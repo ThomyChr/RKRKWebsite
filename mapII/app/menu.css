@@ -1,0 +1,47 @@
+/* Top menu styling for rkrk_map_edit.php */
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+}
+
+.top .bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 46px;
+  overflow: visible;
+}
+
+.top .bar .bar-item.button,
+.top .bar .padding-large.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.top .dropdown-hover {
+  position: relative;
+  display: inline-block;
+}
+
+.top .dropdown-content {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  min-width: 220px;
+  z-index: 1200;
+  display: none;
+}
+
+.top .dropdown-hover:hover .dropdown-content {
+  display: block;
+}
+
+#navDemo {
+  z-index: 1200;
+}

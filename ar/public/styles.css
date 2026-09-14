@@ -1,0 +1,388 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.4rem 1.25rem 1.25rem;
+}
+
+.top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 6px;
+  margin-bottom: 1rem;
+}
+
+.top-nav a {
+  text-decoration: none;
+  color: #9aa4ae;
+  background: #fff;
+  border: 1px solid #c5cdd4;
+  padding: 2px 10px;
+  min-height: 22px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+}
+
+.top-nav a:hover {
+  border-color: #9aa4ae;
+  color: #6b7682;
+}
+
+.top-nav a.active {
+  background: #fff;
+  border-color: #4d6b3e;
+  color: #3f5a32;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.header p {
+  margin: 0.25rem 0 0;
+  color: #4b5563;
+}
+
+.header-logo {
+  height: 60px;
+  width: auto;
+  object-fit: contain;
+  align-self: flex-start;
+}
+
+.filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filter-form select {
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  min-width: 120px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Scope under .container so this does not restyle CreateTopMenu (.bar.black.card). */
+.container .card {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.container .card h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.value {
+  font-size: 1.4rem;
+  margin: 0.75rem 0 0;
+  font-weight: 700;
+}
+
+.positive {
+  color: #166534;
+}
+
+.negative {
+  color: #b91c1c;
+}
+
+.chart-card {
+  min-height: 340px;
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  height: 280px !important;
+}
+
+.filters-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.filters-inline label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 140px;
+  font-size: 0.9rem;
+}
+
+.filters-inline input,
+.filters-inline select,
+.filters-inline button,
+.button-link {
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.9rem;
+}
+
+.filters-inline button,
+.button-link {
+  background: var(--brand-dark, #48673A);
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid button {
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.92rem;
+}
+
+.form-grid button {
+  background: var(--brand-dark, #48673A);
+  color: #fff;
+  cursor: pointer;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.notice {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.notice.ok {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.notice.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.table-wrapper {
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead th {
+  text-align: left;
+  background: #f3f4f6;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.3rem 0.4rem;
+  vertical-align: top;
+  line-height: 1.15;
+}
+
+tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.kontobuch-grid table td,
+.kontobuch-grid table th {
+  padding: 0.3rem 0.4rem;
+  line-height: 1.15;
+}
+
+.kontobuch-grid tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.kontobuch-grid td.amount-out { background: #fdeaea; }
+.kontobuch-grid td.amount-in { background: #ebf9e8; }
+.kontobuch-grid td.saldo { background: #e9f2ff; }
+
+.status-badge {
+  display: inline-block;
+  min-width: 1.7rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.28rem;
+  border: 1px solid #d1d5db;
+  text-align: center;
+  font-weight: 700;
+}
+
+.status-n { background: #f3f4f6; }
+.status-v { background: #fff7d6; }
+.status-x { background: #ffe3e3; }
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.button-link.secondary {
+  background: #6b7280;
+  display: inline-block;
+}
+
+.readonly-field {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.inline-form button {
+  margin-left: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  border-radius: 0.35rem;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.link-button {
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
+  color: #1d4ed8;
+}
+
+.icon-link,
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid #d1d5db;
+  text-decoration: none;
+  font-size: 0.92rem;
+  line-height: 1;
+  margin-right: 0.2rem;
+}
+
+.icon-link {
+  background: #eef2ff;
+  color: #1d4ed8;
+}
+
+.icon-btn {
+  background: #f3f4f6;
+  color: #111827;
+  cursor: pointer;
+}
+
+.icon-btn.icon-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.cell-actions {
+  white-space: nowrap;
+}
+
+.accounts-table .row-inactive {
+  opacity: 0.65;
+}
+
+@media (max-width: 960px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .header-logo {
+    height: 48px;
+  }
+
+  .cell-actions {
+    white-space: normal;
+  }
+}
+

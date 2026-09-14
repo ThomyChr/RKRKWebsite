@@ -1,0 +1,537 @@
+<section id="Kursbeschrieb">
+<!--<h2>PDRA und MTOM Berechnung</h2>-->
+<!--<strong>Dauer:</strong> ca. 45 Minuten-->
+<p><strong>Zielgruppe:</strong> Freizeitpiloten, gewerbliche Betreiber, Behörden, Technikinteressierte</p>
+<p><strong>Ziel:</strong> Vorbereitung auf die Prüfungen für die Unterkategorie A2 der offenen Betriebskategorie sowie die STS-Szenarien der speziellen Kategorie gemäss EU-Drohnenverordnung</p>
+
+<h3>Einführung</h3>
+<p>Die Erstellung einer <b>Preliminary Design Risk Assessment (PDRA)</b> und die Berechnung der <b>Maximum Take-Off Mass (MTOM)</b> sind zentrale Elemente in der Luftfahrtplanung, insbesondere bei der Entwicklung und dem Betrieb von unbemannten Luftfahrtsystemen
+    (UAS).</p>
+<p>Dieser Kurs vermittelt dir die Grundlagen, Methoden und praktischen Anwendungen beider Konzepte. Du wirst lernen, wie man eine PDRA strukturiert, Risiken identifiziert und bewertet, sowie ein Beispiel zur MTOM-Berechnung nachvollziehen.</p>
+
+<h3>Lernziele</h3>
+<ul>
+    <li>Die Struktur und Zielsetzung einer PDRA erklären</li>
+    <li>Risiken systematisch identifizieren, bewerten und mitigieren</li>
+    <li>Die regulatorischen Anforderungen der EASA zur PDRA interpretieren</li>
+    <li>Die MTOM eines UAS anhand eines praktischen Beispiels berechnen</li>
+    <li>Die Bedeutung von Risikomanagement und Gewichtslimits für den sicheren Betrieb verstehen</li>
+</ul>
+
+<h3>Kursinhalt: Kapitelübersicht</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Kapitel</th>
+            <th>Thema</th>
+            <th>Inhalt</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1</td>
+            <td>Grundlagen der PDRA</td>
+            <td>Definition, Zielsetzung, regulatorischer Rahmen</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Risikobewertung in der PDRA</td>
+            <td>Identifikation, Bewertung, Risikomatrix</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>Mitigationsstrategien</td>
+            <td>Technische, operationelle und organisatorische Massnahmen</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>Anwendung einer PDRA</td>
+            <td>Beispielhafte Durchführung einer PDRA</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>MTOM-Berechnung</td>
+            <td>Beispielhafte Berechnung der MTOM eines UAS</td>
+        </tr>
+    </tbody>
+</table>
+</section>
+
+<section id="Kapitel 01">
+  <h2>Kapitel 1: Grundlagen der PDRA (Preliminary Design Risk Assessment)</h2>
+  <p class="keywords">Stichworte: PDRA, EASA, SORA, Risikoanalyse, UAS-Kategorien</p>
+
+  <h3>Überblick</h3>
+  <p>Die Preliminary Design Risk Assessment (PDRA) ist ein vereinfachtes Verfahren zur Risikobewertung im Rahmen des Betriebs von unbemannten Luftfahrtsystemen (UAS). Sie wurde von der <b>EASA (European Union Aviation Safety Agency)</b> entwickelt, um Betreibern eine standardisierte Methode zur Bewertung und Minimierung von Risiken zu bieten – insbesondere in der <b>„Specific“ Kategorie</b> gemäss der <b>SORA (Specific Operations Risk Assessment)</b>.</p>
+  <p>Die PDRA ist besonders relevant für Standard-Szenarien, bei denen die Betriebsbedingungen bereits definiert sind. Sie ersetzt nicht die vollständige SORA, sondern bietet eine pragmatische Alternative für bestimmte Einsätze.</p>
+
+  <h3>Zielsetzung der PDRA</h3>
+  <p>Die PDRA verfolgt das Ziel, die Sicherheitsrisiken eines UAS-Betriebs systematisch zu identifizieren, zu bewerten und durch geeignete Massnahmen zu mitigieren. Dabei werden sowohl Luftfahrtrisiken (z. B. Zusammenstösse mit bemannten Flugzeugen) als auch Bodenrisiken (z. B. Verletzungen von Personen am Boden) berücksichtigt.</p>
+  <p>Die PDRA ist ein zentraler Bestandteil der Betriebsgenehmigung für UAS in der Specific-Kategorie und muss gegenüber der zuständigen Luftfahrtbehörde dokumentiert und begründet werden.</p>
+
+  <h3>Regulatorischer Rahmen</h3>
+  <p>Die rechtliche Grundlage für die PDRA bildet die EU-Verordnung 2019/947, die den Betrieb von UAS in Europa regelt. Darin sind drei Betriebskategorien definiert:</p>
+    <div class="highlight">
+  <ul>
+    <li><strong>Open Category:</strong> Kein Genehmigungsverfahren erforderlich, aber strenge Betriebsgrenzen</li>
+    <li><strong>Specific Category:</strong> Genehmigungspflichtig, PDRA oder SORA erforderlich</li>
+    <li><strong>Certified Category:</strong> Für komplexe und risikoreiche Einsätze, ähnlich bemannter Luftfahrt</li>
+  </ul>
+	</div>
+  <p>Die PDRA ist also ein Werkzeug für Betreiber in der Specific-Kategorie, die ein standardisiertes Szenario nutzen möchten, z. B. PDRA-S01 für Sichtflug über kontrolliertem Gelände.</p>
+
+  <h3>Aufbau einer PDRA</h3>
+  <p>Eine vollständige PDRA besteht typischerweise aus folgenden Elementen:</p>
+    <div class="highlight">
+  <ol>
+    <li><strong>Beschreibung des Betriebs:</strong> Ort, Zeit, Dauer, Flugprofil, beteiligte Systeme</li>
+    <li><strong>Identifikation der Risiken:</strong> Luftfahrtrisiken, Bodenrisiken, Umweltrisiken</li>
+    <li><strong>Bewertung der Risiken:</strong> Eintrittswahrscheinlichkeit, Schadensausmass, Risikomatrix</li>
+    <li><strong>Mitigationsmassnahmen:</strong> Technische, operationelle und organisatorische Massnahmen</li>
+    <li><strong>Restrestrisiko und Schlussfolgerung:</strong> Bewertung nach Mitigation, Dokumentation</li>
+  </ol>
+	</div>
+  <h3>Wichtige Begriffe</h3>
+  <ul class="checklist">
+    <li><strong>PDRA:</strong> Preliminary Design Risk Assessment, vereinfachte Risikobewertung für UAS</li>
+    <li><strong>SORA:</strong> Specific Operations Risk Assessment, vollständige Risikoanalyse für spezifische UAS-Einsätze</li>
+    <li><strong>EASA:</strong> European Union Aviation Safety Agency, europäische Luftfahrtbehörde</li>
+    <li><strong>Specific Category:</strong> Genehmigungspflichtige UAS-Einsätze</li>
+    <li><strong>Mitigation:</strong> Massnahmen zur Risikominderung</li>
+    <li><strong>Risikomatrix:</strong> Werkzeug zur Bewertung von Risiken</li>
+  </ul>
+
+ </section>
+
+<section id="Kapitel 02">
+ <h2>Kapitel 2: Risikobewertung in der PDRA</h2>
+  <p class="keywords">Stichworte: Risikoidentifikation, Eintrittswahrscheinlichkeit, Schadensausmass, Risikomatrix, Restrisiko</p>
+
+  <h3>Ziel dieses Kapitels</h3>
+  <p>Die Risikobewertung ist das Herzstück jeder PDRA. Sie ermöglicht es, potenzielle Gefahren systematisch zu identifizieren, deren Eintrittswahrscheinlichkeit und Auswirkungen zu bewerten und daraus fundierte Entscheidungen für Mitigationsmassnahmen abzuleiten. In diesem Kapitel lernst du, wie Risiken klassifiziert und mit Hilfe einer Risikomatrix bewertet werden.</p>
+
+  <h3>Schritt 1: Risikoidentifikation</h3>
+  <p>Die Risikoidentifikation beginnt mit der Frage: <em>Was kann schiefgehen?</em> Dabei werden alle potenziellen Gefahrenquellen im geplanten UAS-Betrieb analysiert. Typische Risiken sind:</p>
+  <ul>
+    <li><strong>Luftfahrtrisiken:</strong> Kollision mit bemannten Luftfahrzeugen, Verlust der Kontrolle, Funkstörungen</li>
+    <li><strong>Bodenrisiken:</strong> Absturz über bewohntem Gebiet, Verletzung von Personen, Sachschäden</li>
+    <li><strong>Umweltrisiken:</strong> Störungen durch Wetter, elektromagnetische Felder, Sichtverhältnisse</li>
+  </ul>
+  <p>Die Identifikation erfolgt durch eine Kombination aus Szenarioanalyse, Erfahrungswerten und regulatorischen Vorgaben.</p>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Risikoidentifikation – systematische Erfassung potenzieller Gefahrenquellen</p>
+
+  <h3>Schritt 2: Bewertung der Risiken</h3>
+  <p>Nach der Identifikation folgt die Bewertung. Hierbei werden zwei Dimensionen betrachtet:</p>
+  <ul>
+    <li><strong>Eintrittswahrscheinlichkeit (Likelihood):</strong> Wie wahrscheinlich ist es, dass das Risiko eintritt?<br>Skala: sehr gering, gering, mittel, hoch, sehr hoch</li>
+    <li><strong>Schadensausmass (Severity):</strong> Wie gravierend wären die Folgen?<br>Skala: vernachlässigbar, gering, mittel, schwerwiegend, katastrophal</li>
+  </ul>
+  <p>Diese beiden Werte werden in einer <b>Risikomatrix</b> kombiniert, um das Gesamtrisiko zu bestimmen.</p>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Risikomatrix – grafisches Werkzeug zur Bewertung von Risiken anhand von Wahrscheinlichkeit und Auswirkung</p>
+
+  <h3>Beispielhafte Risikomatrix</h3>
+  <table>
+    <thead>
+      <tr>
+        <th align="left">Wahrscheinlichkeit ↓ / Auswirkung →</th>
+        <th align="left">Vernachlässigbar</th>
+        <th>Gering</th>
+        <th>Mittel</th>
+        <th>Schwerwiegend</th>
+        <th>Katastrophal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th align="left">Sehr gering</th>
+        <td>Niedrig</td>
+        <td>Niedrig</td>
+        <td>Niedrig</td>
+        <td>Mittel</td>
+        <td>Mittel</td>
+      </tr>
+      <tr>
+        <th align="left">Gering</th>
+        <td>Niedrig</td>
+        <td>Niedrig</td>
+        <td>Mittel</td>
+        <td>Mittel</td>
+        <td>Hoch</td>
+      </tr>
+      <tr>
+        <th align="left">Mittel</th>
+        <td>Niedrig</td>
+        <td>Mittel</td>
+        <td>Mittel</td>
+        <td>Hoch</td>
+        <td>Hoch</td>
+      </tr>
+      <tr>
+        <th align="left">Hoch</th>
+        <td>Mittel</td>
+        <td>Mittel</td>
+        <td>Hoch</td>
+        <td>Hoch</td>
+        <td>Sehr hoch</td>
+      </tr>
+      <tr>
+        <th align="left">Sehr hoch</th>
+        <td>Mittel</td>
+        <td>Hoch</td>
+        <td>Hoch</td>
+        <td>Sehr hoch</td>
+        <td>Sehr hoch</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Die Matrix hilft dabei, Risiken zu priorisieren und gezielt Massnahmen zu entwickeln.</p>
+
+  <h3>Schritt 3: Ableitung von Mitigationsbedarf</h3>
+  <p>Risiken mit einem hohen oder sehr hohen Wert müssen durch geeignete Massnahmen reduziert werden. Ziel ist es, das Restrisiko auf ein akzeptables Niveau zu senken. Die Bewertung nach Mitigation wird ebenfalls dokumentiert und mit der ursprünglichen Bewertung verglichen.</p>
+
+  <p><strong>Beispiele für Mitigationsmassnahmen:</strong></p>
+  <ul>
+    <li>Technisch: Einsatz redundanter Systeme, automatische Rückkehrfunktion (RTH), Geo-Awareness</li>
+    <li>Operationell: Flug nur bei optimalen Wetterbedingungen, Sichtflug, Sicherheitsabstände</li>
+    <li>Organisatorisch: Schulung des Personals, klare Rollenverteilung, Kommunikationsprotokolle</li>
+  </ul>
+
+  <p class="key"><strong>Schlüsselbegriff:</strong> Restrisiko – verbleibendes Risiko nach Umsetzung von Mitigationsmassnahmen</p>
+
+  <h3>Dokumentation der Risikobewertung</h3>
+  <p>Die Risikobewertung wird in der PDRA strukturiert dokumentiert. Typischer Aufbau:</p>
+    <div class="highlight">
+  <ul>
+    <li><strong>Risikoquelle:</strong> z. B. Funkverbindung, Wetter, Technik</li>
+    <li><strong>Beschreibung des Risikos:</strong> Was kann passieren?</li>
+    <li><strong>Bewertung (vor Mitigation):</strong> Einschätzung gemäss Risikomatrix</li>
+    <li><strong>Mitigationsmassnahmen:</strong> geplante Reduktionsstrategien</li>
+    <li><strong>Bewertung (nach Mitigation):</strong> Restrisiko gemäss Matrix</li>
+    <li><strong>Verantwortlichkeit und Nachweisführung:</strong> Wer ist zuständig, wie wird dokumentiert?</li>
+  </ul>
+	</div>
+	
+  <p>Diese strukturierte Darstellung ist essenziell für die Genehmigung durch die Luftfahrtbehörde und sollte im Betriebshandbuch verankert sein.</p>
+
+  <p><strong>Zusammenfassung – Wichtige Inhalte:</strong></p>
+  <ul class="checklist">
+    <li>Risikoidentifikation analysiert potenzielle Gefahrenquellen</li>
+    <li>Bewertung erfolgt über Eintrittswahrscheinlichkeit und Schadensausmass</li>
+    <li>Risikomatrix hilft bei Priorisierung und Entscheidungsfindung</li>
+    <li>Mitigationsmassnahmen senken das Restrisiko</li>
+    <li>Dokumentation ist Voraussetzung für behördliche Genehmigung</li>
+  </ul>
+
+</section>
+
+<section id="Kapitel 03">
+  <h2>Kapitel 3: Mitigationsstrategien in der PDRA</h2>
+  <p class="keywords">Stichworte: Mitigation, technische Massnahmen, operationelle Verfahren, organisatorische Prozesse, Restrisiko</p>
+
+  <h3>Ziel dieses Kapitels</h3>
+  <p>Nachdem Risiken identifiziert und bewertet wurden, ist der nächste Schritt die Entwicklung von <b>Mitigationsstrategien</b>. Diese sollen das Risiko auf ein akzeptables Mass reduzieren, sodass der Betrieb des UAS sicher und genehmigungsfähig ist. Die Massnahmen können technischer, operationeller oder organisatorischer Natur sein – und müssen zur jeweiligen Risikokategorie passen.</p>
+
+  <h3>Technische Mitigationsmassnahmen</h3>
+  <p>Technische Massnahmen betreffen die <b>Hardware und Software</b> des UAS und dienen dazu, Risiken direkt durch Systemfunktionen zu minimieren. Beispiele:</p>
+    <div class="highlight">
+
+  <ul>
+    <li><b>Failsafe-Systeme:</b> Automatischer Rückflug bei Signalverlust</li>
+    <li><b>Geo-Fencing:</b> Begrenzung des Flugbereichs durch virtuelle Zonen</li>
+    <li><b>Redundanz:</b> Doppelte Stromversorgung, Backup-Kommunikation</li>
+    <li><b>Obstacle Avoidance:</b> Sensoren zur Hinderniserkennung und -vermeidung</li>
+    <li><b>Flight Termination System (FTS):</b> Notabschaltung bei Kontrollverlust</li>
+  </ul>
+	</div>
+  <p>Diese Massnahmen sind besonders wirksam gegen <b>technische Ausfälle</b> und <b>unbeabsichtigte Flugabweichungen</b>.</p>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Failsafe – automatische Sicherheitsfunktion bei Systemversagen</p>
+
+  <h3>Operationelle Mitigationsmassnahmen</h3>
+  <p>Operationelle Massnahmen betreffen die Planung und Durchführung des Fluges. Sie zielen darauf ab, Risiken durch menschliches Verhalten und Abläufe zu kontrollieren. Beispiele:</p>
+    <div class="highlight">
+  <ul>
+    <li><b>Flugplanung:</b> Auswahl sicherer Flugrouten, Vermeidung von Menschenansammlungen</li>
+    <li><b>Wetterüberwachung:</b> Einsatz nur bei geeigneten Bedingungen</li>
+    <li><b>Pilotentraining:</b> Schulung in Notfallverfahren und Systembedienung</li>
+    <li><b>Pre-Flight Checks:</b> Systemprüfung vor jedem Einsatz</li>
+    <li><b>Kommunikationsprotokolle:</b> Klare Abläufe bei Kontrollverlust oder Zwischenfällen</li>
+  </ul>
+	</div>
+  <p>Diese Massnahmen sind besonders relevant für die <b>Bodenrisiken</b> und die <b>Betriebsdisziplin</b>.</p>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Pre-Flight Check – systematische Prüfung vor dem Flug</p>
+
+  <h3>Organisatorische Mitigationsmassnahmen</h3>
+  <p>Organisatorische Massnahmen betreffen die Strukturen und Prozesse des Betreibers. Sie schaffen Rahmenbedingungen für einen sicheren Betrieb. Beispiele:</p>
+    <div class="highlight">
+  <ul>
+    <li><b>Betriebshandbuch:</b> Dokumentierte Verfahren und Verantwortlichkeiten</li>
+    <li><b>Sicherheitsmanagementsystem (SMS):</b> Überwachung und Verbesserung der Sicherheit</li>
+    <li><b>Rollenverteilung:</b> Klare Zuständigkeiten für Flug, Wartung und Notfälle</li>
+    <li><b>Auditierung:</b> Regelmässige interne und externe Prüfungen</li>
+    <li><b>Meldesysteme:</b> Erfassung und Analyse von Zwischenfällen</li>
+  </ul>
+</div>
+
+  <p>Diese Massnahmen stärken die <b>organisatorische Resilienz</b> und die <b>Regelkonformität</b>.</p>
+  <p class="key"><strong>Schlüsselbegriff:</strong> SMS – systematisches Sicherheitsmanagement im Betrieb</p>
+
+  <h3>Bewertung der Mitigation</h3>
+  <p>Nach Umsetzung der Mitigationsmassnahmen wird das Risiko erneut bewertet. Ziel ist es, das <b>Restrisiko</b> auf ein akzeptables Niveau zu senken. Die neue Bewertung wird in der Risikomatrix dokumentiert und mit der ursprünglichen Bewertung verglichen.</p>
+  <p><strong>Ein Beispiel:</strong></p>
+  <ul>
+    <li>Ursprüngliches Risiko: Hoch (Kollision mit bemanntem Flugzeug)</li>
+    <li>Mitigation: ADS-B-Empfänger, Flug unter 120 m, Sichtflug</li>
+    <li>Restrisiko: Mittel</li>
+  </ul>
+  <p>Diese Bewertung ist entscheidend für die Genehmigungsfähigkeit des Betriebs.</p>
+
+  <h3>Dokumentation der Mitigationsmassnahmen</h3>
+  <p>Die Massnahmen müssen <b>klar beschrieben, begründet und nachgewiesen</b> werden. Typische Dokumentationspunkte:</p>
+    <div class="highlight">
+  <ul>
+    <li>Massnahme (technisch, operationell, organisatorisch)</li>
+    <li>Ziel und Wirkung</li>
+    <li>Implementierung und Verantwortlichkeit</li>
+    <li>Nachweis (z. B. Fotos, Handbücher, Schulungszertifikate)</li>
+  </ul>
+	</div>
+  <p>Die Dokumentation ist Teil der PDRA und wird der Luftfahrtbehörde vorgelegt.</p>
+
+ <h3>Zusammenfassung – Wichtige Inhalte</h3>
+  <ul class="checklist">
+    <li>Mitigationsstrategien reduzieren Risiken auf ein akzeptables Mass</li>
+    <li>Technische Massnahmen wirken direkt auf Systemebene (z. B. Failsafe, Geo-Fencing)</li>
+    <li>Operationelle Massnahmen betreffen Planung, Verhalten und Abläufe</li>
+    <li>Organisatorische Massnahmen schaffen sichere Rahmenbedingungen</li>
+    <li>Restrisiko wird nach Umsetzung erneut bewertet und dokumentiert</li>
+    <li>Alle Massnahmen müssen nachvollziehbar dokumentiert und begründet werden</li>
+  </ul>
+
+  <p>Die Wirksamkeit der Mitigationsmassnahmen entscheidet massgeblich über die Genehmigungsfähigkeit des Betriebs. Eine sorgfältige Auswahl, Umsetzung und Dokumentation ist daher unerlässlich – sowohl aus regulatorischer als auch aus sicherheitstechnischer Sicht.</p>
+
+</section>
+
+<section id="Kapitel 04">
+  <h2>Kapitel 4: Anwendung einer PDRA – Praxisbeispiel</h2>
+
+  <h3>Ziel dieses Kapitels</h3>
+  <p>Die Theorie ist nur so gut wie ihre Umsetzung. In diesem Kapitel führen wir eine vollständige PDRA exemplarisch durch – Schritt für Schritt, basierend auf einem typischen UAS-Einsatzszenario. Du lernst, wie man die einzelnen Elemente der PDRA konkret ausfüllt und dokumentiert.</p>
+
+  <h3>Szenario: UAS-Flug zur Inspektion von Hochspannungsleitungen</h3>
+    <div class="highlight">
+  <ul>
+    <li><strong>Einsatzort:</strong> Ländliches Gebiet, keine Menschenansammlungen</li>
+    <li><strong>Flugprofil:</strong> Sichtflug (VLOS), max. Flughöhe 100 m</li>
+    <li><strong>UAS:</strong> Multikopter mit 3 kg MTOM, ausgestattet mit Kamera und GPS</li>
+    <li><strong>Dauer:</strong> ca. 20 Minuten pro Flug</li>
+    <li><strong>Pilot:</strong> zertifiziert nach EU-Verordnung 2019/947</li>
+  </ul>
+	</div>
+
+  <h3>1. Beschreibung des Betriebs</h3>
+    <div class="highlight">
+  <ul>
+    <li><strong>Ziel:</strong> Inspektion von Hochspannungsleitungen zur Wartungsplanung</li>
+    <li><strong>Ort:</strong> Entlang eines 5 km langen Abschnitts in ländlicher Umgebung</li>
+    <li><strong>Flugmodus:</strong> Sichtflug, manuell gesteuert</li>
+    <li><strong>Technik:</strong> UAS mit redundanter Stromversorgung, Geo-Fencing und Return-to-Home-Funktion</li>
+  </ul>
+	</div>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Sichtflug (VLOS) – Betrieb mit direkter Sichtverbindung zum UAS</p>
+
+  <h3>2. Risikoidentifikation</h3>
+    <div class="highlight">
+  <ul>
+    <li><strong>Luftfahrtrisiken:</strong> Kollision mit bemanntem Flugzeug, Kontrollverlust</li>
+    <li><strong>Bodenrisiken:</strong> Absturz auf Stromleitung, Verletzung von Wartungspersonal</li>
+    <li><strong>Umweltrisiken:</strong> Windböen, elektromagnetische Störungen durch Leitungen</li>
+  </ul>
+	</div>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Umweltbedingte Risiken – externe Einflüsse auf den sicheren Betrieb</p>
+
+  <h3>3. Risikobewertung (vor Mitigation)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Risiko</th>
+        <th>Wahrscheinlichkeit</th>
+        <th>Auswirkung</th>
+        <th>Risikostufe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Kollision mit Luftfahrzeug</td>
+        <td>Gering</td>
+        <td>Katastrophal</td>
+        <td>Hoch</td>
+      </tr>
+      <tr>
+        <td>Absturz auf Leitung</td>
+        <td>Mittel</td>
+        <td>Schwerwiegend</td>
+        <td>Hoch</td>
+      </tr>
+      <tr>
+        <td>Windbedingter Kontrollverlust</td>
+        <td>Mittel</td>
+        <td>Mittel</td>
+        <td>Mittel</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Risikostufe – Kombination aus Eintrittswahrscheinlichkeit und Schadensausmass</p>
+
+  <h3>4. Mitigationsmassnahmen</h3>
+    <div class="highlight">
+  <ul>
+    <li><strong>Technisch:</strong> ADS-B-Empfänger zur Erkennung bemannter Luftfahrzeuge, Geo-Fencing zur Begrenzung des Flugraums</li>
+    <li><strong>Operationell:</strong> Flug nur bei Wind &lt; 15 km/h, Pre-Flight Checks, Kommunikation mit Wartungspersonal</li>
+    <li><strong>Organisatorisch:</strong> Betriebshandbuch mit Notfallverfahren, Schulung des Piloten, Sicherheitsbriefing vor jedem Einsatz</li>
+  </ul>
+	</div>
+  <p class="key"><strong>Schlüsselbegriff:</strong> ADS-B – System zur Positionsübermittlung von Luftfahrzeugen</p>
+
+  <h3>5. Risikobewertung (nach Mitigation)</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Risiko</th>
+        <th>Wahrscheinlichkeit</th>
+        <th>Auswirkung</th>
+        <th>Risikostufe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Kollision mit Luftfahrzeug</td>
+        <td>Sehr gering</td>
+        <td>Katastrophal</td>
+        <td>Mittel</td>
+      </tr>
+      <tr>
+        <td>Absturz auf Leitung</td>
+        <td>Gering</td>
+        <td>Schwerwiegend</td>
+        <td>Mittel</td>
+      </tr>
+      <tr>
+        <td>Windbedingter Kontrollverlust</td>
+        <td>Gering</td>
+        <td>Mittel</td>
+        <td>Niedrig</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Die Mitigationsmassnahmen haben das Gesamtrisiko deutlich reduziert. Der Betrieb gilt als genehmigungsfähig unter PDRA-S01.</p>
+
+  <h3>Dokumentation</h3>
+  <ul>
+    <li>Betriebsbeschreibung</li>
+    <li>Risikotabelle (vor/nach Mitigation)</li>
+    <li>Massnahmenübersicht</li>
+    <li>Nachweise (Fotos, Handbücher, Schulungszertifikate)</li>
+    <li>Unterschrift des verantwortlichen Betreibers</li>
+  </ul>
+  <p>Diese Dokumentation wird der Luftfahrtbehörde zur Prüfung vorgelegt.</p>
+
+  <h3>Zusammenfassung – Wichtige Inhalte</h3>
+  <ul class="checklist">
+    <li>PDRA ist praxisnah anwendbar – z. B. für Inspektionsflüge</li>
+    <li>Risiken müssen vor und nach Mitigation bewertet werden</li>
+    <li>Mitigationsmassnahmen senken das Restrisiko auf genehmigungsfähiges Niveau</li>
+    <li>Technische, operationelle und organisatorische Massnahmen greifen ineinander</li>
+    <li>Dokumentation ist Voraussetzung für behördliche Prüfung</li>
+  </ul>
+
+  <p>Die strukturierte Durchführung einer PDRA – wie in diesem Beispiel – zeigt, wie regulatorische Anforderungen, technische Sicherheit und praktische Einsatzplanung zusammenwirken. Sie ist ein zentrales Werkzeug für professionelle UAS-Betreiber in der Specific-Kategorie.</p>
+
+</section>
+
+<section id="Kapitel 05">
+  <h2>Kapitel 5: MTOM-Berechnung – Beispiel und Anwendung</h2>
+  <p class="keywords">Stichwort: MTOM, Gewichtskomponenten, Berechnungsformel, Beispielrechnung, Betriebshandbuch</p>
+
+  <h3>Ziel dieses Kapitels</h3>
+  <p>Die <b>Maximum Take-Off Mass (MTOM)</b> ist die maximal zulässige Startmasse eines Luftfahrzeugs, inklusive aller Komponenten wie Nutzlast, Batterien und Zubehör. Die MTOM ist ein zentraler Parameter für die <b>Zulassung, Klassifizierung und Betriebssicherheit</b> von UAS. In diesem Kapitel lernst du, wie die MTOM berechnet wird und welche Komponenten berücksichtigt werden müssen.</p>
+
+  <h3>Definition der MTOM</h3>
+  <p>Die MTOM ist die Summe aller Massen, die beim Start des UAS vorhanden sind:</p>
+    <div class="highlight">
+	<p><strong>MTOM = Eigenmasse des UAS + Nutzlast + Energiequelle + Zubehör + Sicherheitsreserven</strong></p>
+	</div>
+  <p>Die MTOM darf die vom Hersteller angegebene strukturelle Grenze nicht überschreiten und muss mit den regulatorischen Vorgaben (z. B. EU-Verordnung 2019/947) übereinstimmen.</p>
+  <p class="key"><strong>Schlüsselbegriff:</strong> MTOM – maximal zulässige Startmasse eines UAS</p>
+
+  <h3>Beispielhafte Berechnung</h3>
+  <p><strong>Szenario:</strong> Ein Multikopter soll für Luftbildaufnahmen eingesetzt werden. Die Komponenten sind wie folgt:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Komponente</th>
+        <th>Masse (in g)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Eigenmasse (Rahmen, Motoren, Steuerung)</td>
+        <td align="right">1.800 g</td>
+      </tr>
+      <tr>
+        <td>Kamera (Nutzlast)</td>
+        <td align="right">400 g</td>
+      </tr>
+      <tr>
+        <td>Akku (LiPo 4S)</td>
+        <td align="right">600 g</td>
+      </tr>
+      <tr>
+        <td>GPS-Modul</td>
+        <td align="right">100 g</td>
+      </tr>
+      <tr>
+        <td>Sicherheitsreserve</td>
+        <td align="right">100 g</td>
+      </tr>
+      <tr>
+        <th>Gesamtmasse (MTOM)</th>
+        <th>3.000 g</th>
+      </tr>
+    </tbody>
+  </table>
+  <p>Die berechnete MTOM beträgt <b>3.000 g (3,0 kg)</b>. Diese muss mit der vom Hersteller angegebenen maximalen Startmasse verglichen werden. Liegt die MTOM darüber, ist der Betrieb <b>nicht zulässig</b>.</p>
+
+  <h3>Bedeutung der MTOM</h3>
+  <p>Die MTOM hat Auswirkungen auf:</p>
+     <div class="highlight">
+ <ul>
+    <li><b>Kategorisierung des Betriebs:</b> z. B. &lt;250 g, &lt;2 kg, &lt;25 kg</li>
+    <li><b>Genehmigungspflicht:</b> Je nach Gewicht gelten unterschiedliche Anforderungen</li>
+    <li><b>Flugleistung:</b> Höheres Gewicht = geringere Flugzeit und Manövrierfähigkeit</li>
+    <li><b>Sicherheitsbewertung:</b> Höheres Gewicht = höheres Schadenspotenzial bei Absturz</li>
+  </ul>
+	</div>
+	<p class="key"><strong>Schlüsselbegriff:</strong> Gewichtsklassen – regulatorische Einteilung nach MTOM</p>
+
+  <h3>Fehlerquellen bei der MTOM-Berechnung</h3>
+    <div class="highlight">
+  <ul>
+    <li><b>Nicht berücksichtigte Komponenten</b> (z. B. Halterungen, Kabel)</li>
+    <li><b>Unterschätzung der Sicherheitsreserve</b></li>
+    <li><b>Variierende Akkugrössen</b> je nach Einsatz</li>
+    <li><b>Fehlende Berücksichtigung von Wetterausrüstung</b> (z. B. Heizung, Schutzgehäuse)</li>
+  </ul>
+	</div>
+  <p>Eine präzise Berechnung ist essenziell für die Sicherheit und Genehmigungsfähigkeit.</p>
+
+  <h3>Dokumentation der MTOM</h3>
+  <p>Die MTOM muss im <b>Betriebshandbuch</b> und in der <b>PDRA</b> dokumentiert werden. Typische Angaben:</p>
+  <ul>
+    <li>Einzelgewichte der Komponenten</li>
+    <li>Gesamtgewicht</li>
+    <li>Vergleich mit Herstellerangabe</li>
+    <li>Nachweise (z. B. Wiegeprotokoll, technische Datenblätter)</li>
+  </ul>
+  <p class="key"><strong>Schlüsselbegriff:</strong> Betriebshandbuch – zentrales Dokument zur Beschreibung des UAS-Betriebs</p>
+</section>
+

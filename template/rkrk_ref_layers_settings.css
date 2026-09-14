@@ -1,0 +1,65 @@
+:root { --bg:#f4f6f8; --card:#fff; --line:#d5dde6; --ink:#1b3552; --muted:#5b6f86; --accent:#48673A; }
+body.rkrk-page.rkrk-layer-settings { background: var(--bg); margin: 0; }
+.rkrk-layer-settings .container { max-width: 960px; margin: 0 auto; padding: 16px 16px 64px; }
+.rkrk-layer-settings .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.rkrk-layer-settings h1 { margin: 0 0 6px; font-size: 1.35rem; color: var(--ink); }
+.rkrk-layer-settings h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--ink); }
+.rkrk-layer-settings .muted { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 0; }
+.rkrk-layer-settings .toplinks { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; align-items: center; }
+.rkrk-layer-settings .sticky {
+  position: sticky; top: var(--rkrk-nav-h, 56px); z-index: 20;
+  background: rgba(244,246,248,0.97); border-bottom: 1px solid var(--line);
+  margin: 0 -16px 14px; padding: 10px 16px;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.rkrk-layer-settings .status { flex: 1 1 160px; font-size: 13px; color: var(--muted); }
+.rkrk-layer-settings .tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+.rkrk-layer-settings .panel[hidden] { display: none !important; }
+.rkrk-layer-settings .row {
+  display: grid;
+  grid-template-columns: minmax(120px,1.1fr) 100px 1fr 58px 70px 80px;
+  gap: 10px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid #edf1f5; font-size: 13px;
+}
+.rkrk-layer-settings .row:last-child { border-bottom: 0; }
+.rkrk-layer-settings .row label { color: var(--ink); font-weight: 600; }
+.rkrk-layer-settings .row input[type="color"] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: #fff; cursor: pointer; }
+.rkrk-layer-settings .row input[type="text"],
+.rkrk-layer-settings .row input[type="number"] {
+  width: 100%; padding: 6px 8px; border: 1px solid #c9d1db; border-radius: 5px; font-size: 12px;
+}
+.rkrk-layer-settings .swatch {
+  height: 28px; border-radius: 6px; border: 1px solid #cfd6de;
+  background: linear-gradient(90deg, var(--s), var(--s)), var(--f);
+}
+.rkrk-layer-settings .head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 4px; }
+.rkrk-layer-settings .colh { display: grid; grid-template-columns: minmax(120px,1.1fr) 100px 1fr 58px 70px 80px; gap: 10px; font-size: 11px; color: var(--muted); text-transform: uppercase; }
+.rkrk-layer-settings .toggle-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px 10px;
+}
+.rkrk-layer-settings .toggle-grid label {
+  display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ink);
+  padding: 6px 8px; border: 1px solid #e1e7ef; border-radius: 8px; background: #fbfcfd;
+}
+.rkrk-layer-settings .toggle-grid input { width: auto; margin: 0; }
+.rkrk-layer-settings .filter-row { margin-top: 12px; font-size: 13px; }
+.rkrk-layer-settings .filter-row label { display: inline-flex; gap: 8px; align-items: center; }
+.rkrk-layer-settings .tab {
+  box-sizing: border-box; width: 44px; height: 44px; padding: 0; border-radius: 10px;
+  border: 1px solid #c7d7ea; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; background: #fff; color: #48673A;
+}
+.rkrk-layer-settings .tab.is-active { background: #e7f0e4; border-color: #96B588; }
+.rkrk-layer-settings .icon-btn {
+  box-sizing: border-box; width: 44px; height: 44px; padding: 0; border-radius: 10px;
+  border: 1px solid #c7d7ea; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; background: #fff; color: #48673A;
+}
+.rkrk-layer-settings .icon-btn.btn-ok { background: #577a47; color: #fff; border-color: transparent; }
+.rkrk-layer-settings .icon-btn.btn-warn { background: #9a6500; color: #fff; border-color: transparent; }
+.rkrk-layer-settings .icon-btn.btn-accent { background: #48673A; color: #fff; border-color: transparent; }
+.rkrk-layer-settings .icon-btn.btn-ghost { background: #fff; color: #48673A; }
+@media (max-width: 720px) {
+  .rkrk-layer-settings .row, .rkrk-layer-settings .colh { grid-template-columns: 1fr 1fr; }
+  .rkrk-layer-settings .swatch { grid-column: 1 / -1; }
+}

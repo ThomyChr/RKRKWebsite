@@ -1,0 +1,34 @@
+name: Fehler
+description: Bug im bestehenden Verhalten (nicht neues Modernisierungs-Paket)
+title: "fix: "
+labels: []
+body:
+  - type: textarea
+    id: seen
+    attributes:
+      label: Beobachtet
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartet
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: URL inkl. Query
+  - type: dropdown
+    id: php
+    attributes:
+      label: PHP-Version (falls bekannt)
+      options: ["7.x", "8.0", "8.1+", "unbekannt"]
+  - type: checkboxes
+    id: public
+    attributes:
+      label: Betrifft
+      options:
+        - label: Öffentliche Seite / Embed (`constraint-public-api`)
+        - label: Speicherung Missionen/RKRK (`constraint-storage`)
+        - label: Login / Rechte

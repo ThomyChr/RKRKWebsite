@@ -1,0 +1,188 @@
+/* Admin config UI (M4) */
+
+.rkrk-cfg {
+  max-width: 1100px;
+}
+.rkrk-cfg-lead {
+  color: var(--rkrk-muted, #5a675a);
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+.rkrk-cfg-msg {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #e8f3e4;
+  font-weight: 600;
+}
+.rkrk-cfg-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  position: sticky;
+  top: var(--rkrk-header-h, 52px);
+  z-index: 30;
+  background: var(--rkrk-bg, #f6f7f6);
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--rkrk-border, #e4e7e4);
+  margin-bottom: 12px;
+}
+.rkrk-cfg-toolbar input[type="search"],
+.rkrk-cfg-toolbar select {
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid var(--rkrk-border, #e4e7e4);
+  border-radius: 6px;
+  min-width: 140px;
+}
+.rkrk-cfg-toolbar input[type="search"] {
+  min-width: 220px;
+  flex: 1;
+}
+.rkrk-cfg-toolbar button {
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--rkrk-border, #e4e7e4);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.rkrk-cfg-group {
+  border: 1px solid var(--rkrk-border, #e4e7e4);
+  border-radius: 10px;
+  background: #fff;
+  margin: 0 0 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+.rkrk-cfg-group > summary {
+  font-weight: 700;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rkrk-cfg-group > summary::-webkit-details-marker { display: none; }
+.rkrk-cfg-count {
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--rkrk-muted, #5a675a);
+}
+.rkrk-cfg-list {
+  min-height: 8px;
+}
+.rkrk-cfg-item {
+  border-top: 1px solid var(--rkrk-border, #e4e7e4);
+  padding: 8px 12px 10px;
+}
+.rkrk-cfg-item.is-off { opacity: 0.62; }
+.rkrk-cfg-item.is-dragging { opacity: 0.4; }
+.rkrk-cfg-item.is-dragover { outline: 2px dashed var(--rkrk-brand, #6F8B5E); }
+.rkrk-cfg-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+}
+.rkrk-cfg-drag {
+  cursor: grab;
+  color: #889188;
+  font-size: 16px;
+  letter-spacing: -2px;
+  user-select: none;
+  padding: 2px 4px;
+}
+.rkrk-cfg-drag:active { cursor: grabbing; }
+.rkrk-cfg-item-head input[type="text"] {
+  font-size: 14px;
+  padding: 5px 8px;
+  border: 1px solid var(--rkrk-border, #e4e7e4);
+  border-radius: 6px;
+}
+.rkrk-cfg-title { flex: 1; min-width: 140px; }
+.rkrk-cfg-sort { width: 4.2em; }
+.rkrk-cfg-key {
+  font-size: 12px;
+  color: var(--rkrk-muted, #5a675a);
+}
+.rkrk-cfg-more > summary {
+  cursor: pointer;
+  color: var(--rkrk-muted, #5a675a);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.rkrk-cfg-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 12px;
+  padding: 8px 0 2px;
+}
+.rkrk-cfg-fields label,
+.rkrk-cfg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--rkrk-muted, #5a675a);
+}
+.rkrk-cfg-fields input[type="text"],
+.rkrk-cfg-fields select,
+.rkrk-cfg-fields textarea {
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid var(--rkrk-border, #e4e7e4);
+  border-radius: 6px;
+  color: var(--rkrk-text, #1f2a1f);
+}
+.rkrk-cfg-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--rkrk-text, #1f2a1f);
+  font-size: 13px;
+}
+.rkrk-cfg-levels label {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: inherit;
+}
+.rkrk-cfg-desc {
+  font-size: 13px;
+  color: var(--rkrk-text, #1f2a1f);
+  line-height: 1.4;
+  margin: 0;
+}
+.rkrk-cfg-steer {
+  font-size: 12px;
+  color: var(--rkrk-muted, #5a675a);
+  margin: 0 0 8px;
+}
+.rkrk-cfg-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 25;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border-top: 1px solid var(--rkrk-border, #e4e7e4);
+  padding: 10px 0;
+}
+.rkrk-cfg-bar button[type="submit"] {
+  background: var(--rkrk-brand, #6F8B5E);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+@media (max-width: 700px) {
+  .rkrk-cfg-toolbar input[type="search"] { min-width: 100%; }
+}

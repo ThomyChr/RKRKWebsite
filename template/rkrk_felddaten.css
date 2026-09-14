@@ -1,0 +1,162 @@
+/* Felddaten-Editor: Randabstand und Tablet/Mobile-Umbruch */
+
+html {
+	overflow-x: auto;
+}
+
+.rkrk-felddaten {
+	box-sizing: border-box;
+	max-width: 100%;
+	padding: 8px max(20px, env(safe-area-inset-right, 0px)) 32px max(20px, env(safe-area-inset-left, 0px));
+}
+.rkrk-felddaten h1,
+.rkrk-felddaten #Titel {
+	margin-left: 0;
+	margin-right: 0;
+	overflow-wrap: anywhere;
+}
+.rkrk-felddaten input[type="checkbox"],
+.rkrk-felddaten input[type="radio"] {
+	width: auto;
+	margin-right: 4px;
+}
+
+.rkrk-felddaten-search {
+	width: 100%;
+	white-space: nowrap;
+}
+.rkrk-felddaten-search td {
+	vertical-align: middle;
+}
+.rkrk-felddaten-search img,
+.rkrk-felddaten-search image,
+.rkrk-felddaten-search input[type="image"] {
+	height: 24px !important;
+	width: auto !important;
+	max-height: 24px;
+	max-width: 40px;
+	vertical-align: middle;
+}
+.rkrk-felddaten-search img[src*="step_"],
+.rkrk-felddaten-search image[src*="step_"] {
+	height: 16px !important;
+	max-width: 18px;
+	max-height: 16px;
+}
+.rkrk-felddaten-search input[type="submit"] {
+	height: 26px;
+	padding: 2px 10px;
+	font-size: 13px;
+	vertical-align: middle;
+	box-sizing: border-box;
+}
+.rkrk-felddaten-search select,
+.rkrk-felddaten-search input[type="text"] {
+	height: 26px;
+	vertical-align: middle;
+	box-sizing: border-box;
+}
+.rkrk-felddaten-form {
+	width: 100%;
+	max-width: 100%;
+}
+
+.rkrk-feldwahl {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 8px 10px;
+	margin: 8px 0 16px;
+}
+.rkrk-feldwahl-label {
+	flex: 0 0 auto;
+	font-weight: 700;
+	padding-top: 0;
+}
+.rkrk-feldwahl .rkrk-sels {
+	flex: 1 1 auto;
+	flex-wrap: nowrap;
+	min-width: 0;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.rkrk-felddaten-legend {
+	width: 100%;
+	table-layout: auto;
+}
+.rkrk-felddaten-legend td {
+	padding-right: 18px;
+	vertical-align: top;
+}
+.rkrk-felddaten-legend ul {
+	margin: 0;
+	padding-left: 1.2em;
+}
+
+@media (max-width: 1024px) {
+	.rkrk-felddaten {
+		padding-left: max(18px, env(safe-area-inset-left, 0px));
+		padding-right: max(18px, env(safe-area-inset-right, 0px));
+		font-size: 13px;
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
+	}
+	.rkrk-felddaten h1,
+	.rkrk-felddaten #Titel {
+		font-size: 1.35rem;
+	}
+	.rkrk-felddaten h2 {
+		font-size: 1.05rem;
+	}
+	.rkrk-felddaten td,
+	.rkrk-felddaten label:not(.rkrk-sel):not(.rkrk-reg-pill),
+	.rkrk-felddaten input:not([type="checkbox"]):not([type="radio"]),
+	.rkrk-felddaten select,
+	.rkrk-felddaten textarea {
+		font-size: 13px;
+	}
+	.rkrk-felddaten-legend {
+		font-size: 12px;
+	}
+	.rkrk-felddaten-legend h3 {
+		font-size: 0.95rem;
+		margin: 0 0 6px;
+	}
+}
+
+@media (max-width: 700px) {
+	.rkrk-felddaten {
+		padding-left: max(14px, env(safe-area-inset-left, 0px));
+		padding-right: max(14px, env(safe-area-inset-right, 0px));
+	}
+	.rkrk-felddaten-form > tbody > tr > td {
+		display: block;
+		width: auto;
+		box-sizing: border-box;
+		padding: 4px 0;
+	}
+	.rkrk-felddaten-form > tbody > tr > td:first-child {
+		padding-top: 10px;
+		font-weight: 600;
+	}
+	.rkrk-felddaten input[type="text"],
+	.rkrk-felddaten input[type="number"],
+	.rkrk-felddaten select,
+	.rkrk-felddaten textarea {
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+	.rkrk-felddaten input[type="submit"] {
+		min-height: 36px;
+		margin: 6px 4px 6px 0;
+	}
+	.rkrk-feldwahl {
+		flex-wrap: wrap;
+		align-items: flex-start;
+	}
+	.rkrk-feldwahl .rkrk-sels {
+		flex-wrap: wrap;
+		overflow-x: visible;
+	}
+}

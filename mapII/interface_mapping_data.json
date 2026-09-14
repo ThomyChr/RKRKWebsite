@@ -1,0 +1,185 @@
+{
+  "source": "field_editor.mission_settings",
+  "formats": {
+    "coordinates": "WGS84 lon,lat",
+    "waypoint_altitude": "AGL meter",
+    "numbers": "decimal point",
+    "booleans": "true|false"
+  },
+  "rows": [
+    {
+      "form": "msDroneType",
+      "settings_key": "drone_type",
+      "type": "string",
+      "format": "enum text",
+      "uav": "drone_control_settings.drone_type",
+      "dji": "wpml:droneInfo/wpml:payloadInfo (profile selection)",
+      "transform": "direct",
+      "ui_options": ["Mavic 3T"]
+    },
+    {
+      "form": "msKmzParamsActive",
+      "settings_key": "kmz_params_active",
+      "type": "boolean",
+      "format": "true|false",
+      "uav": "drone_control_settings.kmz_params_active",
+      "dji": "KMZ override switch",
+      "transform": "if false => use DJI reference defaults",
+      "ui_options": [true, false]
+    },
+    {
+      "form": "msSimpleMode",
+      "settings_key": "simple_mode",
+      "type": "boolean",
+      "format": "true|false",
+      "uav": "drone_control_settings.simple_mode",
+      "dji": "template mode flags",
+      "transform": "boolean -> mode flags",
+      "ui_options": [true, false]
+    },
+    {
+      "form": "msSpeed",
+      "settings_key": "speed_m_s",
+      "type": "number",
+      "format": "m/s",
+      "uav": "drone_control_settings.speed_m_s",
+      "dji": "wpml:autoFlightSpeed + wpml:globalTransitionalSpeed",
+      "transform": "direct",
+      "ui_options": "numeric input"
+    },
+    {
+      "form": "msStartSpeedActive",
+      "settings_key": "start_speed_active",
+      "type": "boolean",
+      "format": "true|false",
+      "uav": "drone_control_settings.start_speed_active",
+      "dji": "start segment speed activation",
+      "transform": "boolean gate",
+      "ui_options": [true, false]
+    },
+    {
+      "form": "msStartSpeed",
+      "settings_key": "start_speed_m_s",
+      "type": "number",
+      "format": "m/s",
+      "uav": "drone_control_settings.start_speed_m_s",
+      "dji": "start segment speed",
+      "transform": "conditional by msStartSpeedActive",
+      "ui_options": "numeric input"
+    },
+    {
+      "form": "msEndAction",
+      "settings_key": "end_action",
+      "type": "string",
+      "format": "enum text",
+      "uav": "drone_control_settings.end_action",
+      "dji": "wpml:finishAction",
+      "transform": "enum mapping",
+      "ui_options": ["Aufgabe beenden", "Rückkehr zum Start (RTH)", "Landen", "Zum ersten Wegpunkt"]
+    },
+    {
+      "form": "msHeadingMode",
+      "settings_key": "heading_mode",
+      "type": "string",
+      "format": "enum text",
+      "uav": "drone_control_settings.heading_mode",
+      "dji": "wpml:globalWaypointHeadingParam.wpml:waypointHeadingMode",
+      "transform": "enum mapping",
+      "ui_options": ["Manuell", "Richtung naechster Wegpunkt", "Schenkachse sperren", "Fokus POI", "Definiert"]
+    },
+    {
+      "form": "msWaypointType",
+      "settings_key": "waypoint_type",
+      "type": "string",
+      "format": "enum text",
+      "uav": "drone_control_settings.waypoint_type",
+      "dji": "wpml:globalWaypointTurnMode + waypointTurnParam",
+      "transform": "enum mapping",
+      "ui_options": [
+        "Koordinierte Drehung, Ueberspringt den Wegpunkt",
+        "Gerade Flugroute. Fluggeraet stoppt",
+        "Gekruemmte Route. Fluggeraet setzt fort",
+        "Gekruemmte Route. Fluggeraet stoppt",
+        "Wendet vor dem Wegpunkt. Fliegt durch"
+      ]
+    },
+    {
+      "form": "msWaypointSettingsMode",
+      "settings_key": "waypoint_settings_mode",
+      "type": "string",
+      "format": "enum",
+      "uav": "drone_control_settings.waypoint_settings_mode + waypoints[].useMission*",
+      "dji": "wpml:useGlobalHeadingParam / useGlobalSpeed / waypointHeadingParam",
+      "transform": "route_follow vs per_waypoint",
+      "ui_options": ["route_follow", "per_waypoint"]
+    },
+    {
+      "form": "msTurnDistance",
+      "settings_key": "standard_turn_distance_m",
+      "type": "number",
+      "format": "meters",
+      "uav": "drone_control_settings.standard_turn_distance_m",
+      "dji": "wpml:waypointTurnParam.wpml:waypointTurnDampingDist",
+      "transform": "direct",
+      "ui_options": "numeric input"
+    },
+    {
+      "form": "msSafeStartAltitude",
+      "settings_key": "safe_start_altitude_m",
+      "type": "number",
+      "format": "meters",
+      "uav": "drone_control_settings.safe_start_altitude_m",
+      "dji": "wpml:takeOffSecurityHeight",
+      "transform": "direct",
+      "ui_options": "numeric input"
+    },
+    {
+      "form": "msDirectToStart",
+      "settings_key": "direct_to_start_position",
+      "type": "boolean",
+      "format": "true|false",
+      "uav": "drone_control_settings.direct_to_start_position",
+      "dji": "start routing strategy",
+      "transform": "boolean gate",
+      "ui_options": [true, false]
+    },
+    {
+      "form": "msGimbalMode",
+      "settings_key": "gimbal_mode",
+      "type": "string",
+      "format": "enum text",
+      "uav": "drone_control_settings.gimbal_mode",
+      "dji": "wpml:gimbalPitchMode",
+      "transform": "enum mapping",
+      "ui_options": ["Manuell", "Jeden Wegpunkt festlegen"]
+    },
+    {
+      "form": "msAltitudeMode",
+      "settings_key": "altitude_mode",
+      "type": "string",
+      "format": "enum text",
+      "uav": "drone_control_settings.altitude_mode",
+      "dji": "wpml:waylineCoordinateSysParam.wpml:heightMode",
+      "transform": "enum mapping",
+      "ui_options": ["ALT (Relativ zum Startpunkt)"]
+    }
+  ],
+  "field_geometry": {
+    "flaechendaten": {
+      "uav_json": "field (reference geometry, external to waypoint list)",
+      "dji_kmz": "doc.kml LineString/mission context",
+      "format": "lon,lat pairs"
+    },
+    "flugweg": {
+      "uav_json": "waypoints[]",
+      "dji_kmz": "Placemark/Point/coordinates",
+      "format": "lon,lat,agl triplets"
+    },
+    "startplatz": {
+      "uav_json": "field/start reference",
+      "dji_kmz": "mission start reference",
+      "format": "lon,lat"
+    }
+  }
+}
+

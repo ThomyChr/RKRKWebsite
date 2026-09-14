@@ -1,0 +1,298 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.top-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.top-nav a {
+  text-decoration: none;
+  color: #1f2937;
+  background: #e5e7eb;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.92rem;
+}
+
+.top-nav a.active {
+  background: #111827;
+  color: #f9fafb;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.header p {
+  margin: 0.25rem 0 0;
+  color: #4b5563;
+}
+
+.filter-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filter-form select {
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  min-width: 120px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.value {
+  font-size: 1.4rem;
+  margin: 0.75rem 0 0;
+  font-weight: 700;
+}
+
+.positive {
+  color: #166534;
+}
+
+.negative {
+  color: #b91c1c;
+}
+
+.chart-card {
+  min-height: 340px;
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  height: 280px !important;
+}
+
+.filters-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.filters-inline label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 140px;
+  font-size: 0.9rem;
+}
+
+.filters-inline input,
+.filters-inline select,
+.filters-inline button,
+.button-link {
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.9rem;
+}
+
+.filters-inline button,
+.button-link {
+  background: #111827;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid button {
+  border: 1px solid #d1d5db;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.92rem;
+}
+
+.form-grid button {
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.notice {
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.notice.ok {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.notice.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.table-wrapper {
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+thead th {
+  text-align: left;
+  background: #f3f4f6;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.55rem;
+  vertical-align: top;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.button-link.secondary {
+  background: #6b7280;
+  display: inline-block;
+}
+
+.readonly-field {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.inline-form {
+  display: inline;
+}
+
+.inline-form button {
+  margin-left: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+  border-radius: 0.35rem;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.link-button {
+  font-size: 0.85rem;
+  margin-right: 0.35rem;
+  color: #1d4ed8;
+}
+
+.cell-actions {
+  white-space: nowrap;
+}
+
+.accounts-table .row-inactive {
+  opacity: 0.65;
+}
+
+@media (max-width: 960px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .cell-actions {
+    white-space: normal;
+  }
+}
+

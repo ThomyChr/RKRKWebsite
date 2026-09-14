@@ -1,0 +1,81 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>Entfernungen schätzen</h1>-->
+<p><strong>Zielgruppe:</strong> Drohnenpiloten, Outdoor-Aktive, Sicherheitskräfte, Technikinteressierte</p>
+<p><strong>Ziel:</strong> Verbesserung der Fähigkeit, Entfernungen visuell und rechnerisch korrekt einzuschätzen</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir praxisnahe Methoden zur visuellen und rechnerischen Entfernungsschätzung – mit und ohne technische Hilfsmittel. Du lernst, wie du Distanzen im Gelände, in der Luft oder im urbanen Raum zuverlässig beurteilst und welche Fehlerquellen du vermeiden solltest.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Grundlagen der Entfernungsschätzung verstehen</li>
+  <li>Visuelle und geometrische Methoden anwenden</li>
+  <li>Hilfsmittel wie Maßstab, GPS und Laser sinnvoll nutzen</li>
+  <li>Fehlerquellen erkennen und vermeiden</li>
+  <li>Entfernungsschätzung in sicherheitsrelevanten Kontexten einsetzen</li>
+</ul>
+
+<h2>Kapitel 1: Grundlagen der Entfernungsschätzung</h2>
+<p><strong>Stichworte:</strong> Tiefenwahrnehmung · Perspektive · Referenzobjekte · Augenhöhe · Parallaxe</p>
+<p>Die Tiefenwahrnehmung entsteht durch binokulares Sehen, Perspektive und Bewegung. Referenzobjekte helfen bei der Einschätzung, Parallaxe zeigt Nähe durch Bewegung. Erfahrung verbessert die Genauigkeit – besonders bis 100 m.</p>
+<div class="highlight">
+✅ Tiefenwahrnehmung entsteht durch binokulares Sehen<br>
+✅ Referenzobjekte helfen bei der Einschätzung<br>
+✅ Parallaxe zeigt relative Nähe durch Bewegung<br>
+✅ Erfahrung verbessert die Schätzgenauigkeit
+</div>
+
+<h2>Kapitel 2: Visuelle Methoden und Faustregeln</h2>
+<p><strong>Stichworte:</strong> Daumenmethode · Schrittmaß · Objektgröße · Horizontlinie · Höhenvergleich</p>
+<p>Visuelle Methoden wie Daumenmethode, Schrittmaß und Objektgrößenvergleich sind hilfreich ohne Technik. Die Horizontlinie und Höhenvergleich über Stockwerke bieten zusätzliche Orientierung.</p>
+<div class="highlight">
+✅ Daumenmethode für schnelle Schätzung<br>
+✅ Schrittmaß = 0,75 m pro Schritt<br>
+✅ Objektgröße im Verhältnis zur Sichtgröße nutzen<br>
+✅ Horizontlinie als Referenz für große Distanzen<br>
+✅ Höhenvergleich über Stockwerke oder bekannte Maße
+</div>
+
+<h2>Kapitel 3: Geometrische Methoden zur Entfernungsschätzung</h2>
+<p><strong>Stichworte:</strong> Winkelmessung · Triangulation · Höhenwinkel · Basislinie · Maßstab</p>
+<p>Triangulation nutzt Winkel und Basislinie zur Berechnung. Höhenwinkel erlaubt Schätzung bei bekannten Höhen. Maßstab hilft bei Karten- und Fotoanalyse. Je länger die Basislinie, desto genauer die Schätzung.</p>
+<div class="highlight">
+✅ Triangulation nutzt Winkel und Basislinie<br>
+✅ Höhenwinkel erlaubt Entfernungsschätzung bei bekannten Höhen<br>
+✅ Maßstab hilft bei Foto- und Kartenanalyse<br>
+✅ Genauigkeit steigt mit Länge der Basislinie
+</div>
+
+<h2>Kapitel 4: Technische Hilfsmittel zur Entfernungsmessung</h2>
+<p><strong>Stichworte:</strong> Laserentfernungsmesser · GPS · Karten-Apps · Telemetrie · Barometer</p>
+<p>Laserentfernungsmesser bieten hohe Genauigkeit. GPS liefert Koordinatenbasierte Distanzen. Karten-Apps helfen bei Streckenplanung. Telemetrie zeigt Echtzeitdaten, Barometer ergänzt Höhenmessung.</p>
+<div class="highlight">
+✅ Laserentfernungsmesser = hohe Genauigkeit<br>
+✅ GPS liefert Koordinatenbasierte Entfernung<br>
+✅ Karten-Apps helfen bei Streckenplanung<br>
+✅ Telemetrie zeigt Echtzeitdaten zur Entfernung<br>
+✅ Barometer ergänzt Höhenmessung
+</div>
+
+<h2>Kapitel 5: Fehlerquellen und Sicherheitsaspekte</h2>
+<p><strong>Stichworte:</strong> Perspektivfehler · Lichtverhältnisse · Geländeform · Bewegungsparallaxe · Sicherheitsabstand</p>
+<p>Fehlerquellen wie Perspektivfehler, Lichtverhältnisse und Geländeform können die Einschätzung verzerren. Bewegungsparallaxe kann täuschen. Bei Unsicherheit gilt: Sicherheitsabstand vergrößern – besonders bei Flügen nahe Menschen oder Hindernissen.</p>
+<div class="highlight">
+✅ Perspektivfehler durch Blickwinkel vermeiden<br>
+✅ Lichtverhältnisse beeinflussen Entfernungseindruck<br>
+✅ Geländeform und Höhenunterschiede berücksichtigen<br>
+✅ Sicherheitsabstand bei Unsicherheit vergrößern<br>
+✅ Bewegungsparallaxe kann täuschen
+</div>
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+/* Shared RKRK two-column layout: left menu hide/resize + Boxen anzeigen.
+   Opt out: <html data-rkrk-layout="off"> or <body data-rkrk-layout="off"> */
+#rkrkSidebarResizeHandle {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 1900;
+  background: transparent;
+}
+#rkrkSidebarResizeHandle:hover { background: rgba(90,110,140,0.12); }
+#rkrkSidebarToggleBtn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1901;
+  width: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  letter-spacing: -1px;
+  background: var(--brand-dark, #48673A) !important;
+  color: #fff !important;
+  border: 1px solid var(--brand-hover, #3d5632) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+#rkrkSidebarToggleBtn:hover { background: var(--brand-hover, #3d5632) !important; }
+body.rkrk-sidebar-collapsed .wrap { grid-template-columns: 1fr !important; }
+body.rkrk-sidebar-collapsed .wrap > .left { display: none !important; }
+body.rkrk-has-sidebar .wrap { overflow: hidden; }
+body.rkrk-has-sidebar .wrap > .left {
+  min-width: 0;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+}
+.rkrk-setup-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 30;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 18px;
+  line-height: 34px;
+  text-align: center;
+  background: rgba(255,255,255,0.96);
+  color: #1b3552;
+  border: 1px solid #cfd6de;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+.rkrk-setup-panel,
+.map-setup-panel {
+  position: absolute;
+  top: 46px;
+  right: 8px;
+  z-index: 31;
+  background: rgba(255,255,255,0.97);
+  border: 1px solid #cfd6de;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  padding: 8px;
+  min-width: 210px;
+  display: none;
+  font-size: 12px;
+  color: #1b3552;
+}
+.rkrk-setup-panel.show,
+.map-setup-panel.show { display: block; }
+.rkrk-setup-panel .title,
+.map-setup-panel .title {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.rkrk-setup-panel label,
+.map-setup-panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+  font-size: 12px;
+  color: #2e4158;
+}
+.rkrk-setup-panel,
+.map-setup-panel {
+  display: none;
+}
+.rkrk-setup-panel.show,
+.map-setup-panel.show { display: flex; flex-direction: column; gap: 5px; }
+.rkrk-setup-panel label.rkrk-sel,
+.map-setup-panel label.rkrk-sel {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  color: inherit;
+}
+.toplinks.rkrk-sels {
+  margin-bottom: 10px;
+}
+.rkrk-sels, .rkrk-reg-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; }
+.rkrk-sel, .rkrk-reg-pill {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-height: 22px; min-width: 2.15em; padding: 2px 10px; margin: 0;
+  border: 1px solid #c5cdd4; border-radius: 999px; background: #fff; color: #9aa4ae;
+  font-size: 12px; font-weight: 600; line-height: 1.2; white-space: nowrap; cursor: pointer;
+  user-select: none; box-sizing: border-box; text-decoration: none;
+}
+.rkrk-sel input[type="checkbox"], .rkrk-sel input[type="radio"],
+.rkrk-reg-pill input[type="checkbox"], .rkrk-reg-pill input[type="radio"] {
+  position: absolute !important; opacity: 0 !important; width: 1px !important; height: 1px !important;
+  min-width: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important;
+  border: 0 !important; appearance: none !important; pointer-events: none;
+}
+.rkrk-sel:hover, .rkrk-reg-pill:hover { border-color: #9aa4ae; color: #6b7682; }
+.rkrk-sel.is-active, .rkrk-reg-pill.is-active,
+.rkrk-sel:has(input:checked), .rkrk-reg-pill:has(input:checked) {
+  border-color: #4d6b3e; color: #3f5a32; background: #fff;
+}

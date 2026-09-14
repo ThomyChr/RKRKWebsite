@@ -1,0 +1,64 @@
+name: Modernisierung (MOD)
+description: Arbeitspaket aus dem Katalog docs/modernisierung/github-issues.md
+title: "MOD-xxx: "
+labels: []
+body:
+  - type: input
+    id: mod_id
+    attributes:
+      label: MOD-Nummer
+      placeholder: "012"
+    validations:
+      required: true
+  - type: dropdown
+    id: milestone_phase
+    attributes:
+      label: Phase
+      options:
+        - M0 Inventar
+        - M1 GitHub-Basis
+        - M2 PHP 8.0
+        - M3 UI-Shell
+        - M4 Config-Admin
+        - M5 Seiten-Wellen
+        - M6 Öffentliche Verträge
+        - M7 Aufräumen
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Ziel
+      description: Ein Satz, was nach dem Merge gilt.
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints für dieses Issue
+      options:
+        - label: Speicher/Ordner Missionen & RKRK nicht ändern
+          required: false
+        - label: Öffentliche URL-/Query-Verträge nicht brechen
+          required: false
+        - label: Nur PHP 8, kein Layout
+          required: false
+        - label: Nur Layout/Shell, keine Speicherlogik
+          required: false
+        - label: Admin-UI nur für test/Admin-User
+          required: false
+  - type: textarea
+    id: files
+    attributes:
+      label: Voraussichtliche Dateien
+  - type: textarea
+    id: test
+    attributes:
+      label: Testplan
+      description: Konkrete URLs inkl. GA/Color/MenuOn wo nötig.
+    validations:
+      required: true
+  - type: textarea
+    id: out
+    attributes:
+      label: Explizit nicht in diesem Issue

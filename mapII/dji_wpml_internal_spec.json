@@ -1,0 +1,653 @@
+{
+  "meta": {
+    "title": "DJI WPML interne Spezifikation",
+    "lang": "de",
+    "updated": "2026-08-21",
+    "wpml_ns": "http://www.dji.com/wpmz/1.0.2",
+    "kml_ns": "http://www.opengis.net/kml/2.2",
+    "sources": [
+      "https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html",
+      "https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/template-kml.html",
+      "https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/waylines-wpml.html",
+      "https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/common-element.html",
+      "https://developer.dji.com/doc/mobile-sdk-tutorial/en/",
+      "test/scripts/rkrk_dji_kmz_interface.php"
+    ],
+    "note": "Interne Uebersetzung der DJI-WPML-Felder fuer RKRK/RKRS. Drohnen-Enums und Kamerawinkel kommen zur Laufzeit aus rkrk_dji_kmz_interface.php."
+  },
+  "kmz_package": {
+    "de_name": "WPML-Routendatei",
+    "de_help": "Eine KMZ-Datei ist ein ZIP-Archiv. Dateinamen muessen exakt so heissen, sonst liest Pilot 2 die Route nicht.",
+    "suffix": ".kmz",
+    "layout": [
+      {
+        "path": "wpmz/template.kml",
+        "de_name": "Vorlagendatei",
+        "de_help": "Geschaefts- und Editierparameter. Pilot 2 und FlightHub erzeugen daraus die ausfuehrbare Route."
+      },
+      {
+        "path": "wpmz/waylines.wpml",
+        "de_name": "Ausfuehrungsdatei",
+        "de_help": "Konkrete Flug- und Payload-Befehle. templateId verknuepft Vorlage und Ausfuehrung."
+      },
+      {
+        "path": "wpmz/res/",
+        "de_name": "Ressourcenordner",
+        "de_help": "Optional. Hilfsdateien z. B. fuer AI Spot-Check. Fuer Feldscan nicht noetig."
+      }
+    ]
+  },
+  "elements": {
+    "wpml:author": {
+      "de_name": "Autor",
+      "de_help": "Ersteller der Routendatei.",
+      "parent": "Document",
+      "files": ["template.kml"],
+      "type": "string",
+      "required": false,
+      "settings_key": null
+    },
+    "wpml:createTime": {
+      "de_name": "Erstellzeit",
+      "de_help": "Unix-Zeitstempel in Millisekunden.",
+      "parent": "Document",
+      "files": ["template.kml"],
+      "type": "integer",
+      "unit": "ms",
+      "required": false
+    },
+    "wpml:updateTime": {
+      "de_name": "Aenderungszeit",
+      "de_help": "Unix-Zeitstempel in Millisekunden.",
+      "parent": "Document",
+      "files": ["template.kml"],
+      "type": "integer",
+      "unit": "ms",
+      "required": false
+    },
+    "wpml:flyToWaylineMode": {
+      "de_name": "Anflug erster Wegpunkt",
+      "de_help": "Wie die Drohne nach dem Start den ersten Wegpunkt anfliegt.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "enum",
+      "required": true,
+      "settings_key": "direct_to_start_position",
+      "form": "msDirectToStart",
+      "values": [
+        {
+          "wpml": "safely",
+          "de": "Sicher (Steigflug, dann Horizontal)",
+          "de_help": "Steigt zuerst auf die Hoehe des ersten Wegpunkts bzw. die sichere Starthoehe, dann Horizontalflug. Bei M30 gilt die sichere Starthoehe nur am Boden.",
+          "default": true,
+          "aliases": ["sicher", "safely"]
+        },
+        {
+          "wpml": "pointToPoint",
+          "de": "Direkt zur Startposition fliegen",
+          "de_help": "Nach Erreichen der sicheren Starthoehe Schraegflug zum ersten Wegpunkt.",
+          "aliases": ["direkt", "pointtopoint", "schraeg"]
+        }
+      ]
+    },
+    "wpml:finishAction": {
+      "de_name": "Endaktion",
+      "de_help": "Was nach dem letzten Wegpunkt passiert. Bei Funkverlust gilt zuerst die Lost-Action.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "enum",
+      "required": true,
+      "settings_key": "end_action",
+      "form": "msEndAction",
+      "values": [
+        {
+          "wpml": "noAction",
+          "de": "Aufgabe beenden",
+          "de_help": "Routenmodus verlassen, keine weitere Aktion.",
+          "default": true,
+          "aliases": ["beenden", "aufheben", "noaction"],
+          "match_contains": ["beenden", "aufheben"]
+        },
+        {
+          "wpml": "goHome",
+          "de": "Rückkehr zum Start (RTH)",
+          "de_help": "Routenmodus verlassen und zum Startpunkt zurueckfliegen.",
+          "aliases": ["rth", "home", "rueckkehr", "rückkehr"],
+          "match_contains": ["rth", "home", "rueckkehr", "rückkehr", "startpunkt"]
+        },
+        {
+          "wpml": "autoLand",
+          "de": "Landen",
+          "de_help": "Routenmodus verlassen und vor Ort landen.",
+          "aliases": ["autoland", "landing"],
+          "match_contains": ["land"]
+        },
+        {
+          "wpml": "gotoFirstWaypoint",
+          "de": "Zum ersten Wegpunkt",
+          "de_help": "Sofort zum ersten Wegpunkt fliegen, dort Routenmodus verlassen.",
+          "aliases": ["gotofirstwaypoint"],
+          "match_contains": ["ersten wegpunkt", "first waypoint"]
+        }
+      ]
+    },
+    "wpml:exitOnRCLost": {
+      "de_name": "Verhalten bei Funkverlust",
+      "de_help": "Ob die Route bei Verbindungsabbruch weiterfliegt oder eine Lost-Action ausfuehrt.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "enum",
+      "required": true,
+      "values": [
+        {
+          "wpml": "goContinue",
+          "de": "Route weiterfliegen",
+          "de_help": "Trotz Funkverlust die Wegpunktroute fortsetzen."
+        },
+        {
+          "wpml": "executeLostAction",
+          "de": "Lost-Action ausfuehren",
+          "de_help": "Route verlassen und die eingestellte Lost-Action fliegen.",
+          "default": true
+        }
+      ]
+    },
+    "wpml:executeRCLostAction": {
+      "de_name": "Lost-Action",
+      "de_help": "Pflicht, wenn exitOnRCLost = executeLostAction.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "enum",
+      "required": false,
+      "values": [
+        {
+          "wpml": "goBack",
+          "de": "Zum Startpunkt zurueck",
+          "de_help": "Von der Verlustposition zum Startpunkt fliegen.",
+          "default": true
+        },
+        {
+          "wpml": "landing",
+          "de": "Sofort landen",
+          "de_help": "An der Verlustposition landen."
+        },
+        {
+          "wpml": "hover",
+          "de": "Schweben",
+          "de_help": "An der Verlustposition hoveren."
+        }
+      ]
+    },
+    "wpml:takeOffSecurityHeight": {
+      "de_name": "Sichere Startflughoehe",
+      "de_help": "Nach dem Start zuerst auf diese Hoehe steigen (relativ zum Startpunkt). Fernsteuerung 1.2–1500 m, Dock 8–1500 m. Wirkt nur, wenn die Drohne noch nicht in der Luft ist.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "float",
+      "unit": "m",
+      "required": true,
+      "settings_key": "safe_start_altitude_m",
+      "form": "msSafeStartAltitude",
+      "range_rc": [1.2, 1500],
+      "range_dock": [8, 1500]
+    },
+    "wpml:globalTransitionalSpeed": {
+      "de_name": "Uebergangsgeschwindigkeit",
+      "de_help": "Speed zum ersten Wegpunkt jeder Route und bei Wiederaufnahme nach Unterbruch. DJI: 0–15 m/s.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "float",
+      "unit": "m/s",
+      "required": true,
+      "settings_key": "start_speed_m_s",
+      "form": "msStartSpeed",
+      "range": [0.1, 15]
+    },
+    "wpml:globalRTHHeight": {
+      "de_name": "RTH-Höhe",
+      "de_help": "Nur waylines.wpml. Bei Rueckkehr zuerst auf diese Hoehe steigen. 2–1500 m.",
+      "parent": "wpml:missionConfig",
+      "files": ["waylines.wpml"],
+      "type": "float",
+      "unit": "m",
+      "required": true,
+      "range": [2, 1500]
+    },
+    "wpml:takeOffRefPoint": {
+      "de_name": "Referenz-Startpunkt",
+      "de_help": "Format Breitengrad,Laengengrad,Hoehe. Nur Planungsreferenz; beim Flug gilt der echte Start. Ellipsoidenhoehe.",
+      "parent": "wpml:missionConfig",
+      "files": ["template.kml"],
+      "type": "lat,lng,alt",
+      "required": false
+    },
+    "wpml:droneEnumValue": {
+      "de_name": "Drohnentyp (Enum)",
+      "de_help": "DJI Product-Support Enumeration. Interne Schluessel 3T/4T/30T siehe rkrk_dji_kmz_interface.php.",
+      "parent": "wpml:droneInfo",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "int",
+      "required": true,
+      "runtime_source": "DJI_DroneInformation.wpml:droneEnumValue"
+    },
+    "wpml:droneSubEnumValue": {
+      "de_name": "Drohnen-Untertyp",
+      "de_help": "Pflicht z. B. bei M30/M30T (Enum 67).",
+      "parent": "wpml:droneInfo",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "int",
+      "required": false,
+      "runtime_source": "DJI_DroneInformation.wpml:droneSubEnumValue"
+    },
+    "wpml:payloadEnumValue": {
+      "de_name": "Nutzlasttyp (Enum)",
+      "de_help": "Kamera/Gimbal laut DJI Camera Enumeration.",
+      "parent": "wpml:payloadInfo",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "int",
+      "required": true,
+      "runtime_source": "DJI_DroneInformation.wpml:payloadEnumValue"
+    },
+    "wpml:payloadPositionIndex": {
+      "de_name": "Gimbal-Position",
+      "de_help": "Montageindex der Nutzlast (meist 0).",
+      "parent": "wpml:payloadInfo",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "int",
+      "required": true,
+      "runtime_source": "DJI_DroneInformation.wpml:payloadPositionIndex"
+    },
+    "wpml:templateType": {
+      "de_name": "Vorlagentyp",
+      "de_help": "Schnellerzeugung in Pilot 2. Feldscan nutzt waypoint.",
+      "parent": "Folder",
+      "files": ["template.kml"],
+      "type": "enum",
+      "required": true,
+      "values": [
+        {
+          "wpml": "waypoint",
+          "de": "Wegpunktflug",
+          "de_help": "Jeder Wegpunkt wird explizit beschrieben. Standard fuer Rehkitz-Feldscan.",
+          "default": true
+        },
+        {
+          "wpml": "mapping2d",
+          "de": "Kartierung 2D (Orthofoto)",
+          "hidden_in_ui": true
+        },
+        {
+          "wpml": "mapping3d",
+          "de": "Schraegaufnahmen / 3D",
+          "hidden_in_ui": true
+        },
+        {
+          "wpml": "mappingStrip",
+          "de": "Streifenbefliegung",
+          "hidden_in_ui": true
+        }
+      ]
+    },
+    "wpml:templateId": {
+      "de_name": "Vorlagen-ID",
+      "de_help": "Eindeutig in der KMZ, fortlaufend ab 0. Verknuepft template.kml und waylines.wpml.",
+      "parent": "Folder",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "int",
+      "range": [0, 65535],
+      "required": true
+    },
+    "wpml:waylineId": {
+      "de_name": "Routen-ID",
+      "de_help": "Nur waylines.wpml. Eindeutig, fortlaufend ab 0.",
+      "parent": "Folder",
+      "files": ["waylines.wpml"],
+      "type": "int",
+      "required": true
+    },
+    "wpml:autoFlightSpeed": {
+      "de_name": "Reisegeschwindigkeit",
+      "de_help": "Zielspeed der ganzen Route. Wegpunkt-Speed kann lokal ueberschreiben. Maximum je Drohnentyp.",
+      "parent": "Folder",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "float",
+      "unit": "m/s",
+      "required": true,
+      "settings_key": "speed_m_s",
+      "form": "msSpeed",
+      "runtime_source": "DJI_Commands.wpml:autoFlightSpeed"
+    },
+    "wpml:globalHeight": {
+      "de_name": "Globale Flughoehe",
+      "de_help": "Bezueglich Startpunkt, wenn heightMode = relativeToStartPoint.",
+      "parent": "Folder",
+      "files": ["template.kml"],
+      "type": "float",
+      "unit": "m",
+      "required": true,
+      "settings_key": "altitude_m",
+      "form": "msAltitude"
+    },
+    "wpml:coordinateMode": {
+      "de_name": "Koordinatensystem",
+      "de_help": "Immer WGS84.",
+      "parent": "wpml:waylineCoordinateSysParam",
+      "files": ["template.kml"],
+      "type": "enum",
+      "values": [
+        { "wpml": "WGS84", "de": "WGS84", "default": true }
+      ]
+    },
+    "wpml:heightMode": {
+      "de_name": "Flughoehenmodus (Vorlage)",
+      "de_help": "Bezugsebene der Hoehe in template.kml.",
+      "parent": "wpml:waylineCoordinateSysParam",
+      "files": ["template.kml"],
+      "type": "enum",
+      "required": true,
+      "settings_key": "altitude_mode",
+      "form": "msAltitudeMode",
+      "values": [
+        {
+          "wpml": "relativeToStartPoint",
+          "de": "ALT (Relativ zum Startpunkt)",
+          "de_help": "Hoehe relativ zum tatsaechlichen Startpunkt. Standard fuer Feldscan.",
+          "default": true,
+          "aliases": ["alt", "relativ", "startpunkt"],
+          "match_contains": ["relativ", "startpunkt", "alt"]
+        },
+        {
+          "wpml": "EGM96",
+          "de": "EGM96 / AMSL",
+          "de_help": "Geoid-Hoehe (ueber Meer).",
+          "hidden_in_ui": true,
+          "match_contains": ["egm", "amsl", "meer"]
+        },
+        {
+          "wpml": "WGS84",
+          "de": "WGS84 Ellipsoid",
+          "de_help": "Ellipsoidenhoehe.",
+          "hidden_in_ui": true,
+          "match_contains": ["ellipsoid", "wgs"]
+        }
+      ]
+    },
+    "wpml:executeHeightMode": {
+      "de_name": "Ausfuehrungshoehenmodus",
+      "de_help": "Nur waylines.wpml. Bezug von wpml:executeHeight.",
+      "parent": "Folder",
+      "files": ["waylines.wpml"],
+      "type": "enum",
+      "required": true,
+      "values": [
+        {
+          "wpml": "relativeToStartPoint",
+          "de": "Relativ zum Startpunkt",
+          "default": true
+        },
+        {
+          "wpml": "WGS84",
+          "de": "WGS84 Ellipsoid",
+          "hidden_in_ui": true
+        },
+        {
+          "wpml": "realTimeFollowSurface",
+          "de": "Echtzeit Gelaendefolge",
+          "de_help": "Nur M3E/M3T/M3M.",
+          "hidden_in_ui": true
+        }
+      ]
+    },
+    "wpml:positioningType": {
+      "de_name": "Positionierung",
+      "parent": "wpml:waylineCoordinateSysParam",
+      "files": ["template.kml"],
+      "type": "enum",
+      "values": [
+        { "wpml": "GPS", "de": "GPS", "default": true }
+      ]
+    },
+    "wpml:gimbalPitchMode": {
+      "de_name": "Gimbalsteuerung",
+      "de_help": "Pitch waehrend des Segments zwischen zwei Wegpunkten.",
+      "parent": "Folder",
+      "files": ["template.kml"],
+      "type": "enum",
+      "required": true,
+      "settings_key": "gimbal_mode",
+      "form": "msGimbalMode",
+      "values": [
+        {
+          "wpml": "manual",
+          "de": "Manuell",
+          "de_help": "Pilot kann Pitch manuell steuern; ohne Eingabe bleibt der Pitch beim Verlassen des Wegpunkts.",
+          "default": true,
+          "aliases": ["manuell"],
+          "match_contains": ["manuel"]
+        },
+        {
+          "wpml": "usePointSetting",
+          "de": "Jeden Wegpunkt festlegen",
+          "de_help": "Pitch geht gleichmaessig auf den Pitch des naechsten Wegpunkts.",
+          "aliases": ["usepointsetting"],
+          "match_contains": ["wegpunkt", "punkt", "usepoint"]
+        }
+      ]
+    },
+    "wpml:waypointHeadingMode": {
+      "de_name": "Gierrichtung des Fluggeraetes",
+      "de_help": "Nasenrichtung zum naechsten Wegpunkt.",
+      "parent": "wpml:globalWaypointHeadingParam / wpml:waypointHeadingParam",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "enum",
+      "required": true,
+      "settings_key": "heading_mode",
+      "form": "msHeadingMode",
+      "values": [
+        {
+          "wpml": "manually",
+          "de": "Manuell",
+          "de_help": "Nasenrichtung waehrend des Segments manuell steuerbar.",
+          "default": true,
+          "aliases": ["manuell"],
+          "match_contains": ["manuel"]
+        },
+        {
+          "wpml": "followWayline",
+          "de": "Richtung zum naechsten Wegpunkt",
+          "de_help": "Nase folgt der Kursrichtung zum naechsten Wegpunkt.",
+          "aliases": ["followwayline", "flugroute"],
+          "match_contains": ["richtung", "flugroute", "followwayline"]
+        },
+        {
+          "wpml": "smoothTransition",
+          "de": "Schenkachse sperren",
+          "de_help": "Gleichmaessiger Uebergang auf waypointHeadingAngle. Pflichtfeld Winkel.",
+          "aliases": ["smoothtransition"],
+          "match_contains": ["schenk"],
+          "extra": { "wpml:waypointHeadingAngle": true }
+        },
+        {
+          "wpml": "towardPOI",
+          "de": "Fokus POI",
+          "de_help": "Nase zeigt auf den Interest-Punkt (Lat,Lng,Alt). Ohne POI intern auf followWayline zurueckfallen.",
+          "aliases": ["towardpoi"],
+          "match_contains": ["poi", "fokus"],
+          "extra": { "wpml:waypointPoiPoint": true }
+        },
+        {
+          "wpml": "fixed",
+          "de": "Definiert",
+          "de_help": "Nase haelt den Gierwinkel nach der Wegpunktaktion bis zum naechsten Punkt.",
+          "aliases": ["fixed"],
+          "match_contains": ["definiert"]
+        }
+      ]
+    },
+    "wpml:waypointHeadingPathMode": {
+      "de_name": "Gier-Drehrichtung",
+      "de_help": "Kuerzester Weg oder fest Uhrzeigersinn / Gegen.",
+      "parent": "wpml:waypointHeadingParam",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "enum",
+      "required": true,
+      "values": [
+        {
+          "wpml": "followBadArc",
+          "de": "Kuerzester Drehweg",
+          "default": true
+        },
+        { "wpml": "clockwise", "de": "Uhrzeigersinn" },
+        { "wpml": "counterClockwise", "de": "Gegen den Uhrzeigersinn" }
+      ]
+    },
+    "wpml:globalWaypointTurnMode": {
+      "de_name": "Wegpunkt Typ",
+      "de_help": "Kurvenverhalten am Wegpunkt. Pilot 2: «Wendet vor dem Wegpunkt» = toPointAndPassWithContinuityCurvature + useStraightLine 1.",
+      "parent": "Folder",
+      "files": ["template.kml"],
+      "type": "enum",
+      "required": true,
+      "settings_key": "waypoint_type",
+      "form": "msWaypointType",
+      "values": [
+        {
+          "wpml": "coordinateTurn",
+          "de": "Koordinierte Drehung, Ueberspringt den Wegpunkt",
+          "de_help": "Koordinierte Kurve, wendet vor dem Punkt, ohne zu stoppen. Damping-Distanz noetig.",
+          "default": true,
+          "path_mode": "straight",
+          "use_straight_line": 1,
+          "ch_waypoint_type": "coordinateTurn",
+          "aliases": ["koordinierte drehung"],
+          "match_contains": ["koordinierte"]
+        },
+        {
+          "wpml": "toPointAndStopWithDiscontinuityCurvature",
+          "de": "Gerade Flugroute. Fluggeraet stoppt",
+          "de_help": "Gerade Linie, Drohne haelt am Wegpunkt.",
+          "path_mode": "straight",
+          "use_straight_line": 1,
+          "ch_waypoint_type": "toPointAndStopWithDiscontinuityCurvature",
+          "match_contains": ["gerade", "discontinuity"]
+        },
+        {
+          "wpml": "toPointAndPassWithContinuityCurvature",
+          "de": "Gekruemmte Route. Fluggeraet setzt fort",
+          "de_help": "Kurvenflug, fliegt durch ohne Stopp.",
+          "path_mode": "curve",
+          "use_straight_line": 0,
+          "ch_waypoint_type": "toPointAndPassWithContinuityCurvature",
+          "match_contains": ["setzt fort"]
+        },
+        {
+          "wpml": "toPointAndStopWithContinuityCurvature",
+          "de": "Gekruemmte Route. Fluggeraet stoppt",
+          "de_help": "Kurvenflug, haelt am Wegpunkt.",
+          "path_mode": "curve",
+          "use_straight_line": 0,
+          "ch_waypoint_type": "toPointAndStopWithContinuityCurvature",
+          "match_contains": ["gekrümmte route. fluggeraet stoppt", "gekruemmte route. fluggeraet stoppt"]
+        },
+        {
+          "wpml": "toPointAndPassWithContinuityCurvature",
+          "de": "Wendet vor dem Wegpunkt. Fliegt durch",
+          "de_help": "Pilot-2-Modus: Kurve + useStraightLine=1 (so nah wie moeglich an der Geraden, wendet vor dem Punkt).",
+          "path_mode": "curve",
+          "use_straight_line": 1,
+          "ch_waypoint_type": "toPointAndPassWithContinuityCurvature2",
+          "aliases": ["toPointAndPassWithContinuityCurvature2"],
+          "match_contains": ["wendet vor"]
+        }
+      ]
+    },
+    "wpml:globalUseStraightLine": {
+      "de_name": "Segment an Gerade annaehern",
+      "de_help": "0 = durchgehend Kurve. 1 = so nah wie moeglich an der Verbindungslinie. Pflicht bei ContinuityCurvature-Turn-Modi.",
+      "parent": "Folder",
+      "files": ["template.kml"],
+      "type": "bool",
+      "values": [
+        { "wpml": "0", "de": "Kurve" },
+        { "wpml": "1", "de": "Nahezu Gerade" }
+      ]
+    },
+    "wpml:waypointTurnDampingDist": {
+      "de_name": "Standard-Wendedistanz",
+      "de_help": "Abstand vor dem Wegpunkt, ab dem gedreht wird. Segment muss groesser sein als Summe der Damping-Werte. Pflicht bei coordinateTurn und bei Pass+useStraightLine=1.",
+      "parent": "wpml:waypointTurnParam",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "float",
+      "unit": "m",
+      "required": false,
+      "settings_key": "standard_turn_distance_m",
+      "form": "msTurnDistance"
+    },
+    "wpml:executeHeight": {
+      "de_name": "Ausfuehrungshoehe",
+      "de_help": "Nur waylines.wpml. Bezug laut executeHeightMode.",
+      "parent": "Placemark",
+      "files": ["waylines.wpml"],
+      "type": "float",
+      "unit": "m",
+      "required": true
+    },
+    "wpml:height": {
+      "de_name": "Wegpunkthoehe",
+      "de_help": "EGM96 / relativ Start / AGL je nach heightMode. Zusammen mit ellipsoidHeight.",
+      "parent": "Placemark",
+      "files": ["template.kml"],
+      "type": "float",
+      "unit": "m"
+    },
+    "wpml:ellipsoidHeight": {
+      "de_name": "Ellipsoidenhoehe",
+      "de_help": "WGS84-Ellipsoid. Zusammen mit height dieselbe Stelle, andere Bezugsebene.",
+      "parent": "Placemark",
+      "files": ["template.kml"],
+      "type": "float",
+      "unit": "m"
+    },
+    "wpml:useGlobalHeight": {
+      "de_name": "Globale Hoehe verwenden",
+      "de_help": "1 = Folder-globalHeight, 0 = lokale height.",
+      "parent": "Placemark",
+      "files": ["template.kml"],
+      "type": "bool"
+    },
+    "wpml:useGlobalSpeed": {
+      "de_name": "Globale Speed verwenden",
+      "parent": "Placemark",
+      "files": ["template.kml"],
+      "type": "bool"
+    },
+    "wpml:useGlobalHeadingParam": {
+      "de_name": "Globale Gierrichtung verwenden",
+      "parent": "Placemark",
+      "files": ["template.kml"],
+      "type": "bool"
+    },
+    "wpml:useGlobalTurnParam": {
+      "de_name": "Globalen Wegpunkttyp verwenden",
+      "parent": "Placemark",
+      "files": ["template.kml"],
+      "type": "bool"
+    },
+    "wpml:index": {
+      "de_name": "Wegpunktnummer",
+      "de_help": "Fortlaufend ab 0, eindeutig in der Route.",
+      "parent": "Placemark",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "int",
+      "required": true
+    },
+    "Point.coordinates": {
+      "de_name": "Koordinaten",
+      "de_help": "Format Laengengrad,Breitengrad (lon,lat). Nicht lat,lon. takeOffRefPoint ist umgekehrt lat,lng,alt.",
+      "parent": "Point",
+      "files": ["template.kml", "waylines.wpml"],
+      "type": "lon,lat",
+      "required": true
+    }
+  }
+}

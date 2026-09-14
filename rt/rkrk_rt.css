@@ -1,0 +1,558 @@
+/* =========================================================
+   RKRK / SkyScan – Standard Stylesheet (Green Theme)
+   Variablenbasiert, harmonisiert, tabletfreundlich
+   ========================================================= */
+
+/* ---------- Farbvariablen ---------- */
+:root {
+    --green-dark:      var(--brand-dark, #48673A);
+    --green-mid:       var(--brand, #96B588);
+    --green-light:     var(--brand-light, #C5E0B4);
+    --green-vlight:    var(--brand-vlight, #ECF7EC);
+
+    --green-brand:     var(--brand-dark, #48673A);
+    --green-brand-dark:var(--brand-hover, #3d5632);
+
+    --yellow-light: 	#e0b200;
+    --yellow: 			#fff7d6;
+
+	--white:           #FFFFFF;
+    --black:           #000000;
+
+    --text-dark:       #2F3E28;
+    --text-mid:        #4F6A3C;
+    --text-light:      #6F8B5E;
+
+    --border:          #C8D9C0;
+    --shadow:          rgba(0,0,0,0.08);
+
+    --table-header:    #E8F5EE;
+    --table-row:       #FFFFFF;
+    --table-row-alt:   #F9FDFB;
+    --table-hover:     #E0FFE0;
+
+    --surface:         #F4F8F6;
+    --background:      #FFFFFF;
+}
+
+
+/* ---------- Global Layout ---------- */
+html {
+    overflow-x: auto;
+}
+html body {
+    font-family: system-ui, sans-serif;
+    margin: 0 !important;
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+    padding-bottom: 28px;
+    background: var(--surface);
+    color: var(--text-dark);
+    box-sizing: border-box;
+    max-width: 100%;
+}
+.rkrk-shell-header.top {
+    left: 0;
+    right: 0;
+    width: 100%;
+}
+
+.page {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: min(1100px, 100%);
+    margin: 12px auto 20px auto;
+    background: var(--background);
+    padding: 22px 24px 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 6px var(--shadow);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3 {
+    margin-top: 0;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* ---------- Navigation ---------- */
+.navbar a,
+.header-top a {
+    margin-right: 15px;
+    text-decoration: none;
+    color: var(--green-brand);
+    font-weight: 600;
+}
+.navbar a:hover,
+.header-top a:hover {
+    text-decoration: underline;
+}
+
+/* ---------- Buttons ---------- */
+.btn-primary {
+    padding: 8px 16px;
+    background: var(--brand-dark, #48673A);
+    color: #fff;
+    border: 1px solid var(--brand-dark, #48673A);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn-primary:hover {
+    background: var(--brand-hover, #3d5632);
+    border-color: var(--brand-hover, #3d5632);
+    color: #fff;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    padding: 2px 10px;
+    margin: 0 2px 4px 0;
+    border: 1px solid #c5cdd4;
+    border-radius: 999px;
+    background: #fff;
+    color: #9aa4ae;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn:hover {
+    background: #fff;
+    border-color: #9aa4ae;
+    color: #6b7682;
+}
+
+/* ---------- Tables ---------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    border: 1px solid var(--border);
+    padding: 6px 8px;
+}
+
+th {
+    background: var(--table-header);
+    font-weight: 600;
+}
+
+tr:nth-child(even) td {
+    background: var(--table-row);
+}
+
+tr:nth-child(odd) td {
+    background: var(--table-row-alt);
+}
+
+tr:hover td {
+    background: var(--table-hover);
+}
+
+/* ---------- Drag & Drop ---------- */
+.drag-handle {
+    cursor: grab;
+    font-size: 18px;
+    text-align: center;
+    width: 30px;
+}
+
+.drag-over td {
+    background: var(--table-hover) !important;
+}
+
+label {
+   font-size: 70%;
+}
+
+/* ---------- Form Elements ---------- */
+input,
+select,
+textarea {
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    color: var(--text-dark);
+    background: var(--white);
+}
+input[type="checkbox"],
+input[type="radio"],
+input[type="image"] {
+    width: auto;
+    max-width: none;
+}
+
+
+input[type="number"] {
+    text-align: right;
+	appearance: textfield;
+}
+
+
+input::placeholder {
+  opacity: 0.5;
+}
+
+/* Menge 50% schmaler */
+.menge,
+.line-menge {
+    width: 60px !important;
+}
+
+/* Preis 50% schmaler */
+.preis-cell,
+.line-preis,
+.line-einheit {
+    width: 80px !important;
+}
+
+/* Preis 50% schmaler */
+.preis-total,
+.line-preis {
+    width: 100px !important;
+}
+
+/*  */
+.total {
+    text-align: right !important;
+}
+
+
+.line-risiko {
+    background: var(--yellow) !important;
+    border-left: 3px solid var(--yellow-light);
+}
+
+/* Tabellen ohne .line-menge-Klassen (Editor / Beispiele): Zellen einfärben */
+.table.rechnung tbody tr.line-risiko > td,
+.example-card table tbody tr.line-risiko > td {
+    background: var(--yellow) !important;
+}
+
+.line-risiko .line-menge,
+.line-risiko .line-einheit,
+.line-risiko .line-preis,
+.line-risiko .line-total {
+    visibility: hidden;
+}
+
+/* ---------- Layout Helpers ---------- */
+.rkrk-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 20px;
+    margin: 10px 0;
+}
+.rkrk-row > div {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+/* ---------- Totals Box ---------- */
+.total-box {
+    background: var(--surface);
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-top: 15px;
+}
+.total-box strong {
+    font-size: 1.1em;
+    color: var(--text-mid);
+}
+
+/* ---------- Section Blocks ---------- */
+.section-block {
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 6px;
+    background: var(--white);
+    margin-bottom: 20px;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+.table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    margin-top: 10px;
+}
+.table-scroll table {
+    margin-top: 0;
+}
+
+/* ---------- Line Controls ---------- */
+.line-move {
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 14px;
+    color: var(--text-mid);
+}
+.line-move:hover {
+    color: var(--green-brand);
+    font-weight: bold;
+}
+
+
+/* ---------- Logos ---------- */
+.header-logos img {
+    margin-left: 10px;
+}
+
+/* ---------- PDF options ---------- */
+.pdf-opts {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 8px 0 16px;
+}
+.pdf-opts label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.35;
+    cursor: pointer;
+}
+.pdf-opts input[type="checkbox"] {
+    margin-top: 3px;
+    flex: 0 0 auto;
+}
+
+/* ---------- Invoice list ---------- */
+.invoice-sort-bar {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 0;
+    font-size: 0.95rem;
+}
+.invoice-sort-bar select {
+    min-height: 36px;
+    max-width: 100%;
+}
+.table-invoices-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    margin-top: 12px;
+}
+.table-invoices {
+    margin-top: 0;
+}
+.table-invoices th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+.table-invoices th[data-sort]:hover,
+.table-invoices th[data-sort]:focus {
+    background: var(--table-hover);
+    outline: none;
+}
+.table-invoices th[data-sort]::after {
+    content: "\00a0\2195";
+    display: inline;
+    font-weight: 400;
+    opacity: 0.35;
+}
+.table-invoices th[data-sort="datum"],
+.table-invoices td[data-sort-key="datum"] {
+    white-space: nowrap;
+    min-width: 7.5em;
+}
+.table-invoices th[data-sort][aria-sort="ascending"]::after {
+    content: "\25B2";
+    opacity: 1;
+}
+.table-invoices th[data-sort][aria-sort="descending"]::after {
+    content: "\25BC";
+    opacity: 1;
+}
+.table-invoices .col-actions {
+    white-space: nowrap;
+}
+.table-invoices .col-actions .btn {
+    min-height: 32px;
+    padding: 6px 12px;
+    margin: 0 4px 4px 0;
+}
+
+.top-header {
+    gap: 12px;
+}
+.top-header h1 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Tablet / phone ---------- */
+@media (max-width: 1024px) {
+    html body {
+        padding-left: max(18px, env(safe-area-inset-left, 0px));
+        padding-right: max(18px, env(safe-area-inset-right, 0px));
+        font-size: 13px;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+    html body .page {
+        padding: 14px 14px 20px;
+        margin-top: 8px;
+        font-size: 13px;
+    }
+    html body .page h1 {
+        font-size: 1.28rem;
+    }
+    html body .page h2 {
+        font-size: 1.05rem;
+    }
+    html body th,
+    html body td {
+        padding: 4px 5px;
+        font-size: 12px;
+    }
+    html body input,
+    html body select,
+    html body textarea {
+        padding: 4px 6px;
+        font-size: 13px;
+    }
+    html body .section-block {
+        padding: 8px 8px 10px;
+        font-size: 0.88rem;
+    }
+    html body .section-block table.rechnung {
+        font-size: 0.8rem;
+    }
+    html body .section-block table.rechnung thead th {
+        font-size: 0.7rem;
+    }
+    html body .section-block .rkrk-row > div > label {
+        font-size: 0.82rem;
+    }
+    html body .table.rechnung th.col-menge,
+    html body .table.rechnung td.col-menge {
+        min-width: 4.2rem;
+        max-width: 5.4rem;
+        width: auto;
+    }
+    html body .table.rechnung th.col-preis,
+    html body .table.rechnung td.col-preis {
+        max-width: 4.2rem;
+        width: auto;
+    }
+    html body .table.rechnung th.col-total,
+    html body .table.rechnung td.col-total {
+        min-width: 4.6rem;
+        width: auto;
+    }
+    html body .summen-gross label {
+        font-size: 0.88rem;
+    }
+    html body .summen-gross input {
+        font-size: 0.95rem;
+    }
+    html body .summen-gross #total {
+        font-size: 1.12rem;
+    }
+    html body .btn-primary {
+        height: 32px;
+        line-height: 32px;
+        padding: 0 12px;
+        font-size: 13px;
+    }
+    html body .summen-gross > div {
+        flex: 1 1 calc(50% - 16px);
+    }
+}
+
+@media (max-width: 700px) {
+    html body {
+        padding-left: max(14px, env(safe-area-inset-left, 0px));
+        padding-right: max(14px, env(safe-area-inset-right, 0px));
+    }
+    .page {
+        padding: 14px 12px 22px;
+        border-radius: 6px;
+    }
+    .summen-gross > div {
+        flex: 1 1 100%;
+    }
+    .btn-primary,
+    .btn {
+        min-height: 36px;
+    }
+    .invoice-sort-bar {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .table-invoices thead {
+        display: none;
+    }
+    .table-invoices,
+    .table-invoices tbody,
+    .table-invoices tr,
+    .table-invoices td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .table-invoices tr {
+        margin: 0 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--white);
+    }
+    .table-invoices td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        border: 0;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 10px;
+    }
+    .table-invoices td:last-child {
+        border-bottom: 0;
+    }
+    .table-invoices td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        flex: 0 0 34%;
+        color: var(--text-mid);
+    }
+    .table-invoices .col-actions {
+        white-space: normal;
+        flex-wrap: wrap;
+    }
+    .table-invoices .col-actions::before {
+        flex: 0 0 100%;
+        margin-bottom: 4px;
+    }
+    .example-card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}

@@ -1,0 +1,468 @@
+{
+    "meta": {
+        "title": "Algorithmische Requirements Rehkitzsuche",
+        "version": "2.4",
+        "last_updated": "2026-04-27"
+    },
+    "core_parameters": [
+        {
+            "key": "HFOV_deg",
+            "label": "Kamera HFOV",
+            "value": 48,
+            "unit": "deg",
+            "description": "Horizontal Field of View der Wärmebildkamera."
+        },
+        {
+            "key": "DFOV_deg",
+            "label": "Kamera DFOV",
+            "value": 61,
+            "unit": "deg",
+            "description": "Diagonaler Oeffnungswinkel fuer Drehpunkt-Abdeckungsradius."
+        },
+        {
+            "key": "VFOV_deg",
+            "label": "Kamera VFOV",
+            "value": 40,
+            "unit": "deg",
+            "description": "Vertikaler Oeffnungswinkel in Flugrichtung fuer Vorwaerts-Sichtanteil."
+        },
+        {
+            "key": "target_agl_m",
+            "label": "Zielhöhe AGL",
+            "value": 50,
+            "unit": "m",
+            "description": "Ziel-Flughöhe über Grund entlang der Flugbahn."
+        },
+        {
+            "key": "overlap",
+            "label": "Überlappung",
+            "value": 0.15,
+            "unit": "-",
+            "description": "Bahnenüberlappung zur sicheren Abdeckung."
+        },
+        {
+            "key": "edge_factor",
+            "label": "Randfaktor",
+            "value": 0.3,
+            "unit": "-",
+            "description": "Randbedingung: d_rand <= edge_factor * S."
+        },
+        {
+            "key": "agl_tolerance_m",
+            "label": "AGL-Toleranz",
+            "value": 10,
+            "unit": "m",
+            "description": "Harte maximal zulässige Abweichung entlang linearer WP-Verbindung."
+        },
+        {
+            "key": "speed_m_s",
+            "label": "Geschwindigkeit",
+            "value": 5,
+            "unit": "m/s",
+            "description": "Rechenwert zur Zeitabschätzung und Vergleichbarkeit."
+        },
+        {
+            "key": "turn_delay_s",
+            "label": "Drehzuschlag je Wegpunkt",
+            "value": 5.5,
+            "unit": "s",
+            "description": "Zusatzzeit pro erkanntem Drehpunkt fuer die Flugzeitberechnung im Standardmodus (alle Wegpunkttypen ausser Skip-Typ)."
+        },
+        {
+            "key": "turn_delay_skip_wp_s",
+            "label": "Drehzuschlag Skip-Wegpunkt",
+            "value": 1.0,
+            "unit": "s",
+            "description": "Zusatzzeit pro erkanntem Drehpunkt fuer Wegpunkttyp 'Koordinierte Drehung, Ueberspringt den Wegpunkt'."
+        },
+        {
+            "key": "angle_step_deg",
+            "label": "Winkelschritt",
+            "value": 5,
+            "unit": "deg",
+            "description": "Winkelschritt für automatische Richtungsprüfung."
+        },
+        {
+            "key": "target_step_m",
+            "label": "Profil-Abtastschritt",
+            "value": 2,
+            "unit": "m",
+            "description": "Interner Abtastschritt entlang Segmenten fuer kontinuierliche AGL-Pruefung (feiner als Kontrollpunkt-Raster)."
+        },
+        {
+            "key": "max_nb_points",
+            "label": "Max Profilpunkte",
+            "value": 5000,
+            "unit": "-",
+            "description": "Maximale Anzahl Profilpunkte je Segment."
+        },
+        {
+            "key": "min_delay_s",
+            "label": "API Mindestdelay",
+            "value": 0.05,
+            "unit": "s",
+            "description": "Mindestwartezeit zwischen API-Requests."
+        },
+        {
+            "key": "preferred_direction",
+            "label": "Bevorzugte Richtung",
+            "value": "auto",
+            "unit": "-",
+            "description": "Nur Fallback. Primär wird Richtung aus Höhenpunkten abgeleitet."
+        },
+        {
+            "key": "fixed_theta_deg",
+            "label": "Fixwinkel Richtung",
+            "value": "",
+            "unit": "deg",
+            "description": "Optionaler fester Flugwinkel. Leer bedeutet keine Vorgabe."
+        },
+        {
+            "key": "section_direction_split_deg",
+            "label": "Richtungs-Split Schwelle Sektionen",
+            "value": 20,
+            "unit": "deg",
+            "description": "Ab dieser Richtungsdifferenz werden pro Feldsektion getrennte Hauptflugrichtungen verlangt."
+        },
+        {
+            "key": "min_shape_coverage_ratio",
+            "label": "Mindestabdeckung Grundmuster",
+            "value": 0.8,
+            "unit": "-",
+            "description": "Mindestziel fuer die Flaechenabdeckung des primaeren Grundmusters in der Formanalyse."
+        },
+        {
+            "key": "section_min_objects",
+            "label": "Minimale Objektzahl",
+            "value": 2,
+            "unit": "-",
+            "description": "Minimale Anzahl Grundobjekte/Sektoren im Eskalationsmodus."
+        },
+        {
+            "key": "section_max_objects",
+            "label": "Maximale Objektzahl",
+            "value": 8,
+            "unit": "-",
+            "description": "Maximale Anzahl Grundobjekte/Sektoren im Eskalationsmodus."
+        },
+        {
+            "key": "secondary_section_max_ratio",
+            "label": "Max Flaechenanteil kleiner Sektionen",
+            "value": 0.2,
+            "unit": "-",
+            "description": "Kleinere Sektionen duerfen maximal diesen Anteil der groessten Sektion einnehmen."
+        },
+        {
+            "key": "low_relief_height_threshold_m",
+            "label": "Hoehendifferenz-Schwelle Low Relief",
+            "value": 15,
+            "unit": "m",
+            "description": "Liegt die Hoehendifferenz darunter, werden sektorspezifische Richtungsunterschiede ignoriert."
+        },
+        {
+            "key": "curve_waypoint_angle_step_deg",
+            "label": "Winkel-Schritt Zwischenpunkte bei Kurvenfeldern",
+            "value": 20,
+            "unit": "deg",
+            "description": "Bei gekruemmtem Feldverlauf (z.B. bananenfoermig) werden an Flugpfad-Kurven Zwischenpunkte in maximal diesem Winkelabstand eingefuegt."
+        },
+        {
+            "key": "min_path_coverage_ratio",
+            "label": "Mindest-Pfadabdeckung",
+            "value": 0.98,
+            "unit": "-",
+            "description": "Mindestabdeckung entlang des Flugwegs mit Breite W; bei Unterschreitung wird neu geplant."
+        }
+    ],
+    "requirements": [
+        {
+            "id": "R-001",
+            "name": "Sichtbreitenberechnung",
+            "priority": "must",
+            "status": "valid",
+            "formula": "W = 2 * h * tan(HFOV / 2)",
+            "description": "Die Boden-Sichtbreite muss aus AGL und HFOV berechnet werden."
+        },
+        {
+            "id": "R-002",
+            "name": "Spurabstand",
+            "priority": "must",
+            "formula": "S = (1 - overlap) * W",
+            "description": "Der Spurabstand muss die definierte Überlappung einhalten."
+        },
+        {
+            "id": "R-003",
+            "name": "Randabdeckung",
+            "priority": "must",
+            "formula": "d_rand_max <= edge_factor * S und d_outside_max <= edge_factor * S",
+            "description": "Die Flugbahnen duerfen den Feldrand nur innerhalb des Max.-Randfaktors verlassen: maximaler Innenabstand zum Rand und maximaler Aussenabstand muessen jeweils <= edge_factor * S bleiben."
+        },
+        {
+            "id": "R-004",
+            "name": "Bahnmuster",
+            "priority": "must",
+            "formula": "Lawnmower/Boustrophedon",
+            "description": "Die Absuche erfolgt in parallelen Bahnen mit Richtungswechsel."
+        },
+        {
+            "id": "R-005",
+            "name": "AGL-Harte Grenze",
+            "priority": "must",
+            "formula": "max_t |AGL_path(t) - AGL_target| <= agl_tolerance_m",
+            "description": "Massgebend ist der kontinuierliche Bodenabstand entlang jedes linearen Flugsegments. Sobald die AGL-Toleranz entlang des Segments verletzt wird, muessen zusaetzliche Wegpunkte gesetzt werden."
+        },
+        {
+            "id": "R-006",
+            "name": "Wegpunktreduktion",
+            "priority": "should",
+            "formula": "min waypoints with tolerance constraint",
+            "description": "So wenige Wegpunkte wie möglich, so viele wie nötig."
+        },
+        {
+            "id": "R-007",
+            "name": "Richtungsoptimierung",
+            "priority": "should",
+            "status": "non_relevant",
+            "formula": "min weighted objective (distance, time, energy proxy)",
+            "description": "Aktuell nicht als eigener globaler Optimierer aktiv. Die Richtung folgt primär Höhenlinien-/Regelvorgaben."
+        },
+        {
+            "id": "R-008",
+            "name": "Richtung aus Höhenpunkten",
+            "priority": "must",
+            "formula": "direction = f(height_points); contour-aligned",
+            "description": "Die Flugrichtung muss aus den Höhenpunkten des Feldes abgeleitet werden (parallel zu Höhenlinien, minimale Höhendifferenz)."
+        },
+        {
+            "id": "R-009",
+            "name": "Referenzhöhe für Vergleich",
+            "priority": "must",
+            "formula": "AGL_algo = AGL_reference_field",
+            "description": "Algorithmus und Referenzflug werden pro Feld immer mit derselben Referenz-Flughöhe verglichen."
+        },
+        {
+            "id": "R-010",
+            "name": "Randabstand als Maximum",
+            "priority": "must",
+            "status": "invalid",
+            "formula": "merged_into(R-003)",
+            "description": "Mit R-003 zusammengefuehrt (identische Randgrenzen fuer Innen-/Aussenabstand)."
+        },
+        {
+            "id": "R-011",
+            "name": "Ueberlappung 15 Prozent",
+            "priority": "must",
+            "formula": "overlap = 0.15",
+            "description": "Die Planung verwendet standardmaessig 15% Ueberlappung, sofern kein aktiviertes Schritt-Requirement dies explizit aendert."
+        },
+        {
+            "id": "R-012",
+            "name": "Startpunkt-Prioritaet (Ausnahme ausserhalb Feld)",
+            "priority": "must",
+            "formula": "path[0] = start_point, auch wenn start_point ∉ field_polygon",
+            "description": "Der Flugweg startet immer am definierten Startpunkt. Liegt der Startpunkt ausserhalb des Feldpolygons, ist dies eine explizit erlaubte Ausnahme und der Flugweg wird von dort ins Feld gefuehrt."
+        },
+        {
+            "id": "R-013",
+            "name": "Kontrollpunkt-Raster ueber Feld",
+            "priority": "must",
+            "formula": "control_points_field_spacing_m = 20",
+            "description": "Zusaetzlich zu Kontrollpunkten entlang der Flugbahn wird ein Kontrollpunkt-Raster ueber die gesamte Feldflaeche mit 20m Abstand verwendet (Step 1)."
+        },
+        {
+            "id": "R-014",
+            "name": "Formanalyse und Feldsektionen",
+            "priority": "must",
+            "formula": "primary_shape = best_fit_rotated_shape(field_polygon)",
+            "description": "Schritt 2 bestimmt primaer ein einzelnes gedrehtes Haupt-Grundmuster (Rechteck/Parallelogramm), das die Feldform bestmoeglich beschreibt."
+        },
+        {
+            "id": "R-015",
+            "name": "Richtungswechsel zwischen Sektionen",
+            "priority": "must",
+            "status": "conditional",
+            "formula": "if |heading_i - heading_j| > 20deg then section-specific heading",
+            "description": "Mehrere Sektionen sind nur bei klarer Richtungsdifferenz erforderlich. Bei Low-Relief (R-027) wird diese Regel übersteuert."
+        },
+        {
+            "id": "R-016",
+            "name": "Grundmuster Randueberlappung begrenzt",
+            "priority": "must",
+            "formula": "max_overlap(shape_polygon, field_polygon) <= 0.5 * S",
+            "description": "Die fuer die Formanalyse gezeichneten Grundmuster/Sektionen duerfen den Feldrand ueberlappen, aber maximal um 1/2 Spurabstand S."
+        },
+        {
+            "id": "R-017",
+            "name": "Formanalyse mit Feld-Referenzhoehe",
+            "priority": "must",
+            "formula": "h_step2 = StdFlughoehe(field) when enabled(use_field_reference_agl)",
+            "description": "Fuer Schritt 2 wird dieselbe Feld-Referenzhoehe verwendet wie im Referenzfeld, sofern die Option aktiv ist."
+        },
+        {
+            "id": "R-018",
+            "name": "Schmales Feld Regel",
+            "priority": "must",
+            "formula": "if field_width_m < 2 * S then lane_direction = direction(longest_edge(field_polygon))",
+            "description": "Ist ein Feld schmaler als zwei Spurabstaende S, wird es als schmales Feld klassifiziert. Die Flugbahnen verlaufen dann kanten-parallel, bevorzugt entlang der laengsten Feldkante."
+        },
+        {
+            "id": "R-019",
+            "name": "Schmales Feld lokal entlang Feldverlauf",
+            "priority": "must",
+            "formula": "if exists s along centerline(field) with local_width(s) < 2 * S then apply narrow-field decision logic",
+            "description": "Der Schmalfeld-Entscheid muss auch lokal entlang des Feldverlaufs gelten (z.B. bei schlangenfoermigen Feldern). Sobald in irgendeinem Abschnitt die lokale Breite unter 2*S faellt, ist dies als Schmalfeld-Faktor zu beruecksichtigen."
+        },
+        {
+            "id": "R-020",
+            "name": "Schmalfeld-Segmentierung entlang Verlauf",
+            "priority": "must",
+            "status": "invalid",
+            "formula": "for narrow fields: if needed then sections = segment_along_centerline(field, n>=2) else single pattern",
+            "description": "Ungültig im aktuellen Stand: starre Centerline-Segmentierung ist nicht mehr verbindlich. Verwendet wird eine requirement-gesteuerte Objekt-/Sektoren-Eskalation."
+        },
+        {
+            "id": "R-021",
+            "name": "Lokale Ausrichtung je Schmalfeld-Sektion",
+            "priority": "must",
+            "status": "invalid",
+            "formula": "heading(section_i) = tangent(centerline, section_i)",
+            "description": "Ungültig im aktuellen Stand: Sektionsrichtungen sind Guidance, die Wegpunktplanung läuft auf Gesamtfläche (R-026/S3-R9)."
+        },
+        {
+            "id": "R-022",
+            "name": "Flugrichtung pro Sektor visualisieren",
+            "priority": "must",
+            "formula": "draw(section_heading_i, style=dashed_dark_blue, toggleable=true)",
+            "description": "Pro Feldsektion ist die resultierende Flugrichtung als dunklere, dickere, gestrichelte Linie in der Karte anzuzeigen und in der Anzeige-Kontrolle ein-/ausblendbar zu machen."
+        },
+        {
+            "id": "R-023",
+            "name": "Sektionsplanung bei Mehr-Sektionen",
+            "priority": "must",
+            "status": "conditional",
+            "formula": "if used_multi_section then sections define heading guidance; path remains planned on full field",
+            "description": "Sektionen dienen der Form- und Richtungsfuehrung. Der Wegpunktflug bleibt auf der gesamten Originalflaeche geplant."
+        },
+        {
+            "id": "R-024",
+            "name": "Mindestabdeckung mit Eskalation",
+            "priority": "must",
+            "formula": "if coverage(primary_pattern) < 0.80 then add additional objects/sectors until coverage >= 0.80 or max_objects reached",
+            "description": "Unterschreitet die Hauptabdeckung 80%, muessen weitere Grundobjekte/Sektoren automatisch eingesetzt und geprueft werden, bis mindestens 80% erreicht sind (oder eine technische Obergrenze erreicht ist)."
+        },
+        {
+            "id": "R-025",
+            "name": "Kleine Sektionenflaeche begrenzen",
+            "priority": "must",
+            "status": "conditional",
+            "formula": "area(section_i) <= 0.20 * area(max_section) for non-max sections (field-specific)",
+            "description": "Bei Spezialfaellen wie 26-004 duerfen kleinere Sektionen/Grundfiguren maximal 20% der Flaeche des groessten Teils haben."
+        },
+        {
+            "id": "R-026",
+            "name": "Wegpunktflug auf Gesamtflaeche ab Startpunkt",
+            "priority": "must",
+            "formula": "path = plan(full_field_polygon, start_point); sections -> heading_guidance_only",
+            "description": "Die Berechnung des Wegpunktfluges erfolgt immer auf der gesamten Originalflaeche und ab dem Startpunkt. Sektionen geben die Flugrichtung mit vor, werden aber nicht als separate Teilflaechen-Fluege geplant."
+        },
+        {
+            "id": "R-027",
+            "name": "Low-Relief Parallelregel",
+            "priority": "must",
+            "formula": "if height_range_m < low_relief_height_threshold_m then ignore sector heading differences; keep open-direction edge alignment; lanes parallel and as long as possible",
+            "description": "Wenn die Hoehenunterschiede kleiner als der konfigurierbare Low-Relief-Schwellenwert sind (Default 15m), werden keine Flugrichtungen pro Sektor berechnet/angezeigt. Bei offener Richtung bleibt die Kanten-Ausrichtung erhalten."
+        },
+        {
+            "id": "R-028",
+            "name": "Startpunkt auf naechsten Feldwegpunkt linken",
+            "priority": "must",
+            "formula": "from start_point connect to nearest endpoint waypoint of planned field path",
+            "description": "Ab dem Startpunkt ist immer ein naher Wegpunkt im Feld als erster Zielpunkt zu verwenden (durch Wahl der guenstigeren Pfadrichtung)."
+        },
+        {
+            "id": "R-029",
+            "name": "Flugpfad innerhalb Feldflaeche",
+            "priority": "must",
+            "formula": "normal: for i>=2 waypoint_i in field_polygon; narrow_field: for i>=1 waypoint_i in field_polygon",
+            "description": "Der Flugpfad darf die Feldflaeche nicht verlassen. Nur im Normalfall ist das erste Segment Start->Feld als Ausnahme erlaubt; bei Schmalfeld gilt striktes In-Feld-Clamping."
+        },
+        {
+            "id": "R-030",
+            "name": "Parallelbahnen mit Spurabstand S",
+            "priority": "must",
+            "formula": "lanes are parallel and lane_spacing = S = (1-overlap)*W",
+            "description": "Die Arbeitsbahnen muessen parallel verlaufen und den berechneten Spurabstand S einhalten, damit sich die geforderte minimale Ueberlappung ergibt."
+        },
+        {
+            "id": "R-031",
+            "name": "Pfadabdeckung ohne Leerflaechen",
+            "priority": "must",
+            "formula": "coverage = moving_band(W, VFOV_forward) union start_rect(W,VFOV) union end_half_rect(W,VFOV) union turn_circles(D); coverage >= min_path_coverage_ratio",
+            "description": "Die Abdeckung wird ab Startpunkt entlang des gesamten Flugpfads berechnet: entlang der Strecke mit W (HFOV) und VFOV-Vorblick, am Start mit vollem VFOV-Rechteck, am Ende mit halbem VFOV-Vorblick und an Drehpunkten mit D (DFOV)."
+        },
+        {
+            "id": "R-032",
+            "name": "Drehpunkt-Kreis mit DFOV",
+            "priority": "must",
+            "status": "valid",
+            "formula": "turn_circle_diameter D = 2*h*tan(DFOV/2); turning-point circles use D (not W)",
+            "description": "Fuer die Abdeckung an Drehpunkten ist der Kreis mit DFOV (diagonalem Oeffnungswinkel) zu berechnen; dadurch kann der Drehpunkt-Kreis groesser als bei HFOV sein."
+        },
+        {
+            "id": "R-033",
+            "name": "Abdeckungskorrektur bei Restflaechen",
+            "priority": "must",
+            "status": "valid",
+            "formula": "if uncovered_cells > 0 then moderately_extend_lanes_within_segments() and/or adjust_direction_small_delta(); recompute_coverage()",
+            "description": "Nicht abgedeckte Restflaechen sind nicht akzeptiert. Der Flugpfad ist moderat innerhalb der Segmentgrenzen zu verlaengern und bei Bedarf ueber kleine Richtungsdeltas nachzujustieren."
+        },
+        {
+            "id": "R-034",
+            "name": "HFOV/DFOV klar getrennt darstellen",
+            "priority": "must",
+            "status": "valid",
+            "formula": "forward_path_width = W(HFOV), forward_length = L(VFOV), turning_diameter = D(DFOV)",
+            "description": "Entlang des Vorwaertsflugs gilt W aus HFOV (Breite) und L aus VFOV (Vorblick). An Drehpunkten ist der groessere Kreis mit D aus DFOV zu verwenden und klar getrennt darzustellen."
+        },
+        {
+            "id": "R-035",
+            "name": "Flugzeit je Wegpunkt mit Drehzuschlag",
+            "priority": "must",
+            "status": "valid",
+            "formula": "t_wp(i) = sum_{k=1..i}(segment_length_k / speed_m_s) + n_turns(<=i) * turn_delay(waypoint_type), mit turn_delay = 1.0s fuer 'Koordinierte Drehung, Ueberspringt den Wegpunkt', sonst 5.5s",
+            "description": "Die Flugzeit ist pro Wegpunkt kumulativ zu berechnen. Jede erkannte Drehung erhoeht die Zeit um den typabhaengigen Zuschlag: 1.0s fuer 'Koordinierte Drehung, Ueberspringt den Wegpunkt', ansonsten 5.5s."
+        },
+        {
+            "id": "R-036",
+            "name": "Wendekurve als Hilfslinie (ohne Zwischenpunkte)",
+            "priority": "must",
+            "status": "valid",
+            "formula": "if turn_wp then keep_single_turn_waypoint(); draw_dotted_turn_guide_from_wp_both_directions(length_m = standard_turn_distance_m)",
+            "description": "Bei gekruemmten Feldformen werden Kurven nicht durch zusaetzliche Wegpunkte interpoliert. Stattdessen bleibt ein einzelner Wegpunkt am Wendepunkt, und die Kurvenfuehrung wird visuell als gestrichelte Wendelinie ab diesem Punkt in beide Richtungen mit der Standard-Wendedistanz dargestellt."
+        },
+        {
+            "id": "R-037",
+            "name": "Offene Flugrichtung an Feldkante ausrichten (SHALL)",
+            "priority": "should",
+            "status": "valid",
+            "formula": "if flight_direction_deg < 0 then lane_direction ~= direction(longest_edge(field_polygon))",
+            "description": "Wenn die Flugrichtung offen/automatisch ist (z.B. -1), soll die Richtung bestmoeglich an einer Feldkante ausgerichtet werden, bevorzugt entlang der laengsten Feldkante."
+        },
+        {
+            "id": "R-038",
+            "name": "Schmalfeld: mindestens zwei Bahnen",
+            "priority": "must",
+            "status": "valid",
+            "formula": "if narrow_field and geometry_allows then lane_count >= 2",
+            "description": "Schmale Felder sollen nicht auf eine Einzelbahn kollabieren. Falls geometrisch moeglich, sind mindestens zwei Arbeitsbahnen zu planen."
+        },
+        {
+            "id": "R-039",
+            "name": "Moderate Richtungs-Nachjustierung bei Luecken",
+            "priority": "must",
+            "status": "valid",
+            "formula": "if coverage < min_path_coverage_ratio then test theta += delta, delta in {-10,-7.5,-5,-2.5,2.5,5,7.5,10} deg and keep best",
+            "description": "Zur Schliessung von Restflaechen ist eine moderate Richtungsanpassung erlaubt. Es wird ein kleiner Winkelsweep getestet und die Variante mit besserer Abdeckung uebernommen."
+        }
+    ]
+}

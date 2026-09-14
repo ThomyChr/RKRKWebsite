@@ -1,0 +1,1107 @@
+﻿<!--
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modul 010 – Luftrecht</title>
+-->
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; margin: 2em; background: #f9f9f9; }
+    h1, h2, h3 { color: #003366; }
+    section { margin-bottom: 2em; background: #fff; padding: 1em; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    ul.checklist { list-style: none; padding: 0; }
+    ul.checklist li::before { content: "✅ "; }
+    .glossar dt { font-weight: bold; }
+    .glossar dd { margin-bottom: 1em; }
+    .quiz { background: #eef; padding: 1em; border-radius: 6px; }
+    .highlight {
+              background-color: #e6f7ff;
+              border-left: 4px solid #1890ff;
+              padding: 0.5rem 1rem;
+              margin: 1rem 0;
+            }
+	
+  </style>
+<!--
+</head>
+<body>
+-->
+<section id="kursbeschreibung">
+  <h3>Zielgruppe</h3>
+  <p>
+    Dieser Kurs richtet sich an <strong>UAS-Betreiber</strong>, <strong>Fernpiloten</strong>, <strong>Einsatzplaner</strong> und <strong>technische Fachkräfte</strong>, die Drohnen im professionellen Kontext einsetzen – insbesondere in den Bereichen <strong>Vermessung</strong>, <strong>Inspektion</strong>, <strong>Rettung</strong>, <strong>Umweltschutz</strong> und <strong>Luftbildanalyse</strong>.
+  </p>
+
+  <h3>Ziel</h3>
+  <p>
+    Ziel des Kurses ist es, den Teilnehmenden ein <strong>fundiertes Verständnis</strong> für den sicheren, regelkonformen und risikominimierten Betrieb von <strong>unbemannten Luftfahrzeugsystemen (UAS)</strong> zu vermitteln – unter Berücksichtigung technischer, rechtlicher und meteorologischer Rahmenbedingungen.
+  </p>
+
+  <h3>Kursziel</h3>
+  <p>
+    Die Teilnehmenden sollen nach Abschluss des Kurses in der Lage sein, <strong>UAS-Einsätze selbstständig zu planen, durchzuführen und zu dokumentieren</strong>, dabei <strong>gesetzliche Vorgaben</strong> einzuhalten, <strong>Risiken zu bewerten</strong> und <strong>technische Schutzmassnahmen</strong> korrekt anzuwenden.
+  </p>
+  <h3>Lernziele</h3>
+  <div class="highlight">
+    <ul>
+      <li>Kenntnis der <strongUAS-Systemkomponenten</strong> und deren Funktionen.</li>
+      <li>Verständnis der <strong>Rollenverteilung</strong> zwischen Betreiber, Fernpilot und Behörden.</li>
+      <li>Einordnung von <strong>Luftraumklassen</strong> und <strong>geografischen UAS-Gebieten</strong>.</li>
+      <li>Durchführung von <strong>Risikoanalysen</strong> und Anwendung von <strong>technischen sowie operativen Schutzmassnahmen</strong>.</li>
+      <li>Interpretation von <strong>Wetterdaten</strong> und deren Einfluss auf Flugverhalten und Sicherheit.</li>
+      <li>Planung und Durchführung von Einsätzen in <strong>standardisierten Szenarien (STS-01 / STS-02)</strong>.</li>
+      <li>Dokumentation und Kommunikation gemäss <strong>behördlichen Anforderungen</strong>.</li>
+      <li>Bewertung der <strong>Flugleistung</strong> und <strong>Nutzlastintegration</strong> im Einsatzkontext.</li>
+    </ul>
+  </div>
+</section>
+
+
+
+<section id="lernmittel-inhaltsverzeichnis">
+  <h2>Inhaltsverzeichnis – Lernmittel UAS STS-01/02</h2>
+  <ul>
+    <li><strong>010 Luftrecht</strong>
+      <ul>
+        <li>Allgemeine Elemente der spezifischen Kategorie</li>
+        <li>Risikobewertung und Einführung in SORA</li>
+        <li>Standardszenarien</li>
+        <li>Konzept der Betriebserklärung</li>
+        <li>STS-01</li>
+        <li>STS-02</li>
+      </ul>
+    </li>
+    <li><strong>Zusätzliche Kenntnisse über den Luftraum und aeronautische Informationen</strong>
+      <ul>
+        <li>Allgemein</li>
+        <li>Luftraumreservierungen</li>
+      </ul>
+    </li>
+    <li><strong>020 Grenzen der menschlichen Leistungsfähigkeit</strong></li>
+    <li><strong>030 Betriebsverfahren</strong>
+      <ul>
+        <li>Pre-Flight</li>
+        <li>Vorflugmassnahmen für STS-01</li>
+        <li>Vorflugmassnahmen für STS-02</li>
+        <li>Gemeinsame Aktionen vor dem Flug</li>
+        <li>In-Flight</li>
+        <li>Verfahren für unvorhergesehene Ereignisse</li>
+        <li>Verfahren für Notfälle</li>
+        <li>Notfallplan (ERP)</li>
+      </ul>
+    </li>
+    <li><strong>040 Luftrisiko</strong>
+      <ul>
+        <li>Allgemeines</li>
+        <li>Luftrisiko in STS-01</li>
+        <li>Luftrisiko in STS-02</li>
+      </ul>
+    </li>
+    <li><strong>050 Allgemeinwissen UAS</strong>
+      <ul>
+        <li>Allgemeine technische Kenntnisse</li>
+        <li>Technisches Wissen für C5</li>
+        <li>Technisches Wissen für C6</li>
+        <li>Fortgeschrittenes UAS-Wissen</li>
+        <li>Flugterminierungssystem (FTS)</li>
+        <li>Geo-Caging-Funktion</li>
+        <li>Fortgeschrittene Kenntnisse über Batterien</li>
+        <li>Sensoren</li>
+      </ul>
+    </li>
+    <li><strong>060 Meteorologie</strong>
+      <ul>
+        <li>Wettereinflüsse auf den UAS-Betrieb</li>
+        <li>Wind</li>
+        <li>Temperatur</li>
+        <li>Atmosphärischer Druck</li>
+        <li>Sichtbarkeit</li>
+        <li>Luftdichte</li>
+        <li>Regionale Witterungseinflüsse</li>
+        <li>Einholung von Wetterinformationen</li>
+        <li>Ressourcen für Wetterbericht und Briefing</li>
+        <li>Wetterberichte</li>
+        <li>Wetterkarten</li>
+        <li>Lokale Wetterbeurteilungen</li>
+      </ul>
+    </li>
+    <li><strong>070 UAS Flugleistung</strong>
+      <ul>
+        <li>Typische Einsatzbereiche</li>
+        <li>Masse, Gleichgewicht & Schwerpunkt</li>
+        <li>Ladungssicherung</li>
+        <li>Batterien</li>
+      </ul>
+    </li>
+    <li><strong>080 Bodenrisiko</strong>
+      <ul>
+        <li>Definitionen und Zuständigkeiten</li>
+        <li>Bodenrisiko in STS-01</li>
+        <li>Bodenrisiko in STS-02</li>
+        <li>Anhang</li>
+      </ul>
+    </li>
+  </ul>
+</section>
+
+<section id="modul-010-luftrecht">
+  <h2>Kapitel 010 – Luftrecht</h2>
+<p class="keywords">
+EU-Drohnenverordnung · UAS-Kategorien · Betreiberregistrierung · Fernpilotenkompetenz · geografische Gebiete · Luftraumstruktur · Haftung · Datenschutz
+</p>
+
+  <p>
+    Das <strong>Luftrecht</strong> bildet die rechtliche Grundlage für den <strong>sicheren und regelkonformen Betrieb</strong> von unbemannten Luftfahrzeugsystemen (UAS) in der <strong>spezifischen Kategorie</strong> gemäss den Standardszenarien <strong>EASA STS-01</strong> und <strong>STS-02</strong>. Es umfasst zentrale Elemente wie <strong>Betriebskategorien</strong>, <strong>Risikobewertung</strong>, <strong>Standardszenarien</strong> und die <strong>Betriebserklärung</strong>. Ziel ist es, Risiken zu minimieren, Verantwortlichkeiten zu klären und den Betrieb europaweit zu harmonisieren.
+  </p>
+
+ 	<figure>
+		<img  class="lernimage"  src="quiz/images/sts/drone-airspace.png">
+		<figcaption  class="lerncaption">Luftraum</figcaption>
+	</figure> 
+
+  <h3>Allgemeine Elemente der spezifischen Kategorie</h3>
+  <p>
+    Die <strong>spezifische Kategorie</strong> richtet sich an Drohnenoperationen mit <strong>erhöhtem Risiko</strong>, die nicht unter die <strong>offene</strong> oder <strong>zertifizierte Kategorie</strong> fallen. Sie verlangt eine <strong>risikobasierte Planung</strong> und setzt voraus, dass Betreiber und Fernpiloten bestimmte <strong>technische, organisatorische und rechtliche Voraussetzungen</strong> erfüllen. Dazu gehören unter anderem <strong>Betriebsbeschränkungen</strong> (z. B. Flughöhe, Sichtweite), <strong>Risikoanalysen vor jedem Flug</strong> sowie <strong>Schulung und Qualifikation</strong> des Personals.
+  </p>
+
+  <p>
+    Bei Flügen in anderen EU-Mitgliedstaaten gelten zusätzliche Anforderungen wie <strong>Registrierung</strong>, <strong>Versicherung</strong> und die <strong>Beachtung lokaler Vorschriften</strong>. Die Einhaltung dieser Vorgaben ist Voraussetzung für eine <strong>rechtskonforme grenzüberschreitende Operation</strong>.
+  </p>
+
+  <p>
+    Die folgenden Punkte fassen die Anforderungen der spezifischen Kategorie zusammen:
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Risikobasierte Bewertung</strong> vor jedem Flug gemäss SORA oder PDRA.</li>
+      <li><strong>Technische und sicherheitsrelevante Standards</strong> wie Registrierung, Kennzeichnung und Geo-Caging.</li>
+      <li><strong>Schulung und Prüfung</strong> des Fernpiloten nach STS-Anforderungen.</li>
+      <li><strong>Notfallverfahren</strong> und umfassende <strong>Dokumentation</strong> im Betriebskonzept.</li>
+      <li><strong>Internationale Betriebserlaubnis</strong> bei Einsätzen ausserhalb des Heimatstaates.</li>
+    </ul>
+  </div>
+
+  <p>
+    Zusätzlich müssen Betreiber bei Auslandseinsätzen <strong>lokale Vorschriften</strong> beachten, <strong>Genehmigungen</strong> einholen und eine <strong>gültige Versicherung</strong> nachweisen. Die Verantwortung für die Einhaltung liegt beim <strong>UAS-Betreiber</strong>, der alle relevanten Unterlagen vorhalten und auf Anfrage vorlegen muss.
+  </p>
+
+  <h3>Risikobewertung und Einführung in SORA</h3>
+ 	<figure>
+		<img  class="lernimage"  src="quiz/images/sts/luftrisiko-bodenrisiko.png">
+		<figcaption  class="lerncaption">Luft- und Bodenrisiko</figcaption>
+	</figure> 
+  <p>
+    Die Risikobewertung erfolgt nach dem <strong>SORA-Modell (Specific Operations Risk Assessment)</strong>, einem von der EASA entwickelten <strong>standardisierten Verfahren</strong> zur Identifikation, Bewertung und Minderung von Risiken bei Drohnenflügen in der <strong>spezifischen Kategorie</strong>. Ziel ist es, das <strong>Restrisiko</strong> auf ein akzeptables Mass zu senken und den Betrieb sicher und nachvollziehbar zu gestalten.
+  </p>
+  
+  <p>
+    Die SORA umfasst die systematische Analyse von <strong>Gefahrenquellen</strong>, die Einschätzung der <strong>Eintrittswahrscheinlichkeit</strong> und der <strong>Schadensauswirkungen</strong> sowie die Definition <strong>technischer, organisatorischer und operativer Massnahmen</strong> zur Risikominderung. Ergänzend dazu existieren <strong>PDRAs (Pre-Defined Risk Assessments)</strong>, die für bestimmte Standardszenarien wie <strong>STS-01</strong> und <strong>STS-02</strong> bereits <strong>vorgefertigte Risikoanalysen</strong> bereitstellen und den <strong>Genehmigungsprozess vereinfachen</strong>.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Gefahrenidentifikation</strong> – z. B. Kollision, Systemausfall, Kontrollverlust.</li>
+      <li><strong>Risikobewertung</strong> – Einschätzung von Eintrittswahrscheinlichkeit und Schadensausmass.</li>
+      <li><strong>Massnahmen zur Risikominderung</strong> – technische, organisatorische und operationelle Schutzmassnahmen.</li>
+      <li><strong>Akzeptanzprüfung</strong> – Bewertung, ob das Restrisiko tragbar ist.</li>
+      <li><strong>Dokumentation</strong> – Nachweis gegenüber Behörden und Grundlage für die Betriebserklärung.</li>
+    </ul>
+  </div>
+
+  <h3>Standardszenarien</h3>
+  <p>
+    <strong>Standardszenarien (STS)</strong> sind von der EASA definierte, vorstrukturierte Einsatzszenarien für Drohnenflüge mit <strong>mittlerem Risiko</strong>. Sie ermöglichen eine <strong>vereinfachte Betriebserklärung</strong> auf Basis einer anerkannten <strong>PDRA</strong> und gelten als bewährte Praxis für bestimmte Flugtypen. Derzeit sind <strong>STS-01</strong> und <strong>STS-02</strong> die relevanten Szenarien für <strong>Sichtflugoperationen (VLOS)</strong> und <strong>kontrollierte Einsatzgebiete</strong>.
+  </p>
+  <p>
+    Die Nutzung eines STS setzt voraus, dass <strong>alle Bedingungen des Szenarios</strong> vollständig eingehalten werden – einschliesslich <strong>technischer Anforderungen</strong>, <strong>Sicherheitsmassnahmen</strong> und <strong>Dokumentationspflichten</strong>. Eine <strong>Betriebserklärung</strong> auf Basis der zugehörigen <strong>PDRA</strong> muss bei der zuständigen Behörde eingereicht werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>STS-01</strong>: Sichtflug (VLOS) mit UAS bis 25 kg in risikoarmen Gebieten.</li>
+      <li><strong>STS-02</strong>: BVLOS-Flüge in kontrollierten, abgesicherten Einsatzräumen.</li>
+    </ul>
+  </div>
+
+  <h3>Konzept der Betriebserklärung</h3>
+  <p>
+    Die <strong>Betriebserklärung</strong> ist ein zentrales, <strong>rechtlich verbindliches Dokument</strong>, das vom <strong>UAS-Betreiber</strong> bei der <strong>zuständigen Luftfahrtbehörde</strong> eingereicht wird. Sie bildet die Grundlage für den genehmigten Betrieb in der <strong>spezifischen Kategorie</strong> und dient der <strong>Transparenz</strong>, <strong>Nachvollziehbarkeit</strong> und <strong>Risikominimierung</strong>. Die Erklärung enthält alle relevanten Angaben zur <strong>geplanten Operation</strong>, zur <strong>Drohne</strong>, zu den <strong>Sicherheitsmassnahmen</strong> und zur <strong>Risikoanalyse</strong>. Zusätzlich sind <strong>Versicherungsnachweise</strong> und <strong>Qualifikationsdokumente</strong> erforderlich.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Betreiberangaben</strong> – Name, Adresse, Kontaktinformationen.</li>
+      <li><strong>Beschreibung der Operation</strong> – Drohnentyp, Einsatzgebiet, Flugzeiten.</li>
+      <li><strong>Technische Daten</strong> – Modell, Gewicht, Sicherheitsmerkmale.</li>
+      <li><strong>Sicherheitsmassnahmen</strong> – Notfallpläne, Sichtflugregeln, Sicherheitsabstände.</li>
+      <li><strong>Risikoanalyse</strong> – basierend auf <strong>SORA</strong> oder <strong>PDRA</strong>.</li>
+      <li><strong>Versicherungsnachweis</strong> – gültige Haftpflichtversicherung.</li>
+      <li><strong>Zusätzliche Dokumente</strong> – z. B. Schulungsnachweise, Systemhandbuch.</li>
+    </ul>
+  </div>
+  <p>
+    In der Schweiz ist das <strong>BAZL (Bundesamt für Zivilluftfahrt)</strong> bzw. <strong>FOCA</strong> zuständig. Die Anforderungen können sich ändern – aktuelle Vorgaben sind auf der 
+    <a href="https://www.bazl.admin.ch" target="_blank">FOCA-Webseite</a> zu finden.
+  </p>
+
+  <h3>STS-01</h3>
+ 	<figure>
+		<img  class="lernimage"  src="quiz/images/sts/sts-01.png">
+		<figcaption  class="lerncaption">EASA STS-01</figcaption>
+	</figure> 
+  
+  <p>
+    Das <strong>Standardszenario STS-01</strong> beschreibt einen genehmigungsfähigen Drohnenbetrieb mit einem <strong>maximalen Startgewicht von 25 kg</strong> innerhalb der <strong>Sichtweite (VLOS)</strong> in <strong>risikoarmen Gebieten</strong>. Der Betrieb muss innerhalb <strong>definierter Parameter</strong> erfolgen, darunter <strong>Flughöhe</strong>, <strong>Entfernung</strong> zur Steuerstation und <strong>Wetterbedingungen</strong>. Der Betreiber ist verpflichtet, eine <strong>Risikoabschätzung</strong> durchzuführen, die <strong>technische Sicherheit</strong> der Drohne zu gewährleisten und <strong>alle Flüge zu dokumentieren</strong>. Eine <strong>gültige Haftpflichtversicherung</strong> sowie die <strong>Einhaltung der gesetzlichen Vorgaben</strong> der <strong>EASA</strong> und des <strong>BAZL</strong> sind ebenfalls erforderlich.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Einhalten der Szenariobedingungen</strong> – Flughöhe, Entfernung, Wettergrenzen.</li>
+      <li><strong>Technische Sicherheit</strong> – regelmässige Wartung, Systemprüfung.</li>
+      <li><strong>Risikoabschätzung</strong> – vor jedem Flug, dokumentiert nach SORA.</li>
+      <li><strong>Dokumentation</strong> – aller Flüge, Zwischenfälle und Wartungsmassnahmen.</li>
+      <li><strong>Haftpflichtversicherung</strong> – mit ausreichender Deckungssumme.</li>
+      <li><strong>Einhaltung gesetzlicher Vorgaben</strong> – gemäss EASA und nationaler Luftfahrtbehörde.</li>
+    </ul>
+  </div>
+  <p>
+    Der <strong>Fernpilot</strong> muss jederzeit <strong>VLOS</strong> sicherstellen, <strong>Notfallmassnahmen</strong> bereithalten und <strong>geeignete Wetterbedingungen</strong> prüfen. Die Nutzung eines <strong>FTS (Flight Termination System)</strong> ist verpflichtend, sofern im Szenario oder Betriebskonzept vorgesehen.
+  </p>
+
+  <h3>STS-02</h3>
+ 	<figure>
+		<img  class="lernimage"  src="quiz/images/sts/sts-02.png">
+		<figcaption  class="lerncaption">EASA STS-02</figcaption>
+	</figure> 
+  <p>
+    Das <strong>Standardszenario STS-02</strong> gilt für <strong>BVLOS-Flüge</strong> (Beyond Visual Line of Sight) in <strong>kontrollierten oder vorab genehmigten Einsatzgebieten</strong>. Es richtet sich an Betreiber, die Drohnenflüge ausserhalb der Sichtweite durchführen möchten, jedoch innerhalb eines definierten und abgesicherten Luftraums. Voraussetzung ist eine <strong>gültige Betriebsgenehmigung</strong> auf Basis einer <strong>PDRA</strong> (Pre-Defined Risk Assessment).
+  </p>
+  <p>
+    Der Betrieb erfolgt in der Regel <strong>ohne direkte Aufsicht durch Behörden</strong>, solange <strong>alle Szenariobedingungen</strong> eingehalten werden. Dazu zählen <strong>technische Anforderungen</strong> wie Geo-Caging und Notabschaltung, <strong>Sicherheitsvorkehrungen</strong> zur Risikominderung sowie die <strong>Überwachung der Wetterbedingungen</strong>. Der Betreiber ist verpflichtet, <strong>alle Flüge, Wartungen und Zwischenfälle zu dokumentieren</strong>, eine <strong>Haftpflichtversicherung</strong> nachzuweisen und die <strong>gesetzlichen Vorgaben der EASA und FOCA</strong> einzuhalten.
+  </p>
+  <p>
+    Zusätzlich müssen <strong>alle beteiligten Personen geschult</strong> sein, und es ist sicherzustellen, dass eine <strong>Kommunikation mit relevanten Stellen</strong> (z. B. Flugsicherung, Einsatzleitung) möglich ist. Zur Risikominderung kann entweder ein <strong>Luftraumbeobachter</strong> eingesetzt oder eine <strong>vorprogrammierte Flugbahn</strong> verwendet werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Gültige Betriebsgenehmigung</strong> auf Basis einer anerkannten <strong>PDRA</strong>.</li>
+      <li><strong>Technische Anforderungen</strong> wie <strong>Geo-Caging</strong> und <strong>Flight Termination System (FTS)</strong>.</li>
+      <li><strong>Dokumentation</strong> aller Flüge, Wartungsmassnahmen und sicherheitsrelevanter Ereignisse.</li>
+      <li><strong>Haftpflichtversicherung</strong> mit ausreichender Deckungssumme.</li>
+      <li><strong>Einhaltung der EASA- und FOCA-Vorgaben</strong> für BVLOS-Betrieb.</li>
+      <li><strong>Wetterüberwachung</strong> und <strong>geeignete Schulung</strong> des eingesetzten Personals.</li>
+      <li><strong>Luftraumbeobachter</strong> oder <strong>automatisierte Flugwegführung</strong> zur Kollisionsvermeidung.</li>
+    </ul>
+  </div>
+  <p>
+    Der <strong>Fernpilot</strong> ist verpflichtet, die <strong>technische Kontrolle</strong> vor jedem Flug sicherzustellen, <strong>Flugverbotszonen</strong> zu beachten und die <strong>Privatsphäre Dritter</strong> zu respektieren. Die Einhaltung dieser Vorgaben ist Voraussetzung für einen sicheren und rechtskonformen BVLOS-Betrieb im Rahmen von STS-02.
+  </p>
+</section>
+
+<section id="modul-luftraum-und-informationen">
+  <h2>Zusätzliche Kenntnisse über den Luftraum und aeronautische Informationen</h2>
+<p class="keywords">
+NOTAM · AIP · VFR-Karten · Luftraumstruktur · geografische UAS-Gebiete · Luftraumklassifizierung · AIS-Dienste · Flugbeschränkungsgebiete
+</p>
+
+
+  <h3>Allgemein</h3>
+  <p>
+    Die <strong>Luftraumhoheit</strong> bedeutet, dass ein Staat – in diesem Fall die <strong>Schweiz</strong> – das <strong>Recht und die Verantwortung</strong> hat, den Luftraum über seinem Staatsgebiet zu <strong>regeln, zu kontrollieren und zu überwachen</strong>. Dies umfasst die <strong>Festlegung von Vorschriften</strong>, die einen <strong>sicheren, geordneten und effizienten Luftverkehr</strong> gewährleisten. Die Schweiz arbeitet dabei eng mit <strong>internationalen Organisationen</strong> wie der <strong>ICAO</strong> sowie mit <strong>Nachbarländern</strong> zusammen, um grenzüberschreitende Flugoperationen zu koordinieren.
+  </p>
+  <p>
+    Zur Organisation und Kontrolle wird der Luftraum in verschiedene <strong>Kategorien</strong> unterteilt. Diese sogenannten <strong>Luftraumklassen</strong> definieren den Grad der Flugverkehrskontrolle und die Anforderungen an Piloten und Betreiber.
+  </p>
+ 	<figure>
+		<img  class="lernimage"  src="quiz/images/sts/luftraum-schweiz-2.png">
+		<figcaption  class="lerncaption">Luftraumeinteilung Schweiz</figcaption>
+	</figure> 
+
+
+  <div class="highlight">
+    <ul>
+      <li><strong>Klasse G</strong>: <em>Unkontrollierter Luftraum</em> bis ca. <strong>600 m AGL</strong>; keine ständige Flugverkehrskontrolle – Piloten sind selbst verantwortlich.</li>
+      <li><strong>Klasse E</strong>: <em>Teilweise kontrollierter Luftraum</em>, selten genutzt in der Schweiz, z. B. über dem Jura.</li>
+      <li><strong>Klasse D</strong>: <em>Kontrollierter Luftraum</em> in der Nähe von Flughäfen, z. B. <strong>CTR-Zonen</strong>.</li>
+      <li><strong>Klasse C</strong>: <em>Stark kontrollierter Luftraum</em>, z. B. <strong>über FL100</strong> oder in <strong>TMA-Zonen</strong>.</li>
+      <li><strong>Klasse B</strong>: <em>Höchste Kontrollstufe</em>, meist um grosse internationale Flughäfen – in der Schweiz kaum relevant.</li>
+    </ul>
+  </div>
+
+  <h3>Luftraumreservierungen</h3>
+  <p>
+    <strong>Luftraumreservierungen</strong> sind zeitlich und räumlich definierte Bereiche, die für bestimmte Zwecke <strong>vorübergehend gesperrt oder eingeschränkt</strong> werden. Sie dienen dem Schutz von <strong>militärischen Operationen</strong>, <strong>Testflügen</strong>, <strong>Grossveranstaltungen</strong> oder <strong>besonderen Einsätzen</strong> wie Rettungsaktionen oder Katastrophenhilfe.
+  </p>
+  <p>
+    Für Drohnenbetreiber ist es entscheidend, sich vor jedem Flug über aktuelle Reservierungen zu informieren. Ein Flug in einem <strong>reservierten Luftraum</strong> ohne Genehmigung stellt einen <strong>Verstoss gegen das Luftrecht</strong> dar und kann zu rechtlichen Konsequenzen führen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Aeronautische Informationsdienste</strong> wie das <strong>VFR Bulletin</strong> oder <strong>NOTAMs</strong> liefern aktuelle Reservierungsdaten.</li>
+      <li><strong>Online-Kartenportale</strong> wie <a href="https://map.geo.admin.ch" target="_blank">map.geo.admin.ch</a> zeigen Luftraumstruktur und aktive Sperrzonen.</li>
+      <li><strong>Apps und Tools</strong> für UAS-Planung bieten Echtzeitdaten zur Luftraumlage.</li>
+    </ul>
+  </div>
+  <p>
+    Eine <strong>Luftraumprüfung</strong> ist vor jedem Flug verpflichtend – insbesondere bei <strong>BVLOS-Flügen</strong> oder Einsätzen in der Nähe von <strong>Flughäfen</strong>, <strong>Helikopterlandeplätzen</strong> oder <strong>militärischen Sperrzonen</strong>. Die Verantwortung für die Einhaltung liegt beim Betreiber.
+  </p>
+</section>
+
+<section id="modul-020-menschliche-leistungsgrenzen">
+  <h2>020 – Grenzen der menschlichen Leistungsfähigkeit</h2>
+<p class="keywords">
+Wahrnehmung · Aufmerksamkeit · Reaktionszeit · Stress · Ermüdung · Entscheidungsverhalten · Situationsbewusstsein · Fehlerquellen
+</p>
+
+  <p>
+    Der sichere Betrieb von UAS hängt nicht nur von Technik und Vorschriften ab, sondern auch von den <strong>menschlichen Fähigkeiten und Grenzen</strong> der beteiligten Personen. Fernpiloten und Einsatzleiter müssen sich ihrer <strong>körperlichen, kognitiven und psychischen Belastbarkeit</strong> bewusst sein, um Risiken zu vermeiden. Die <strong>Leistungsfähigkeit</strong> kann durch Faktoren wie <strong>Müdigkeit</strong>, <strong>Stress</strong>, <strong>Ablenkung</strong> oder <strong>Überforderung</strong> eingeschränkt sein – mit direkten Auswirkungen auf <strong>Reaktionszeit</strong>, <strong>Fehleranfälligkeit</strong> und <strong>Entscheidungsqualität</strong>.
+  </p>
+
+  <p>
+    Um die <strong>Flugsicherheit</strong> zu gewährleisten, müssen menschliche Grenzen erkannt, respektiert und durch <strong>präventive Massnahmen</strong> kompensiert werden. Dazu gehören <strong>Pausenregelungen</strong>, <strong>klare Aufgabenverteilung</strong>, <strong>Checklisten</strong> und eine <strong>offene Kommunikation</strong> im Team.
+  </p>
+
+  <div class="highlight">
+    <ul>
+      <li><strong>Müdigkeit</strong> reduziert Aufmerksamkeit und Reaktionsgeschwindigkeit – regelmässige Pausen sind essenziell.</li>
+      <li><strong>Stress</strong> kann zu Tunnelblick und Fehlentscheidungen führen – klare Abläufe helfen.</li>
+      <li><strong>Ablenkung</strong> durch Umgebung oder Multitasking erhöht die Fehlerquote – Fokus ist entscheidend.</li>
+      <li><strong>Überforderung</strong> entsteht bei komplexen Einsätzen ohne klare Rollenverteilung – Teamkoordination ist notwendig.</li>
+      <li><strong>Emotionale Belastung</strong> (z. B. bei Rettungseinsätzen) kann die Urteilsfähigkeit beeinträchtigen – Nachbesprechung und psychologische Unterstützung sind hilfreich.</li>
+      <li><strong>Physische Einschränkungen</strong> wie Sehschwäche oder motorische Ermüdung müssen berücksichtigt werden – ggf. Aufgaben an andere delegieren.</li>
+      <li><strong>Selbstreflexion</strong> und <strong>Feedbackkultur</strong> fördern die kontinuierliche Verbesserung der Einsatzpraxis.</li>
+    </ul>
+  </div>
+
+  <p>
+    Die <strong>Grenzen der menschlichen Leistungsfähigkeit</strong> sind ein zentraler Bestandteil der <strong>betrieblichen Risikoanalyse</strong>. Sie müssen bei der <strong>Flugvorbereitung</strong>, der <strong>Rollenverteilung</strong> und der <strong>Einsatzplanung</strong> aktiv berücksichtigt werden – insbesondere bei <strong>BVLOS-Flügen</strong>, <strong>Notfalleinsätzen</strong> oder <strong>langen Operationen</strong>.
+  </p>
+</section>
+
+<section id="modul-030-betriebsverfahren">
+  <h2>030 – Betriebsverfahren</h2>
+<p class="keywords">
+Pre-Flight-Check · Betriebshandbuch · Flugplanung · Notfallverfahren · Sichtverbindung · STS-Konformität · Kommunikationsabläufe · Dokumentationspflicht
+</p>
+
+  <p>
+    Die <strong>Betriebsverfahren</strong> regeln den sicheren Ablauf von Drohnenflügen in der <strong>spezifischen Kategorie</strong> gemäss den Standardszenarien <strong>STS-01</strong> und <strong>STS-02</strong>. Sie gliedern sich in drei zentrale Phasen: <strong>Pre-Flight</strong>, <strong>In-Flight</strong> und <strong>Notfallmassnahmen</strong>. Jede Phase enthält verbindliche Vorgaben zur <strong>Risikominimierung</strong>, <strong>Verantwortungszuweisung</strong> und <strong>Dokumentation</strong>.
+  </p>
+
+  <h3>Pre-Flight</h3>
+  <p>
+    Vor jedem Flug sind umfassende <strong>Vorbereitungsmassnahmen</strong> erforderlich, um die <strong>Einsatzbereitschaft</strong> sicherzustellen und <strong>potenzielle Risiken</strong> frühzeitig zu erkennen. Diese Massnahmen gelten unabhängig vom Szenario und müssen systematisch durchgeführt und dokumentiert werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Flugplanung</strong> – Festlegung von Einsatzgebiet, Flugroute, Wetterlage und Sichtverhältnissen.</li>
+      <li><strong>Technische Kontrolle</strong> – Prüfung von Drohne, Akkus, Sensorik und Kommunikationssystemen.</li>
+      <li><strong>Luftraumprüfung</strong> – Abfrage von Flugverbotszonen, Reservierungen und <strong>NOTAMs</strong>.</li>
+      <li><strong>Kommunikation</strong> – ggf. Abstimmung mit Behörden, Einsatzleitung oder anderen Luftraumnutzern.</li>
+      <li><strong>Dokumentation</strong> – Nutzung von Checklisten, Risikoanalysen und Genehmigungsnachweisen.</li>
+    </ul>
+  </div>
+
+  <h3>Vorflugmassnahmen für STS-01</h3>
+  <p>
+    Für das Szenario <strong>STS-01</strong> gelten spezifische Anforderungen, da der Betrieb <strong>innerhalb der Sichtweite (VLOS)</strong> erfolgt und typischerweise in <strong>risikoarmen Gebieten</strong> stattfindet. Die Massnahmen zielen darauf ab, die <strongvisuelle Kontrolle</strong> sicherzustellen und <strong>unmittelbare Gefahren</strong> zu vermeiden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>VLOS sicherstellen</strong> – Der Fernpilot muss die Drohne jederzeit visuell erfassen können, ohne technische Hilfsmittel.</li>
+      <li><strong>Fluggebiet prüfen</strong> – Keine Menschenansammlungen, keine sensiblen Einrichtungen oder kritische Infrastruktur.</li>
+      <li><strong>Technische Sicherheit</strong> – Funktion aller sicherheitsrelevanten Systeme wie FTS, Geo-Caging und Rückkehrfunktion.</li>
+      <li><strong>Wetterbedingungen</strong> – Keine Einsätze bei starkem Wind, Regen, Nebel oder eingeschränkter Sicht.</li>
+    </ul>
+  </div>
+
+  <h3>Vorflugmassnahmen für STS-02</h3>
+  <p>
+    Das <strong>Standardszenario STS-02</strong> erlaubt <strong>BVLOS-Flüge</strong> (Beyond Visual Line of Sight) in <strong>kontrollierten oder vorab genehmigten Einsatzgebieten</strong>. Die <strong>Vorbereitung</strong> ist entsprechend umfangreicher und erfordert eine präzise Abstimmung technischer, organisatorischer und rechtlicher Komponenten. Ziel ist es, die <strong>Flugsicherheit</strong> auch ausserhalb der Sichtweite zu gewährleisten.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Betriebsgenehmigung</strong> prüfen und mit den Bedingungen des Szenarios STS-02 abgleichen.</li>
+      <li><strong>Geo-Caging</strong> und <strong>Flight Termination System (FTS)</strong> aktivieren und auf Funktion testen.</li>
+      <li><strong>Luftraumbeobachter</strong> einweisen oder <strong>automatisierte Überwachungssysteme</strong> konfigurieren und prüfen.</li>
+      <li><strong>Kommunikationswege</strong> mit Bodenstation, Einsatzleitung und ggf. Behörden sicherstellen.</li>
+    </ul>
+  </div>
+
+  <h3>Gemeinsame Aktionen vor dem Flug</h3>
+  <p>
+    Unabhängig vom gewählten Szenario sind bestimmte <strong>Vorflugmassnahmen</strong> immer erforderlich. Sie dienen der <strong>Standardisierung</strong>, <strong>Fehlervermeidung</strong> und <strong>Teamkoordination</strong> – insbesondere bei komplexen Einsätzen oder BVLOS-Flügen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Checklisten durchgehen</strong> – technische, rechtliche und operationelle Punkte systematisch prüfen.</li>
+      <li><strong>Flugfreigabe</strong> intern oder behördlich einholen, je nach Einsatzgebiet und Genehmigungslage.</li>
+      <li><strong>Teambriefing</strong> durchführen – Rollen, Kommunikationswege und Abläufe klären.</li>
+      <li><strong>Notfallprotokolle</strong> besprechen und griffbereit halten – inkl. FTS-Auslösung, Rückflug, Abbruchverfahren.</li>
+    </ul>
+  </div>
+
+  <h3>In-Flight</h3>
+  <p>
+    Während des Fluges muss der <strong>Fernpilot</strong> die <strong>Kontrolle über das UAS</strong> jederzeit sicherstellen und auf <strong>unvorhergesehene Ereignisse</strong> vorbereitet sein. Dies gilt sowohl für VLOS- als auch BVLOS-Flüge. Die <strong>Flugüberwachung</strong> erfolgt über Telemetrie, visuelle Systeme oder automatisierte Sensorik.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Flugüberwachung</strong> – Telemetriedaten, Systemstatus und ggf. visuelle Rückmeldung laufend prüfen.</li>
+      <li><strong>Kommunikation</strong> – bei Bedarf mit Behörden, Flugsicherung oder anderen Luftfahrern abstimmen.</li>
+      <li><strong>Situationsbewusstsein</strong> – Umgebung, Wetterentwicklung und andere Luftfahrzeuge aktiv beobachten.</li>
+    </ul>
+  </div>
+
+  <h3>Verfahren für unvorhergesehene Ereignisse</h3>
+  <p>
+    Während eines UAS-Einsatzes können <strong>technische Probleme</strong>, <strong>Störungen</strong> oder <strong>externe Einflüsse</strong> auftreten, die eine sofortige Reaktion erfordern. Der <strong>Fernpilot</strong> muss in solchen Situationen angemessen handeln, um die <strong>Flugsicherheit</strong> zu gewährleisten und Schäden zu vermeiden. Die Massnahmen hängen vom Szenario, der Flugphase und der Umgebung ab.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Flug abbrechen</strong> oder <strong>in eine sichere Zone verlagern</strong>, wenn die Situation es zulässt.</li>
+      <li><strong>FTS (Flight Termination System)</strong> aktivieren bei Kontrollverlust oder kritischer Systemstörung.</li>
+      <li><strong>Dokumentation</strong> des Vorfalls inklusive Zeit, Ort, Ursache und Reaktion zur späteren Auswertung und Nachbearbeitung.</li>
+    </ul>
+  </div>
+
+  <h3>Verfahren für Notfälle</h3>
+  <p>
+    In einem <strong>Notfall</strong> sind <strong>sofortige Massnahmen</strong> erforderlich, um <strong>Personen</strong>, <strong>Tiere</strong> und <strong>Sachwerte</strong> zu schützen. Notfälle können durch technische Defekte, Wetterumschwünge oder externe Gefahren entstehen. Die Reaktion muss klar definiert, geübt und dokumentiert sein.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Sichere Landung einleiten</strong> oder <strong>Flugterminierung</strong> aktivieren, wenn keine andere Massnahme möglich ist.</li>
+      <li><strong>Umfeld warnen</strong> – z. B. durch akustische Signale, visuelle Hinweise oder direkte Kommunikation.</li>
+      <li><strong>Notfallkontakt</strong> informieren – z. B. Behörden, Einsatzleitung oder Sicherheitsverantwortliche.</li>
+    </ul>
+  </div>
+
+  <h3>Notfallplan (ERP)</h3>
+  <p>
+    Der <strong>Emergency Response Plan (ERP)</strong> ist ein <strong>verpflichtendes Dokument</strong> für den Betrieb in der spezifischen Kategorie. Er beschreibt alle <strong>Notfallmassnahmen</strong> systematisch und dient als Grundlage für die <strong>Koordination</strong> im Ernstfall. Der ERP muss regelmässig überprüft, geübt und bei Bedarf aktualisiert werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Kontaktpersonen</strong> und <strong>Rollenverteilung</strong> im Einsatzteam klar definieren.</li>
+      <li><strong>Verhalten bei Ausfall</strong> von Steuerung, Kommunikation oder Sichtkontakt festlegen.</li>
+      <li><strong>Evakuierungs- und Sicherungsmassnahmen</strong> für das Einsatzgebiet beschreiben.</li>
+      <li><strong>Nachbearbeitung</strong> – inklusive Bericht, Ursachenanalyse und Massnahmen zur Vermeidung künftiger Vorfälle.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="modul-040-Luftrisiko">
+<h3>040 Luftrisiko</h3>
+<p class="keywords">
+VLOS · BVLOS · CE-Klassifizierung · Geo-Caging · Flight Termination System · kontrollierter Bodenbereich · Luftraumbeobachter · Betriebserklärung
+</p>
+
+  <p>
+    Das <strong>Luftrisiko</strong> beschreibt die Gefahr, die von einem UAS-Betrieb für andere Luftraumnutzer – insbesondere für die <strong>bemannte Luftfahrt</strong> – ausgeht. Es ist ein zentrales Element der <strong>betrieblichen Risikoanalyse</strong> und muss durch geeignete <strong>technische</strong> und <strong>organisatorische Massnahmen</strong> minimiert werden. Die Bewertung erfolgt unter Berücksichtigung von <strong>Flughöhe</strong>, <strong>Fluggebiet</strong>, <strong>Sichtverbindung</strong>, <strong>Verkehrsdichte</strong>, <strong>Systemeigenschaften</strong> sowie der Nähe zu <strong>kontrollierten Lufträumen</strong> oder <strong>Flughäfen</strong>. Die Anforderungen variieren je nach Einsatzszenario und Betriebsart.
+  </p>
+
+  <h4>Luftrisiko im Szenario STS-01</h4>
+  <p>
+    Im standardisierten Szenario <strong>STS-01</strong> wird das Luftrisiko durch den Betrieb <strong>in Sichtverbindung (VLOS)</strong> und über einem <strong>kontrollierten Bodenbereich</strong> deutlich reduziert. Der Fernpilot muss das UAS jederzeit visuell erfassen können, ohne technische Hilfsmittel. Die maximale Flughöhe beträgt <strong>120 m über Grund</strong>. Der Betrieb darf nur erfolgen, wenn keine Nähe zu <strong>kontrollierten Lufträumen</strong> besteht oder eine <strong>behördliche Freigabe</strong vorliegt. Das UAS muss der <strong>CE-Klassifizierung C5</strong> entsprechen und über <strong>Geo-Caging</strong> sowie <strong>Failsafe-Funktionen</strong> verfügen. Zusätzlich sind <strong>Mindestabstände zu unbeteiligten Personen</strong> einzuhalten, abhängig von Startmasse und Flughöhe. Der <strong>kontrollierte Bodenbereich</strong> muss durch den Betreiber eindeutig definiert und abgesichert sein. Eine <strong>Betriebserklärung</strong> ist vor Aufnahme des Betriebs verpflichtend.
+  </p>
+
+  <div class="highlight">
+    <ul>
+      <li><strong>Luftrisiko</strong> betrifft die Sicherheit anderer Luftraumnutzer und ist Teil der Risikoanalyse.</li>
+      <li><strong>STS-01</strong>: Betrieb in <strong>Sichtverbindung (VLOS)</strong>, max. <strong>120 m AGL</strong>.</li>
+      <li><strong>CE-Klassifizierung C5</strong> ist Voraussetzung für das eingesetzte UAS.</li>
+      <li><strong>Geo-Caging</strong> und <strong>Failsafe-Systeme</strong> sind verpflichtend.</li>
+      <li><strong>Kontrollierter Bodenbereich</strong> muss klar definiert und abgesichert sein.</li>
+      <li><strong>Mindestabstände</strong> zu unbeteiligten Personen sind abhängig von Masse und Flughöhe.</li>
+      <li><strong>Keine Nähe zu kontrollierten Lufträumen</strong> ohne behördliche Freigabe.</li>
+      <li><strong>Betriebserklärung</strong> muss vor Betriebsaufnahme eingereicht werden.</li>
+    </ul>
+  </div>
+
+
+	<h4>Luftrisiko im Szenario STS-02</h4>
+
+	<p>
+	Im Szenario <strong>STS-02</strong> steigt das <strong>Luftrisiko</strong> deutlich, da der Betrieb <strong>ausserhalb der Sichtverbindung (BVLOS)</strong> erfolgt. Um die Sicherheit anderer Luftraumnutzer – insbesondere der bemannten Luftfahrt – zu gewährleisten, gelten erweiterte technische und organisatorische Anforderungen. Der Betrieb darf ausschliesslich <strong>über einem kontrollierten Bodenbereich</strong> erfolgen, der vom Betreiber eindeutig definiert und abgesichert ist. Die <strong>visuelle Überwachung</strong> des Luftraums erfolgt durch <strong>Luftraumbeobachter</strong>, die in direkter Kommunikation mit dem Fernpiloten stehen und eine maximale Entfernung von <strong>1 km</strong> zum UAS einhalten müssen.
+	</p>
+
+	<p>
+	Das eingesetzte UAS muss der <strong>CE-Klassifizierung C6</strong> entsprechen und über spezifische <strong>Sicherheitsfunktionen</strong> verfügen. Dazu zählen ein <strong>Geo-Caging-System</strong>, ein <strong>Flight Termination System</strong> zur kontrollierten Beendigung des Fluges im Notfall sowie <strong>Failsafe-Funktionen</strong> bei Signalverlust oder Systemausfall. Zusätzlich sind <strong>redundante Kommunikationssysteme</strong> erforderlich, um die Verbindung zwischen Fernpilot und UAS auch bei Störungen aufrechtzuerhalten. Eine <strong>Betriebserklärung</strong> muss vor Aufnahme des Betriebs eingereicht und von der zuständigen Behörde bestätigt werden.
+	</p>
+
+	<div class="highlight">
+	  <ul>
+		<li><strong>STS-02</strong>: BVLOS-Betrieb mit erhöhtem Luftrisiko.</li>
+		<li><strong>Luftraumbeobachter</strong> sind verpflichtend und dürfen max. <strong>1 km</strong> vom UAS entfernt sein.</li>
+		<li><strong>Kontrollierter Bodenbereich</strong> muss klar definiert und abgesichert sein.</li>
+		<li><strong>CE-Klassifizierung C6</strong> ist Voraussetzung für das eingesetzte UAS.</li>
+		<li><strong>Geo-Caging</strong>, <strong>Flight Termination System</strong> und <strong>Failsafe-Funktionen</strong> sind verpflichtend.</li>
+		<li><strong>Redundante Kommunikationssysteme</strong> sichern die Verbindung bei Störungen.</li>
+		<li><strong>Betriebserklärung</strong> muss vor Betriebsaufnahme eingereicht und bestätigt werden.</li>
+	  </ul>
+	</div>
+
+
+	<h4>Zusätzliche Anforderungen für beide Szenarien</h4>
+
+	<p>
+	Unabhängig davon, ob der Betrieb nach <strong>STS-01</strong> oder <strong>STS-02</strong> erfolgt, gelten übergreifende Anforderungen zur Sicherstellung der <strong>Luftraumsicherheit</strong> und <strong>Regelkonformität</strong>. Bei Nähe zu <strong>kontrollierten Lufträumen</strong> oder <strong>Flughäfen</strong> ist eine <strong>Flugfreigabe</strong> durch die zuständige Luftfahrtbehörde zwingend erforderlich. Die Kommunikation mit der Behörde muss <strong>vorab</strong> erfolgen und dokumentiert sein.
+	</p>
+
+	<p>
+	Vor Aufnahme des Betriebs ist eine <strong>Betriebserklärung</strong> (Declaration) einzureichen. Diese muss alle relevanten Angaben enthalten: <strong>UAS-Modell und CE-Klassifizierung</strong>, <strong>Betriebsszenario</strong>, <strong>Fluggebiet</strong>, <strong>technische Schutzmassnahmen</strong> sowie die <strong>organisatorische Struktur</strong> des Betriebs. Die Erklärung muss von der Behörde bestätigt werden, bevor der Betrieb aufgenommen werden darf.
+	</p>
+
+	<p>
+	Alle <strong>Sicherheitsmassnahmen</strong> – wie <strong>Geo-Caging</strong>, <strong>Failsafe-Funktionen</strong>, <strong>Flight Termination Systems</strong> oder <strong>Kommunikationsprotokolle</strong> – müssen <strong>dokumentiert</strong> und auf Anfrage nachgewiesen werden. Die <strong>Rollenverteilung</strong> zwischen Fernpilot, Beobachter und Betreiber muss eindeutig definiert und im Betriebshandbuch festgehalten sein. Der <strong>kontrollierte Bodenbereich</strong> muss klar abgegrenzt und gegen unbefugten Zutritt gesichert sein. Bei BVLOS-Flügen sind zusätzlich <strong>Kommunikationswege</strong> zwischen Fernpilot und Beobachter zu beschreiben und zu testen.
+	</p>
+
+	<ul>
+	  <li><strong>Flugfreigabe</strong> bei Nähe zu kontrollierten Lufträumen oder Flughäfen erforderlich.</li>
+	  <li><strong>Betriebserklärung</strong> muss vor Betriebsaufnahme eingereicht und behördlich bestätigt werden.</li>
+	  <li><strong>Dokumentation</strong> aller eingesetzten Sicherheitsmassnahmen ist verpflichtend.</li>
+	  <li><strong>Rollenverteilung</strong> zwischen Fernpilot, Beobachter und Betreiber muss klar geregelt sein.</li>
+	  <li><strong>Kontrollierter Bodenbereich</strong> muss definiert und abgesichert sein.</li>
+	  <li><strong>Kommunikationsstruktur</strong> bei BVLOS-Betrieb muss nachweislich funktionieren.</li>
+	</ul>
+
+	<h4>Merkpunkte</h4>
+	<div class="highlight">
+	  <ul>
+		<li><strong>Luftrisiko</strong> betrifft die Sicherheit anderer Luftraumnutzer und ist zentral für die Betriebsgenehmigung.</li>
+		<li><strong>STS-01</strong>: VLOS, geringes Risiko, einfache technische Anforderungen.</li>
+		<li><strong>STS-02</strong>: BVLOS, erhöhtes Risiko, erweiterte technische und organisatorische Massnahmen erforderlich.</li>
+		<li><strong>Geo-Caging</strong>, <strong>Failsafe-Systeme</strong> und <strong>Airspace Observers</strong> sind entscheidend für die Risikominderung.</li>
+		<li><strong>CE-Klassifizierung</strong>: C5 für STS-01, C6 für STS-02.</li>
+		<li><strong>Betriebserklärung</strong> und <strong>Flugfreigabe</strong> sind behördlich vorgeschrieben.</li>
+		<li><strong>Dokumentationspflicht</strong> gilt für alle sicherheitsrelevanten Massnahmen.</li>
+		<li><strong>Kommunikation</strong> und <strong>Rollenverteilung</strong> müssen betrieblich klar geregelt sein.</li>
+	  </ul>
+	</div>
+</section>
+
+<section id="modul-050-allgemeinwissen-uas">
+  <h2>050 – Allgemeinwissen UAS</h2>
+<p class="keywords">
+UAS-Typen · Flugsteuerung · Sensorik · Energieversorgung · Nutzlastintegration · Steuerungsmodi · Redundanz · Wartung
+</p>
+
+  <h3>Allgemeine technische Kenntnisse</h3>
+  <p>
+    Für den sicheren Betrieb von UAS in der <strong>spezifischen Kategorie</strong> sind grundlegende <strong>technische Kenntnisse</strong> erforderlich. Dazu zählen das Verständnis der <strong>Systemarchitektur</strong>, der <strong>Kommunikationsverbindungen</strong> zwischen Fernpilot und Drohne sowie der <strong>Sicherheitsfunktionen</strong> wie Flugbegrenzung, Notabschaltung und Rückkehrmechanismen. UAS der Klassen <strong>C5</strong> und <strong>C6</strong> unterliegen erweiterten Anforderungen, insbesondere hinsichtlich <strong>Geowahrnehmung</strong>, <strong>Verbindungsüberwachung</strong> und <strong>automatischer Warnsysteme</strong>.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>C5/C6-UAS</strong> müssen die <strong>C2-Verbindungsqualität</strong> überwachen und bei Störungen automatisch warnen.</li>
+      <li><strong>FTS (Flight Termination System)</strong> muss unabhängig vom Flugregler funktionieren und im Notfall aktiviert werden können.</li>
+      <li><strong>Geo-Caging</strong> verhindert das Verlassen des definierten Einsatzvolumens durch digitale Begrenzung.</li>
+      <li>Das <strong>Benutzerhandbuch</strong> muss die Funktionen von <strong>FTS</strong> und <strong>Geo-Caging</strong> eindeutig dokumentieren.</li>
+    </ul>
+  </div>
+
+  <h3>Technisches Wissen für C5-UAS</h3>
+  <p>
+    UAS mit <strong>C5-Kennzeichnung</strong> sind für den Betrieb in <strong>STS-01</strong> vorgesehen und müssen spezifische <strong>Sicherheitsanforderungen</strong> erfüllen. Diese betreffen insbesondere die <strong>Fluggeschwindigkeit</strong>, die <strong>Höhenkontrolle</strong> und die <strong>Energieabsorption</strong> im Notfall. Ziel ist es, das <strong>Bodenrisiko</strong> zu minimieren und die <strong>Flugstabilität</strong> zu gewährleisten.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Maximale Geschwindigkeit</strong> ist auf <strong>5 m/s</strong> begrenzt, um die kinetische Energie im Flug zu reduzieren.</li>
+      <li><strong>Höhenanzeige</strong> muss dem Fernpiloten jederzeit verfügbar sein – visuell oder digital.</li>
+      <li><strong>FTS</strong> muss unabhängig vom Hauptflugregler arbeiten und mit <strong>Aufprallminderung</strong> ausgestattet sein.</li>
+      <li><strong>Fallschirm</strong> oder andere <strong>Energieabsorptionssysteme</strong> müssen bei FTS-Aktivierung die Aufprallenergie reduzieren.</li>
+    </ul>
+  </div>
+
+  <h3>Technisches Wissen für C6-UAS</h3>
+  <p>
+    UAS mit <strong>C6-Kennzeichnung</strong> sind für <strong>höhere Geschwindigkeiten</strong> und <strong>komplexere Einsätze</strong> konzipiert – insbesondere im Rahmen von <strong>STS-02</strong> oder anderen BVLOS-Szenarien. Sie müssen erweiterte <strong>Sicherheitsfunktionen</strong> und <strong>Telemetrieanforderungen</strong> erfüllen, um den Betrieb auch ausserhalb der Sichtweite sicher zu ermöglichen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Maximale Bodengeschwindigkeit</strong> darf bis zu <strong>50 m/s</strong> betragen – abhängig vom Einsatzprofil und Genehmigung.</li>
+      <li><strong>Positions-, Höhen- und Geschwindigkeitsdaten</strong> müssen dem Fernpiloten in Echtzeit übermittelt werden – visuell oder digital.</li>
+      <li><strong>Geo-Caging</strong> und <strong>FTS</strong> müssen unabhängig voneinander funktionieren – keine gegenseitige Beeinflussung.</li>
+      <li><strong>Entfernung bei FTS-Aktivierung</strong> muss im <strong>Benutzerhandbuch</strong> klar dokumentiert sein – inkl. Sicherheitsradius und Aufprallzone.</li>
+    </ul>
+  </div>
+
+  <h3>Fortgeschrittenes UAS-Wissen</h3>
+
+  <h4>Flugterminierungssystem (FTS)</h4>
+  <p>
+    Das <strong>Flight Termination System (FTS)</strong> ist eine kritische <strong>Sicherheitsvorrichtung</strong>, die im <strong>Notfall</strong> aktiviert wird, um ein unbemanntes Luftfahrzeugsystem <strong>kontrolliert zu stoppen</strong> oder <strong>zu deaktivieren</strong>. Ziel ist es, bei <strong>Kontrollverlust</strong>, <strong>Systemversagen</strong> oder <strong>Gefährdung Dritter</strong> eine sichere Beendigung des Fluges zu gewährleisten. Die Aktivierung kann <strong>manuell</strong> durch den Fernpiloten oder <strong>automatisch</strong> durch das System erfolgen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Manuelle oder automatische Aktivierung</strong> bei Gefahrensituationen wie Kontrollverlust oder Luftraumverletzung.</li>
+      <li><strong>Abschaltung der Steuerung</strong> nach Aktivierung – keine weitere Eingabe durch den Piloten möglich.</li>
+      <li><strong>Sichere Landung oder kontrollierte Zerstörung</strong> zur Minimierung von Risiken für Personen und Infrastruktur.</li>
+      <li><strong>Nur im Notfall</strong> aktivierbar – Schutz vor unbeabsichtigter Auslösung durch doppelte Sicherung.</li>
+    </ul>
+  </div>
+
+  <h4>Geo-Caging-Funktion</h4>
+ 	<figure>
+		<img  class="lernimage"  src="quiz/images/sts/geocaging.png">
+		<figcaption  class="lerncaption">Geo-Caging Funktion</figcaption>
+	</figure>   
+  <p>
+    Die <strong>Geo-Caging-Funktion</strong> begrenzt den <strong>Flugbereich</strong> eines UAS auf ein zuvor definiertes Einsatzgebiet und verhindert das Eindringen in <strong>verbotene, gefährliche oder nicht genehmigte Lufträume</strong>. Sie basiert auf <strongGNss-Daten</strong> und digitalen Karten und ist ein wesentliches Element zur <strong>Risikominimierung</strong> und zur <strong>Einhaltung gesetzlicher Vorgaben</strong>.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>GPS-/GNss-basierte Positionsüberwachung</strong> zur präzisen Erfassung der Drohnenposition in Echtzeit.</li>
+      <li><strong>Digitale Karten</strong> mit definierten erlaubten und gesperrten Zonen als Grundlage für die Flugbegrenzung.</li>
+      <li><strong>Automatische Reaktion</strong> bei Grenzverletzung – z. B. durch sofortigen Stopp, Rückflug oder Höhenbegrenzung.</li>
+      <li><strong>Einhaltung gesetzlicher Vorgaben</strong> durch technische Begrenzung des Einsatzraums gemäss STS-Anforderungen.</li>
+    </ul>
+  </div>
+
+
+  <h4>Fortgeschrittene Batteriekenntnisse</h4>
+  <p>
+    Batterien sind ein zentraler Faktor für die <strong>Flugsicherheit</strong>, <strong>Leistungsfähigkeit</strong> und <strong>Planbarkeit</strong> von UAS-Einsätzen. Ein fundiertes Verständnis über <strong>Batterietypen</strong>, <strong>Ladeverhalten</strong>, <strong>Risiken</strong> und <strong>Transportvorschriften</strong> ist für Fernpiloten und Betreiber unerlässlich – insbesondere bei längeren oder sicherheitskritischen Flügen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Kapazität</strong> wird in Ah oder Wh angegeben; die <strong>C-Rate</strong> definiert Lade- und Entladeströme.</li>
+      <li><strong>LiPo (Lithium-Polymer)</strong>: hohe Energiedichte, empfindlich gegenüber mechanischer Beschädigung, Brandgefahr bei Zellschäden.</li>
+      <li><strong>Li-Ion (Lithium-Ionen)</strong>: robust und langlebig, aber ebenfalls brandgefährdet bei Kurzschluss oder Tiefentladung.</li>
+      <li><strong>NiMH (Nickel-Metallhydrid)</strong>: robust, aber hohe Selbstentladung – weniger geeignet für lange Lagerung.</li>
+      <li><strong>Pb (Bleiakkumulatoren)</strong>: schwer, gasen bei Überladung, nur für spezielle Anwendungen geeignet.</li>
+      <li><strong>Lagerung</strong>: kühl und trocken; LiPo-Akkus idealerweise bei 30–50 % Ladezustand lagern.</li>
+      <li><strong>Transport</strong>: in feuerfesten Beuteln oder Thermobags; bei Versand ggf. teilentladen und gemäss Gefahrgutvorschriften kennzeichnen.</li>
+    </ul>
+  </div>
+
+  <h4>Sensoren</h4>
+  <p>
+    Sensoren sind essenziell für die <strong>Flugstabilität</strong>, <strong>Positionsbestimmung</strong> und <strong>Lageerkennung</strong> eines UAS. Die zentrale Komponente ist die <strong>IMU (Inertial Measurement Unit)</strong>, die Bewegungsdaten erfasst und mit anderen Sensorquellen kombiniert. Durch <strong>Datenfusion</strong> entsteht ein präzises Lagebild, das für die Steuerung und Navigation unerlässlich ist.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>IMU</strong> kombiniert <strong>Beschleunigungssensoren</strong> und <strong>Gyroskope</strong> zur Erfassung von Bewegungen und Rotationen.</li>
+      <li><strong>Datenfusion</strong> mit <strong>GPS</strong>, <strong>Barometer</strong> und <strong>Lidar</strong> ermöglicht präzise Positions- und Höhenbestimmung.</li>
+      <li><strong>Kalman-Filter</strong> dienen der <strong>Stabilisierung</strong> und <strong>Fehlerkorrektur</strong> bei inkonsistenten Sensordaten.</li>
+    </ul>
+  </div>
+
+  <h4>Höhenmessung</h4>
+  <p>
+    Die <strong>Höhenmessung</strong> ist ein kritischer Bestandteil der Flugführung und erfolgt je nach Einsatzprofil über unterschiedliche Sensoren. Während <strong>GPS</strong> grobe Höhenangaben liefert, sind <strong>Barometer</strong> und <strong>Lidar</strong> für präzise Steuerung in niedriger Höhe besonders relevant. Durch <strong>Sensorfusion</strong> lassen sich die Stärken der einzelnen Systeme kombinieren und Schwächen ausgleichen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Barometer</strong>: liefert schnelle Höhenwerte, jedoch abhängig von Luftdruck und Wetterlage.</li>
+      <li><strong>GPS</strong>: geeignet für grobe Höhenbestimmung, insbesondere in grossen Flughöhen.</li>
+      <li><strong>Ultraschall</strong> und <strong>Lidar</strong>: besonders präzise bei niedrigen Flughöhen und für automatische Landungssysteme.</li>
+      <li><strong>Sensorfusion</strong>: kombiniert mehrere Quellen für eine <strong>zuverlässige und robuste Höhenangabe</strong>.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="modul-060-meteorologie">
+  <h2>060 – Meteorologie</h2>
+<p class="keywords">
+Luftdruck · Windverhältnisse · Thermik · Wolkenarten · Sichtweite · Wetterkarten · Frontensysteme · Gefahrenwetter
+</p>
+
+  <h3>Wettereinflüsse auf den UAS-Betrieb</h3>
+  <p>
+    Wetterbedingungen haben einen direkten Einfluss auf die <strong>Flugsicherheit</strong>, <strong>Flugleistung</strong> und <strong>Planbarkeit</strong> von UAS-Einsätzen. Sie müssen vor jedem Flug sorgfältig analysiert und in die <strong>Risikoabschätzung</strong>, <strong>Flugvorbereitung</strong> und <strong>Betriebsentscheidungen</strong> integriert werden. Neben den offensichtlichen Faktoren wie <strong>Wind</strong> und <strong>Sichtverhältnissen</strong> spielen auch <strong>Temperatur</strong>, <strong>Luftdruck</strong>, <strong>Luftfeuchtigkeit</strong> und <strong>Luftdichte</strong> eine entscheidende Rolle – insbesondere bei längeren Flügen, BVLOS-Einsätzen oder in komplexem Gelände.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Wind</strong> beeinflusst Steuerbarkeit, Stabilität und Flugroute – insbesondere bei Böen und Seitenwind.</li>
+      <li><strong>Temperatur</strong> wirkt sich auf die <strong>Batterieleistung</strong>, <strong>Sensorik</strong> und <strong>Materialverhalten</strong> aus.</li>
+      <li><strong>Atmosphärischer Druck</strong> beeinflusst die <strong>Höhenmessung</strong> und die <strong>Flugleistung</strong> durch veränderte Luftdichte.</li>
+      <li><strong>Sichtverhältnisse</strong> sind entscheidend für <strong>VLOS-Flüge</strong>, <strong>Visuelle Navigation</strong> und <strong>Kollisionsvermeidung</strong>.</li>
+      <li><strong>Luftdichte</strong> beeinflusst den <strong>Auftrieb</strong>, die <strong>Motorleistung</strong> und den <strong>Energieverbrauch</strong>.</li>
+      <li><strong>Luftfeuchtigkeit</strong> kann Kondensation verursachen und <strong>Sensoren</strong> oder <strong>Elektronik</strong> beeinträchtigen.</li>
+    </ul>
+  </div>
+
+  <h3>Wind</h3>
+  <p>
+    <strong>Wind</strong> zählt zu den kritischsten meteorologischen Einflussfaktoren im UAS-Betrieb. Er kann die <strong>Flugstabilität</strong> erheblich beeinträchtigen, insbesondere bei <strong>Böen</strong>, <strong>Seitenwind</strong> oder <strong>Turbulenzen</strong>. Die zulässige Windgeschwindigkeit hängt vom <strongUAS-Typ</strong>, der <strong>Nutzlast</strong> und dem <strong>Einsatzprofil</strong> ab. Eine genaue Windanalyse ist vor jedem Flug erforderlich – insbesondere bei <strong>Start</strong>, <strong>Landung</strong> und <strong>BVLOS-Flügen</strong>.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Maximale Windgeschwindigkeit</strong> gemäss Herstellerangaben beachten – z. B. 8 m/s für leichte Multikopter.</li>
+      <li><strong>Gegenwind</strong> verlängert die Flugzeit und erhöht den Energieverbrauch – relevant für Rückflugplanung.</li>
+      <li><strong>Rückenwind</strong> verkürzt die Flugzeit, kann aber die Steuerung erschweren.</li>
+      <li><strong>Böen</strong> sind besonders gefährlich bei <strong>Start</strong> und <strong>Landung</strong> – plötzliche Richtungswechsel können zu Kontrollverlust führen.</li>
+      <li><strong>Windrichtung</strong> muss bei der <strong>Flugroutenplanung</strong> und <strong>Positionierung der Bodenstation</strong> berücksichtigt werden.</li>
+      <li><strong>Seitenwind</strong> kann zu Drift führen und die Genauigkeit bei automatisierten Missionen beeinträchtigen.</li>
+    </ul>
+  </div>
+
+  <h3>Temperatur</h3>
+  <p>
+    Die <strong>Temperatur</strong> beeinflusst massgeblich die <strong>Batterieleistung</strong>, die <strong>Sensorik</strong> und das <strong>Materialverhalten</strong> von UAS-Systemen. Sowohl <strong>niedrige</strong als auch <strong>hohe Umgebungstemperaturen</strong> können zu <strong>Leistungsabfall</strong>, <strong>Systeminstabilität</strong> oder sogar <strong>Ausfällen</strong> führen. Temperaturgrenzen müssen bei der <strong>Flugplanung</strong>, <strong>Akkupflege</strong> und <strongEinsatzdauer</strong> berücksichtigt werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Kälte</strong> reduziert die <strong>Kapazität</strong von Akkus, erhöht den <strong>Innenwiderstand</strong> und kann <strong>Spannungseinbrüche</strong> verursachen – besonders kritisch bei Start und Rückflug.</li>
+      <li><strong>Hitze</strong> kann zur <strong>Überhitzung</strong> von <strong>Motoren</strong>, <strong>Elektronik</strong> und <strong>Batterien</strong> führen – mit erhöhtem Risiko für <strong>Brand</strong> oder <strong>Systemabschaltung</strong>.</li>
+      <li><strong>Temperaturgrenzen</strong> laut <strong>Herstellerangaben</strong> strikt einhalten – z. B. Betriebsbereich von –10 °C bis +40 °C.</li>
+      <li><strong>Temperatursensoren</strong> regelmässig prüfen – insbesondere bei längeren Einsätzen oder starker Sonneneinstrahlung.</li>
+      <li><strong>Vorwärmen</strong> von Akkus bei Wintereinsätzen kann die Leistung stabilisieren und Spannungseinbrüche vermeiden.</li>
+    </ul>
+  </div>
+
+  <h3>Atmosphärischer Druck</h3>
+  <p>
+    Der <strong>atmosphärische Druck</strong> beeinflusst die <strong>barometrische Höhenmessung</strong> und die <strong>Leistung</strong> des Antriebs durch seine Wirkung auf die <strong>Luftdichte</strong>. Druckveränderungen treten insbesondere bei <strong>Wetterumschwüngen</strong> oder <strong>Flügen in grossen Höhen</strong> auf und müssen bei der <strong>Flugplanung</strong> und <strong>Sensorenkalibrierung</strong> berücksichtigt werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Barometrische Höhenmessung</strong> basiert auf Druckveränderungen – bei starkem Wetterwechsel kann die Genauigkeit sinken.</li>
+      <li><strong>Druckabfall</strong> in grosser Höhe reduziert die <strong>Luftdichte</strong> und damit den <strong>Auftrieb</strong> sowie die <strong>Motorleistung</strong>.</li>
+      <li><strong>Schnelle Druckwechsel</strong> – z. B. bei Thermik oder Frontdurchgang – können die <strong>Sensorik</strong> und das <strong>Flugverhalten</strong> beeinträchtigen.</li>
+      <li><strong>Kalibrierung</strong> der barometrischen Sensoren vor jedem Flug empfohlen – besonders bei wechselnden Einsatzorten oder Höhenprofilen.</li>
+    </ul>
+  </div>
+
+  <h3>Regionale Witterungseinflüsse</h3>
+  <p>
+    <strong>Regionale Wetterphänomene</strong> wie <strong>Föhn</strong>, <strong>Bergwinde</strong>, <strong>Inversionslagen</strong> oder <strong>Thermik</strong> können lokal erhebliche Auswirkungen auf den UAS-Betrieb haben. Diese Effekte sind oft <strong>nicht in allgemeinen Wetterkarten erkennbar</strong> und erfordern <strong>lokale Erfahrung</strong> sowie eine <strong>spezifische Einschätzung</strong> vor Ort. Besonders in alpinen oder topografisch komplexen Regionen ist eine <strong>präzise Wetterbeurteilung</strong> entscheidend für die <strong>Flugsicherheit</strong>.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Föhn</strong> bringt starke, böige Winde mit abrupten Richtungswechseln – besonders gefährlich in Alpentälern und bei Start/Landung.</li>
+      <li><strong>Bergwinde</strong> wie Talwind oder Hangwind können lokal stark variieren und die Steuerbarkeit beeinträchtigen.</li>
+      <li><strong>Inversionslagen</strong> führen zu stabiler Luftschichtung, eingeschränkter Vertikalbewegung und <strong>Sichtproblemen</strong> durch Dunst oder Nebel.</li>
+      <li><strong>Thermik</strong> verursacht vertikale Luftbewegungen, die die <strong>Flugstabilität</strong> beeinflussen – besonders relevant für leichte oder langsam fliegende UAS.</li>
+      <li><strong>Kaltluftseen</strong> in Senken oder Tälern können zu plötzlichen Temperaturwechseln und Feuchtigkeitsansammlungen führen.</li>
+    </ul>
+  </div>
+
+  <h3>Einholung von Wetterinformationen</h3>
+  <p>
+    Eine <strong>sorgfältige Wetterrecherche</strong> ist ein unverzichtbarer Bestandteil der <strong>Flugvorbereitung</strong>. Die Informationen müssen <strong>aktuell</strong>, <strong>lokal</strong> und <strong>einsatzspezifisch</strong> sein. Neben offiziellen Wetterdiensten sind auch <strong>visuelle Einschätzungen</strong> vor Ort und <strong>digitale Tools</strong> hilfreich. Bei komplexen oder grenznahen Einsätzen empfiehlt sich ein <strong>Briefing</strong> mit Behörden oder lokalen Wetterexperten.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Wetterberichte</strong> und <strong>Wetterkarten</strong> analysieren – insbesondere Windrichtung, Böen, Sichtweite und Niederschlagswahrscheinlichkeit.</li>
+      <li><strong>Lokale Wetterbeurteilung</strong> durch Sichtprüfung, Windmessung und Sensorik – z. B. Hygrometer, Barometer, Anemometer.</li>
+      <li><strong>Online-Ressourcen</strong> und <strong>Apps</strong> nutzen – z. B. MeteoSwiss, Windy, Skywatch, UAV Forecast.</li>
+      <li><strong>Briefing</strong> mit Team, Einsatzleitung oder Behörden – besonders bei BVLOS-Flügen, Rettungseinsätzen oder Flügen in kontrollierten Lufträumen.</li>
+      <li><strong>Wetterdaten dokumentieren</strong> im Flugprotokoll – inkl. Zeitpunkt, Quelle und Bewertung.</li>
+    </ul>
+  </div>
+
+  <h3>Ressourcen für Wetterbericht und Briefing</h3>
+  <p>
+    Für eine fundierte <strong>Wetterbeurteilung</strong> im Rahmen der <strong>Flugvorbereitung</strong> stehen verschiedene <strong>Informationsquellen</strong> zur Verfügung. Diese sollten <strong>aktuell</strong>, <strong>lokal relevant</strong> und <strong>operationell verwertbar</strong> sein. Neben offiziellen Wetterdiensten sind auch <strong>digitale Tools</strong> und <strong>luftfahrtspezifische Informationssysteme</strong> essenziell für die Planung sicherer UAS-Einsätze.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>MeteoSwiss</strong>: amtliche Wetterdaten für die Schweiz, inklusive Prognosen, Warnungen und Radarbilder.</li>
+      <li><strong>Windy</strong>: interaktive Karten mit Echtzeitdaten zu <strong>Wind</strong>, <strong>Temperatur</strong>, <strong>Luftdruck</strong>, <strong>Niederschlag</strong> und <strong>Wolkenhöhe</strong>.</li>
+      <li><strong>Aviation Weather Center</strong>: internationale Flugwetterdaten, METARs, TAFs und SIGMETs für grenzüberschreitende Einsätze.</li>
+      <li><strong>VFR Bulletin</strong> und <strong>NOTAMs</strong>: luftfahrtrelevante Einschränkungen, temporäre Sperrzonen und sicherheitskritische Hinweise.</li>
+      <li><strong>UAV Forecast</strong>: speziell für Drohnenpiloten aufbereitete Wetterdaten mit Windprofilen, GPS-Sichtbarkeit und Flugtauglichkeit.</li>
+    </ul>
+  </div>
+
+  <h3>Wetterberichte</h3>
+  <p>
+    <strong>Wetterberichte</strong> liefern <strong>prognostische Informationen</strong> für die kommenden Stunden bis Tage und sind ein zentrales Element der <strong>Flugplanung</strong>. Sie enthalten Angaben zu <strong>Windgeschwindigkeit</strong>, <strong>Windrichtung</strong>, <strong>Temperaturverlauf</strong>, <strong>Niederschlagswahrscheinlichkeit</strong>, <strong>Luftfeuchtigkeit</strong> und <strong>Sichtverhältnissen</strong>. Für UAS-Einsätze sind insbesondere <strong>lokale Kurzfristprognosen</strong> entscheidend, da sie die aktuelle Wetterentwicklung am Einsatzort abbilden und eine präzise Risikoeinschätzung ermöglichen.
+  </p>
+
+  <h3>Wetterkarten</h3>
+  <p>
+    <strong>Wetterkarten</strong> visualisieren meteorologische Parameter wie <strong>Druckgebiete</strong>, <strong>Frontensysteme</strong>, <strong>Windrichtungen</strong>, <strong>Temperaturverteilungen</strong> und <strong>Niederschlagsfelder</strong>. Sie ermöglichen eine <strong>räumliche Einschätzung</strong> der Wetterlage und helfen, <strong>regionale Risiken</strong> wie <strong>Föhn</strong>, <strong>Sturmzonen</strong> oder <strong>Inversionslagen</strong> frühzeitig zu erkennen. Wetterkarten sind besonders hilfreich für die <strong>Routenplanung</strong>, die <strong>Abschätzung von Wetterentwicklungen</strong> bei längeren oder BVLOS-Flügen sowie die <strong>Koordination mit Behörden</strong> bei komplexen Einsätzen.
+  </p>
+
+  <h3>Lokale Wetterbeurteilungen</h3>
+  <p>
+    Die <strong>lokale Wetterbeurteilung</strong> ergänzt offizielle Daten durch <strong>direkte Beobachtung</strong> vor Ort. Sie ist besonders wichtig bei <strong>kurzfristigen Wetteränderungen</strong>, in <strong>komplexem Gelände</strong> oder bei <strong>thermisch aktiven Bedingungen</strong>. UAS-Piloten müssen in der Lage sein, Wetterverhältnisse eigenständig einzuschätzen und mit <strong>technischen Hilfsmitteln</strong> zu validieren. Diese Fähigkeit ist entscheidend für die <strong>Flugsicherheit</strong>, insbesondere bei Start, Landung und in bodennahen Flugphasen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Sichtprüfung</strong> des Himmels, Windverhalten, Wolkenstruktur und Sonnenstand zur Einschätzung von Thermik, Böen oder Sichtgrenzen.</li>
+      <li><strong>Sensoren</strong> am Startplatz: Windmesser, Thermometer, Hygrometer und ggf. Barometer zur objektiven Messung lokaler Bedingungen.</li>
+      <li><strong>Erfahrung</strong> und <strong>Intuition</strong> des Piloten ergänzen die Datenlage – besonders bei thermischen Effekten, Hangwinden oder lokalen Windmustern.</li>
+      <li><strong>Vergleich mit Prognose</strong>: Abgleich zwischen Vorhersage und realer Beobachtung zur Validierung und Risikoeinschätzung.</li>
+      <li><strong>Dokumentation</strong> der lokalen Wetterbeurteilung im Flugprotokoll – inkl. Zeitpunkt, Beobachtungen und daraus abgeleitete Entscheidungen.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="modul-070-uas-flugleistung">
+  <h2>Kapitel 070 – UAS Flugleistung</h2>
+<p class="keywords">
+Schwebeflugverhalten · Flugzeit · Nutzlastgrenze · Schwerpunktlage · Energieeffizienz · Wetterabhängigkeit · Steigrate · Flugprofil
+</p>
+
+  <h3>Typische Einsatzbereiche</h3>
+  <p>
+    Die <strong>Flugleistung</strong> eines UAS hängt massgeblich vom jeweiligen <strong>Einsatzbereich</strong> und den <strong>betrieblichen Anforderungen</strong> ab. Je nach Anwendung müssen Drohnen unterschiedliche Leistungsmerkmale erfüllen – etwa hinsichtlich <strong>Flugdauer</strong>, <strong>Reichweite</strong>, <strong>Nutzlastkapazität</strong>, <strong>Manövrierfähigkeit</strong>, <strong>Sensorik</strong> und <strong>Kommunikationssystemen</strong>. Auch die <strong>Flugumgebung</strong> (urban, ländlich, industriell, alpines Gelände) sowie <strong>Regelwerke</strong> wie <strong>STS-01</strong> oder <strong>STS-02</strong> beeinflussen die Auswahl, Konfiguration und Betriebsgrenzen des Systems.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Inspektion</strong> (z. B. Infrastruktur, Gebäude): hohe Präzision, stabile Positionierung, oft mit optischen, thermischen oder LiDAR-Sensoren.</li>
+      <li><strong>Such- und Rettungseinsätze</strong>: lange Flugdauer, robuste Sensorik, BVLOS-Fähigkeit, oft mit Wärmebildkamera, Lautsprechersystem und Positionsweitergabe in Echtzeit.</li>
+      <li><strong>Landwirtschaft</strong>: grosse Flächenabdeckung, hohe Nutzlast für Sprühsysteme, GPS-gestützte Flugrouten, oft mit Multispektralsensoren zur Vegetationsanalyse.</li>
+      <li><strong>Film und Medien</strong>: ruhige Flugbewegung, hohe Kameraauflösung, präzise Steuerung für dynamische Aufnahmen, oft mit Gimbal-Stabilisierung.</li>
+      <li><strong>Vermessung und Kartierung</strong>: hohe GPS-Genauigkeit, gleichmässige Flugrouten, RTK/PPK-Module, Photogrammetrie-Software und redundante Positionssensorik.</li>
+      <li><strong>Umweltschutz und Monitoring</strong>: leiser Betrieb, lange Flugzeit, Sensoren für Luftqualität, Tierbeobachtung, Vegetationszustand oder Gewässeranalyse.</li>
+    </ul>
+  </div>
+
+  <h3>Masse, Gleichgewicht & Schwerpunkt</h3>
+  <p>
+    Die <strong>Masseverteilung</strong>, das <strong>Gleichgewicht</strong> und der <strong>Schwerpunkt</strong> sind entscheidend für die <strong>Flugstabilität</strong>, <strong>Steuerbarkeit</strong> und <strong>Effizienz</strong> eines UAS. Eine falsche Beladung oder Schwerpunktlage kann zu <strong>Instabilität</strong>, <strong>Überlastung</strong> einzelner Komponenten oder <strong>unvorhersehbarem Flugverhalten</strong> führen. Diese Faktoren sind besonders relevant bei <strong>Nutzlastbetrieb</strong>, z. B. mit Kameras, Sensoren, Transportbehältern oder Messinstrumenten. Eine korrekte Konfiguration ist Voraussetzung für die Einhaltung der <strong>Herstellergrenzen</strong> und die <strong>Zuverlässigkeit</strong> im Flug.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Gesamtmasse</strong> muss unterhalb der vom Hersteller definierten maximalen Startmasse liegen – inklusive Akkus, Nutzlast und Zubehör.</li>
+      <li><strong>Schwerpunkt</strong> sollte möglichst zentral und symmetrisch zur Rotorebene liegen – Abweichungen führen zu Steuerfehlern und asymmetrischem Energieverbrauch.</li>
+      <li><strong>Ungleichmässige Beladung</strong> kann zu Schieflage, Drift, erhöhter Motorbelastung oder instabiler Fluglage führen.</li>
+      <li><strong>Herstellerangaben</strong> zur Schwerpunktlage, Nutzlastgrenzen und Befestigungspunkten sind verbindlich und müssen dokumentiert sowie vor jedem Flug überprüft werden.</li>
+      <li><strong>Nutzlastverteilung</strong> sollte bei wechselnden Sensoren oder Modulen neu bewertet und ggf. durch Testflug validiert werden.</li>
+    </ul>
+  </div>
+
+  <h3>Ladungssicherung</h3>
+  <p>
+    Eine korrekt befestigte <strong>Nutzlast</strong> ist entscheidend für die <strong>Flugsicherheit</strong>, <strong>Flugstabilität</strong> und <strong>Systemintegrität</strong> eines UAS. Unzureichende Sicherung kann zu <strong>Vibrationsproblemen</strong>, <strong>Verlust der Nutzlast</strong>, <strong>Schwerpunktverschiebung</strong> oder <strong>mechanischer Beschädigung</strong> führen. Dies betrifft insbesondere Einsätze mit <strong>Kameras</strong>, <strong>Sensoren</strong>, <strong>Messinstrumenten</strong> oder <strong>Transportbehältern</strong>. Die Ladungssicherung muss vor jedem Flug überprüft und dokumentiert werden.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Mechanische Befestigung</strong> mit Klammern, Schrauben, Halterungen oder Schnellverschlüssen – vibrationsfest und formschlüssig.</li>
+      <li><strong>Vibrationsdämpfung</strong> durch Gummielemente, Silikonlager oder gefederte Halterungen zur Schonung empfindlicher Komponenten.</li>
+      <li><strong>Gewichtsverteilung</strong> prüfen – keine einseitige Belastung, Schwerpunkt möglichst zentral zur Rotorebene.</li>
+      <li><strong>Prüfung vor jedem Flug</strong> auf festen Sitz, Unversehrtheit der Befestigung und korrekte Ausrichtung der Nutzlast.</li>
+      <li><strong>Dokumentation</strong> der Nutzlastkonfiguration im Flugprotokoll – inkl. Gewicht, Position und Befestigungsart.</li>
+    </ul>
+  </div>
+
+  <h3>Batterien</h3>
+  <p>
+    Die <strong>Batterie</strong> ist das <strong>Herzstück</strong> der Energieversorgung eines UAS. Ihre <strong>Kapazität</strong>, <strong>Zustand</strong>, <strong>Temperaturverhalten</strong> und <strong>Ladehistorie</strong> beeinflussen direkt die <strong>Flugdauer</strong>, <strong>Systemstabilität</strong> und <strong>Sicherheit</strong> im Betrieb. Eine fehlerhafte Batterie kann zu <strong>Spannungseinbrüchen</strong>, <strong>Systemabschaltungen</strong> oder im Extremfall zu <strong>Bränden</strong> führen. Daher sind regelmässige Prüfungen, sachgerechte Lagerung und dokumentierte Wartung unerlässlich.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Kapazität</strong> in Wh oder Ah bestimmt die maximale Flugzeit – abhängig von Nutzlast, Flugprofil und Umgebungstemperatur.</li>
+      <li><strong>Spannungslage</strong> muss stabil bleiben – <strong>Tiefentladung</strong> vermeiden, da sie die Zellen dauerhaft schädigt.</li>
+      <li><strong>Temperaturbereich</strong>: optimal zwischen <strong>15 °C und 35 °C</strong>; ausserhalb dieses Bereichs sinkt die Leistung und steigt das Risiko.</li>
+      <li><strong>Ladezyklen</strong> begrenzen die Lebensdauer – regelmässige Prüfung der Zellspannung und Innenwiderstände empfohlen.</li>
+      <li><strong>Brandschutz</strong>: Transport in <strong>feuerfesten Beuteln</strong>, Lagerung bei <strong>30–50 %</strong> Ladezustand in <strong>kühler, trockener Umgebung</strong>.</li>
+      <li><strong>Redundanz</strong>: bei kritischen Einsätzen mehrere Akkus oder <strong>Notstromversorgung</strong> vorsehen – z. B. für BVLOS-Flüge oder Rettungseinsätze.</li>
+      <li><strong>Kennzeichnung</strong> und <strong>Dokumentation</strong> jeder Batterie – inkl. Seriennummer, Ladehistorie und Wartungsstatus.</li>
+    </ul>
+  </div>
+</section>
+
+
+<section id="modul-080-bodenrisiko">
+  <h2>080 – Bodenrisiko: Verringerung durch technische und operative Massnahmen</h2>
+<p class="keywords">
+Drittrisiko · unbeteiligte Personen · kontrollierter Bodenbereich · Schutzmaßnahmen · Aufprallenergie · Risikominderung · Betriebsszenario · Sicherheitsabstand
+</p>
+
+  <h3>Definitionen und Zuständigkeiten</h3>
+  <p>
+    Das <strong>Bodenrisiko</strong> beschreibt die potenzielle Gefahr, die ein UAS-Flug für <strong>Menschen am Boden</strong>, <strong>Tiere</strong> und <strong>Sachwerte</strong> darstellt. Es ist ein zentraler Bestandteil der <strong>Risikobewertung</strong> in der <strong>spezifischen Kategorie</strong> und muss systematisch erfasst, bewertet und durch geeignete Massnahmen reduziert werden. Die Verantwortung für die Minimierung dieses Risikos liegt sowohl beim <strong>Betreiber</strong> als auch beim <strong>Fernpiloten</strong>, wobei auch <strong>Behörden</strong> und <strong>Versicherungen</strong> eine wichtige Rolle im Gesamtsystem der Risikokontrolle spielen.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Betreiber</strong>: verantwortlich für <strong>Planung</strong>, <strong>Genehmigungen</strong>, <strong>Sicherheitskonzepte</strong> und die <strong>Risikodokumentation</strong>.</li>
+      <li><strong>Fernpilot</strong>: verantwortlich für die <strong>sichere Durchführung</strong> des Fluges, die <strong>Situationsbeurteilung</strong> und die <strong>Reaktion auf Zwischenfälle</strong>.</li>
+      <li><strong>Behörden</strong>: prüfen <strong>Betriebserklärungen</strong>, genehmigen <strong>Einsätze</strong> und kontrollieren die Einhaltung gesetzlicher Vorgaben.</li>
+      <li><strong>Versicherung</strong>: muss <strong>Schäden gegenüber Dritten</strong> abdecken und ist Teil der <strong>betrieblichen Risikovorsorge</strong>.</li>
+    </ul>
+  </div>
+
+  <h3>Bodenrisiko in STS-01</h3>
+  <p>
+    Im Standardszenario <strong>STS-01</strong> erfolgt der Flug <strong>innerhalb der Sichtweite (VLOS)</strong> und in <strong>nicht besiedelten oder risikoarmen Gebieten</strong>. Dennoch sind gezielte <strong>technische</strong und <strong>operative Massnahmen</strong> erforderlich, um das Bodenrisiko zu minimieren. Diese betreffen sowohl die <strong>Flugplanung</strong> als auch die <strong>Systemkonfiguration</strong> und das <strong>Verhalten im Notfall</strong>.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Fluggebiet</strong> muss frei von <strong>Menschenansammlungen</strong>, <strong>sensiblen Einrichtungen</strong> und <strong>kritischer Infrastruktur</strong> sein.</li>
+      <li><strong>Flughöhe</strong> und <strong>Flugzeit</strong> müssen so gewählt werden, dass das Risiko für Personen am Boden möglichst gering bleibt – z. B. durch Flüge ausserhalb von Betriebszeiten oder in Randzonen.</li>
+      <li><strong>Technische Sicherheit</strong>: regelmässige <strong>Wartung</strong>, Einsatz von <strong>FTS</strong> (Flight Termination System), <strongGeo-Caging</strong> und <strongFailsafe-Funktionen</strong>.</li>
+      <li><strong>Notfallmassnahmen</strong>: z. B. <strong>sofortige Landung</strong>, <strong>Flugabbruch</strong>, <strong>Warnung Dritter</strong> oder <strong>Aktivierung des FTS</strong> bei Kontrollverlust.</li>
+      <li><strong>Dokumentation</strong>: vollständige <strong>Flugprotokolle</strong>, <strong>Risikobewertungen</strong>, <strong>Nachweise für Behörden</strong> und <strong>Kommunikationspläne</strong> für Zwischenfälle.</li>
+    </ul>
+  </div>
+
+  <h3>Bodenrisiko in STS-02</h3>
+  <p>
+    Im Szenario <strong>STS-02</strong> sind <strong>BVLOS-Flüge (Beyond Visual Line of Sight)</strong> zulässig, was das <strong>Bodenrisiko</strong> im Vergleich zu VLOS-Einsätzen deutlich erhöht. Der Betrieb erfolgt in <strong>kontrollierten oder behördlich genehmigten Einsatzgebieten</strong>, dennoch gelten strenge Anforderungen an <strong>technische Redundanz</strong>, <strong>operative Sicherheit</strong> und <strong>rechtliche Absicherung</strong>. Ziel ist es, das Risiko für unbeteiligte Personen, Tiere und Sachwerte am Boden auch bei längerer Flugdistanz und eingeschränkter Sichtverbindung wirksam zu minimieren.
+  </p>
+  <div class="highlight">
+    <ul>
+      <li><strong>Genehmigungspflicht</strong>: Der Betrieb ist nur mit einer <strong>behördlich bestätigten Risikoanalyse</strong> und einer <strong>gültigen Betriebserklärung</strong> zulässig.</li>
+      <li><strong>Technische Massnahmen</strong>: Einsatz von <strong>redundanten Systemen</strong> (z. B. doppelte Stromversorgung, doppelte Steuerung), <strong>Flight Termination System (FTS)</strong> und <strongGeo-Caging</strong> zur Begrenzung des Flugraums.</li>
+      <li><strong>Operative Massnahmen</strong>: Detaillierte <strong>Flugplanung</strong>, <strong>Absicherung des Einsatzgebiets</strong> (z. B. durch Bodenpersonal oder Absperrungen) und <strong>Routenoptimierung</strong> zur Vermeidung sensibler Zonen.</li>
+      <li><strong>Kommunikation</strong>: Laufende Abstimmung mit <strong>Luftfahrtbehörden</strong>, <strong>Einsatzleitung</strong> und ggf. <strong>Öffentlichkeit</strong> – insbesondere bei Flügen in der Nähe von Siedlungen oder kritischer Infrastruktur.</li>
+      <li><strong>Versicherungsschutz</strong>: Der <strong>Haftpflichtversicherungsschutz</strong> muss auch für <strong>BVLOS-Einsätze</strong> gelten und die erhöhten Risiken abdecken.</li>
+      <li><strong>Notfallmanagement</strong>: Vorab definierte <strong>Notfallverfahren</strong> (z. B. FTS-Aktivierung, Rückflugprotokoll, Warnsysteme) müssen dokumentiert, getestet und dem Einsatzteam bekannt sein.</li>
+      <li><strong>Dokumentation</strong>: Vollständige <strongRisikobewertung</strong>, <strong>Flugprotokolle</strong>, <strong>Kommunikationspläne</strong> und <strong>Nachweise technischer Prüfungen</strong> sind vorzuhalten und auf Anfrage vorzuweisen.</li>
+    </ul>
+  </div>
+
+
+
+</section>
+
+<section id="kapitel-checklisten" class="checklist">
+  <h2>Relevante Checklisten für den UAS-Betrieb</h2>
+  <p>
+    Die folgenden Checklisten unterstützen <strong>Fernpiloten</strong>, <strong>Betreiber</strong> und <strong>Einsatzleiter</strong> bei der sicheren, regelkonformen und effizienten Durchführung von UAS-Flügen. Sie sind für <strong>STS-01</strong>, <strong>STS-02</strong> und <strong>Sonderbetriebe</strong> geeignet.
+  </p>
+
+  <h3>Vorflug-Check</h3>
+    <ul class="checklist">
+      <li><strong>Systemstatus</strong> prüfen: Firmware, Akkustand, Sensorverfügbarkeit.</li>
+      <li><strong>Mechanische Kontrolle</strong>: Propeller, Befestigungen, Nutzlast, Gehäuse.</li>
+      <li><strong>Geo-Awareness</strong>: Flugverbotszonen, NOTAMs, VFR Bulletin.</li>
+      <li><strong>Wetterlage</strong>: Wind, Sicht, Temperatur, lokale Phänomene.</li>
+      <li><strong>Flugplanung</strong>: Route, Flughöhe, Zeitfenster, Ausweichzonen.</li>
+      <li><strong>Kommunikation</strong>: Funkverbindung, Backup-Systeme, Teambriefing.</li>
+      <li><strong>Dokumentation</strong>: Betriebserklärung, Flugprotokoll, Genehmigungen.</li>
+    </ul>
+
+  <h3>Technischer Systemcheck</h3>
+    <ul class="checklist">
+      <li><strong>IMU-Kalibrierung</strong> und Sensorstatus prüfen.</li>
+      <li><strong>FTS-Funktion</strong> testen – manuell und automatisch.</li>
+      <li><strong>Geo-Caging</strong> aktivieren und Einsatzvolumen validieren.</li>
+      <li><strong>Failsafe-Einstellungen</strong> konfigurieren – z. B. Return-to-Home.</li>
+      <li><strong>Batteriezustand</strong>: Spannung, Temperatur, Ladezyklen.</li>
+      <li><strong>Nutzlastsicherung</strong>: Schwerpunkt, Befestigung, Dämpfung.</li>
+    </ul>
+
+  <h3>Nachflug-Check</h3>
+    <ul class="checklist">
+      <li><strong>Systemabschaltung</strong> und sichere Lagerung.</li>
+      <li><strong>Datenübertragung</strong>: Logfiles, Bilder, Sensorwerte sichern.</li>
+      <li><strong>Wartungsbedarf</strong> dokumentieren – z. B. Verschleiss, Fehlercodes.</li>
+      <li><strong>Batterien</strong> entladen, prüfen, lagern.</li>
+      <li><strong>Flugprotokoll</strong> abschliessen und archivieren.</li>
+      <li><strong>Besonderheiten</strong> oder Zwischenfälle melden und analysieren.</li>
+    </ul>
+
+  <h3>Risikominimierung STS-01</h3>
+    <ul class="checklist">
+      <li><strong>Fluggebiet</strong> frei von Menschenansammlungen und sensibler Infrastruktur.</li>
+      <li><strong>Flughöhe</strong> und <strong>Flugzeit</strong> risikoarm wählen.</li>
+      <li><strong>FTS</strong> und <strongGeo-Caging</strong> aktiv und getestet.</li>
+      <li><strong>Notfallmassnahmen</strong> definiert und kommuniziert.</li>
+      <li><strong>Risikobewertung</strong> dokumentiert und freigegeben.</li>
+    </ul>
+
+  <h3>Flug im Ausland</h3>
+	<ul class="checklist">
+	  <li>Registrierung im Heimatland gültig?</li>
+	  <li>Lokale Vorschriften des Gastlandes bekannt?</li>
+	  <li>Haftpflichtversicherung auch im Ausland gültig?</li>
+	  <li>Genehmigungen bei lokalen Behörden eingeholt?</li>
+	  <li>Kommunikation mit Behörden vorbereitet?</li>
+	</ul>
+</section>
+
+
+
+<section id="kapitel-glossar">
+  <h2>Glossar – Fachbegriffe aus dem UAS-Betrieb</h2>
+  <p>
+    Dieses Glossar enthält zentrale Begriffe aus dem Bereich der <strong>unbemannten Luftfahrzeugsysteme (UAS)</strong>, die für <strong>technische Schulungen</strong>, <strong>Risikobewertungen</strong>, <strong>Regelkonformität</strong> und <strong>Einsatzplanung</strong> relevant sind. Die Definitionen sind didaktisch reduziert und eignen sich für Lernmodule, Prüfvorbereitung und Feldbetrieb.
+  </p>
+   <table>
+    <thead>
+      <tr>
+        <th>Begriff</th>
+        <th>Definition</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>UAS</strong></td><td>Unmanned Aircraft System – umfasst Fluggerät, Steuerung, Kommunikation und Bodenstation.</td></tr>
+      <tr><td><strong>Fernpilot</strong></td><td>Person, die das UAS während des Fluges steuert und für die sichere Durchführung verantwortlich ist.</td></tr>
+      <tr><td><strong>UAS-Betreiber</strong></td><td>Rechtlich verantwortliche Organisation oder Person für Planung, Durchführung und Dokumentation von UAS-Einsätzen.</td></tr>
+      <tr><td><strong>VLOS</strong></td><td>Visual Line of Sight – Betrieb innerhalb direkter Sichtverbindung zum UAS ohne technische Hilfsmittel.</td></tr>
+      <tr><td><strong>BVLOS</strong></td><td>Beyond Visual Line of Sight – Betrieb ausserhalb der Sichtverbindung, erfordert zusätzliche Sicherheitsmassnahmen.</td></tr>
+      <tr><td><strong>STS-01 / STS-02</strong></td><td>Standardisierte Szenarien gemäss EU-Verordnung – STS-01 für VLOS, STS-02 für BVLOS mit erhöhten Anforderungen.</td></tr>
+      <tr><td><strong>C-Klassen</strong></td><td>EU-Kategorisierung von UAS nach technischen Eigenschaften – C0 bis C6, relevant für Betriebserlaubnis und Szenarien.</td></tr>
+      <tr><td><strong>Geo-Caging</strong></td><td>Begrenzung des Flugbereichs auf definierte Zonen mittels GNss und digitaler Karten.</td></tr>
+      <tr><td><strong>Geo-Awareness</strong></td><td>Fähigkeit des UAS, geografische Einschränkungen zu erkennen und zu berücksichtigen.</td></tr>
+      <tr><td><strong>FTS</strong></td><td>Flight Termination System – Sicherheitsvorrichtung zur kontrollierten Deaktivierung oder Notlandung.</td></tr>
+      <tr><td><strong>Failsafe</strong></td><td>Automatische Sicherheitsfunktion bei Störung – z. B. Rückkehr, Landung oder Flugabbruch.</td></tr>
+      <tr><td><strong>Redundanz</strong></td><td>Mehrfach vorhandene Systeme zur Erhöhung der Ausfallsicherheit – z. B. doppelte Stromversorgung.</td></tr>
+      <tr><td><strong>IMU</strong></td><td>Inertial Measurement Unit – Sensor zur Erfassung von Bewegung und Lage (Gyroskop + Beschleunigungssensor).</td></tr>
+      <tr><td><strong>RTK / PPK</strong></td><td>GNss-basierte Verfahren zur hochpräzisen Positionsbestimmung – wichtig für Vermessung und Kartierung.</td></tr>
+      <tr><td><strong>GNss</strong></td><td>Global Navigation Satellite System – z. B. GPS, Galileo, GLONAss zur Positionsbestimmung.</td></tr>
+      <tr><td><strong>NOTAM</strong></td><td>Notice to Airmen – amtliche Mitteilung über temporäre Einschränkungen im Luftraum.</td></tr>
+      <tr><td><strong>Risikobewertung</strong></td><td>Systematische Analyse möglicher Gefahren für Menschen, Tiere und Sachwerte.</td></tr>
+      <tr><td><strong>Flugprotokoll</strong></td><td>Dokumentation eines Fluges mit Angaben zu Zeit, Ort, Wetter, Systemstatus und Ereignissen.</td></tr>
+      <tr><td><strong>Sensorfusion</strong></td><td>Kombination mehrerer Sensordaten zur Verbesserung der Genauigkeit – z. B. GPS + Barometer + Lidar.</td></tr>
+      <tr><td><strong>Barometrische Höhenmessung</strong></td><td>Ermittlung der Flughöhe über Luftdruckveränderungen.</td></tr>
+      <tr><td><strong>Thermik</strong></td><td>Aufsteigende Warmluft, die Flugverhalten beeinflussen kann – besonders relevant bei leichteren UAS.</td></tr>
+      <tr><td><strong>Inversionslage</strong></td><td>Wetterphänomen mit stabiler Luftschichtung – kann Sicht und Sensorik beeinträchtigen.</td></tr>
+      <tr><td><strong>Föhn</strong></td><td>Regionaler, böiger Wind mit starkem Einfluss auf Flugstabilität – typisch in Alpentälern.</td></tr>
+      <tr><td><strong>Flugleistung</strong></td><td>Fähigkeit eines UAS hinsichtlich Geschwindigkeit, Reichweite, Flugdauer und Nutzlast.</td></tr>
+      <tr><td><strong>Nutzlast</strong></td><td>Zusätzliche Ausrüstung am UAS – z. B. Kamera, Sensor, Transportbehälter.</td></tr>
+      <tr><td><strong>Ladungssicherung</strong></td><td>Massnahmen zur sicheren Befestigung der Nutzlast – wichtig für Schwerpunkt und Stabilität.</td></tr>
+      <tr><td><strong>Schwerpunkt</strong></td><td>Lage des Massenmittelpunkts – beeinflusst Flugverhalten und Steuerbarkeit.</td></tr>
+      <tr><td><strong>Flugmodi</strong></td><td>Vordefinierte Steuerungsarten – z. B. manuell, GPS-gestützt, autonom.</td></tr>
+      <tr><td><strong>Flugplanung</strong></td><td>Vorbereitung eines Einsatzes inkl. Route, Wetter, Risikoanalyse und Genehmigungen.</td></tr>
+      <tr><td><strong>Operation Manual</strong></td><td>Betriebsdokumentation mit technischen Daten, Verfahren und Sicherheitsmassnahmen.</td></tr>
+      <tr><td><strong>ConOps</strong></td><td>Concept of Operations – Beschreibung des geplanten Einsatzes, Ablaufs und Sicherheitskonzepts.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="kapitel-referenzen" class="referenz">
+  <h2>Link-Referenzen</h2>
+  <p>
+    Die folgenden Quellen bieten weiterführende Informationen zu <strong>UAS-Betrieb</strong>, <strong>Regelwerken</strong>, <strong>Meteorologie</strong>, <strong>Technik</strong> und <strong>Sicherheitsmassnahmen</strong>. Sie sind für Schulung, Einsatzvorbereitung und vertiefende Recherche geeignet.
+  </p>
+<p><a class="referenz" href="https://www.easa.europa.eu/en/domains/civil-drones-rpas" target="_blank">EASA – Civil Drones</a>: Offizielle Informationen zu EU-Regularien und STS-Szenarien.</p>
+<p><a class="referenz" href="https://www.easa.europa.eu/en/domains/civil-drones" target="_blank">EASA Drohnenregulierung</a></p>
+<p><a class="referenz" href="https://www.bazl.admin.ch/de/drohnen" target="_blank">BAZL – Drohnenbetrieb in der Schweiz</a>: Nationale Vorgaben, Registrierung und Betriebserklärungen.</p>
+<p><a class="referenz" href="https://www.bazl.admin.ch/de/pdra-de" target="_blank">FOCA PDRA-Übersicht</a></p>
+<p><a class="referenz" href="https://meteo.ch" target="_blank">MeteoSwiss</a>: Amtliche Wetterdaten, Prognosen und Warnungen für die Schweiz.</p>
+<p><a class="referenz" href="https://www.windy.com" target="_blank">Windy</a>: Interaktive Wetterkarten mit Wind-, Temperatur- und Druckdaten.</p>
+<p><a class="referenz" href="https://www.uavforecast.com" target="_blank">UAV Forecast</a>: Flugwetter speziell für Drohnenpiloten – inkl. GPS-Sichtbarkeit und Windprofile.</p>
+<p><a class="referenz" href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a>: Kartenmaterial für Flugplanung und Geo-Caging.</p>
+<p><a class="referenz" href="https://www.dji.com" target="_blank">DJI – Technische Dokumentation</a>: Handbücher, Firmware und Sicherheitsfunktionen für DJI-Systeme.</p>
+<p><a class="referenz" href="https://www.pix4d.com" target="_blank">Pix4D</a>: Photogrammetrie-Software für Vermessung und Kartierung.</p>
+<p><a class="referenz" href="https://www.uas.noaa.gov" target="_blank">NOAA UAS Program</a>: Einsatz von Drohnen für Umweltmonitoring und Forschung.</p>
+<p><a class="referenz" href="https://eudroneport.com/blog/sora-methodology/" target="_blank">SORA Methodology—Specific Operation Risk Assessment</a>: Erklärung über die Anwendung der SORA Methode.</p>
+
+
+
+</section>
+<!--
+</body>
+</html>
+-->
+
+<!--
+Copilot prompts:
+
+Formuliere mir folgende unterkapitel basierend lerntext im fliesstextformat und merkpunkten als highlight in listenform im html format und markiere wichtige elemente im fettdruck. achte auf semantische fehler und korrigiere diese.
+
+prüfe ob wichtige Inhalte in diesen kapitlen noch fehlen und detailiere diese aus. behalte die kapitel bei und markiere wichtige element im fettdruck- ausgabe im html format
+
+überarbeite diesen abschnitt, prüfe ob der Inhalt komplett ist, wenn nich detailiere ihn aus und formatiere es in Fliesstext, merkpunkte als liste mit einem div class="highlight" darum herum. Markiere wichtige Elemente fett und gib es in html format aus. achte auf semantische fehler und korrigiere diese.
+
+
+Mache mir 8 mulitple choice fragen zu Kapitel 01 und gib es im CSV format mit folgenden Felder aus: "Nr;Frage;Loesungsauswahl;Bereich;Frage-Bild;Bildformat;Loesungs-Bild;Loesungstext;Loesung;Antwort;Audienz;Aktiv;Locked"
+
+Felderdefintionen:
+Nr: Nummer der Frage mit Kapitelnummer als teil der zahl
+Frage: Frage
+Lösungsauswahl: 4-6 Lösungsoptionen mit "|" als Seperator
+Bereich: "RKRK"
+Frage-Bild: leer
+Bildformat: schmal
+Lösungs-Bild: leer
+Loesungstext: "Die Richtige Antwort ist <Buchstabe>" gefolgt von einer kurzen Erklärung der Antwort
+Audienz,Aktiv;Locked: leer
+
+gib mir einen Stichwortliste mit 5 bis 8 stichworten mit separator " · " using <p class="keywords"> für Modul 010
+-->

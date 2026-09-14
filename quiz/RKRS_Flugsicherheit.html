@@ -1,0 +1,288 @@
+<section id="Kursbeschrieb">
+<!--<h1>Drohnenflugsicherheit mit Fokus auf C2 (Subkategorie A2)</h1>-->
+<p><strong>Zielgruppe:</strong> Fernpiloten mit C2-Drohnen in der offenen Kategorie</p>
+<p><strong>Grundlage:</strong> Inhalte aus 202403 Fernpilotenunterlagen.docx</p>
+
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir fundiertes Wissen zur sicheren Durchführung von Drohnenflügen mit C2-Drohnen in der Subkategorie A2. Du lernst technische Grundlagen, rechtliche Anforderungen, meteorologische Risiken und betriebliche Verfahren kennen – praxisnah
+    und prüfungsrelevant.</p>
+
+<h3>Lernziele</h3>
+<ul>
+    <li>Aufbau und Steuerung von C2-Drohnen verstehen</li>
+    <li>Navigation und Sensorik sicher anwenden</li>
+    <li>Wetterrisiken erkennen und bewerten</li>
+    <li>Rechtliche Vorgaben der Subkategorie A2 kennen</li>
+    <li>Betriebsverfahren und Flugvorbereitung korrekt durchführen</li>
+</ul>
+</section>
+
+<section id="kapitel1">
+    <h2>Kapitel 1: Technische Grundlagen der Drohne</h2>
+    <p class="keywords">Stichworte: Fluglageregler · ESCs · Brushless-Motoren · Propeller · Roll/Nick/Gier</p>
+
+    <p>C2-Drohnen sind hochentwickelte Fluggeräte, die durch mindestens drei unabhängig steuerbare Motoren angetrieben werden. Das zentrale Steuerorgan ist der <strong>Fluglageregler</strong>, der kontinuierlich Sensordaten wie Gyroskop, Beschleunigungssensor und Magnetometer auswertet. Diese Daten werden genutzt, um die Drehzahl der einzelnen Motoren präzise anzupassen und die gewünschte Fluglage zu erreichen.</p>
+
+    <p>Jeder <strong>Brushless-Motor</strong> benötigt ein elektrisches Drehfeld, das durch einen <strong>ESC</strong> (Electronic Speed Controller) erzeugt wird. Die <strong>Propeller</strong> erzeugen Auftrieb, indem sie Luft nach unten drücken – an der
+        Oberkante entsteht ein Unterdruck, der die Drohne „ansaugt“.</p>
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/achsen.png">
+		<figcaption class="lerncaption">Achsen</figcaption>
+	</figure>
+
+    <div class="highlight">
+        <strong>Bewegungen entlang der drei Achsen:</strong>
+        <ul>
+            <li><strong>Roll (Längsachse):</strong> Drehen um die Achse von Nase zu Heck</li>
+            <li><strong>Nick (Querachse):</strong> Neigung nach vorne oder hinten</li>
+            <li><strong>Gier (Hochachse):</strong> Drehung um die vertikale Achse</li>
+        </ul>
+    </div>
+
+    <p>Beim <strong>Schweben</strong> drehen alle Motoren mit gleicher Drehzahl. Diagonal gegenüberliegende Motoren rotieren entgegengesetzt, um das Drehmoment auszugleichen. <strong>Steigen/Sinken</strong> erfolgt durch gleichzeitige Änderung der Drehzahl
+        aller Motoren. <strong>Nick, Roll und Gier</strong> werden durch gezielte Drehzahlanpassungen einzelner Motoren erreicht.</p>
+
+    <p>Die Stromversorgung erfolgt über <strong>Lithium-Polymer-Akkus</strong>. Moderne Drohnen verfügen über <strong>Fail-Safe-Systeme</strong> und <strong>Status-LEDs</strong>. Viele C2-Drohnen besitzen ein <strong>Gimbal</strong> zur Kamerastabilisierung.</p>
+
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/modus2-fernsteuerung.png">
+		<figcaption class="lerncaption">Modus Fernsteuerung (typ. Modus 2)</figcaption>
+	</figure>
+
+    <p>Die Steuerung erfolgt über eine <strong>Fernbedienung</strong> mit zwei Steuerknüppeln. Die Reichweite hängt von Sendeleistung, Umgebung und Antennenausrichtung ab. Bei Signalverlust greift der <strong>RTH-Modus</strong> (Return to Home), sofern GPS verfügbar ist.</p>
+	
+	<figure>
+		<img  class="lernimagesmall"  src="quiz/images/allgemeine-drohnenkunde/rth.png">
+		<figcaption  class="lerncaption">RTH - Return to Home</figcaption>
+	</figure>
+
+    <p>Die <strong>Flugleistung</strong> wird durch Gewicht, Aerodynamik und Wetter beeinflusst. Die <strong>MTOM</strong> (maximale Startmasse) darf 4 kg nicht überschreiten.</p>
+
+    <ul class="checklist">
+        <li>Fluglageregler steuert die Stabilität</li>
+        <li>ESC regelt die Drehzahl der Motoren</li>
+        <li>MTOM bei C2-Drohnen: max. 4 kg</li>
+        <li>Schweben = gleiche Drehzahl aller Motoren</li>
+        <li>RTH-Modus aktiviert bei Signalverlust</li>
+    </ul>
+</section>
+
+<section id="kapitel2">
+    <h2>Kapitel 2: Navigation & Sensorik</h2>
+    <p class="keywords">Stichworte: GNSS · Kompass · Barometer · VPS · ADS-B · FLARM</p>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/allgemeine-drohnenkunde/GNSS-Systeme.png" alt="GNSS Satellitensysteme">
+		<figcaption  class="lerncaption">GNSS Satellitensysteme</figcaption>
+	</figure>
+
+    <p>Die Navigation moderner Drohnen basiert auf einer Kombination aus <strong>Satellitensystemen</strong>, internen Sensoren und visuellen Hilfsmitteln. Das wichtigste System ist <strong>GNSS</strong> (Global Navigation Satellite System), das <strong>GPS</strong>        (USA), <strong>Galileo</strong> (EU), <strong>GLONASS</strong> (Russland) und <strong>BeiDou</strong> (China) umfasst. Diese Satelliten senden Signale, die von der Drohne empfangen und zur Positionsbestimmung genutzt werden. Besonders präzise
+        sind <strong>LEO-Satelliten</strong> (Low Earth Orbit), da sie näher an der Erde kreisen und geringere Signalverzögerung bieten.</p>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/allgemeine-drohnenkunde/GNSS-Triangulation.png">
+		<figcaption  class="lerncaption">Berechnung der Position durch Laufzeit und Triangulation</figcaption>
+	</figure>
+	
+    <p>Die Positionsbestimmung erfolgt durch <strong>Triangulation</strong>: Die Drohne misst die Entfernung zu mindestens vier Satelliten und berechnet daraus ihre genaue Position. Je mehr Satelliten empfangen werden, desto höher ist die Genauigkeit. GNSS
+        ist essenziell für Funktionen wie <strong>RTH</strong>, <strong>Wegpunktflug</strong> und <strong>Geofencing</strong>.</p>
+
+    <p>Der <strong>Kompass</strong> (Magnetometer) misst das Erdmagnetfeld und zeigt die Ausrichtung der Drohne relativ zum magnetischen Norden. Da der magnetische Nordpol nicht mit dem geografischen Nordpol übereinstimmt und sich jährlich verschiebt, muss der Kompass bei Standortwechsel über 100 km neu kalibriert werden. Eine fehlerhafte Kalibrierung kann zu unkontrollierbarem Flugverhalten führen.</p>
+
+    <p>Das <strong>Barometer</strong> misst den Luftdruck und berechnet daraus die Höhe über dem Boden. Es ist besonders wichtig für die Einhaltung der maximalen Flughöhe (120 m) und für automatische Flugmodi. In Kombination mit GNSS ergibt sich eine präzise Höhenführung.</p>
+
+	<figure>
+		<img  class="lernimagesmall"  src="quiz/images/allgemeine-drohnenkunde/vps.png">
+		<figcaption  class="lerncaption">VPS - Visual Positioning System</figcaption>
+	</figure>
+	
+    <p>Das <strong>VPS</strong> (Vision Positioning System) nutzt optische Sensoren und Infrarotkameras zur Stabilisierung bei niedriger Flughöhe. Es ist besonders hilfreich beim Starten und Landen, kann aber über Wasser oder bei reflektierenden Oberflächen gestört werden. Daher sollte VPS bei Gewässerüberflug deaktiviert werden.</p>
+
+    <p><strong>ADS-B</strong> (Automatic Dependent Surveillance – Broadcast) ist ein System zur Kollisionsvermeidung. Es empfängt Signale von bemannten Luftfahrzeugen und zeigt deren Position auf der App an. <strong>FLARM</strong> ist ein aktives Kollisionswarnsystem, das Positionsdaten sendet und empfängt – besonders relevant in Segelfluggebieten.</p>
+
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/sensorfusion.png">
+		<figcaption class="lerncaption">Sensorfusion</figcaption>
+	</figure>
+
+    <p><strong>Sensorfusion</strong> bezeichnet die Kombination aller verfügbaren Datenquellen (IMU, GNSS, Barometer, VPS), um eine stabile Fluglage zu gewährleisten. Bei Ausfall einzelner Sensoren greift das System auf alternative Quellen zurück. Dies erhöht die Ausfallsicherheit und ermöglicht präzises Fliegen auch unter schwierigen Bedingungen.</p>
+
+    <p>Zusätzlich verfügen viele Drohnen über ein <strong>Gimbal-System</strong> zur Kamerastabilisierung, ein <strong>IMU</strong> (Inertial Measurement Unit) zur Lageerkennung und eine <strong>Telemetrieübertragung</strong> zur Anzeige von Echtzeitdaten         wie Höhe, Geschwindigkeit und Akkustand.</p>
+
+    <ul class="checklist">
+        <li>GNSS = Positionsbestimmung via Satelliten</li>
+        <li>Kompass muss bei Standortwechsel &gt;100 km kalibriert werden</li>
+        <li>VPS über Wasser deaktivieren</li>
+        <li>ADS-B empfängt bemannte Luftfahrzeuge</li>
+        <li>Sensorfusion erhöht Flugsicherheit</li>
+    </ul>
+</section>
+
+
+<section id="kapitel3">
+    <h2>Kapitel 3: Luftrecht & Subkategorie A2</h2>
+    <p class="keywords">Stichworte: Subkategorie A2 · Mindestabstand · CE-Kennzeichnung · Remote ID · Registrierung · Versicherung</p>
+
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/kategorien.png">
+		<figcaption class="lerncaption">Kategorien</figcaption>
+	</figure>
+
+	<strong>OFFENE Kategorie (A1 / A2 / A3):</strong> Umfasst Flugoperationen, die weder eine vorherige Genehmigung durch das BAZL noch eine Erklärung vor der Durchführung der Operation erfordern. Die große Mehrheit der Piloten fliegt in dieser Kategorie.
+
+    <div class="highlight">
+        <p>Generelle Vorschriften in der Offenen Katheogorie:</p>
+        <ul>
+            <li>Maximale Flughöhe über Grund 120m</li>
+            <li>Gebietseinschränkungen beachten (Flugverbots- zonen, lokale Flugeinschränkungen)</li>
+            <li>Nur Sichtflug erlaubt (VLOS)</li>
+            <li>Ausweichen gegenüber anderen Luftfahrzeugen jederzeit möglich</li>
+            <li>Keine Menschenansammlungen überfliegen</li>
+            <li>Privatsphäre berücksichtigen</li>
+            <li>Versicherungsnachweis mitführen</li>
+            <li>Registrierung als Betreiber in dLIS</li>
+			<li>Mindestalter 12 Jahre</li>
+        </ul>
+    </div>
+	
+    <p>Die <strong>Subkategorie A2</strong> der offenen Kategorie erlaubt den Betrieb von Drohnen mit erhöhtem Risiko, insbesondere in der Nähe von Menschen. Für <strong>C2-Drohnen</strong> mit einer maximalen Startmasse von 4 kg gelten besondere Anforderungen. Der Fernpilot muss neben dem <strong>Online-Test A1/A3</strong> auch einen <strong>Präsenztest A2</strong> absolvieren, um die notwendige Kompetenz nachzuweisen.</p>
+
+    <figure>
+		<img class="lernimagefixwidth" src="quiz/images/allgemeine-drohnenkunde/A2-Flugzonen.png">
+		<img class="lernimagefixwidth" src="quiz/images/allgemeine-drohnenkunde/A2-Klasse.png">
+		<figcaption class="lerncaption">Lizenz A2</figcaption>
+	</figure>
+
+	<div class="highlight">
+        <p>Ein zentraler Aspekt ist der <strong>Mindestabstand</strong> zu unbeteiligten Personen:</p>
+        <ul>
+            <li>30 m im Normalbetrieb</li>
+            <li>5 m bei aktiviertem Langsamflugmodus (&lt;3 m/s)</li>
+        </ul>
+		<p>Zusätzlich gilt die <strong>1:1-Regel</strong>: Die horizontale Entfernung zu Personen muss mindestens der Flughöhe entsprechen.</p>
+    </div>
+
+    <p>C2-Drohnen müssen über eine <strong>CE-Kennzeichnung</strong>, ein <strong>Geo-Awareness-System</strong> und eine <strong>Remote ID</strong> verfügen. Letztere sendet Identifikationsdaten der Drohne und des Piloten an Behörden und andere Luftverkehrsteilnehmer.
+        Dies erhöht die Transparenz und Sicherheit im Luftraum.</p>
+
+    <p>Ab einer Startmasse von <strong>250 g</strong> gilt die <strong>Registrierungspflicht</strong>. Der Betreiber muss sich bei der zuständigen Luftfahrtbehörde registrieren und erhält eine <strong>UAS-Betreiber-ID</strong>, die sichtbar an der Drohne angebracht werden muss. Die <strong>Fernpiloten-ID</strong> wird nach erfolgreicher Prüfung ausgestellt.</p>
+
+    <p>Eine <strong>Haftpflichtversicherung</strong> mit einer Mindestdeckung von <strong>1 Mio. CHF</strong> ist für Drohnen ab 250 gr gesetzlich vorgeschrieben. Sie schützt vor Schäden, die durch den Drohnenbetrieb entstehen können – sowohl an Personen als auch an Sachen.</p>
+
+    <p><strong>Flüge über Menschenansammlungen</strong>, in der Nähe von Flughäfen, über kritische Infrastruktur oder in Flugverbotszonen sind untersagt, es sei denn, es liegt eine <strong>Sondergenehmigung</strong> vor. Die Verantwortung für den sicheren Betrieb liegt beim Fernpiloten und dem Betreiber.</p>
+
+    <p><strong>Autonome Flüge</strong> ohne Eingriffsmöglichkeit sind verboten. Die Drohne muss jederzeit <strong>manuell steuerbar</strong> sein. Auch wenn viele Systeme automatisiert arbeiten, bleibt der Mensch in der Verantwortung.</p>
+
+    <ul class="checklist">
+        <li>A2-Zertifikat = Online-Test A1/A3 + Präsenztest A2</li>
+        <li>Maximalflughöhe: 120m</li>
+        <li>Mindestabstand: 30 m / 5 m mit Langsamflugmodus</li>
+        <li>CE-Kennzeichnung, Geo-Awareness, Remote ID sind Pflicht</li>
+        <li>Registrierung ab 250 g, Versicherung ab 1 Mio. CHF</li>
+        <li>Flüge über Menschenmengen nur mit Sondergenehmigung</li>
+    </ul>
+</section>
+
+
+<section id="kapitel4">
+    <h2>Kapitel 4: Wetter & Meteorologie</h2>
+    <p class="keywords">Stichworte: Wind · Nebel · Luftfeuchtigkeit · KP-Index · Downwash · METAR · TAF</p>
+
+    <p><strong>Wetterbedingungen</strong> beeinflussen die Flugsicherheit massgeblich. Besonders kritisch ist <strong>Wind über 10 m/s</strong> (Beaufort 5), da er die Steuerbarkeit der Drohne erheblich beeinträchtigen kann. Seitenwind, Böen und thermische Aufwinde sind besonders gefährlich. Über <strong>Bergen</strong> entstehen Aufwinde, über <strong>Wäldern</strong> und <strong>Gewässern</strong> Abwinde. Diese können die Fluglage destabilisieren.</p>
+
+    <p><strong>Nebel</strong> reduziert die Sichtweite und macht Flüge in Sichtlinie (<strong>VLOS</strong>) unmöglich. Da VLOS gesetzlich vorgeschrieben ist, darf bei Nebel nicht geflogen werden. <strong>Hohe Luftfeuchtigkeit</strong> kann zu Kondensation führen und elektronische Komponenten beschädigen. <strong>Regen</strong> erhöht das Risiko von Signalverlust und VPS-Störungen.</p>
+
+    <p>Der <strong>KP-Index</strong> zeigt die geomagnetische Aktivität an. Ab einem Wert von 5 ist mit <strong>GPS-Störungen</strong> zu rechnen – Flüge sollten dann unterbleiben. Besonders betroffen sind <strong>Höhenflüge</strong> und automatisierte Flugmodi wie <strong>RTH</strong> oder <strong>Wegpunktnavigation</strong>.</p>
+
+    <div class="highlight">
+        <p><strong>Temperatur</strong> beeinflusst die Akkuleistung:</p>
+        <ul>
+            <li>Bei Kälte sinkt die Kapazität</li>
+            <li>Bei Hitze droht Überhitzung</li>
+        </ul>
+    </div>
+    <p>Drohnenakkus sollten daher vor dem Flug auf Betriebstemperatur (<br>~15°C</b>) gebracht und während des Flugs überwacht werden.</p>
+
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/downwash.png">
+		<figcaption class="lerncaption">Downwash Effekt über Wasser</figcaption>
+	</figure>
+ 
+	<p><strong>Downwash-Effekte</strong> entstehen durch Rotorabwind und können bei Schwebeflug über Wasserflächen zu Instabilität führen. Die Luft wird nach unten gedrückt und erzeugt Turbulenzen, die die Sensorik stören.</p>
+
+    <p><strong>Ceiling</strong> beschreibt die Hauptwolkenuntergrenze – wichtig für Sichtflugbedingungen. Bei niedriger Ceiling kann die Drohne schnell in Wolken geraten, was die Sichtlinie unterbricht und die Navigation erschwert.</p>
+
+    <p><strong>Wetterdaten</strong> erhält man über:</p>
+    <ul>
+        <li><strong>METAR:</strong> aktueller Wetterbericht</li>
+        <li><strong>TAF:</strong> Wetterprognose</li>
+        <li><strong>UAV Forecast:</strong> drohnenspezifische Wetterdaten</li>
+        <li><strong>RPAS-Karte:</strong> Flugverbotszonen und Einschränkungen</li>
+    </ul>
+
+    <ul class="checklist">
+        <li>Wind &gt;10 m/s = hohes Risiko</li>
+        <li>KP-Index &gt;5 = GPS-Störung → Flugverbot</li>
+        <li>Nebel = VLOS nicht möglich</li>
+        <li>Downwash über Wasser beachten</li>
+        <li>METAR & TAF liefern zuverlässige Wetterdaten</li>
+    </ul>
+</section>
+
+<section id="kapitel5">
+    <h2>Kapitel 5: Betriebsverfahren & Flugvorbereitung</h2>
+    <p class="keywords">Stichworte: Preflight-Check · RTH · CSC · VLOS · Nachtflug · UAV-Editor · RPAS-Karte</p>
+
+    <div class="highlight">
+        <p>Vor jedem Flug ist ein strukturierter <strong>Preflight-Check</strong> erforderlich. Dazu gehören:</p>
+        <ul>
+            <li>Prüfung von Akkustand und Ladezustand</li>
+            <li>Sensorstatus (Kompass, GNSS, VPS)</li>
+            <li>Wetterbedingungen und KP-Index</li>
+            <li>Flugverbotszonen (RPAS-Karte, DABS, NOTAM)</li>
+            <li>RTH-Höhe und Startpunkt</li>
+            <li>Sichtlinie (VLOS) und Umgebungssicherheit</li>
+        </ul>
+    </div>
+    <p>Die Drohne muss in <strong>Sichtlinie (VLOS)</strong> geflogen werden. <strong>FPV-Flüge</strong> sind nur mit einem Flughelfer erlaubt, der die Drohne visuell überwacht. <strong>Nachtflüge</strong> sind erlaubt, wenn ein grünes Blinklicht vorhanden ist, das die Drohne sichtbar macht.</p>
+
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/rth.png">
+		<figcaption class="lerncaption">RTH - Return to Home</figcaption>
+	</figure>
+ 
+	<p>Der <strong>RTH-Modus</strong> (Return to Home) sorgt bei Signalverlust oder niedrigem Akku für eine automatische Rückkehr zum Startpunkt. Die <strong>RTH-Höhe</strong> muss so gewählt werden, dass Hindernisse wie Bäume oder Gebäude sicher überflogen werden.</p>
+
+    <p><strong>CSC</strong> (Combination Stick Command) ermöglicht eine sofortige <strong>Notabschaltung</strong> der Motoren – z. B. bei Gefahr für Personen oder bei unkontrollierbarem Flugverhalten. Diese Funktion sollte nur im äussersten Notfall verwendet werden.</p>
+
+	<figure>
+		<img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/vps.png">
+		<figcaption class="lerncaption">VPS - Visial Positionng System</figcaption>
+	</figure>
+ 
+    <p><strong>VPS</strong> sollte bei <strong>Gewässerüberflug</strong> deaktiviert werden, da Wasserreflexionen die Sensorik stören können. Die Drohne könnte dadurch instabil werden oder falsche Höhenwerte anzeigen.</p>
+
+    <div class="highlight">
+        <p>Die <strong>Flugplanung</strong> erfolgt mit dem <strong>UAV-Editor</strong>:</p>
+        <ul>
+            <li>Wegpunkte setzen</li>
+            <li>Höhenprofile analysieren</li>
+            <li>Geländeprofil prüfen</li>
+            <li>Sichtlinien berechnen</li>
+        </ul>
+    </div>
+
+	<embed src="https://map.geo.admin.ch/#/map?lang=de&center=2660000,1190000&z=1&topic=ech&layers=ch.bazl.einschraenkungen-drohnen&bgLayer=ch.swisstopo.pixelkarte-farbe" style="width:500px; height: 300px;">
+ 
+	<p>Die <strong>RPAS-Karte</strong> zeigt Flugverbotszonen, temporäre Einschränkungen und genehmigungspflichtige Bereiche. <strong>DABS</strong> und <strong>NOTAMs</strong> informieren über aktuelle Sperrungen und Luftraumänderungen.</p>
+
+    <p>Die <strong>Kommunikation mit Flughelfern</strong> ist essenziell. Vor dem Start sollten klare Signale vereinbart werden. Während des Flugs muss der Pilot jederzeit eingreifen können. Nach dem Flug erfolgt eine <strong>Postflight-Kontrolle</strong>:  Akku prüfen, Sensoren auslesen, Logdaten sichern.</p>
+
+    <ul class="checklist">
+        <li>VLOS ist Pflicht – FPV nur mit Flughelfer</li>
+        <li>RTH-Höhe muss Hindernisse überfliegen</li>
+        <li>CSC = Notabschaltung bei Gefahr</li>
+        <li>VPS über Wasser deaktivieren</li>
+        <li>UAV-Editor & RPAS-Karte für Flugplanung nutzen</li>
+    </ul>
+</section>

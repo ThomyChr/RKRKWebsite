@@ -1,0 +1,382 @@
+:root{
+  /* zentrale Farbpalette für Exam-Plattform */
+  --brand:#98B489;
+  --brand-dark:#48673A;
+  --danger:#b30000;
+  --muted:#E8E8E8;
+  --bg:#f6f7f6;
+  --card:#ffffff;
+  --text:#1f2a1f;
+  --border:#e4e7e4;
+  --radius:14px;
+  --shadow:0 6px 18px rgba(0,0,0,.06);
+  --timer-bg:#ddd;
+  --timer-fill:#00c853;
+  --highlight-blue:#1890ff;
+}
+
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* gemeinsame Layout-Container für Exam-Seiten (nicht fürs Menü) */
+.rkrk-wrap{
+  max-width:1200px;
+  margin:0 auto;
+  padding:14px;
+}
+
+.rkrk-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:14px 16px;
+}
+
+.rkrk-footer{
+  margin-top:14px;
+  font-size:13px;
+  opacity:.85;
+}
+
+.rkrk-footer a{
+  color:#2a5b2a;
+  text-decoration:none;
+}
+
+.rkrk-footer a:hover{
+  text-decoration:underline;
+}
+
+.rkrk-wrap table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+.rkrk-wrap th,
+.rkrk-wrap td{
+  padding:8px;
+  border-bottom:1px solid #ecefec;
+  text-align:left;
+  font-size:14px;
+}
+
+.rkrk-wrap th{
+  background:#f2f5f1;
+}
+
+.rkrk-wrap select,
+.rkrk-wrap button{
+  padding:8px;
+  border:1px solid #cfd8cc;
+  border-radius:8px;
+}
+
+.rkrk-wrap button{
+  background:var(--brand);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+
+.ok{
+  color:#1d7a2d;
+  font-weight:700;
+}
+
+.bad{
+  color:var(--danger);
+  font-weight:700;
+}
+
+/* ===========================
+   Quiz-Layout (rkrk_quiz / digitalexam)
+   =========================== */
+
+/* Hilfsklassen */
+.left{ text-align:left; }
+.center{ text-align:center; }
+.right{ text-align:right; }
+
+/* Header / Layout */
+.rkrk-topbar{ display:flex; gap:12px; align-items:flex-start; justify-content:space-between; }
+.rkrk-title h1{ margin:0; font-size:24px; line-height:1.2; }
+.rkrk-title #indrodution{ display:block; margin-top:6px; opacity:.8; }
+.rkrk-logo img{ height:56px; width:auto; object-fit:contain; display:block; }
+
+.rkrk-learning{ margin-top:14px; }
+
+.rkrk-grid{ display:grid; gap:14px; margin-top:14px; grid-template-columns:1fr; }
+@media (min-width: 900px){
+  .rkrk-grid{ grid-template-columns:320px 1fr; align-items:start; }
+  .rkrk-sidebar{ position:sticky; top:12px; }
+}
+
+.rkrk-main{ width:100%; max-width:100%; box-sizing:border-box; }
+.rkrk-sidebar #result{ display:block; margin-top:8px; }
+
+/* Fragebereich */
+.rkrk-qtitle{ font-weight:700; margin:10px 0 6px; font-size:16px; }
+.rkrk-qtext{ margin:0 0 12px; line-height:1.45; }
+
+/* Timer-Balken */
+#timer-container,
+#quiztimer-container{
+  width:100%;
+  height:20px;
+  background:var(--timer-bg);
+  border-radius:4px;
+  overflow:hidden;
+}
+
+#timer-bar,
+#quiztimer-bar{
+  width:100%;
+  height:100%;
+  background:var(--timer-fill);
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-weight:bold;
+  font-size:14px;
+  text-shadow:1px 1px 2px #000;
+}
+
+#timer-text,
+#quiztimer-text{
+  position:absolute;
+  z-index:2;
+  pointer-events:none;
+}
+
+/* Bilder */
+#frage-bild,
+#loesung-bild{
+  max-width:100%;
+  height:auto;
+}
+
+/* Antwort-Bereich */
+.rkrk-fieldset{ border:1px solid var(--border); border-radius:12px; padding:12px; }
+.rkrk-fieldset legend{ padding:0 8px; font-weight:700; }
+
+.rkrk-options{ display:grid; gap:10px; grid-template-columns:1fr; margin-top:10px; }
+@media (min-width:560px){
+  .rkrk-options{ grid-template-columns:1fr 1fr; }
+}
+.rkrk-opt{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:10px 10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fff;
+}
+.rkrk-opt input{ margin-top:3px; transform:scale(1.2); }
+.rkrk-opt label{ cursor:pointer; line-height:1.25; }
+
+/* Benutzerfelder */
+.rkrk-user{ display:grid; gap:10px; margin-top:12px; }
+.rkrk-field label{ display:block; margin-bottom:6px; font-weight:700; }
+.rkrk-field input,
+.rkrk-field select{
+  width:100%;
+  box-sizing:border-box;
+  padding:11px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  font-size:16px;
+  background:#fff;
+}
+
+/* Navigation */
+.rkrk-nav{ display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:14px; }
+.rkrk-nav > span{ flex:1; min-width:160px; }
+.rkrk-nav button{ width:100%; }
+
+/* Lösung */
+.rkrk-solution{ margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); }
+
+/* Bewertungsoptionen mit Farbcodes (g/r/o) */
+.option-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+  gap:10px;
+}
+
+.color-option{
+  --option-color:#9aa3af;
+  --option-fill:#eef4ee;
+  --option-selected-text:#1f2a1f;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:42px;
+  box-sizing:border-box;
+  text-align:center;
+  gap:0;
+  border:2px solid var(--option-color);
+  border-radius:10px;
+  padding:10px 12px;
+  cursor:pointer;
+  background:#fff;
+  color:var(--option-color);
+  transition:all .15s ease;
+}
+
+.color-option input{
+  position:absolute;
+  opacity:0;
+  width:0;
+  height:0;
+  pointer-events:none;
+}
+
+.color-option .color-badge{
+  font-weight:700;
+  line-height:1.2;
+}
+
+.color-option.selected{
+  background:var(--option-fill);
+  color:var(--option-selected-text);
+}
+
+.color-option.selected .color-badge{
+  color:inherit;
+}
+
+/* Typografie/Hilfen */
+sup a{ text-decoration:none; font-size:0.75em; vertical-align:super; }
+img{ border-radius:5px 15% 10px; }
+
+.lernimagelarge{ height:500px; }
+.lernimage{ height:300px; }
+.lernimagesmall{ height:200px; }
+.lernimageverysmall{ height:100px; }
+.lernimagefixwidth{ width:600px; }
+.lernimagefixheight{ height:200px; }
+.lernimagefixlargeheight{ height:500px; }
+.lernimagesmallfixwidth{ width:450px; }
+.lerncaption{ font-style:italic; }
+
+.formula{
+  font-family:"Courier New",monospace;
+  background:#f4f4f4;
+  padding:4px 6px;
+  border-radius:4px;
+  display:inline-block;
+}
+
+.key{
+  background:#f0f8ff;
+  padding:4px 8px;
+  display:inline-block;
+  margin:5px 0;
+}
+
+.keywords{
+  font-style:italic;
+  color:#666;
+  margin-bottom:1rem;
+}
+
+.highlight{
+  background-color:#e6f7ff;
+  border-left:4px solid var(--highlight-blue);
+  padding:0.5rem 1rem;
+  margin:1rem 0;
+}
+
+ul.checklist{
+  list-style:none;
+  padding-left:0;
+}
+ul.checklist li::before{
+  content:"✅ ";
+  color:green;
+}
+
+/* Tabellen-Hilfen im Quiz */
+.two-gray-cols td,
+.two-gray-cols th,
+.one-gray-col td,
+.one-gray-col th{
+  vertical-align:top;
+}
+
+.lightgreen-box{
+  background-color:#e8f8e8;
+  border:2px solid #8ac78a;
+  padding:1rem 1.2rem;
+  border-radius:6px;
+  margin:1rem 0;
+}
+
+.lightred-box{
+  background-color:#fdeaea;
+  border:2px solid #e08a8a;
+  padding:1rem 1.2rem;
+  border-radius:6px;
+  margin:1rem 0;
+}
+
+.lightred-box h3,
+.lightgreen-box h3{
+  margin-top:0;
+  font-weight:bold;
+}
+
+.lightred-box p{
+  margin:0.4rem 0 1rem 0;
+  font-weight:bold;
+  font-size:120%;
+  color:#b85a5a;
+}
+
+/* ===========================
+   Admin-Seite (rkrk_exam_admin.php)
+   =========================== */
+
+.kpis{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:10px;
+}
+.kpi{
+  background:#f8fbf7;
+  border:1px solid #dfe6dc;
+  border-radius:10px;
+  padding:10px;
+}
+.filters{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  align-items:flex-end;
+}
+.quick-links{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.quick-links .ql-btn{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:8px;
+  background:var(--brand);
+  color:#fff;
+  text-decoration:none;
+}
+.quick-links .ql-btn:hover{
+  background:var(--brand-dark);
+}

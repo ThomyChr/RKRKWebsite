@@ -1,0 +1,428 @@
+<section id="kapitel1">
+	<h2>
+      Kapitel 1: Aufbau und Funktionsweise von Drohnen
+    </h2> <a class="back-to-top" href="#toc">
+      ↑ zum Inhaltsverzeichnis
+    </a>
+	<p class="keywords"> Stichworte: Multikopter · Brushless-Motoren · ESC · Fluglageregler · Propeller · Achsen </p>
+	<p> Drohnen, insbesondere Multikopter, bestehen aus mehreren Rotoren, die durch bürstenlose Elektromotoren (Brushless-Motoren) angetrieben werden. Diese Motoren sind besonders effizient, langlebig und wartungsarm. Die Steuerung der Drehzahl erfolgt über sogenannte ESCs (Electronic Speed Controllers), die die Motoren präzise ansteuern und so die Fluglage beeinflussen. </p>
+	<p> Das Herzstück der Steuerung ist der <strong>
+        Fluglageregler
+      </strong> . Er verarbeitet kontinuierlich Sensordaten – darunter Gyroskop, Beschleunigungssensor und Magnetometer – und sorgt dafür, dass die Drohne stabil bleibt. </p>
+	<figure> <img alt="Flugachsen" class="lernimage" src="quiz/images/drohne-allgemein/achsen.png" />
+		<figcaption class="lerncaption"> Flugachsen </figcaption>
+	</figure>
+	<div class="highlight"> <strong>
+        Bewegungen entlang der drei Achsen:
+      </strong>
+		<ul>
+			<li> <strong>
+            Roll (Längsachse):
+          </strong> Drehen um die Achse von Nase zu Heck </li>
+			<li> <strong>
+            Nick (Querachse):
+          </strong> Neigung nach vorne oder hinten </li>
+			<li> <strong>
+            Gier (Hochachse):
+          </strong> Drehung um die vertikale Achse </li>
+		</ul>
+	</div>
+	<p> Durch gezielte Drehzahlanpassung einzelner Motoren entstehen Flugmanöver wie Schweben, Drehen oder Richtungswechsel. Beim Schweben drehen alle Motoren gleich schnell. Beim Steigen wird die Drehzahl aller Motoren erhöht, beim Sinken reduziert. Für Richtungsänderungen werden die Motoren asymmetrisch angesteuert. </p>
+	<p> Die <strong>
+        Propeller
+      </strong> erzeugen Auftrieb durch Luftverdrängung. Gegenläufige Propellerpaare gleichen Drehmomente aus und sorgen für Stabilität. </p>
+	<p> Die Stromversorgung erfolgt über <strong>
+        Lithium-Polymer-Akkus
+      </strong> . Ihre Kapazität bestimmt die Flugzeit, ihre Spannung die Leistung. Akkus müssen regelmässig geprüft und korrekt geladen werden. </p>
+	<p> Moderne Drohnen verfügen über <strong>
+        LED-Statusanzeigen
+      </strong> , <strong>
+        Gimbal-Systeme
+      </strong> zur Kamerastabilisierung und <strong>
+        Telemetrieübertragung
+      </strong> zur Anzeige von Echtzeitdaten. </p>
+	<figure> <img alt="Modus 2" class="lernimage" src="quiz/images/drohne-allgemein/modus2-fernsteuerung.png" />
+		<figcaption class="lerncaption"> Modus 2 der FernsteuerungFlugachsen </figcaption>
+	</figure>
+	<div class="highlight"> <strong>
+        Fernsteuerung (im Modus 2):
+      </strong>
+		<ul>
+			<li> <strong>
+            Linker Stick:
+          </strong> Höhe und Gier </li>
+			<li> <strong>
+            Rechter Stick:
+          </strong> Nick und Roll </li>
+		</ul>
+	</div>
+	<p> Die Steuerbefehle werden über Funk übertragen. Bei Signalverlust greift der <strong>
+        RTH-Modus
+      </strong> (Return to Home), sofern GPS verfügbar ist. </p>
+	<p> Die Flugleistung wird durch Gewicht, Aerodynamik und Wetterbedingungen beeinflusst. Die <strong>
+        MTOM
+      </strong> (maximale Startmasse) darf bei C2-Drohnen 4 kg nicht überschreiten. </p>
+	<ul class="checklist">
+		<li> ESCs regeln die Motorenleistung </li>
+		<li> Fluglageregler verarbeitet Sensordaten zur Stabilisierung </li>
+		<li> Bewegungen erfolgen entlang Roll-, Nick- und Gierachse </li>
+		<li> Akkus beeinflussen Flugzeit und müssen gepflegt werden </li>
+		<li> RTH-Modus schützt bei Signalverlust </li>
+	</ul>
+	<div class="addendum integrated" data-source="RKRS_Flugsicherheit.html" id="kapitel1-addendum-1">
+		<h3 id="kapitel1-ergänzung-flugsicherheit--technische-grundlagen-c2a2">
+        Ergänzung: Flugsicherheit – Technische Grundlagen (C2/A2)
+      </h3>
+		<h2>
+        Kapitel 1: Technische Grundlagen der Drohne
+      </h2>
+		<p class="keywords"> Stichworte: Fluglageregler · ESCs · Brushless-Motoren · Propeller · Roll/Nick/Gier </p>
+		<p> C2-Drohnen sind hochentwickelte Fluggeräte, die durch mindestens drei unabhängig steuerbare Motoren angetrieben werden. Das zentrale Steuerorgan ist der <strong>
+          Fluglageregler
+        </strong> , der kontinuierlich Sensordaten wie Gyroskop, Beschleunigungssensor und Magnetometer auswertet. Diese Daten werden genutzt, um die Drehzahl der einzelnen Motoren präzise anzupassen und die gewünschte Fluglage zu erreichen. </p>
+		<p> Jeder <strong>
+          Brushless-Motor
+        </strong> benötigt ein elektrisches Drehfeld, das durch einen <strong>
+          ESC
+        </strong> (Electronic Speed Controller) erzeugt wird. Die <strong>
+          Propeller
+        </strong> erzeugen Auftrieb, indem sie Luft nach unten drücken – an der Oberkante entsteht ein Unterdruck, der die Drohne „ansaugt“. </p>
+		<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/achsen.png" />
+			<figcaption class="lerncaption"> Achsen </figcaption>
+		</figure>
+		<div class="highlight"> <strong>
+          Bewegungen entlang der drei Achsen:
+        </strong> </div>
+		<p> Beim <strong>
+          Schweben
+        </strong> drehen alle Motoren mit gleicher Drehzahl. Diagonal gegenüberliegende Motoren rotieren entgegengesetzt, um das Drehmoment auszugleichen. <strong>
+          Steigen/Sinken
+        </strong> erfolgt durch gleichzeitige Änderung der Drehzahl aller Motoren. <strong>
+          Nick, Roll und Gier
+        </strong> werden durch gezielte Drehzahlanpassungen einzelner Motoren erreicht. </p>
+		<p> Die Stromversorgung erfolgt über <strong>
+          Lithium-Polymer-Akkus
+        </strong> . Moderne Drohnen verfügen über <strong>
+          Fail-Safe-Systeme
+        </strong> und <strong>
+          Status-LEDs
+        </strong> . Viele C2-Drohnen besitzen ein <strong>
+          Gimbal
+        </strong> zur Kamerastabilisierung. </p>
+		<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/modus2-fernsteuerung.png" />
+			<figcaption class="lerncaption"> Modus Fernsteuerung (typ. Modus 2) </figcaption>
+		</figure>
+		<p> Die Steuerung erfolgt über eine <strong>
+          Fernbedienung
+        </strong> mit zwei Steuerknüppeln. Die Reichweite hängt von Sendeleistung, Umgebung und Antennenausrichtung ab. Bei Signalverlust greift der <strong>
+          RTH-Modus
+        </strong> (Return to Home), sofern GPS verfügbar ist. </p>
+		<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/rth.png" />
+			<figcaption class="lerncaption"> RTH - Return to Home </figcaption>
+		</figure>
+		<p> Die <strong>
+          Flugleistung
+        </strong> wird durch Gewicht, Aerodynamik und Wetter beeinflusst. Die <strong>
+          MTOM
+        </strong> (maximale Startmasse) darf 4 kg nicht überschreiten. </p>
+		<ul class="checklist">
+			<li> Fluglageregler steuert die Stabilität </li>
+			<li> ESC regelt die Drehzahl der Motoren </li>
+			<li> MTOM bei C2-Drohnen: max. 4 kg </li>
+			<li> Schweben = gleiche Drehzahl aller Motoren </li>
+			<li> RTH-Modus aktiviert bei Signalverlust </li>
+		</ul>
+	</div>
+</section>
+<section id="kapitel1-addendum">
+	<h2>
+      1.1 Drohnenphysik
+    </h2> <a class="back-to-top" href="#toc">
+      ↑ zum Inhaltsverzeichnis
+    </a>
+	<p> Eine Drohne (UAV – Unmanned Aerial Vehicle / UAS – Unmanned Aircraft System) ist ein Fluggerät, bei dem der nötige Auf- und Vortrieb durch mindestens drei unabhängig steuerbare Motoren erzeugt wird. Richtungsänderungen erfolgen durch die Anpassung der Drehzahlen der einzelnen Motoren. </p>
+	<h3 id="kapitel1-addendum-111-fluglageregler">
+      1.1.1 Fluglageregler
+    </h3>
+	<p> Das Herzstück einer Drohne ist der Fluglageregler. Dieser misst kontinuierlich die Abweichung der aktuellen Fluglage von der gewünschten Fluglage mithilfe verschiedener Sensoren. Daraufhin wird die Drehzahl der einzelnen Motoren angepasst. Da Brushless-Motoren ein elektrisches Drehfeld benötigen, ist jeder Motor mit einem eigenen ESC (Electronic Speed Controller) ausgestattet, das die Drehzahl des jeweiligen Motors steuert. </p>
+	<h3 id="kapitel1-addendum-112-propeller">
+      1.1.2 Propeller
+    </h3>
+	<p> Die Propeller dienen dem Antrieb und der Steuerung der Drohne. Sie wirken wie die Flügel eines Ventilators, der Luft nach unten drückt. An der Vorder- und Oberkante des Propellers entsteht ein Unterdruck, wodurch die Drohne praktisch in die Luft "gesogen" wird. </p>
+	<h3 id="kapitel1-addendum-113-achsen">
+      1.1.3 Achsen
+    </h3>
+	<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/achsen.png" />
+		<figcaption class="lerncaption"> Achsen </figcaption>
+	</figure>
+	<ul>
+		<li> Längsachse: Eine gedachte Linie, die vom Heck zur Nase des Fluggeräts verläuft. </li>
+		<li> Querachse: Diese verläuft von einer Flügelspitze zur anderen. </li>
+		<li> Hochachse: Sie steht senkrecht auf der durch die Längs- und Querachse aufgespannten Ebene. </li>
+	</ul>
+	<p> Alle drei Achsen gehen durch den Schwerpunkt der Drohne und stehen senkrecht zueinander. </p>
+	<h3 id="kapitel1-addendum-114-schweben">
+      1.1.4 Schweben
+    </h3>
+	<p> Während des Schwebeflugs drehen alle Motoren mit der gleichen Drehzahl und erzeugen somit denselben Schub. Die diagonal gegenüberliegenden Motoren drehen dabei in entgegengesetzte Richtungen. Auf diese Weise kann die Drohne eine stabile Fluglage beibehalten. Da die Anzahl der rechts- und linksdrehenden Propeller gleich ist, neutralisiert sich das um die Hochachse entstehende Drehmoment. </p>
+	<h3 id="kapitel1-addendum-115-steigen-und-sinken">
+      1.1.5 Steigen und Sinken
+    </h3>
+	<p> Um zu steigen, wird die Drehzahl aller Motoren gleichzeitig erhöht. Beim Sinken wird die Drehzahl aller Motoren verringert, wodurch die Drohne der Schwerkraft folgt und nach unten sinkt. </p>
+	<h3 id="kapitel1-addendum-116-nicken">
+      1.1.6 Nicken
+    </h3>
+	<p> Beim Vorwärtsflug verringert sich die Drehzahl der vorderen Motoren, während sich die Drehzahl der hinteren Motoren erhöht. Beim Rückwärtsflug sinkt die Drehzahl der hinteren Motoren, während die Drehzahl der vorderen Motoren ansteigt. </p>
+	<h3 id="kapitel1-addendum-117-rollen">
+      1.1.7 Rollen
+    </h3>
+	<p> Bei einer Rollbewegung nach links (Backbord) erhöhen sich die Drehzahlen der rechten Motoren. Bei einer Rollbewegung nach rechts (Steuerbord) wird die Drehzahl der linken Motoren erhöht. </p>
+	<h3 id="kapitel1-addendum-118-gieren">
+      1.1.8 Gieren
+    </h3>
+	<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/rotoren.png" />
+		<figcaption class="lerncaption"> Rotorendrehrichtung </figcaption>
+	</figure>
+	<p> Das Gieren erfolgt durch die Steuerung der diagonal gegenüberliegenden Motoren. Wenn die Drohne im Uhrzeigersinn giert, erhöht sich die Drehzahl der rechten, diagonalen Motoren. Giert die Drohne gegen den Uhrzeigersinn, wird die Drehzahl der linken, diagonalen Motoren erhöht. </p>
+</section>
+<section id="kapitel2">
+	<h2>
+      Kapitel 2: Sensorik und Navigation
+    </h2> <a class="back-to-top" href="#toc">
+      ↑ zum Inhaltsverzeichnis
+    </a>
+	<p class="keywords"> Stichworte: GNSS · Kompass · Barometer · VPS · IMU · ADS-B </p>
+	<p> Die Navigation moderner Drohnen basiert auf einer Kombination aus <strong>
+        Satellitensystemen
+      </strong> , internen Sensoren und visuellen Hilfsmitteln. Das wichtigste System ist <strong>
+        GNSS(Global Navigation Satellite System)
+      </strong> , das <strong>
+        GPS
+      </strong> (USA), <strong>
+        Galileo
+      </strong> (EU), <strong>
+        GLONASS
+      </strong> (Russland) und <strong>
+        BeiDou
+      </strong> (China) umfasst. Diese Satelliten senden Signale, die von der Drohne empfangen und zur Positionsbestimmung genutzt werden. </p>
+	<figure> <img alt="GNSS Satellitensysteme" class="lernimage" src="quiz/images/drohne-allgemein/GNSS-Systeme.png" />
+		<figcaption class="lerncaption"> GNSS Satellitensysteme </figcaption>
+	</figure>
+	<p> Die Positionsbestimmung erfolgt durch <strong>
+        Triangulation
+      </strong> : Die Drohne misst die Entfernung zu mindestens vier Satelliten und berechnet daraus ihre genaue Position. Je mehr Satelliten empfangen werden, desto höher ist die Genauigkeit. GNSS ist essenziell für Funktionen wie <strong>
+        RTH
+      </strong> , <strong>
+        Wegpunktflug
+      </strong> und <strong>
+        Geofencing
+      </strong> . </p>
+	<figure> <img alt="GNSS Triangulation" class="lernimage" src="quiz/images/drohne-allgemein/GNSS-Triangulation.png" />
+		<figcaption class="lerncaption"> Berechnung der Position durch Triangulation </figcaption>
+	</figure>
+	<p> Der <strong>
+        Kompass
+      </strong> (Magnetometer) misst das Erdmagnetfeld und zeigt die Ausrichtung der Drohne relativ zum magnetischen Norden. Da der magnetische Nordpol nicht mit dem geografischen Nordpol übereinstimmt und sich jährlich verschiebt, muss der Kompass bei Standortwechsel über 100 km neu kalibriert werden. Eine fehlerhafte Kalibrierung kann zu unkontrollierbarem Flugverhalten führen. </p>
+	<p> Das <strong>
+        Barometer
+      </strong> misst den Luftdruck und berechnet daraus die Höhe über dem Boden. Es ist besonders wichtig für die Einhaltung der maximalen Flughöhe (120 m) und für automatische Flugmodi. In Kombination mit GNSS ergibt sich eine präzise Höhenführung. </p>
+	<p> Das <strong>
+        VPS
+      </strong> (Vision Positioning System) nutzt optische Sensoren und Infrarotkameras zur Stabilisierung bei niedriger Flughöhe. Es ist besonders hilfreich beim Starten und Landen, kann aber über Wasser oder bei reflektierenden Oberflächen gestört werden. Daher sollte VPS bei Gewässerüberflug deaktiviert werden. </p>
+	<p> <strong>
+        ADS-B
+      </strong> (Automatic Dependent Surveillance – Broadcast) ist ein System zur Kollisionsvermeidung. Es empfängt Signale von bemannten Luftfahrzeugen und zeigt deren Position auf der App an. <strong>
+        FLARM
+      </strong> ist ein aktives Kollisionswarnsystem, das Positionsdaten sendet und empfängt – besonders relevant in Segelfluggebieten. </p>
+	<p> <strong>
+        Sensorfusion
+      </strong> bezeichnet die Kombination aller verfügbaren Datenquellen (IMU, GNSS, Barometer, VPS), um eine stabile Fluglage zu gewährleisten. Bei Ausfall einzelner Sensoren greift das System auf alternative Quellen zurück. Dies erhöht die Ausfallsicherheit und ermöglicht präzises Fliegen auch unter schwierigen Bedingungen. </p>
+	<figure> <img alt="IMU, Intertial Measurement Unit" class="lernimagesmall" src="quiz/images/drohne-allgemein/imu.png" />
+		<figcaption class="lerncaption"> IMU, Intertial Measurement Unit </figcaption>
+	</figure>
+	<p> Zusätzlich verfügen viele Drohnen über ein <strong>
+        Gimbal-System
+      </strong> zur Kamerastabilisierung, ein <strong>
+        IMU
+      </strong> (Inertial Measurement Unit) zur Lageerkennung und eine <strong>
+        Telemetrieübertragung
+      </strong> zur Anzeige von Echtzeitdaten wie Höhe, Geschwindigkeit und Akkustand. </p>
+	<ul class="checklist">
+		<li> GNSS liefert Positionsdaten für Navigation und RTH </li>
+		<li> Kompass muss bei Standortwechsel kalibriert werden </li>
+		<li> VPS über Wasser deaktivieren </li>
+		<li> ADS-B warnt vor bemannten Luftfahrzeugen </li>
+		<li> Sensorfusion erhöht Flugsicherheit bei Teilausfall </li>
+	</ul>
+	<div class="addendum integrated" data-source="RKRS_Flugsicherheit.html" id="kapitel2-addendum-1">
+		<h3 id="kapitel2-ergänzung-flugsicherheit--navigation--sensorik">
+        Ergänzung: Flugsicherheit – Navigation &amp; Sensorik
+      </h3>
+		<h2>
+        Kapitel 2: Navigation &amp; Sensorik
+      </h2>
+		<p class="keywords"> Stichworte: GNSS · Kompass · Barometer · VPS · ADS-B · FLARM </p>
+		<figure> <img alt="GNSS Satellitensysteme" class="lernimage" src="quiz/images/allgemeine-drohnenkunde/GNSS-Systeme.png" />
+			<figcaption class="lerncaption"> GNSS Satellitensysteme </figcaption>
+		</figure>
+		<p> Die Navigation moderner Drohnen basiert auf einer Kombination aus <strong>
+          Satellitensystemen
+        </strong> , internen Sensoren und visuellen Hilfsmitteln. Das wichtigste System ist <strong>
+          GNSS
+        </strong> (Global Navigation Satellite System), das <strong>
+          GPS
+        </strong> (USA), <strong>
+          Galileo
+        </strong> (EU), <strong>
+          GLONASS
+        </strong> (Russland) und <strong>
+          BeiDou
+        </strong> (China) umfasst. Diese Satelliten senden Signale, die von der Drohne empfangen und zur Positionsbestimmung genutzt werden. Besonders präzise sind <strong>
+          LEO-Satelliten
+        </strong> (Low Earth Orbit), da sie näher an der Erde kreisen und geringere Signalverzögerung bieten. </p>
+		<figure> <img class="lernimage" src="quiz/images/allgemeine-drohnenkunde/GNSS-Triangulation.png" />
+			<figcaption class="lerncaption"> Berechnung der Position durch Laufzeit und Triangulation </figcaption>
+		</figure>
+		<p> Die Positionsbestimmung erfolgt durch <strong>
+          Triangulation
+        </strong> : Die Drohne misst die Entfernung zu mindestens vier Satelliten und berechnet daraus ihre genaue Position. Je mehr Satelliten empfangen werden, desto höher ist die Genauigkeit. GNSS ist essenziell für Funktionen wie <strong>
+          RTH
+        </strong> , <strong>
+          Wegpunktflug
+        </strong> und <strong>
+          Geofencing
+        </strong> . </p>
+		<p> Der <strong>
+          Kompass
+        </strong> (Magnetometer) misst das Erdmagnetfeld und zeigt die Ausrichtung der Drohne relativ zum magnetischen Norden. Da der magnetische Nordpol nicht mit dem geografischen Nordpol übereinstimmt und sich jährlich verschiebt, muss der Kompass bei Standortwechsel über 100 km neu kalibriert werden. Eine fehlerhafte Kalibrierung kann zu unkontrollierbarem Flugverhalten führen. </p>
+		<p> Das <strong>
+          Barometer
+        </strong> misst den Luftdruck und berechnet daraus die Höhe über dem Boden. Es ist besonders wichtig für die Einhaltung der maximalen Flughöhe (120 m) und für automatische Flugmodi. In Kombination mit GNSS ergibt sich eine präzise Höhenführung. </p>
+		<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/vps.png" />
+			<figcaption class="lerncaption"> VPS - Visual Positioning System </figcaption>
+		</figure>
+		<p> Das <strong>
+          VPS
+        </strong> (Vision Positioning System) nutzt optische Sensoren und Infrarotkameras zur Stabilisierung bei niedriger Flughöhe. Es ist besonders hilfreich beim Starten und Landen, kann aber über Wasser oder bei reflektierenden Oberflächen gestört werden. Daher sollte VPS bei Gewässerüberflug deaktiviert werden. </p>
+		<p> <strong>
+          ADS-B
+        </strong> (Automatic Dependent Surveillance – Broadcast) ist ein System zur Kollisionsvermeidung. Es empfängt Signale von bemannten Luftfahrzeugen und zeigt deren Position auf der App an. <strong>
+          FLARM
+        </strong> ist ein aktives Kollisionswarnsystem, das Positionsdaten sendet und empfängt – besonders relevant in Segelfluggebieten. </p>
+		<figure> <img class="lernimagesmall" src="quiz/images/allgemeine-drohnenkunde/sensorfusion.png" />
+			<figcaption class="lerncaption"> Sensorfusion </figcaption>
+		</figure>
+		<p> <strong>
+          Sensorfusion
+        </strong> bezeichnet die Kombination aller verfügbaren Datenquellen (IMU, GNSS, Barometer, VPS), um eine stabile Fluglage zu gewährleisten. Bei Ausfall einzelner Sensoren greift das System auf alternative Quellen zurück. Dies erhöht die Ausfallsicherheit und ermöglicht präzises Fliegen auch unter schwierigen Bedingungen. </p>
+		<p> Zusätzlich verfügen viele Drohnen über ein <strong>
+          Gimbal-System
+        </strong> zur Kamerastabilisierung, ein <strong>
+          IMU
+        </strong> (Inertial Measurement Unit) zur Lageerkennung und eine <strong>
+          Telemetrieübertragung
+        </strong> zur Anzeige von Echtzeitdaten wie Höhe, Geschwindigkeit und Akkustand. </p>
+		<ul class="checklist">
+			<li> GNSS = Positionsbestimmung via Satelliten </li>
+			<li> Kompass muss bei Standortwechsel &gt;100 km kalibriert werden </li>
+			<li> ADS-B empfängt bemannte Luftfahrzeuge </li>
+			<li> Sensorfusion erhöht Flugsicherheit </li>
+		</ul>
+	</div>
+</section>
+<section id="kapitel2-addendum">
+	<h2>
+      1.2 Positionsbestimmung
+    </h2> <a class="back-to-top" href="#toc">
+      ↑ zum Inhaltsverzeichnis
+    </a>
+	<h3 id="kapitel2-addendum-121-gnss--globale-satellitennavigationssysteme">
+      1.2.1 GNSS – Globale Satellitennavigationssysteme
+    </h3>
+	<h4>
+      1.2.1.1 Überblick über GNSS-Systeme
+    </h4>
+	<p> GNSS steht für „Global Navigation Satellite System“ und umfasst mehrere weltweit verfügbare Satellitennavigationssysteme: </p>
+	<figure> <img alt="GNSS Satellitensysteme" class="lernimage" src="quiz/images/allgemeine-drohnenkunde/GNSS-Systeme.png" />
+		<figcaption class="lerncaption"> GNSS Satellitensysteme </figcaption>
+	</figure>
+	<ul>
+		<li> <strong>
+          GPS
+        </strong> (USA): weltweit verfügbar, militärisch entwickelt </li>
+		<li> <strong>
+          GLONASS
+        </strong> (Russland): robust bei Polarregionen </li>
+		<li> <strong>
+          Galileo
+        </strong> (EU): zivil betrieben, hohe Genauigkeit </li>
+		<li> <strong>
+          BeiDou
+        </strong> (China): ursprünglich regional, seit 2020 global </li>
+	</ul>
+	<p> Moderne GNSS-Empfänger nutzen oft mehrere dieser Systeme gleichzeitig, um die Genauigkeit und Zuverlässigkeit zu erhöhen. </p>
+	<h4>
+      1.2.1.2 Satellitenhöhe und Anzahl
+    </h4>
+	<p> GNSS-Satelliten befinden sich in einer mittleren Erdumlaufbahn (MEO) in etwa <strong>
+        20'200 km Höhe
+      </strong> über der Erdoberfläche (mittlerer Erdumlaufbahn (MEO) zwischen ca. 19.100 km für GLONASS und 23.222 km für Galileo). Sie senden kontinuierlich Positions- und Zeitdaten. </p>
+	<p> Damit ein Empfänger seine Position bestimmen kann, benötigt er Signale von <strong>
+        mindestens vier Satelliten
+      </strong> . Je mehr Satelliten empfangen werden, desto präziser ist die Positionsbestimmung – oft auf wenige Meter genau, mit Korrektursystemen sogar im Zentimeterbereich. </p>
+	<h4>
+      1.2.1.3 Positionsberechnung
+    </h4>
+	<p> Die Positionsbestimmung erfolgt durch sogenannte <strong>
+        Laufzeitmessung
+      </strong> : </p>
+	<figure> <img class="lernimage" src="quiz/images/allgemeine-drohnenkunde/GNSS-Triangulation.png" />
+		<figcaption class="lerncaption"> Berechnung der Position durch Laufzeit und Triangulation </figcaption>
+	</figure>
+	<ol>
+		<li> Jeder Satellit sendet seine Position und die genaue Uhrzeit. </li>
+		<li> Der Empfänger misst, wie lange das Signal vom Satelliten benötigt. </li>
+		<li> Die Zeit wird mit der Lichtgeschwindigkeit multipliziert – das ergibt die Entfernung. </li>
+		<li> Aus den Entfernungen zu mehreren Satelliten wird die Position im Raum berechnet (Triangulation). </li>
+	</ol>
+	<p> Zusätzlich wird ein Uhrenfehler des Empfängers mitberechnet, da dessen Uhr nicht so genau ist wie die Atomuhren der Satelliten. </p>
+	<h4>
+      1.2.1.4 Einflussfaktoren auf die Genauigkeit
+    </h4>
+	<figure> <img class="lernimage" src="quiz/images/allgemeine-drohnenkunde/gnss-fehler.png" />
+		<figcaption class="lerncaption"> Fehlerquellen bie der Positionsberechnung </figcaption>
+	</figure>
+	<ul>
+		<li> <strong>
+          Wetter:
+        </strong> Starke Niederschläge, Gewitter oder Schneefall können die Signalqualität beeinträchtigen. </li>
+		<li> <strong>
+          Magnetische Störungen:
+        </strong> Sonnenstürme oder geomagnetische Aktivität beeinflussen die Ionosphäre und verursachen Signalverzögerungen. </li>
+		<li> <strong>
+          Topografie:
+        </strong> In engen Tälern oder zwischen Gebäuden kann die Sichtverbindung zu Satelliten gestört sein. </li>
+		<li> <strong>
+          Multipath-Effekte:
+        </strong> Reflektionen an Gebäuden oder metallischen Flächen führen zu falschen Laufzeitmessungen. </li>
+	</ul>
+	<p> Für präzise Anwendungen wie Vermessung oder Rehkitzrettung werden oft <strong>
+        RTK
+      </strong> (Real Time Kinematic) oder <strong>
+        SBAS
+      </strong> (Satellite-Based Augmentation Systems wie EGNOS) eingesetzt. </p>
+	<h3 id="kapitel2-addendum-122-kompass">
+      1.2.2 Kompass
+    </h3>
+	<figure> <img class="lernimage" src="quiz/images/allgemeine-drohnenkunde/erdkompass.png" />
+		<figcaption class="lerncaption"> Erdkompass </figcaption>
+	</figure>
+	<p> Damit die Drohne weiss in welche Himmelsrichtung sie ausgerichtet ist und welche Motoren angesteuert werden müssen, ist ein Magnetkompass notwendig. Mit diesem misst die Drohne das Erdmagnetfeld und erkennt, wo Norden liegt. </p>
+	<p> Der geografische Nordpol ist der nördlichste Punkt der Erde und gleichzeitig der Drehpunkt der Erdachse. </p>
+	<p> Der magnetische Nordpol wird auch arktischer Pol genannt. Die Erdmagnetfeldlinien treten am antarktischen Pol (Südpol) senkrecht aus der Erdoberfläche aus, verlaufen dann um die Erde herum und treffen sich wieder am magnetischen Pol. Dort dringen sie wieder senkrecht in die Erdoberfläche ein. Der magnetische Pol ist nicht statisch und wandert zurzeit ca. 35km im Jahr von Kanada aus in Richtung Russland. Die Entfernung zum geografischen Pol beträgt momentan rund 500km. Diese Entfernungsdifferenz nennt man Ortsmissweisung (engl. Variation). </p>
+	<p> Aufgrund der Ortsmissweisung sollte der Kompass einer Drohne neu kalibriert werden, wenn sich der Startplatz mehr als 100km vom letzten Startort entfernt befindet oder magnetische Störungen auftreten. </p>
+	<h3 id="kapitel2-addendum-123-barometer-oder-luftdrucksensor">
+      1.2.3 Barometer oder Luftdrucksensor
+    </h3>
+	<p> Ein Barometer oder Luftdrucksensor wird dazu verwendet, um die Höhe einer Drohne zu ermitteln. Das Barometer misst anhand des sich verändernden Luftdrucks den jeweiligen Höhenunterschied. </p>
+</section>

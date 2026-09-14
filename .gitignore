@@ -1,0 +1,57 @@
+# Runtime / logs
+*.log
+tmp/
+**/_temp/
+**/.DS_Store
+Thumbs.db
+desktop.ini
+
+# PHP
+phpinfo.php
+
+# Large third-party
+rt/dompdf/vendor/
+**/node_modules/
+
+# GIS dumps / local caches (not needed for modernization diffs)
+ch_swisstopo_swissalti3d-g3wYIRtF-orignal/
+
+# Bulky media and map data remain on the NAS; this repo tracks source + docs
+kmlfiles/
+doc/
+**/*.mbtiles
+**/*.tif
+**/*.tiff
+**/*.mp4
+**/*.mov
+**/*.zip
+
+# Quiz: keep CSV catalogs, skip question images/video
+quiz/**/*.jpg
+quiz/**/*.jpeg
+quiz/**/*.png
+quiz/**/*.gif
+quiz/**/*.webp
+quiz/**/*.mp4
+
+# Photo-heavy folders (UI icons as PNG in template/images stay tracked)
+images/**/*.jpg
+images/**/*.jpeg
+
+# Local editor
+.idea/
+.vscode/
+*.swp
+
+# Missionen/RKRK-Daten und Benutzerlisten (nicht ins Repo)
+rkropen/
+**/Rehitzrettung - Users.csv
+
+# Python bytecode
+**/__pycache__/
+**/*.pyc
+
+# Buchhaltung: Konten, IBANs, Transaktionen (nicht öffentlich)
+ar/data_old_unused/
+ar/data_unused/
+ar/data/

@@ -1,0 +1,708 @@
+/* -----------------------------------------------------------
+   LIGHT GREEN UI THEME
+----------------------------------------------------------- */
+:root {
+    --green-dark:  #48673A;
+    --green-mid:   #96B588;
+    --green-light: #C5E0B4;
+    --green-vlight:#ECF7EC;
+    --white:       #FFFFFF;
+
+    --text-dark:   #2F3E28;
+    --text-mid:    #4F6A3C;
+}
+
+/* -----------------------------------------------------------
+   GLOBAL
+----------------------------------------------------------- */
+body {
+    background: var(--white);
+    color: var(--text-dark);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Cards */
+.rkrk-card {
+    background: white;
+    border: 1px solid var(--green-light);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* -----------------------------------------------------------
+   SECTION HEADERS
+----------------------------------------------------------- */
+.section-title-box {
+    background: var(--green-mid);
+    color: var(--text-dark);
+    padding: 10px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 8px;
+    transition: 0.2s ease;
+}
+
+.section-title-box.open {
+    background: var(--green-dark);
+    color: white;
+}
+
+.section-fields {
+    background: var(--green-vlight);
+    border: 1px solid var(--green-light);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.section-fields.collapsed {
+    display: none;
+}
+
+/* -----------------------------------------------------------
+   INPUT FIELDS
+----------------------------------------------------------- */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--green-mid);
+    background-color: white;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: 0.2s ease;
+    color: var(--text-dark);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--green-dark);
+    background-color: var(--green-vlight);
+    box-shadow: 0 0 4px var(--green-light);
+    outline: none;
+}
+
+.field-label {
+    font-weight: bold;
+    color: var(--text-mid);
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* -----------------------------------------------------------
+   BUTTONS
+----------------------------------------------------------- */
+.btn,
+button {
+    background-color: var(--green-mid);
+    color: var(--text-dark);
+    padding: 10px 18px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:hover,
+button:hover {
+    background-color: var(--green-dark);
+    color: white;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background-color: var(--green-dark);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--text-mid);
+}
+
+.btn-danger {
+    background-color: #d77a7a;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c45f5f;
+}
+
+/* -----------------------------------------------------------
+   TABLES
+----------------------------------------------------------- */
+.list-table th {
+    background: var(--green-mid);
+    color: var(--text-dark);
+    padding: 10px;
+}
+
+.list-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--green-light);
+}
+
+.list-table tr:nth-child(even) {
+    background-color: var(--green-vlight);
+}
+
+.list-table tr:hover {
+    background-color: var(--green-light);
+}
+
+/* -----------------------------------------------------------
+   OPTION GRID — CHIP STYLE (RADIO + CHECKBOX)
+----------------------------------------------------------- */
+.option-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+/* Hide native inputs */
+.option-grid input[type="radio"],
+.option-grid input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    opacity: 0;
+}
+
+/* Chip container */
+.option-grid label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #ffffff;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    user-select: none;
+    flex: 1 1 calc(25% - 8px);
+    text-align: center;
+}
+
+/* Chip text */
+.option-grid label span {
+    display: block;
+    width: 100%;
+    line-height: 1.3;
+}
+
+/* ACTIVE STATE — highlight entire chip */
+.option-grid input[type="radio"]:checked + span,
+.option-grid input[type="checkbox"]:checked + span {
+    background: var(--green-light);     /* your soft green */
+    border: 1px solid var(--green-dark); /* your darker green */
+    border-radius: 6px;
+    font-weight: bold;
+    color: var(--text-dark);
+    padding: 4px 8px;
+}
+
+
+/* ===========================================================
+   COLOR-OPTIONS: keep original chip size/form, but:
+   - if option has --option-color => selected bg = that color
+   - if no color => selected bg = standard green theme
+   Place at END of flex.css
+=========================================================== */
+
+/* 1) Keep chip geometry as before (already defined in your file) */
+/* Your existing .option-grid label defines min-height, padding, radius, flex...  [1](https://onedrive.live.com?cid=22BFEB0FDC41B4C8&id=22BFEB0FDC41B4C8!s31e4d0b15e2645fcb437af183a19aa8e) */
+
+/* 2) Make the inside span behave like text only (no own border/padding),
+      so the OUTER label keeps the size/form unchanged */
+.option-grid .color-option .color-badge{
+    background: transparent;
+    border: 0;
+    padding: 0;
+    border-radius: 0;
+    font-weight: inherit;
+    color: inherit;
+}
+
+
+
+/* Fallback that works everywhere (no :has needed):
+   paint the label when its input is checked by using inset box-shadow on badge */
+.option-grid .color-option input[type="radio"]:checked + .color-badge,
+.option-grid .color-option input[type="checkbox"]:checked + .color-badge{
+    box-shadow: none;
+    outline: none;
+;
+}
+
+/* 4) If a color exists -> use it instead of green */
+.option-grid .color-option[style*="--option-color"] input[type="radio"]:checked + .color-badge,
+.option-grid .color-option[style*="--option-color"] input[type="checkbox"]:checked + .color-badge{
+    box-shadow: 0 0 0 999px var(--option-color) inset;
+    color: #fff;
+}
+
+/* 5) Optional: make border match state (keeps same size, just color) */
+.option-grid .color-option{
+    border: 1px solid var(--green-mid); /* same family as your chip style [1](https://onedrive.live.com?cid=22BFEB0FDC41B4C8&id=22BFEB0FDC41B4C8!s31e4d0b15e2645fcb437af183a19aa8e) */
+}
+.option-grid .color-option[style*="border-color"]{
+    border-color: inherit; /* inline border-color stays */
+}
+.option-grid .color-option input:checked + .color-badge{
+    /* when checked and no color, make border stronger green */
+    outline: 1px solid var(--green-dark);
+    outline-offset: -1px;
+}
+
+
+
+/* Responsive */
+@media (max-width: 900px) {
+    .option-grid label {
+        flex: 1 1 calc(33.3% - 8px);
+    }
+}
+
+@media (max-width: 600px) {
+    .option-grid label {
+        flex: 1 1 calc(50% - 8px);
+    }
+}
+
+@media (max-width: 400px) {
+    .option-grid label {
+        flex: 1 1 100%;
+    }
+}
+
+/* -----------------------------------------------------------
+   CHECKLIST HEADER
+----------------------------------------------------------- */
+.checklist-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px !important;
+    margin-bottom: 10px;
+}
+
+.checklist-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.checklist-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.checklist-buttons .btn {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+
+/* -----------------------------------------------------------
+   DEPENDENT VISIBILITY
+----------------------------------------------------------- */
+
+.dependent-field {
+    display: none;
+}
+
+.dependent-field.visible {
+    display: block;
+}
+
+/* -----------------------------------------------------------
+   INFO
+----------------------------------------------------------- */
+
+.info-icon {
+    position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1em;
+    height: 1.1em;
+    line-height: 1;
+    font-size: 1.05em;
+    vertical-align: text-top;
+    font-weight: bold;
+    color: #3a5f3a;
+}
+
+.info-icon .info-tooltip {
+    display: none;
+    position: absolute;
+    left: 20px;
+    top: -5px;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    white-space: pre-wrap;
+    z-index: 9999;
+    max-width: 300px;
+}
+
+.info-icon:hover .info-tooltip {
+    display: block;
+}
+
+.info-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 9998;
+}
+
+.info-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 500px;
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 9999;
+}
+
+.info-popup a {
+    color: #2a6ad4;
+    text-decoration: underline;
+}
+
+.info-popup-close {
+    float: right;
+    cursor: pointer;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+/* Popup-Icons (HTML-Infos) → blau */
+.info-icon:not(:has(.info-tooltip)) {
+    color: #1e6bd6; /* schönes Microsoft-Blau */
+}
+
+/* Checkboxes */
+.nr-toggle {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+}
+
+.nr-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid #ccc;
+    background: #f3f3f3;
+    transition: all 0.15s ease;
+}
+
+.nr-chip.active {
+    background: #4F6A3C;
+    color: white;
+    border-color: #4F6A3C;
+}
+
+.nr-chip:hover {
+    background: #dcdcdc;
+}
+
+.nr-chip.active:hover {
+    background: #3d522f;
+}
+
+.nr-chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* new button */
+.btn-newfield {
+    background: #e8efe2;
+    border: 1px solid #cdd8c7;
+    color: #4F6A3C;
+    font-size: 14px;
+    font-weight: bold;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.15s;
+    line-height: 18px;
+    text-align: center;
+    padding: 0;
+}
+
+.new-fields-container.collapsed {
+    display: none;
+}
+
+/* ---------------------
+entered text
+------------------------*/
+
+
+/* Eingegebenen Text fett darstellen */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+textarea,
+select {
+    font-weight: 600;
+}
+
+/* -----------------------------------------------------------
+   READABILITY + MAX WIDTH OPTIMIZATION
+----------------------------------------------------------- */
+
+/* Center the entire checklist and limit width */
+.rkrk-wrap {
+    max-width: 1100px;      /* sweet spot for readability */
+    margin: 0 auto;         /* center on wide screens */
+    padding: 0 20px;        /* breathing room on mobile */
+}
+
+/* Sektionstitel immer über dem Feld-Block (nicht nebenan; schlägt spätere Grid-Regeln aus Themes). */
+.rkrk-wrap .section-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.rkrk-wrap .section-row > .section-title-box {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin-bottom: 0;
+}
+.rkrk-wrap .section-row > .section-fields {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Slightly increase spacing between fields */
+.field {
+    margin-bottom: 16px;
+}
+
+/* Hilfstext (z. B. «Max 1 Punkt») unter dem Label — verhindert Überlappung mit Score-Chips */
+.field .field-placeholder {
+    display: block;
+    clear: both;
+    margin: 4px 0 10px;
+    line-height: 1.35;
+}
+
+/* Improve section readability */
+.section-fields {
+    padding: 16px 18px;
+    line-height: 1.45;
+}
+
+/* Section titles: more contrast + better tap target */
+.section-title-box {
+    padding: 12px 16px;
+    font-size: 17px;
+    border-radius: 8px;
+}
+
+/* Inputs: improve readability and reduce glare */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+textarea,
+select {
+    background: #ffffff;
+    border: 1px solid var(--green-mid);
+    font-size: 15.5px;
+    line-height: 1.4;
+}
+
+/* Placeholder readability */
+::placeholder {
+    color: #8aa07a;
+    opacity: 0.9;
+}
+
+/* -----------------------------------------------------------
+   CHIP BUTTON IMPROVEMENTS
+----------------------------------------------------------- */
+
+/* Chip container spacing */
+.option-grid {
+    gap: 10px;
+}
+
+/* Chip labels: better contrast + padding */
+.option-grid label {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    border: 1px solid var(--green-mid);
+}
+
+
+/* -----------------------------------------------------------
+   TABLE READABILITY
+----------------------------------------------------------- */
+
+.list-table th {
+    font-size: 15px;
+    padding: 12px;
+}
+
+.list-table td {
+    font-size: 14.5px;
+    padding: 12px;
+}
+
+/* -----------------------------------------------------------
+   MOBILE OPTIMIZATION
+----------------------------------------------------------- */
+
+@media (max-width: 600px) {
+    .section-title-box {
+        font-size: 16px;
+        padding: 10px 14px;
+    }
+
+    input, textarea, select {
+        font-size: 16px; /* avoids iOS zoom */
+    }
+
+    .option-grid label {
+        flex: 1 1 100%;
+        font-size: 16px;
+    }
+}
+/* -----------------------------------------------------------
+   NUR FÜR TEMPLATE BEARBEITEN – BREITERER ARBEITSBEREICH
+----------------------------------------------------------- */
+
+.rkrk-wrap[data-mode="edittemplate"] {
+    max-width: 2100px;
+    margin: 0 auto;
+}
+
+.rkrk-wrap[data-mode="edittemplate"] .template-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.rkrk-wrap[data-mode="edittemplate"] .template-table th,
+.rkrk-wrap[data-mode="edittemplate"] .template-table td {
+    vertical-align: top;
+    white-space: normal;
+}
+
+.rkrk-wrap[data-mode="edittemplate"] .template-table textarea {
+    min-height: 72px;
+    resize: vertical;
+}
+
+@media (max-width: 1400px) {
+    .rkrk-wrap[data-mode="edittemplate"] .template-table thead,
+    .rkrk-wrap[data-mode="edittemplate"] .template-table tr:first-child {
+        display: none;
+    }
+
+    .rkrk-wrap[data-mode="edittemplate"] .template-table,
+    .rkrk-wrap[data-mode="edittemplate"] .template-table tbody {
+        display: block;
+    }
+
+    .rkrk-wrap[data-mode="edittemplate"] .template-table tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 10px 14px;
+        margin-bottom: 14px;
+        padding: 12px;
+        border: 1px solid var(--green-light);
+        border-radius: 10px;
+        background: #fbfdf9;
+    }
+
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td {
+        display: flex;
+        flex-direction: column;
+        border: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td::before {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-mid);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        content: "";
+    }
+
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(1)::before { content: "Sektion"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(2)::before { content: "Label"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(3)::before { content: "Typ"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(4)::before { content: "Optionen"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(5)::before { content: "Placeholder"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(6)::before { content: "Info"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(7)::before { content: "N/R"; }
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td:nth-child(8)::before { content: "Aktion"; }
+
+    .rkrk-wrap[data-mode="edittemplate"] .template-table td[style*="text-align:center"] {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 760px) {
+    .rkrk-wrap[data-mode="edittemplate"] .template-table tr {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

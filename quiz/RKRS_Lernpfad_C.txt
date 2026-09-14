@@ -1,0 +1,4046 @@
+<section id="Inhalt">
+<!--  <h2>Lernpfad C – Spezielle Kategorie mit STS (STS-01 / STS-02)</h2>-->
+
+  <div class="highlight">
+    <strong>Kursziel:</strong><br>
+    Befähigung zur sicheren, regelkonformen und genehmigungsfreien Durchführung von Drohnenflügen nach STS-01 (VLOS) und STS-02 (BVLOS) gemäss EU-Verordnung 2019/947 unter Einhaltung aller technischen, operationellen und dokumentarischen Anforderungen.
+  </div>
+
+  <div class="highlight">
+    <strong>Zielgruppe:</strong><br>
+    UAS-Betreiber, Fernpiloten, Einsatzplaner und technische Fachkräfte, die standardisierte Drohneneinsätze in urbanen oder kontrollierten Gebieten durchführen möchten.
+  </div>
+
+  <div class="highlight">
+    <strong>Lernziele:</strong>
+    <ul class="checklist">
+      <li>Verständnis der STS-Szenarien STS-01 (VLOS) und STS-02 (BVLOS)</li>
+      <li>Kenntnis der technischen Anforderungen (C5/C6, Geo-Awareness, FTS)</li>
+      <li>Planung und Durchführung von Einsätzen gemäss STS-Vorgaben</li>
+      <li>Risikobewertung nach SORA und Umsetzung von Schutzmassnahmen</li>
+      <li>Erstellung und Pflege eines Betriebshandbuchs</li>
+      <li>Dokumentation, Kommunikation und Teamkoordination im Einsatz</li>
+    </ul>
+  </div>
+
+  <table>
+    <caption><strong>Themenübersicht</strong></caption>
+    <tr>
+      <th class="center">Modul</th>
+      <th class="left">Thema</th>
+    </tr>
+    <tr>
+      <td class="center">200</td>
+      <td class="left">STS-01 & STS-02 im Überblick (Szenariobedingungen, Genehmigungsfreiheit)</td>
+    </tr>
+    <tr>
+      <td class="center">210</td>
+      <td class="left">Technische Anforderungen STS (C5/C6, Geo-Awareness, FTS, Redundanz)</td>
+    </tr>
+    <tr>
+      <td class="center">220</td>
+      <td class="left">Betriebsverfahren STS (Pre-Flight, In-Flight, Notfallplan, ERP)</td>
+    </tr>
+    <tr>
+      <td class="center">230</td>
+      <td class="left">Flugplanung & Risikobewertung STS (SORA, Wetter, Luftraum, Mitigation)</td>
+    </tr>
+    <tr>
+      <td class="center">240</td>
+      <td class="left">UAV-Editor & Wegpunktflug (AGL-Logik, Höhenanpassung, Missionsplanung)</td>
+    </tr>
+    <tr>
+      <td class="center">250</td>
+      <td class="left">Dokumentation & Qualitätssicherung (Betriebshandbuch, Nachweise, Protokolle)</td>
+    </tr>
+    <tr>
+      <td class="center">260</td>
+      <td class="left">Versicherungsanforderungen & Haftung STS</td>
+    </tr>
+    <tr>
+      <td class="center">270</td>
+      <td class="left">Datenschutz & Fernidentifikation STS</td>
+    </tr>
+    <tr>
+      <td class="center">290</td>
+      <td class="left">Qualitätssicherung & Audit STS</td>
+    </tr>
+  </table>
+</section>
+
+<section>
+  <h2>Modul 200 – STS-01 & STS-02 im Überblick</h2>
+
+  <div class="keywords">Stichworte: STS-01 · STS-02 · VLOS · BVLOS · genehmigungsfrei · CE-Klassen · EU-Verordnung 2019/947 · Einsatzbedingungen · Szenariobeschreibung</div>
+
+<!--
+  <article>
+    <h3>200.1 Einführung in STS-Szenarien</h3>
+    <div class="highlight">
+      STS steht für „Standard Scenario“ und ermöglicht genehmigungsfreie Einsätze in der speziellen Kategorie:
+      <ul class="checklist">
+        <li>Vordefinierte Einsatzbedingungen mit klaren technischen und operationellen Anforderungen</li>
+        <li>Vereinfachter Genehmigungsprozess durch Szenariokonformität</li>
+        <li>Nur mit CE-konformen Drohnen der Klassen C5 oder C6</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul200-1">
+  <h3>200.1 Einführung in STS-Szenarien</h3>
+
+  <p>
+    Die <strong>Standard Scenario (STS)</strong> ermöglichen Drohnenbetreibern den genehmigungsfreien Betrieb
+    innerhalb der speziellen Kategorie, sofern alle technischen und operationellen Vorgaben exakt
+    eingehalten werden.  
+    STS bieten damit einen klar definierten, regulatorisch vereinfachten Rahmen für professionelle
+    Einsätze, ohne dass eine individuelle SORA oder PDRA erstellt werden muss.
+  </p>
+
+  <h3>Grundprinzip der STS-Szenarien</h3>
+
+  <ul>
+    <li><strong>Vordefinierte Einsatzbedingungen</strong>  
+      – klare Vorgaben zu Luftraum, Flughöhe, Sichtverbindung und Einsatzgebiet  
+      – standardisierte Abläufe für Planung, Durchführung und Notfallmanagement</li>
+
+    <li><strong>Technische und operationelle Anforderungen</strong>  
+      – nur Drohnen mit CE‑Klasse C5 (STS‑01) oder C6 (STS‑02)  
+      – verpflichtende Funktionen wie Geo‑Awareness, Remote ID und Failsafe</li>
+
+    <li><strong>Genehmigungsfreier Betrieb</strong>  
+      – keine individuelle Risikoanalyse notwendig  
+      – Voraussetzung: vollständige Szenariokonformität</li>
+  </ul>
+
+  <h3>Vorteile der STS-Szenarien</h3>
+
+  <ul>
+    <li><strong>Planungssicherheit</strong>  
+      – klare Regeln, keine Interpretationsspielräume</li>
+
+    <li><strong>Reduzierter administrativer Aufwand</strong>  
+      – keine Einreichung einer SORA/PDRA erforderlich</li>
+
+    <li><strong>Höhere Einsatzflexibilität</strong>  
+      – standardisierte Verfahren ermöglichen schnelle Einsatzfreigaben</li>
+  </ul>
+
+  <div class="highlight">
+    STS steht für „Standard Scenario“ und ermöglicht genehmigungsfreie Einsätze in der speziellen Kategorie:
+    <ul class="checklist">
+      <li>Vordefinierte Einsatzbedingungen mit klaren technischen und operationellen Anforderungen</li>
+      <li>Vereinfachter Genehmigungsprozess durch Szenariokonformität</li>
+      <li>Nur mit CE-konformen Drohnen der Klassen C5 oder C6</li>
+    </ul>
+  </div>
+
+  <p>
+    STS-Szenarien bilden damit eine effiziente Alternative zur individuellen Risikoanalyse und
+    ermöglichen einen professionellen, standardisierten und rechtssicheren Drohnenbetrieb.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>200.2 STS-01 – VLOS über kontrolliertem Gelände</h3>
+    <div class="highlight">
+      STS-01 erlaubt Flüge mit Sichtverbindung (VLOS) über einem abgesicherten Einsatzgebiet:
+      <ul class="checklist">
+        <li>Maximale Flughöhe: 120 m über Grund</li>
+        <li>Nur mit C5-Drohne und Geo-Awareness</li>
+        <li>Flughelfer erlaubt zur Erweiterung des Sichtbereichs</li>
+        <li>Keine Überflüge von unbeteiligten Personen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul200-2">
+  <h3>200.2 STS‑01 – VLOS über kontrolliertem Gelände</h3>
+
+  <p>
+    Das <strong>Standard Scenario STS‑01</strong> ermöglicht genehmigungsfreie Flüge in der speziellen Kategorie,
+    sofern die Drohne jederzeit in <strong>Sichtverbindung (VLOS)</strong> betrieben wird und das Einsatzgebiet
+    kontrolliert bzw. abgesichert ist.  
+    Dieses Szenario richtet sich vor allem an professionelle Einsätze in klar definierten,
+    zugangsbeschränkten Bereichen wie Baustellen, Industriearealen oder abgesperrten Feldern.
+  </p>
+
+  <h3>Kernanforderungen von STS‑01</h3>
+
+  <ul>
+    <li><strong>Maximale Flughöhe: 120 m über Grund</strong>  
+      – entspricht der Standardgrenze der EU‑Verordnung  
+      – Höhenbezug erfolgt AGL (Above Ground Level)</li>
+
+    <li><strong>Nur mit C5‑Drohne</strong>  
+      – CE‑Klasse C5 ist speziell für STS‑01 vorgesehen  
+      – beinhaltet verpflichtende Funktionen wie Geo‑Awareness, Remote ID und Failsafe</li>
+
+    <li><strong>Geo‑Awareness</strong>  
+      – Warnung bei Annäherung an Geozonen  
+      – Schutz vor unbeabsichtigtem Eindringen in Flugverbotsbereiche</li>
+
+    <li><strong>Flughelfer erlaubt</strong>  
+      – kann den Sichtbereich des Piloten erweitern  
+      – unterstützt bei Umfeldsicherung und Luftraumbeobachtung</li>
+
+    <li><strong>Keine Überflüge von unbeteiligten Personen</strong>  
+      – Einsatzgebiet muss abgesichert sein  
+      – Personen dürfen sich nicht unter der Flugbahn aufhalten</li>
+  </ul>
+
+  <h3>Typische Einsatzgebiete</h3>
+
+  <ul>
+    <li>Baustellen und Industrieareale</li>
+    <li>Landwirtschaftliche Flächen und abgesperrte Felder</li>
+    <li>Infrastrukturinspektionen in kontrollierten Bereichen</li>
+    <li>Such‑ und Rettungseinsätze in abgesperrten Zonen</li>
+  </ul>
+
+  <div class="highlight">
+    STS‑01 erlaubt Flüge mit Sichtverbindung (VLOS) über einem abgesicherten Einsatzgebiet:
+    <ul class="checklist">
+      <li>Maximale Flughöhe: 120 m über Grund</li>
+      <li>Nur mit C5-Drohne und Geo-Awareness</li>
+      <li>Flughelfer erlaubt zur Erweiterung des Sichtbereichs</li>
+      <li>Keine Überflüge von unbeteiligten Personen</li>
+    </ul>
+  </div>
+
+  <p>
+    STS‑01 bietet damit einen klar definierten, sicheren und effizienten Rahmen für professionelle
+    Drohneneinsätze, solange alle technischen und operationellen Vorgaben konsequent eingehalten werden.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>200.3 STS-02 – BVLOS mit Beobachter</h3>
+    <div class="highlight">
+      STS-02 erlaubt Flüge außerhalb Sichtweite (BVLOS), wenn ein Beobachter die Drohne visuell verfolgt:
+      <ul class="checklist">
+        <li>Nur mit C6-Drohne und redundanter Steuerung</li>
+        <li>Beobachter muss jederzeit Sichtkontakt zur Drohne haben</li>
+        <li>Kommunikation zwischen Pilot und Beobachter muss zuverlässig sein</li>
+        <li>Fluggebiet muss abgesichert und bekannt sein</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul200-3">
+  <h3>200.3 STS‑02 – BVLOS mit Beobachter</h3>
+
+  <p>
+    Das <strong>Standard Scenario STS‑02</strong> ermöglicht genehmigungsfreie BVLOS‑Flüge (Beyond Visual Line of Sight),
+    sofern ein <strong>Beobachter</strong> die Drohne permanent visuell verfolgt und eine zuverlässige Kommunikation
+    mit dem Piloten gewährleistet ist.  
+    Dieses Szenario erweitert den operativen Radius erheblich, bleibt jedoch strikt an technische und
+    operationelle Vorgaben gebunden.
+  </p>
+
+  <h3>Kernanforderungen von STS‑02</h3>
+
+  <ul>
+    <li><strong>Nur mit C6‑Drohne</strong>  
+      – CE‑Klasse C6 ist speziell für BVLOS‑Einsätze vorgesehen  
+      – erfordert erweiterte Sicherheitsfunktionen und Redundanzen</li>
+
+    <li><strong>Redundante Steuerung</strong>  
+      – doppelte GNSS‑Module, redundante Energieversorgung  
+      – erhöhte Ausfallsicherheit bei kritischen Komponenten</li>
+
+    <li><strong>Beobachter mit permanentem Sichtkontakt</strong>  
+      – Beobachter muss die Drohne jederzeit visuell erfassen können  
+      – unterstützt den Piloten bei Luftraumbeobachtung und Konfliktvermeidung</li>
+
+    <li><strong>Zuverlässige Kommunikation</strong>  
+      – klare, störungsfreie Verbindung zwischen Pilot und Beobachter  
+      – definierte Kommunikationsprotokolle und Rufzeichen</li>
+
+    <li><strong>Abgesichertes und bekanntes Fluggebiet</strong>  
+      – keine Überflüge unbeteiligter Personen  
+      – Gelände und Luftraum müssen vorab bewertet und freigegeben sein</li>
+  </ul>
+
+  <h3>Typische Einsatzgebiete</h3>
+
+  <ul>
+    <li>Such‑ und Rettungseinsätze in weitläufigen Gebieten</li>
+    <li>Inspektionen von Leitungen, Bahntrassen oder Pipelines</li>
+    <li>Überwachung von Naturgefahren oder Infrastruktur</li>
+    <li>BVLOS‑Missionen mit klar definierten Flugkorridoren</li>
+  </ul>
+
+  <div class="highlight">
+    STS‑02 erlaubt Flüge außerhalb Sichtweite (BVLOS), wenn ein Beobachter die Drohne visuell verfolgt:
+    <ul class="checklist">
+      <li>Nur mit C6-Drohne und redundanter Steuerung</li>
+      <li>Beobachter muss jederzeit Sichtkontakt zur Drohne haben</li>
+      <li>Kommunikation zwischen Pilot und Beobachter muss zuverlässig sein</li>
+      <li>Fluggebiet muss abgesichert und bekannt sein</li>
+    </ul>
+  </div>
+
+  <p>
+    STS‑02 ermöglicht professionelle BVLOS‑Operationen ohne individuelle Genehmigung – vorausgesetzt,
+    alle technischen, operationellen und organisatorischen Anforderungen werden konsequent erfüllt.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>200.4 Voraussetzungen für STS-Flüge</h3>
+    <div class="highlight">
+      Für STS-Flüge gelten technische, operationelle und dokumentarische Anforderungen:
+      <ul class="checklist">
+        <li>Registrierung als UAS-Betreiber</li>
+        <li>Schulung und Zertifizierung nach STS-Vorgaben</li>
+        <li>Betriebshandbuch mit Szenariobezug</li>
+        <li>Versicherungsnachweis und CE-konforme Drohne</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul200-4">
+  <h3>200.4 Voraussetzungen für STS‑Flüge</h3>
+
+  <p>
+    Für den Betrieb nach <strong>Standard Scenario (STS)</strong> müssen Betreiber und Fernpiloten eine Reihe
+    technischer, operationeller und dokumentarischer Anforderungen erfüllen.  
+    Nur wenn alle Voraussetzungen vollständig erfüllt sind, darf ein STS‑Einsatz genehmigungsfrei
+    durchgeführt werden.
+  </p>
+
+  <h3>Technische, operationelle und dokumentarische Anforderungen</h3>
+
+  <ul>
+    <li><strong>Registrierung als UAS‑Betreiber</strong>  
+      – verpflichtend für alle Betreiber in der speziellen Kategorie  
+      – UAS‑Betreiber‑Nummer muss per Remote ID übertragen werden</li>
+
+    <li><strong>Schulung und Zertifizierung nach STS‑Vorgaben</strong>  
+      – theoretische und praktische STS‑Schulung  
+      – Szenario‑spezifische Qualifikation für STS‑01 oder STS‑02  
+      – behördlich anerkannter Schulungsnachweis erforderlich</li>
+
+    <li><strong>Betriebshandbuch mit Szenariobezug</strong>  
+      – vollständige Beschreibung aller STS‑Verfahren (SOPs, ERP, Rollen)  
+      – technische Anforderungen (C5/C6) müssen dokumentiert sein  
+      – Szenariokonformität muss klar erkennbar sein</li>
+
+    <li><strong>Versicherungsnachweis</strong>  
+      – Haftpflichtversicherung gemäß EU‑Verordnung 785/2004  
+      – Deckungssumme und Gültigkeitsbereich müssen passen</li>
+
+    <li><strong>CE‑konforme Drohne</strong>  
+      – STS‑01: Drohne der Klasse C5  
+      – STS‑02: Drohne der Klasse C6  
+      – Geo‑Awareness, Remote ID und Failsafe müssen vorhanden sein</li>
+  </ul>
+
+  <h3>Warum diese Voraussetzungen wichtig sind</h3>
+
+  <p>
+    STS‑Flüge sind nur deshalb genehmigungsfrei, weil die Szenarien strenge technische und
+    operationelle Mindeststandards definieren.  
+    Die Einhaltung dieser Voraussetzungen stellt sicher, dass der Betrieb sicher, reproduzierbar
+    und behördentauglich durchgeführt werden kann.
+  </p>
+
+  <div class="highlight">
+    Für STS‑Flüge gelten technische, operationelle und dokumentarische Anforderungen:
+    <ul class="checklist">
+      <li>Registrierung als UAS-Betreiber</li>
+      <li>Schulung und Zertifizierung nach STS-Vorgaben</li>
+      <li>Betriebshandbuch mit Szenariobezug</li>
+      <li>Versicherungsnachweis und CE-konforme Drohne</li>
+    </ul>
+  </div>
+
+  <p>
+    Werden alle Voraussetzungen erfüllt, ermöglichen STS‑Szenarien einen effizienten,
+    standardisierten und rechtssicheren Drohnenbetrieb ohne individuelle Genehmigung.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>200.5 Abgrenzung zu PDRA und offener Kategorie</h3>
+    <div class="highlight">
+      STS-Szenarien sind genehmigungsfrei, aber nicht beliebig:
+      <ul class="checklist">
+        <li><strong>Offene Kategorie:</strong> keine STS-Flüge möglich</li>
+        <li><strong>PDRA:</strong> individuell definierte Einsätze mit Risikoanalyse</li>
+        <li><strong>STS:</strong> standardisierte Bedingungen mit klaren Vorgaben</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul200-5">
+  <h3>200.5 Abgrenzung zu PDRA und offener Kategorie</h3>
+
+  <p>
+    Die <strong>Standard Scenario (STS)</strong> bilden einen klar definierten Mittelweg zwischen der offenen Kategorie
+    und den individuell ausgearbeiteten PDRA-/SORA‑Genehmigungen.  
+    Obwohl STS‑Flüge genehmigungsfrei sind, gelten sie nur unter streng festgelegten Bedingungen und
+    können nicht beliebig erweitert oder angepasst werden.
+  </p>
+
+  <h3>Vergleich der Kategorien</h3>
+
+  <ul>
+    <li><strong>Offene Kategorie</strong>  
+      – keine STS‑Flüge möglich  
+      – nur für risikoarme Einsätze ohne Überflüge unbeteiligter Personen  
+      – keine BVLOS‑Flüge (außer mit C0/C1 unter sehr engen Bedingungen)</li>
+
+    <li><strong>PDRA (Pre‑Defined Risk Assessment)</strong>  
+      – für komplexere Einsätze, die nicht in STS oder offene Kategorie passen  
+      – erfordert Risikoanalyse, Mitigationsmatrix und behördliche Prüfung  
+      – mehr Flexibilität, aber höherer Dokumentationsaufwand</li>
+
+    <li><strong>STS (Standard Scenario)</strong>  
+      – genehmigungsfrei, aber strikt standardisiert  
+      – klare technische und operationelle Vorgaben (C5/C6, Geo‑Awareness, SOPs)  
+      – nur zulässig, wenn alle Bedingungen exakt eingehalten werden</li>
+  </ul>
+
+  <h3>Wann welches Verfahren?</h3>
+
+  <ul>
+    <li><strong>Offene Kategorie</strong>  
+      – einfache, risikoarme Flüge ohne besondere Anforderungen</li>
+
+    <li><strong>STS</strong>  
+      – standardisierte Einsätze mit klar definierten Rahmenbedingungen  
+      – ideal für wiederkehrende VLOS‑ oder BVLOS‑Missionen</li>
+
+    <li><strong>PDRA/SORA</strong>  
+      – individuelle, komplexe oder risikoreiche Einsätze  
+      – notwendig, wenn STS‑Bedingungen nicht erfüllt werden können</li>
+  </ul>
+
+  <div class="highlight">
+    STS-Szenarien sind genehmigungsfrei, aber nicht beliebig:
+    <ul class="checklist">
+      <li><strong>Offene Kategorie:</strong> keine STS-Flüge möglich</li>
+      <li><strong>PDRA:</strong> individuell definierte Einsätze mit Risikoanalyse</li>
+      <li><strong>STS:</strong> standardisierte Bedingungen mit klaren Vorgaben</li>
+    </ul>
+  </div>
+
+  <p>
+    Die Abgrenzung zeigt: STS bieten eine attraktive, effiziente Lösung für viele professionelle
+    Einsätze – aber nur innerhalb eines klar definierten Rahmens. Für alles darüber hinaus bleibt
+    die PDRA/SORA der Weg zur behördlichen Genehmigung.
+  </p>
+</article>
+
+
+</section>
+
+<section>
+  <h2>Modul 210 – Technische Anforderungen STS</h2>
+
+  <div class="keywords">Stichworte: C5 · C6 · Geo-Awareness · Fernidentifikation · Redundanz · ADS-B · Failsafe · CE-Kennzeichnung · STS-Konformität</div>
+
+<!--  <article>
+    <h3>210.1 CE-Klassifizierung: C5 und C6</h3>
+    <div class="highlight">
+      Für STS-Flüge sind nur Drohnen mit CE-Klasse C5 oder C6 zugelassen:
+      <ul class="checklist">
+        <li><strong>C5:</strong> für STS-01 (VLOS über kontrolliertem Gelände)</li>
+        <li><strong>C6:</strong> für STS-02 (BVLOS mit Beobachter)</li>
+        <li>Hersteller muss Konformitätserklärung und technische Dokumentation bereitstellen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul210-1">
+  <h3>210.1 CE‑Klassifizierung: C5 und C6</h3>
+
+  <p>
+    Für den Betrieb nach <strong>Standard Scenario (STS)</strong> dürfen ausschließlich Drohnen eingesetzt werden,
+    die den speziellen CE‑Klassen <strong>C5</strong> oder <strong>C6</strong> entsprechen.  
+    Diese Klassen definieren technische Mindestanforderungen, die sicherstellen, dass die Drohne
+    für die jeweiligen STS‑Szenarien geeignet ist und alle sicherheitsrelevanten Funktionen erfüllt.
+  </p>
+
+  <h3>CE‑Klasse C5 – für STS‑01</h3>
+
+  <ul>
+    <li><strong>Einsatzbereich:</strong> STS‑01 (VLOS über kontrolliertem Gelände)</li>
+    <li><strong>Technische Anforderungen:</strong>  
+      – Geo‑Awareness  
+      – Remote ID  
+      – Failsafe‑Funktionen (RTH, Hover, sichere Landung)  
+      – definierte Sicherheits- und Zuverlässigkeitsstandards</li>
+    <li><strong>Besonderheit:</strong> C5 basiert auf einer modifizierten C3‑Drohne mit zusätzlichen STS‑Auflagen</li>
+  </ul>
+
+  <h3>CE‑Klasse C6 – für STS‑02</h3>
+
+  <ul>
+    <li><strong>Einsatzbereich:</strong> STS‑02 (BVLOS mit Beobachter)</li>
+    <li><strong>Technische Anforderungen:</strong>  
+      – redundante Steuerungs- und Navigationssysteme  
+      – erweiterte Failsafe‑Mechanismen  
+      – präzise Telemetrie und zuverlässige Kommunikationssysteme  
+      – Remote ID und Geo‑Awareness</li>
+    <li><strong>Besonderheit:</strong> C6 ist speziell für BVLOS‑Operationen konzipiert</li>
+  </ul>
+
+  <h3>Herstellerpflichten</h3>
+
+  <ul>
+    <li><strong>Konformitätserklärung</strong>  
+      – bestätigt die Einhaltung aller technischen Anforderungen</li>
+
+    <li><strong>Technische Dokumentation</strong>  
+      – detaillierte Unterlagen zu Sicherheit, Funktionen und Prüfverfahren  
+      – Grundlage für behördliche und betriebliche Nachweise</li>
+
+    <li><strong>Kennzeichnung</strong>  
+      – sichtbare CE‑Markierung mit Klassenangabe (C5 oder C6)</li>
+  </ul>
+
+  <div class="highlight">
+    Für STS‑Flüge sind nur Drohnen mit CE‑Klasse C5 oder C6 zugelassen:
+    <ul class="checklist">
+      <li><strong>C5:</strong> für STS‑01 (VLOS über kontrolliertem Gelände)</li>
+      <li><strong>C6:</strong> für STS‑02 (BVLOS mit Beobachter)</li>
+      <li>Hersteller muss Konformitätserklärung und technische Dokumentation bereitstellen</li>
+    </ul>
+  </div>
+
+  <p>
+    Die CE‑Klassifizierung stellt sicher, dass Drohnen im STS‑Betrieb über alle notwendigen
+    Sicherheitsfunktionen verfügen und zuverlässig den hohen Anforderungen der Szenarien
+    entsprechen.
+  </p>
+</article>
+
+
+<!--  <article>
+    <h3>210.2 Geo-Awareness</h3>
+    <div class="highlight">
+      Geo-Awareness verhindert das Eindringen in Flugverbotszonen:
+      <ul class="checklist">
+        <li>System zeigt aktuelle Position relativ zu Geozonen</li>
+        <li>Warnung bei Annäherung an gesperrte Bereiche</li>
+        <li>Verpflichtend für STS-konforme Drohnen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul210-2">
+  <h3>210.2 Geo‑Awareness</h3>
+
+  <p>
+    <strong>Geo‑Awareness</strong> ist ein zentrales Sicherheitsmerkmal für STS‑konforme Drohnen und verhindert,
+    dass ein UAS unbeabsichtigt in gesperrte oder sicherheitskritische Lufträume eindringt.  
+    Das System unterstützt den Piloten aktiv, indem es relevante Geozonen anzeigt, Warnungen ausgibt
+    und so die Einhaltung der Luftraumregeln sicherstellt.
+  </p>
+
+  <h3>Funktionen der Geo‑Awareness</h3>
+
+  <ul>
+    <li><strong>Anzeige der aktuellen Position relativ zu Geozonen</strong>  
+      – visuelle Darstellung auf der Fernsteuerung oder im Flugkontrollsystem  
+      – Integration von offiziellen Geodaten (z. B. Flugverbotszonen, Kontrollzonen)</li>
+
+    <li><strong>Warnungen bei Annäherung an gesperrte Bereiche</strong>  
+      – akustische oder visuelle Hinweise  
+      – frühzeitige Information zur Kurskorrektur  
+      – erhöht die Situational Awareness des Piloten</li>
+
+    <li><strong>Verpflichtend für STS‑konforme Drohnen</strong>  
+      – sowohl C5‑ als auch C6‑Drohnen müssen Geo‑Awareness implementiert haben  
+      – Bestandteil der CE‑Konformität und Herstellerdokumentation</li>
+  </ul>
+
+  <h3>Warum Geo‑Awareness wichtig ist</h3>
+
+  <p>
+    Geo‑Awareness schützt nicht nur den Luftraum, sondern auch den Betreiber:  
+    Es reduziert das Risiko von Luftraumverletzungen, unterstützt die Einhaltung gesetzlicher Vorgaben
+    und trägt wesentlich zur Sicherheit im STS‑Betrieb bei.
+  </p>
+
+  <div class="highlight">
+    Geo-Awareness verhindert das Eindringen in Flugverbotszonen:
+    <ul class="checklist">
+      <li>System zeigt aktuelle Position relativ zu Geozonen</li>
+      <li>Warnung bei Annäherung an gesperrte Bereiche</li>
+      <li>Verpflichtend für STS-konforme Drohnen</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch die Kombination aus Echtzeit‑Positionsdaten und automatisierten Warnmechanismen bildet
+    Geo‑Awareness eine unverzichtbare Grundlage für sichere und regelkonforme STS‑Operationen.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>210.3 Fernidentifikation</h3>
+    <div class="highlight">
+      Die Drohne muss während des Fluges identifizierbar sein:
+      <ul class="checklist">
+        <li>Sendet UAS-Betreiber-ID, Position, Geschwindigkeit</li>
+        <li>Ermöglicht Echtzeit-Überwachung durch Behörden</li>
+        <li>Verpflichtend für alle STS-Flüge</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul210-4">
+  <h3>210.4 Redundanz & Failsafe‑Systeme</h3>
+
+  <p>
+    Für den sicheren Betrieb nach STS‑01 und STS‑02 müssen Drohnen über robuste
+    <strong>Redundanz‑ und Failsafe‑Mechanismen</strong> verfügen.  
+    Diese Systeme stellen sicher, dass die Drohne auch bei technischen Störungen
+    kontrollierbar bleibt und kein unkontrolliertes Flugverhalten entsteht.
+  </p>
+
+  <h3>Redundante Systeme</h3>
+
+  <ul>
+    <li><strong>Redundante GNSS‑Module</strong>  
+      – zwei voneinander unabhängige GNSS‑Empfänger  
+      – erhöht die Positionsgenauigkeit und Ausfallsicherheit  
+      – besonders wichtig für BVLOS‑Flüge (STS‑02)</li>
+
+    <li><strong>Redundante Stromversorgung</strong>  
+      – doppelte Energiepfade oder Backup‑Akkus  
+      – verhindert sofortigen Systemausfall bei Batteriefehlern  
+      – Voraussetzung für C6‑Drohnen</li>
+
+    <li><strong>Redundante Steuerungs- und Sensorkomponenten</strong>  
+      – z. B. doppelte IMUs, Kompasse oder Flight Controller  
+      – automatische Umschaltung bei Fehlfunktionen</li>
+  </ul>
+
+  <h3>Failsafe‑Mechanismen</h3>
+
+  <ul>
+    <li><strong>Failsafe bei Signalverlust</strong>  
+      – definierte Reaktion: Return‑to‑Home, Hover oder sichere Landung  
+      – abhängig vom Szenario und Einsatzgebiet</li>
+
+    <li><strong>Automatische Umschaltung bei Kompass‑ oder GNSS‑Ausfall</strong>  
+      – Wechsel auf redundante Systeme  
+      – verhindert Kontrollverlust oder Fly‑Away</li>
+
+    <li><strong>Failsafe bei kritischen Systemparametern</strong>  
+      – z. B. niedriger Akkustand, Überhitzung, Sensorfehler  
+      – automatische Aktivierung von Sicherheitsprozeduren</li>
+  </ul>
+
+  <h3>Bedeutung für STS‑Konformität</h3>
+
+  <p>
+    Redundanz und Failsafe sind zentrale Elemente der CE‑Klassen C5 und C6.  
+    Ohne diese Mechanismen ist ein sicherer Betrieb nach STS‑01 oder STS‑02 nicht möglich,
+    insbesondere bei BVLOS‑Missionen, bei denen technische Ausfälle schwerwiegende Folgen
+    haben können.
+  </p>
+
+  <div class="highlight">
+    STS-Drohnen müssen über technische Sicherheitsmechanismen verfügen:
+    <ul class="checklist">
+      <li>Redundante GNSS-Module und Stromversorgung</li>
+      <li>Failsafe bei Signalverlust: RTH, Hover oder sichere Landung</li>
+      <li>Automatische Umschaltung bei Kompass- oder GNSS-Ausfall</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch diese Sicherheitsmechanismen wird gewährleistet, dass STS‑Drohnen auch bei
+    unerwarteten Störungen stabil, kontrollierbar und regelkonform bleiben.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>210.4 Redundanz & Failsafe-Systeme</h3>
+    <div class="highlight">
+      STS-Drohnen müssen über technische Sicherheitsmechanismen verfügen:
+      <ul class="checklist">
+        <li>Redundante GNSS-Module und Stromversorgung</li>
+        <li>Failsafe bei Signalverlust: RTH, Hover oder sichere Landung</li>
+        <li>Automatische Umschaltung bei Kompass- oder GNSS-Ausfall</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul210-4">
+  <h3>210.4 Redundanz & Failsafe‑Systeme</h3>
+
+  <p>
+    Für den sicheren Betrieb nach STS‑01 und STS‑02 müssen Drohnen über robuste
+    <strong>Redundanz‑ und Failsafe‑Mechanismen</strong> verfügen.  
+    Diese Systeme stellen sicher, dass das UAS auch bei technischen Störungen kontrollierbar bleibt
+    und kein unkontrolliertes Flugverhalten entsteht.  
+    Besonders im BVLOS‑Szenario (STS‑02) sind solche Sicherheitsmechanismen zwingend erforderlich.
+  </p>
+
+  <h3>Redundante Systeme</h3>
+
+  <ul>
+    <li><strong>Redundante GNSS‑Module</strong>  
+      – zwei unabhängige GNSS‑Empfänger erhöhen die Positionsgenauigkeit  
+      – Ausfallsicherheit bei Signalstörungen oder Hardwarefehlern</li>
+
+    <li><strong>Redundante Stromversorgung</strong>  
+      – doppelte Energiepfade oder Backup‑Akkus  
+      – verhindert den sofortigen Systemausfall bei Batteriefehlern  
+      – essenziell für C6‑Drohnen im BVLOS‑Betrieb</li>
+
+    <li><strong>Redundante Sensorik und Steuerung</strong>  
+      – z. B. doppelte IMUs, Kompasse oder Flight Controller  
+      – automatische Umschaltung bei Fehlfunktionen</li>
+  </ul>
+
+  <h3>Failsafe‑Mechanismen</h3>
+
+  <ul>
+    <li><strong>Failsafe bei Signalverlust</strong>  
+      – definierte Reaktion: Return‑to‑Home, Hover oder sichere Landung  
+      – abhängig vom Einsatzgebiet und STS‑Szenario</li>
+
+    <li><strong>Automatische Umschaltung bei Kompass‑ oder GNSS‑Ausfall</strong>  
+      – Wechsel auf redundante Systeme  
+      – verhindert Kontrollverlust oder Fly‑Away</li>
+
+    <li><strong>Failsafe bei kritischen Systemparametern</strong>  
+      – z. B. niedriger Akkustand, Überhitzung, Sensorfehler  
+      – automatische Aktivierung von Sicherheitsprozeduren</li>
+  </ul>
+
+  <h3>Bedeutung für STS‑Konformität</h3>
+
+  <p>
+    Redundanz und Failsafe sind zentrale Bestandteile der CE‑Klassen C5 und C6.  
+    Ohne diese Mechanismen ist ein sicherer Betrieb nach STS‑01 oder STS‑02 nicht möglich,
+    insbesondere bei BVLOS‑Missionen, bei denen technische Ausfälle schwerwiegende Folgen
+    haben können.
+  </p>
+
+  <div class="highlight">
+    STS-Drohnen müssen über technische Sicherheitsmechanismen verfügen:
+    <ul class="checklist">
+      <li>Redundante GNSS-Module und Stromversorgung</li>
+      <li>Failsafe bei Signalverlust: RTH, Hover oder sichere Landung</li>
+      <li>Automatische Umschaltung bei Kompass- oder GNSS-Ausfall</li>
+    </ul>
+  </div>
+
+  <p>
+    Diese Sicherheitsmechanismen gewährleisten, dass STS‑Drohnen auch bei unerwarteten
+    Störungen stabil, kontrollierbar und regelkonform bleiben.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>210.5 ADS-B & FLARM-Kompatibilität</h3>
+    <div class="highlight">
+      Systeme zur Luftraumüberwachung erhöhen die Sicherheit:
+      <ul class="checklist">
+        <li><strong>ADS-B:</strong> Empfang von Positionsdaten bemannter Luftfahrzeuge</li>
+        <li><strong>FLARM:</strong> Kollisionswarnung für Segel- und Leichtflugzeuge</li>
+        <li>Anzeige in Echtzeit zur Situationsbeurteilung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul210-4">
+  <h3>210.4 Redundanz & Failsafe‑Systeme</h3>
+
+  <p>
+    Für den sicheren Betrieb nach STS‑01 und STS‑02 müssen Drohnen über robuste
+    <strong>Redundanz‑ und Failsafe‑Mechanismen</strong> verfügen.  
+    Diese Systeme stellen sicher, dass das UAS auch bei technischen Störungen kontrollierbar bleibt
+    und kein unkontrolliertes Flugverhalten entsteht.  
+    Besonders im BVLOS‑Szenario (STS‑02) sind solche Sicherheitsmechanismen zwingend erforderlich.
+  </p>
+
+  <h3>Redundante Systeme</h3>
+
+  <ul>
+    <li><strong>Redundante GNSS‑Module</strong>  
+      – zwei unabhängige GNSS‑Empfänger erhöhen die Positionsgenauigkeit  
+      – Ausfallsicherheit bei Signalstörungen oder Hardwarefehlern</li>
+
+    <li><strong>Redundante Stromversorgung</strong>  
+      – doppelte Energiepfade oder Backup‑Akkus  
+      – verhindert den sofortigen Systemausfall bei Batteriefehlern  
+      – essenziell für C6‑Drohnen im BVLOS‑Betrieb</li>
+
+    <li><strong>Redundante Sensorik und Steuerung</strong>  
+      – z. B. doppelte IMUs, Kompasse oder Flight Controller  
+      – automatische Umschaltung bei Fehlfunktionen</li>
+  </ul>
+
+  <h3>Failsafe‑Mechanismen</h3>
+
+  <ul>
+    <li><strong>Failsafe bei Signalverlust</strong>  
+      – definierte Reaktion: Return‑to‑Home, Hover oder sichere Landung  
+      – abhängig vom Einsatzgebiet und STS‑Szenario</li>
+
+    <li><strong>Automatische Umschaltung bei Kompass‑ oder GNSS‑Ausfall</strong>  
+      – Wechsel auf redundante Systeme  
+      – verhindert Kontrollverlust oder Fly‑Away</li>
+
+    <li><strong>Failsafe bei kritischen Systemparametern</strong>  
+      – z. B. niedriger Akkustand, Überhitzung, Sensorfehler  
+      – automatische Aktivierung von Sicherheitsprozeduren</li>
+  </ul>
+
+  <h3>Bedeutung für STS‑Konformität</h3>
+
+  <p>
+    Redundanz und Failsafe sind zentrale Bestandteile der CE‑Klassen C5 und C6.  
+    Ohne diese Mechanismen ist ein sicherer Betrieb nach STS‑01 oder STS‑02 nicht möglich,
+    insbesondere bei BVLOS‑Missionen, bei denen technische Ausfälle schwerwiegende Folgen
+    haben können.
+  </p>
+
+  <div class="highlight">
+    STS-Drohnen müssen über technische Sicherheitsmechanismen verfügen:
+    <ul class="checklist">
+      <li>Redundante GNSS-Module und Stromversorgung</li>
+      <li>Failsafe bei Signalverlust: RTH, Hover oder sichere Landung</li>
+      <li>Automatische Umschaltung bei Kompass- oder GNSS-Ausfall</li>
+    </ul>
+  </div>
+
+  <p>
+    Diese Sicherheitsmechanismen gewährleisten, dass STS‑Drohnen auch bei unerwarteten
+    Störungen stabil, kontrollierbar und regelkonform bleiben.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>210.6 Wartung & Konformitätsnachweise</h3>
+    <div class="highlight">
+      Technische Anforderungen müssen dokumentiert und regelmäßig überprüft werden:
+      <ul class="checklist">
+        <li>Wartungsprotokolle und Firmware-Updates</li>
+        <li>CE-Konformitätserklärung und technische Unterlagen</li>
+        <li>Nachweis der STS-Tauglichkeit bei Behördeneinreichung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul210-6">
+  <h3>210.6 Wartung & Konformitätsnachweise</h3>
+
+  <p>
+    Für den Betrieb nach STS‑01 und STS‑02 müssen alle technischen Anforderungen der Drohne
+    nicht nur erfüllt, sondern auch <strong>nachvollziehbar dokumentiert</strong> und <strong>regelmäßig überprüft</strong> werden.  
+    Eine lückenlose Wartungs- und Nachweisführung ist Voraussetzung für die STS‑Konformität und
+    spielt eine zentrale Rolle bei behördlichen Prüfungen.
+  </p>
+
+  <h3>Wartung & technische Aktualität</h3>
+
+  <ul>
+    <li><strong>Wartungsprotokolle</strong>  
+      – regelmäßige Inspektionen aller relevanten Komponenten  
+      – Dokumentation von Verschleiß, Reparaturen und Austausch  
+      – Nachweis der technischen Einsatzbereitschaft</li>
+
+    <li><strong>Firmware‑Updates</strong>  
+      – Aktualisierung von Flugsteuerung, Sensorik und Sicherheitsfunktionen  
+      – Einhaltung der Herstellerempfehlungen  
+      – Protokollierung jeder Änderung (Version, Datum, Verantwortlicher)</li>
+
+    <li><strong>Funktionsprüfungen</strong>  
+      – Tests von Geo‑Awareness, Remote ID, Failsafe und Redundanzen  
+      – regelmäßige Überprüfung der STS‑relevanten Systeme</li>
+  </ul>
+
+  <h3>Konformitätsunterlagen</h3>
+
+  <ul>
+    <li><strong>CE‑Konformitätserklärung</strong>  
+      – bestätigt die Einhaltung der Anforderungen der Klassen C5 oder C6  
+      – muss vom Hersteller bereitgestellt und im Betrieb hinterlegt sein</li>
+
+    <li><strong>Technische Dokumentation</strong>  
+      – Datenblätter, Prüfberichte, Sicherheitsnachweise  
+      – Grundlage für die behördliche Bewertung</li>
+
+    <li><strong>Nachweis der STS‑Tauglichkeit</strong>  
+      – Kombination aus Herstellerunterlagen, Wartungsprotokollen und Funktionsnachweisen  
+      – erforderlich bei Einreichung von STS‑Unterlagen oder Betriebshandbuch</li>
+  </ul>
+
+  <h3>Bedeutung für die Behördeneinreichung</h3>
+
+  <p>
+    Bei der Einreichung eines STS‑Betriebshandbuchs oder einer ergänzenden Dokumentation
+    erwartet die Behörde eine klare, konsistente und vollständige Nachweisführung.  
+    Unvollständige oder widersprüchliche Unterlagen führen häufig zu Rückfragen oder Verzögerungen.
+  </p>
+
+  <div class="highlight">
+    Technische Anforderungen müssen dokumentiert und regelmäßig überprüft werden:
+    <ul class="checklist">
+      <li>Wartungsprotokolle und Firmware-Updates</li>
+      <li>CE-Konformitätserklärung und technische Unterlagen</li>
+      <li>Nachweis der STS-Tauglichkeit bei Behördeneinreichung</li>
+    </ul>
+  </div>
+
+  <p>
+    Eine sorgfältige Wartung und vollständige Dokumentation gewährleisten nicht nur die
+    STS‑Konformität, sondern erhöhen auch die Betriebssicherheit und die Akzeptanz bei Behörden.
+  </p>
+</article>
+</section>
+
+<section>
+  <h2>Modul 220 – Betriebsverfahren STS</h2>
+
+  <div class="keywords">Stichworte: STS-01 · STS-02 · Pre-Flight · In-Flight · Post-Flight · Notfallplan · SOP · ERP · Rollenverteilung · Kommunikationsstruktur</div>
+
+<!--
+  <article>
+    <h3>220.1 Standard Operating Procedures (SOP)</h3>
+    <div class="highlight">
+      Für STS-Flüge müssen standardisierte Betriebsverfahren dokumentiert und eingehalten werden:
+      <ul class="checklist">
+        <li>Vordefinierte Abläufe für Planung, Durchführung und Nachbereitung</li>
+        <li>Verbindlich für alle Teammitglieder</li>
+        <li>Teil des Betriebshandbuchs und der behördlichen Prüfung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul220-1">
+  <h3>220.1 Standard Operating Procedures (SOP)</h3>
+
+  <p>
+    <strong>Standard Operating Procedures (SOP)</strong> bilden das Rückgrat eines sicheren und 
+    reproduzierbaren STS‑Betriebs.  
+    Sie definieren klare, verbindliche Abläufe für alle Phasen eines Einsatzes und stellen sicher, 
+    dass jeder Flug nach denselben professionellen Standards durchgeführt wird.  
+    Die SOP sind verpflichtender Bestandteil des Betriebshandbuchs und werden von der Behörde 
+    im Rahmen der STS‑Konformitätsprüfung bewertet.
+  </p>
+
+  <h3>Inhalt und Bedeutung der SOP</h3>
+
+  <ul>
+    <li><strong>Vordefinierte Abläufe für Planung, Durchführung und Nachbereitung</strong>  
+      – klare Struktur für Pre‑Flight, In‑Flight und Post‑Flight  
+      – Minimierung von Fehlern durch standardisierte Prozesse  
+      – Grundlage für Schulung, Qualitätssicherung und Audits</li>
+
+    <li><strong>Verbindlich für alle Teammitglieder</strong>  
+      – Pilot, Beobachter, Flughelfer und Einsatzleiter arbeiten nach denselben Regeln  
+      – Rollen und Verantwortlichkeiten sind eindeutig definiert  
+      – Abweichungen müssen dokumentiert und begründet werden</li>
+
+    <li><strong>Teil des Betriebshandbuchs und der behördlichen Prüfung</strong>  
+      – SOP müssen vollständig, konsistent und STS‑konform sein  
+      – Behörde prüft insbesondere Notfallverfahren, Kommunikationswege und Mitigations  
+      – Grundlage für die Genehmigungsfreiheit des STS‑Betriebs</li>
+  </ul>
+
+  <h3>Typische Bestandteile von STS‑SOP</h3>
+
+  <ul>
+    <li>Checklisten für Pre‑Flight, In‑Flight und Post‑Flight</li>
+    <li>Kommunikationsprotokolle und Rufzeichen</li>
+    <li>Notfallmanagement (ERP) und Abbruchkriterien</li>
+    <li>Rollenverteilung und Verantwortlichkeiten</li>
+    <li>Dokumentationspflichten und Qualitätskontrollen</li>
+  </ul>
+
+  <div class="highlight">
+    Für STS-Flüge müssen standardisierte Betriebsverfahren dokumentiert und eingehalten werden:
+    <ul class="checklist">
+      <li>Vordefinierte Abläufe für Planung, Durchführung und Nachbereitung</li>
+      <li>Verbindlich für alle Teammitglieder</li>
+      <li>Teil des Betriebshandbuchs und der behördlichen Prüfung</li>
+    </ul>
+  </div>
+
+  <p>
+    Professionelle SOP sorgen dafür, dass STS‑Einsätze sicher, effizient und jederzeit 
+    nachvollziehbar durchgeführt werden – unabhängig vom Einsatzteam oder der Einsatzumgebung.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>220.2 Pre-Flight-Verfahren</h3>
+    <div class="highlight">
+      Vor dem Flug sind technische, rechtliche und operationelle Checks durchzuführen:
+      <ul class="checklist">
+        <li>Flugfreigabe (Luftraum, Geozonen, Wetter)</li>
+        <li>Systemcheck: Akku, Sensorik, Firmware, RTH-Höhe</li>
+        <li>Briefing: Rollenverteilung, Kommunikationsmittel, Notfallprotokoll</li>
+        <li>Startplatzwahl und Sichtverhältnisse prüfen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul220-2">
+  <h3>220.2 Pre‑Flight‑Verfahren</h3>
+
+  <p>
+    Die <strong>Pre‑Flight‑Phase</strong> ist entscheidend für einen sicheren und regelkonformen STS‑Einsatz.  
+    Alle technischen, rechtlichen und operationellen Voraussetzungen müssen geprüft und dokumentiert werden,
+    bevor die Drohne gestartet werden darf.  
+    Standardisierte Pre‑Flight‑Checks reduzieren Risiken, erhöhen die Einsatzsicherheit und stellen die
+    STS‑Konformität sicher.
+  </p>
+
+  <h3>Technische, rechtliche und operationelle Checks</h3>
+
+  <ul>
+    <li><strong>Flugfreigabe (Luftraum, Geozonen, Wetter)</strong>  
+      – Prüfung von NOTAM, DABS, Geo‑Zonen und Luftraumklasse  
+      – Wetterbewertung: Wind, Sichtweite, Niederschlag, Temperatur  
+      – Abgleich mit STS‑Szenariobedingungen</li>
+
+    <li><strong>Systemcheck</strong>  
+      – Akkustand, Propeller, Sensorik, redundante Systeme  
+      – Firmware‑Versionen und Funktionsstatus  
+      – Kontrolle der RTH‑Höhe und Failsafe‑Einstellungen</li>
+
+    <li><strong>Briefing des Einsatzteams</strong>  
+      – Rollenverteilung: Pilot, Beobachter, Flughelfer, Einsatzleiter  
+      – Kommunikationsmittel und Rufzeichen  
+      – Notfallprotokoll (ERP), Abbruchkriterien, Alternativszenarien</li>
+
+    <li><strong>Startplatzwahl und Sichtverhältnisse</strong>  
+      – sichere, ebene Fläche mit ausreichender Umgebungssicherung  
+      – Hindernisse, Funkstörungen und magnetische Störquellen prüfen  
+      – Sichtlinie für Pilot und ggf. Beobachter sicherstellen</li>
+  </ul>
+
+  <h3>Zusätzliche STS‑spezifische Anforderungen</h3>
+
+  <ul>
+    <li>Überprüfung der CE‑Klasse (C5/C6) und STS‑Konformität</li>
+    <li>Kontrolle der Remote‑ID‑Übertragung</li>
+    <li>Dokumentation im Flugprotokoll oder digitalen Einsatztool</li>
+  </ul>
+
+  <div class="highlight">
+    Vor dem Flug sind technische, rechtliche und operationelle Checks durchzuführen:
+    <ul class="checklist">
+      <li>Flugfreigabe (Luftraum, Geozonen, Wetter)</li>
+      <li>Systemcheck: Akku, Sensorik, Firmware, RTH-Höhe</li>
+      <li>Briefing: Rollenverteilung, Kommunikationsmittel, Notfallprotokoll</li>
+      <li>Startplatzwahl und Sichtverhältnisse prüfen</li>
+    </ul>
+  </div>
+
+  <p>
+    Ein strukturierter Pre‑Flight‑Prozess ist die Grundlage für jeden sicheren STS‑Einsatz und
+    stellt sicher, dass alle Risiken frühzeitig erkannt und mitigiert werden.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>220.3 In-Flight-Verfahren</h3>
+    <div class="highlight">
+      Während des Fluges gelten klare Regeln zur Sicherheit und Kommunikation:
+      <ul class="checklist">
+        <li>VLOS oder BVLOS mit Beobachter gemäß STS-Szenario</li>
+        <li>Kontinuierliche Telemetrieüberwachung</li>
+        <li>Kommunikation zwischen Pilot und Flughelfer sicherstellen</li>
+        <li>Situationsbewusstsein aktiv halten (ADS-B, FLARM, visuelle Beobachtung)</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul220-3">
+  <h3>220.3 In‑Flight‑Verfahren</h3>
+
+  <p>
+    Während der Flugphase müssen alle sicherheitsrelevanten Vorgaben des jeweiligen
+    STS‑Szenarios konsequent eingehalten werden.  
+    Der Pilot trägt die Hauptverantwortung für Steuerung, Überwachung und Kommunikation,
+    wird jedoch durch Beobachter oder Flughelfer unterstützt.  
+    Ziel ist ein stabiler, sicherer und jederzeit nachvollziehbarer Flugbetrieb.
+  </p>
+
+  <h3>Regeln während des Fluges</h3>
+
+  <ul>
+    <li><strong>VLOS oder BVLOS mit Beobachter gemäß STS‑Szenario</strong>  
+      – STS‑01: Pilot muss die Drohne jederzeit visuell erfassen können  
+      – STS‑02: Beobachter übernimmt die visuelle Verfolgung und meldet Abweichungen  
+      – klare Sichtlinie und definierte Kommunikationswege erforderlich</li>
+
+    <li><strong>Kontinuierliche Telemetrieüberwachung</strong>  
+      – Überwachung von Höhe, Position, Geschwindigkeit, Akkustand  
+      – Kontrolle der GNSS‑Qualität und redundanten Systeme  
+      – sofortige Reaktion bei Warnmeldungen oder Systemfehlern</li>
+
+    <li><strong>Zuverlässige Kommunikation zwischen Pilot und Flughelfer/Beobachter</strong>  
+      – Funk oder andere definierte Kommunikationsmittel  
+      – standardisierte Rufzeichen und klare Meldestruktur  
+      – unmittelbare Weitergabe sicherheitsrelevanter Informationen</li>
+
+    <li><strong>Situationsbewusstsein aktiv halten</strong>  
+      – visuelle Beobachtung des Luftraums  
+      – Nutzung von ADS‑B‑ oder FLARM‑Daten (falls verfügbar)  
+      – Erkennen von Hindernissen, Personen, Tieren oder Luftfahrzeugen</li>
+  </ul>
+
+  <h3>Zusätzliche STS‑Anforderungen während des Fluges</h3>
+
+  <ul>
+    <li>Einhalten der maximalen Flughöhe von 120 m AGL</li>
+    <li>Keine Überflüge unbeteiligter Personen</li>
+    <li>Bereitschaft zum sofortigen Abbruch bei Risikoerhöhung</li>
+    <li>Dokumentation relevanter Ereignisse für das Flugprotokoll</li>
+  </ul>
+
+  <div class="highlight">
+    Während des Fluges gelten klare Regeln zur Sicherheit und Kommunikation:
+    <ul class="checklist">
+      <li>VLOS oder BVLOS mit Beobachter gemäß STS-Szenario</li>
+      <li>Kontinuierliche Telemetrieüberwachung</li>
+      <li>Kommunikation zwischen Pilot und Flughelfer sicherstellen</li>
+      <li>Situationsbewusstsein aktiv halten (ADS-B, FLARM, visuelle Beobachtung)</li>
+    </ul>
+  </div>
+
+  <p>
+    Ein strukturiertes In‑Flight‑Verfahren stellt sicher, dass der Flug jederzeit kontrolliert,
+    sicher und STS‑konform durchgeführt wird – unabhängig von Einsatzgebiet oder Szenario.
+  </p>
+</article>
+ 
+<!--
+  <article>
+    <h3>220.4 Post-Flight-Verfahren</h3>
+    <div class="highlight">
+      Nach dem Flug erfolgt die technische und dokumentarische Nachbereitung:
+      <ul class="checklist">
+        <li>Systeme abschalten und Zustand prüfen</li>
+        <li>Flugprotokoll vervollständigen</li>
+        <li>Debriefing mit Team: Ablauf, Auffälligkeiten, Verbesserungspotenzial</li>
+        <li>Wartungsbedarf dokumentieren</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul220-4">
+  <h3>220.4 Post‑Flight‑Verfahren</h3>
+
+  <p>
+    Die <strong>Post‑Flight‑Phase</strong> dient der technischen Kontrolle, der Dokumentation und der 
+    kontinuierlichen Verbesserung des STS‑Betriebs.  
+    Eine sorgfältige Nachbereitung stellt sicher, dass alle Systeme einsatzbereit bleiben, 
+    Zwischenfälle erkannt werden und Optimierungen in zukünftige Einsätze einfließen können.
+  </p>
+
+  <h3>Technische und dokumentarische Nachbereitung</h3>
+
+  <ul>
+    <li><strong>Systeme abschalten und Zustand prüfen</strong>  
+      – Drohne, Fernsteuerung und Zusatzgeräte sicher herunterfahren  
+      – Sichtprüfung auf Schäden, Verschleiß oder ungewöhnliche Temperaturen  
+      – Akkus entnehmen und Ladezustand dokumentieren</li>
+
+    <li><strong>Flugprotokoll vervollständigen</strong>  
+      – Datum, Einsatzort, Szenario (STS‑01/STS‑02)  
+      – Flugzeit, besondere Ereignisse, Abweichungen  
+      – Remote‑ID‑ und Telemetriedaten (falls gespeichert) prüfen</li>
+
+    <li><strong>Debriefing mit dem Team</strong>  
+      – Analyse des Ablaufs: Was lief gut, was kann verbessert werden  
+      – Besprechung von Auffälligkeiten, Near‑Misses oder technischen Warnungen  
+      – Ableitung konkreter Maßnahmen für SOP‑ oder ERP‑Anpassungen</li>
+
+    <li><strong>Wartungsbedarf dokumentieren</strong>  
+      – Eintrag in Wartungsprotokolle  
+      – Planung von Reparaturen, Firmware‑Updates oder Funktionsprüfungen  
+      – Bewertung der Einsatzbereitschaft für zukünftige Flüge</li>
+  </ul>
+
+  <h3>Zusätzliche STS‑Anforderungen</h3>
+
+  <ul>
+    <li>Synchronisation der Einsatzdaten mit dem Betriebshandbuch</li>
+    <li>Dokumentation relevanter Ereignisse für interne Audits oder Behörden</li>
+    <li>Überprüfung der STS‑Konformität nach jedem Einsatz</li>
+  </ul>
+
+  <div class="highlight">
+    Nach dem Flug erfolgt die technische und dokumentarische Nachbereitung:
+    <ul class="checklist">
+      <li>Systeme abschalten und Zustand prüfen</li>
+      <li>Flugprotokoll vervollständigen</li>
+      <li>Debriefing mit Team: Ablauf, Auffälligkeiten, Verbesserungspotenzial</li>
+      <li>Wartungsbedarf dokumentieren</li>
+    </ul>
+  </div>
+
+  <p>
+    Eine konsequente Post‑Flight‑Routine stärkt die Sicherheit, verbessert die Einsatzqualität 
+    und sorgt dafür, dass der STS‑Betrieb dauerhaft professionell und regelkonform bleibt.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>220.5 Notfallmanagement (ERP)</h3>
+    <div class="highlight">
+      Ein Emergency Response Plan (ERP) muss für STS-Flüge vorliegen:
+      <ul class="checklist">
+        <li>Maßnahmen bei Systemausfall, Fly Away, Sichtverlust</li>
+        <li>Kommunikationswege im Notfall (intern und extern)</li>
+        <li>Kontaktliste für Behörden, Rettungskräfte, Infrastrukturbetreiber</li>
+        <li>Dokumentation und Nachbearbeitung von Zwischenfällen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul220-5">
+  <h3>220.5 Notfallmanagement (ERP)</h3>
+
+  <p>
+    Der <strong>Emergency Response Plan (ERP)</strong> ist ein verpflichtender Bestandteil jedes STS‑Betriebs.
+    Er definiert klare Maßnahmen, Verantwortlichkeiten und Kommunikationswege für kritische Situationen
+    während eines Einsatzes.  
+    Ziel ist es, Schäden zu minimieren, die Kontrolle über den Einsatz zu behalten und eine
+    nachvollziehbare Dokumentation sicherzustellen.
+  </p>
+
+  <h3>Inhalte des Emergency Response Plans</h3>
+
+  <ul>
+    <li><strong>Maßnahmen bei Systemausfall, Fly‑Away oder Sichtverlust</strong>  
+      – Aktivierung der Failsafe‑Funktionen (RTH, Hover, sichere Landung)  
+      – sofortige Kommunikation zwischen Pilot, Beobachter und Einsatzleitung  
+      – Einleitung definierter Abbruchkriterien</li>
+
+    <li><strong>Kommunikationswege im Notfall</strong>  
+      – interne Kommunikation: Pilot ↔ Beobachter ↔ Einsatzleiter  
+      – externe Kommunikation: Behörden, Rettungskräfte, Infrastrukturbetreiber  
+      – Nutzung redundanter Kommunikationsmittel (Funk, Mobilfunk)</li>
+
+    <li><strong>Kontaktliste</strong>  
+      – Luftfahrtbehörde (z. B. BAZL)  
+      – Polizei, Feuerwehr, Rettungsdienste  
+      – Betreiber kritischer Infrastruktur im Einsatzgebiet  
+      – interne Verantwortliche und technische Ansprechpartner</li>
+
+    <li><strong>Dokumentation und Nachbearbeitung</strong>  
+      – Erfassung aller Zwischenfälle, Near‑Misses und technischen Auffälligkeiten  
+      – Analyse im Rahmen der Qualitätssicherung  
+      – Ableitung von Verbesserungsmaßnahmen für SOP und Betriebshandbuch</li>
+  </ul>
+
+  <h3>Warum ein ERP unverzichtbar ist</h3>
+
+  <p>
+    Ein gut strukturierter ERP stellt sicher, dass das Einsatzteam auch in kritischen Situationen
+    handlungsfähig bleibt.  
+    Er schafft Klarheit, reduziert Reaktionszeiten und ermöglicht eine professionelle,
+    nachvollziehbare Nachbearbeitung – ein zentraler Bestandteil der STS‑Konformität.
+  </p>
+
+  <div class="highlight">
+    Ein Emergency Response Plan (ERP) muss für STS-Flüge vorliegen:
+    <ul class="checklist">
+      <li>Maßnahmen bei Systemausfall, Fly Away, Sichtverlust</li>
+      <li>Kommunikationswege im Notfall (intern und extern)</li>
+      <li>Kontaktliste für Behörden, Rettungskräfte, Infrastrukturbetreiber</li>
+      <li>Dokumentation und Nachbearbeitung von Zwischenfällen</li>
+    </ul>
+  </div>
+
+  <p>
+    Der ERP bildet damit das sicherheitskritische Fundament für jeden STS‑Einsatz und ist
+    unverzichtbar für einen professionellen und regelkonformen Drohnenbetrieb.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>220.6 Rollenverteilung & Kommunikation</h3>
+    <div class="highlight">
+      Klare Zuständigkeiten und Kommunikationsstrukturen sind essenziell:
+      <ul class="checklist">
+        <li>Pilot, Beobachter, Flughelfer, Einsatzleiter</li>
+        <li>Kommunikationsmittel: Funk, Mobilfunk, visuelle Signale</li>
+        <li>Briefing vor jedem Einsatz, Debriefing danach</li>
+        <li>Verantwortlichkeiten im Betriebshandbuch festhalten</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul220-6">
+  <h3>220.6 Rollenverteilung & Kommunikation</h3>
+
+  <p>
+    Eine klare <strong>Rollenverteilung</strong> und strukturierte <strong>Kommunikation</strong> sind zentrale Voraussetzungen
+    für einen sicheren und effizienten STS‑Betrieb.  
+    Jede beteiligte Person muss ihre Aufgaben, Verantwortlichkeiten und Kommunikationswege genau kennen,
+    um in normalen wie auch in kritischen Situationen schnell und koordiniert handeln zu können.
+  </p>
+
+  <h3>Rollen im STS‑Einsatz</h3>
+
+  <ul>
+    <li><strong>Pilot</strong>  
+      – verantwortlich für Steuerung, Telemetrieüberwachung und Einhaltung der STS‑Vorgaben  
+      – trifft operative Entscheidungen während des Fluges</li>
+
+    <li><strong>Beobachter</strong>  
+      – visuelle Verfolgung der Drohne (insbesondere bei STS‑02)  
+      – meldet Hindernisse, Luftverkehr und sicherheitsrelevante Ereignisse</li>
+
+    <li><strong>Flughelfer</strong>  
+      – unterstützt Pilot und Beobachter bei Start, Landung und Umfeldsicherung  
+      – erweitert den Sichtbereich und übernimmt Kommunikationsaufgaben</li>
+
+    <li><strong>Einsatzleiter</strong>  
+      – Gesamtverantwortung für Planung, Durchführung und Nachbereitung  
+      – Koordination des Teams und Freigabe des Einsatzes</li>
+  </ul>
+
+  <h3>Kommunikationsmittel</h3>
+
+  <ul>
+    <li><strong>Funk</strong>  
+      – primäres Kommunikationsmittel für Pilot, Beobachter und Einsatzleitung  
+      – klare Rufzeichen und standardisierte Meldestruktur</li>
+
+    <li><strong>Mobilfunk</strong>  
+      – Backup‑Kommunikation oder Kontakt zu externen Stellen  
+      – wichtig für Notfälle oder Koordination mit Infrastrukturbetreibern</li>
+
+    <li><strong>Visuelle Signale</strong>  
+      – Handzeichen oder Lichtsignale für laute oder funktechnisch schwierige Umgebungen  
+      – besonders hilfreich bei Start‑ und Landephasen</li>
+  </ul>
+
+  <h3>Briefing & Debriefing</h3>
+
+  <ul>
+    <li><strong>Briefing vor jedem Einsatz</strong>  
+      – Rollenverteilung, Kommunikationswege, Notfallprotokolle  
+      – Flugroute, Luftraumlage und Wetterbedingungen</li>
+
+    <li><strong>Debriefing nach dem Einsatz</strong>  
+      – Analyse von Ablauf, Auffälligkeiten und Verbesserungspotenzial  
+      – Dokumentation für Qualitätssicherung und SOP‑Optimierung</li>
+  </ul>
+
+  <h3>Dokumentation der Verantwortlichkeiten</h3>
+
+  <p>
+    Alle Rollen, Aufgaben und Kommunikationsstrukturen müssen im <strong>Betriebshandbuch</strong> eindeutig
+    festgehalten sein.  
+    Dies ist Teil der behördlichen Prüfung und Voraussetzung für die STS‑Konformität.
+  </p>
+
+  <div class="highlight">
+    Klare Zuständigkeiten und Kommunikationsstrukturen sind essenziell:
+    <ul class="checklist">
+      <li>Pilot, Beobachter, Flughelfer, Einsatzleiter</li>
+      <li>Kommunikationsmittel: Funk, Mobilfunk, visuelle Signale</li>
+      <li>Briefing vor jedem Einsatz, Debriefing danach</li>
+      <li>Verantwortlichkeiten im Betriebshandbuch festhalten</li>
+    </ul>
+  </div>
+
+  <p>
+    Eine klare Rollenverteilung und strukturierte Kommunikation sorgen dafür, dass STS‑Einsätze
+    sicher, effizient und professionell durchgeführt werden – unabhängig von Teamgröße oder Einsatzumgebung.
+  </p>
+</article>
+
+</section>
+
+
+<section>
+  <h2>Modul 230 – Flugplanung & Risikobewertung STS</h2>
+
+  <div class="keywords">Stichworte: Flugplanung · Einsatzgebiet · Luftraumprüfung · Wetter · Bodenrisiko · Luftraumrisiko · Mitigations · SAIL · STS-01 · STS-02</div>
+
+<!--
+  <article>
+    <h3>230.1 Ziel der Flugplanung</h3>
+    <div class="highlight">
+      Die Flugplanung stellt sicher, dass der Einsatz sicher, regelkonform und effizient durchgeführt werden kann:
+      <ul class="checklist">
+        <li>Berücksichtigung technischer, rechtlicher und operationeller Rahmenbedingungen</li>
+        <li>Identifikation potenzieller Risiken und Mitigations</li>
+        <li>Dokumentation für Behörden und interne Qualitätssicherung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul230-1">
+  <h3>230.1 Ziel der Flugplanung</h3>
+
+  <p>
+    Die <strong>Flugplanung</strong> bildet die Grundlage für jeden sicheren und regelkonformen STS‑Einsatz.  
+    Sie stellt sicher, dass alle technischen, rechtlichen und operationellen Anforderungen berücksichtigt werden
+    und der Flug effizient, nachvollziehbar und risikobewusst durchgeführt werden kann.  
+    Eine sorgfältige Planung reduziert Fehlerquellen, erhöht die Einsatzqualität und unterstützt die behördliche
+    Nachvollziehbarkeit.
+  </p>
+
+  <h3>Wesentliche Ziele der Flugplanung</h3>
+
+  <ul>
+    <li><strong>Berücksichtigung technischer, rechtlicher und operationeller Rahmenbedingungen</strong>  
+      – Prüfung von Luftraum, Geozonen, Wetter und Einsatzgebiet  
+      – Sicherstellung der STS‑Konformität (C5/C6, SOP, ERP)  
+      – Abgleich der technischen Einsatzbereitschaft der Drohne</li>
+
+    <li><strong>Identifikation potenzieller Risiken und Mitigations</strong>  
+      – Analyse von Hindernissen, Personenbewegungen und Luftraumaktivität  
+      – Definition von Risikominderungsmaßnahmen (z. B. Flugkorridore, Beobachter, Sicherheitsabstände)  
+      – Vorbereitung von Alternativszenarien und Abbruchkriterien</li>
+
+    <li><strong>Dokumentation für Behörden und interne Qualitätssicherung</strong>  
+      – vollständige Einsatzdokumentation (Flugauftrag, Checklisten, Protokolle)  
+      – Nachweis der Einhaltung von STS‑Vorgaben  
+      – Grundlage für Audits, interne Reviews und kontinuierliche Verbesserung</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine strukturierte Flugplanung ermöglicht einen professionellen, sicheren und effizienten Einsatzablauf.  
+    Sie schafft Transparenz, unterstützt das Risikomanagement und bildet die Basis für einen
+    genehmigungsfreien, aber dennoch hochstandardisierten STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Flugplanung stellt sicher, dass der Einsatz sicher, regelkonform und effizient durchgeführt werden kann:
+    <ul class="checklist">
+      <li>Berücksichtigung technischer, rechtlicher und operationeller Rahmenbedingungen</li>
+      <li>Identifikation potenzieller Risiken und Mitigations</li>
+      <li>Dokumentation für Behörden und interne Qualitätssicherung</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Flugplanung den ersten und entscheidenden Schritt für jeden erfolgreichen STS‑Einsatz.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>230.2 Einsatzgebiet & Luftraumprüfung</h3>
+    <div class="highlight">
+      Das Einsatzgebiet muss hinsichtlich Topografie, Infrastruktur und Luftraum klassifiziert werden:
+      <ul class="checklist">
+        <li>Prüfung auf Flugverbotszonen (Geo-Zonen, NOTAM, DABS)</li>
+        <li>Bewertung der Luftraumklasse und möglicher Konflikte mit bemannter Luftfahrt</li>
+        <li>Einholung von Freigaben bei kontrolliertem Luftraum</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul230-2">
+  <h3>230.2 Einsatzgebiet & Luftraumprüfung</h3>
+
+  <p>
+    Die sorgfältige Analyse des <strong>Einsatzgebiets</strong> und die umfassende <strong>Luftraumprüfung</strong> 
+    sind zentrale Bestandteile der Flugplanung im STS‑Betrieb.  
+    Sie stellen sicher, dass der Einsatz sicher, regelkonform und ohne Konflikte mit bemannter Luftfahrt 
+    durchgeführt werden kann.  
+    Topografie, Infrastruktur und Luftraumstruktur müssen vollständig bewertet und dokumentiert werden.
+  </p>
+
+  <h3>Analyse des Einsatzgebiets</h3>
+
+  <ul>
+    <li><strong>Topografische Bewertung</strong>  
+      – Geländeformen, Höhenunterschiede, Hindernisse (Bäume, Gebäude, Masten)  
+      – Auswirkungen auf Funkverbindung, GNSS‑Empfang und Sichtlinien</li>
+
+    <li><strong>Infrastruktur im Einsatzgebiet</strong>  
+      – Straßen, Bahnlinien, Stromleitungen, Industrieanlagen  
+      – potenzielle Gefahrenquellen und Sicherheitsabstände  
+      – Zugangsmöglichkeiten für Team und Rettungskräfte</li>
+
+    <li><strong>Personenbewegungen</strong>  
+      – Analyse von Publikumsverkehr, Arbeitsbereichen oder temporären Menschenansammlungen  
+      – Bewertung der Möglichkeit, das Gebiet abzusichern (STS‑01/STS‑02)</li>
+  </ul>
+
+  <h3>Luftraumprüfung</h3>
+
+  <ul>
+    <li><strong>Prüfung auf Flugverbotszonen</strong>  
+      – Geo‑Zonen gemäß EU‑Verordnung  
+      – NOTAM‑Abfrage für temporäre Einschränkungen  
+      – DABS (Schweiz) für militärische Aktivitäten oder Sperrgebiete</li>
+
+    <li><strong>Bewertung der Luftraumklasse</strong>  
+      – Identifikation der Luftraumstruktur (z. B. G, E, D)  
+      – mögliche Konflikte mit bemannter Luftfahrt (Helikopter, Segelflug, Linienverkehr)  
+      – Berücksichtigung von Flugrouten, An- und Abflugsektoren</li>
+
+    <li><strong>Einholung von Freigaben bei kontrolliertem Luftraum</strong>  
+      – Kontaktaufnahme mit Flugsicherung oder Infrastrukturbetreibern  
+      – schriftliche oder digitale Freigaben dokumentieren  
+      – Einhaltung der Auflagen während des Einsatzes</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine gründliche Einsatzgebiets‑ und Luftraumprüfung minimiert Risiken, verhindert Luftraumverletzungen 
+    und schafft die Grundlage für einen sicheren, professionellen und behördentauglichen STS‑Einsatz.  
+    Sie ist ein unverzichtbarer Bestandteil jeder Flugplanung.
+  </p>
+
+  <div class="highlight">
+    Das Einsatzgebiet muss hinsichtlich Topografie, Infrastruktur und Luftraum klassifiziert werden:
+    <ul class="checklist">
+      <li>Prüfung auf Flugverbotszonen (Geo-Zonen, NOTAM, DABS)</li>
+      <li>Bewertung der Luftraumklasse und möglicher Konflikte mit bemannter Luftfahrt</li>
+      <li>Einholung von Freigaben bei kontrolliertem Luftraum</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch diese strukturierte Analyse wird gewährleistet, dass der Einsatz sicher, regelkonform 
+    und effizient durchgeführt werden kann.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>230.3 Wetter & Umwelteinflüsse</h3>
+    <div class="highlight">
+      Wetterbedingungen beeinflussen Flugverhalten und Sicherheit:
+      <ul class="checklist">
+        <li>Wind, Sichtweite, Niederschlag, Temperatur prüfen</li>
+        <li>Quellen: MeteoSchweiz, UAV Forecast, lokale Wetterstationen</li>
+        <li>Abbruchkriterien definieren (Windgrenze, Sichtverlust)</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul230-3">
+  <h3>230.3 Wetter & Umwelteinflüsse</h3>
+
+  <p>
+    <strong>Wetterbedingungen</strong> haben einen direkten Einfluss auf Flugverhalten, Systemsicherheit und 
+    Entscheidungsprozesse im STS‑Betrieb.  
+    Eine sorgfältige Analyse der meteorologischen und umweltbezogenen Faktoren ist daher ein 
+    unverzichtbarer Bestandteil der Flugplanung.  
+    Sie bestimmt, ob ein Einsatz sicher durchgeführt werden kann oder ob Anpassungen bzw. ein Abbruch 
+    notwendig sind.
+  </p>
+
+  <h3>Relevante Wetterparameter</h3>
+
+  <ul>
+    <li><strong>Wind</strong>  
+      – Böen, Windrichtung und -geschwindigkeit prüfen  
+      – Vergleich mit den vom Hersteller definierten Windgrenzen  
+      – besondere Vorsicht bei Start, Landung und Höhenänderungen</li>
+
+    <li><strong>Sichtweite</strong>  
+      – Mindestanforderungen für VLOS und BVLOS beachten  
+      – Nebel, Dunst oder tiefstehende Sonne berücksichtigen  
+      – Sichtverlust als klares Abbruchkriterium</li>
+
+    <li><strong>Niederschlag</strong>  
+      – Regen, Schnee oder Hagel können Sensorik und Elektronik beeinträchtigen  
+      – Feuchtigkeitseintrag erhöht das Risiko von Systemausfällen  
+      – STS‑Flüge bei Niederschlag in der Regel unzulässig</li>
+
+    <li><strong>Temperatur</strong>  
+      – Auswirkungen auf Akkuleistung und Motoren  
+      – extreme Kälte oder Hitze können Flugzeit und Stabilität reduzieren  
+      – Herstellergrenzen beachten</li>
+  </ul>
+
+  <h3>Wetterquellen</h3>
+
+  <ul>
+    <li><strong>MeteoSchweiz</strong> – offizielle Prognosen, Warnungen und Radardaten</li>
+    <li><strong>UAV Forecast</strong> – speziell für Drohnen relevante Parameter (Wind, KP‑Index, Satelliten)</li>
+    <li><strong>Lokale Wetterstationen</strong> – präzise Mikroklimadaten für das Einsatzgebiet</li>
+  </ul>
+
+  <h3>Abbruchkriterien</h3>
+
+  <ul>
+    <li>Überschreitung der Windgrenzen</li>
+    <li>Sichtverlust oder rapide Verschlechterung der Sichtbedingungen</li>
+    <li>Aufkommender Niederschlag oder Gewittertendenzen</li>
+    <li>Warnmeldungen der Sensorik oder Telemetrie</li>
+  </ul>
+
+  <div class="highlight">
+    Wetterbedingungen beeinflussen Flugverhalten und Sicherheit:
+    <ul class="checklist">
+      <li>Wind, Sichtweite, Niederschlag, Temperatur prüfen</li>
+      <li>Quellen: MeteoSchweiz, UAV Forecast, lokale Wetterstationen</li>
+      <li>Abbruchkriterien definieren (Windgrenze, Sichtverlust)</li>
+    </ul>
+  </div>
+
+  <p>
+    Eine fundierte Wetteranalyse schützt nicht nur die Drohne, sondern auch das Einsatzteam 
+    und die Umgebung.  
+    Sie bildet einen zentralen Baustein für einen sicheren, professionellen und STS‑konformen Flug.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>230.4 Bodenrisiko & Luftraumrisiko</h3>
+    <div class="highlight">
+      Die Risikobewertung erfolgt getrennt für Ground Risk und Air Risk:
+      <ul class="checklist">
+        <li><strong>Ground Risk:</strong> abhängig von Bebauung, Personenanzahl, Schutzmaßnahmen</li>
+        <li><strong>Air Risk:</strong> abhängig von Luftraumklasse, Flughöhe, Sichtverhältnissen</li>
+        <li>Bewertung über GRC/ARC → ergibt SAIL-Stufe</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul230-4">
+  <h3>230.4 Bodenrisiko & Luftraumrisiko</h3>
+
+  <p>
+    Die Risikobewertung im STS‑Betrieb erfolgt zweistufig: getrennt nach <strong>Ground Risk</strong> 
+    (Bodenrisiko) und <strong>Air Risk</strong> (Luftraumrisiko).  
+    Beide Risikokomponenten werden systematisch analysiert und anschließend über die 
+    GRC‑/ARC‑Matrix zu einer <strong>SAIL‑Stufe</strong> zusammengeführt, die den erforderlichen 
+    Sicherheitsumfang definiert.
+  </p>
+
+  <h3>Ground Risk (Bodenrisiko)</h3>
+
+  <ul>
+    <li><strong>Abhängig von Bebauung</strong>  
+      – dicht bebaute Gebiete erhöhen das Risiko  
+      – Hindernisse und Infrastruktur müssen berücksichtigt werden</li>
+
+    <li><strong>Personenanzahl im Einsatzgebiet</strong>  
+      – unbeteiligte Personen dürfen sich nicht im Gefahrenbereich aufhalten  
+      – Absperrungen und Zugangskontrollen reduzieren das Risiko</li>
+
+    <li><strong>Schutzmaßnahmen</strong>  
+      – Sicherheitsabstände, Flugkorridore, Flughelfer  
+      – organisatorische und technische Mitigations zur Risikoreduktion</li>
+  </ul>
+
+  <h3>Air Risk (Luftraumrisiko)</h3>
+
+  <ul>
+    <li><strong>Abhängig von Luftraumklasse</strong>  
+      – höheres Risiko in kontrollierten oder stark frequentierten Lufträumen  
+      – besondere Vorsicht in der Nähe von Flugplätzen oder Helikopterrouten</li>
+
+    <li><strong>Flughöhe</strong>  
+      – steigende Flughöhe erhöht potenzielle Konflikte mit bemannter Luftfahrt  
+      – STS‑Flüge sind auf 120 m AGL begrenzt</li>
+
+    <li><strong>Sichtverhältnisse</strong>  
+      – klare Sicht ist Voraussetzung für VLOS und BVLOS mit Beobachter  
+      – schlechte Sicht erhöht das Air Risk erheblich</li>
+  </ul>
+
+  <h3>GRC/ARC → SAIL‑Stufe</h3>
+
+  <p>
+    Die Kombination aus <strong>GRC (Ground Risk Class)</strong> und <strong>ARC (Air Risk Class)</strong> 
+    ergibt die <strong>SAIL‑Stufe</strong> (Specific Assurance and Integrity Level).  
+    Diese Stufe bestimmt, welche technischen, operationellen und organisatorischen Maßnahmen 
+    erforderlich sind, um den Einsatz sicher durchzuführen.
+  </p>
+
+  <div class="highlight">
+    Die Risikobewertung erfolgt getrennt für Ground Risk und Air Risk:
+    <ul class="checklist">
+      <li><strong>Ground Risk:</strong> abhängig von Bebauung, Personenanzahl, Schutzmaßnahmen</li>
+      <li><strong>Air Risk:</strong> abhängig von Luftraumklasse, Flughöhe, Sichtverhältnissen</li>
+      <li>Bewertung über GRC/ARC → ergibt SAIL-Stufe</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch diese strukturierte Risikobewertung wird sichergestellt, dass STS‑Einsätze 
+    nachvollziehbar, sicher und regelkonform geplant und durchgeführt werden.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>230.5 Mitigations & SAIL-Anforderungen</h3>
+    <div class="highlight">
+      Die SAIL-Stufe bestimmt die erforderlichen Sicherheitsmaßnahmen:
+      <ul class="checklist">
+        <li>SAIL 1–6: steigende Anforderungen an Technik, Organisation und Nachweisführung</li>
+        <li>Mitigations müssen dokumentiert und wirksam sein</li>
+        <li>Maßnahmen: redundante Systeme, Flughelfer, Notfallprotokolle</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul230-5">
+  <h3>230.5 Mitigations & SAIL‑Anforderungen</h3>
+
+  <p>
+    Die <strong>SAIL‑Stufe (Specific Assurance and Integrity Level)</strong> legt fest, welche technischen,
+    organisatorischen und operationellen Sicherheitsmaßnahmen für einen Einsatz erforderlich sind.  
+    Je höher die SAIL‑Stufe, desto umfangreicher müssen die Nachweise, Mitigations und Prozesse sein,
+    um ein akzeptables Restrisiko sicherzustellen.
+  </p>
+
+  <h3>SAIL‑Stufen und ihre Bedeutung</h3>
+
+  <ul>
+    <li><strong>SAIL 1–6: steigende Anforderungen</strong>  
+      – SAIL 1: geringe Anforderungen, einfache organisatorische Maßnahmen  
+      – SAIL 3–4: erweiterte technische und operationelle Mitigations  
+      – SAIL 5–6: höchste Anforderungen, umfassende Nachweisführung und robuste Systeme  
+      – STS‑Szenarien bewegen sich typischerweise im Bereich SAIL 3–4</li>
+
+    <li><strong>Mitigations müssen dokumentiert und wirksam sein</strong>  
+      – jede Maßnahme muss nachvollziehbar beschrieben und begründet werden  
+      – Wirksamkeit muss überprüfbar sein (Tests, Protokolle, SOP‑Verankerung)  
+      – Kombination aus technischen, operationellen und organisatorischen Mitigations</li>
+
+    <li><strong>Typische Maßnahmen</strong>  
+      – redundante Systeme (GNSS, Stromversorgung, Sensorik)  
+      – Flughelfer oder Beobachter zur Risikoreduktion  
+      – Notfallprotokolle (ERP), Abbruchkriterien, Kommunikationswege  
+      – definierte Flugkorridore, Sicherheitsabstände, Absperrungen  
+      – Nutzung von Geo‑Awareness, Remote ID, ADS‑B/FLARM (optional)</li>
+  </ul>
+
+  <h3>Von GRC/ARC zu SAIL</h3>
+
+  <p>
+    Die SAIL‑Stufe ergibt sich aus der Kombination von <strong>Ground Risk Class (GRC)</strong> und 
+    <strong>Air Risk Class (ARC)</strong>.  
+    Je nach resultierender Stufe müssen entsprechende Mitigations implementiert werden, um das Risiko
+    auf ein akzeptables Maß zu reduzieren.  
+    Die SAIL‑Stufe bestimmt somit direkt die Tiefe der technischen Anforderungen und die Strenge der
+    operationellen Prozesse.
+  </p>
+
+  <div class="highlight">
+    Die SAIL-Stufe bestimmt die erforderlichen Sicherheitsmaßnahmen:
+    <ul class="checklist">
+      <li>SAIL 1–6: steigende Anforderungen an Technik, Organisation und Nachweisführung</li>
+      <li>Mitigations müssen dokumentiert und wirksam sein</li>
+      <li>Maßnahmen: redundante Systeme, Flughelfer, Notfallprotokolle</li>
+    </ul>
+  </div>
+
+  <p>
+    Eine korrekte Anwendung der SAIL‑Anforderungen stellt sicher, dass jeder Einsatz – unabhängig von
+    Komplexität oder Umgebung – strukturiert, sicher und regelkonform durchgeführt wird.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>230.6 Dokumentation & Behördenkommunikation</h3>
+    <div class="highlight">
+      Die Flugplanung und Risikobewertung müssen nachvollziehbar dokumentiert werden:
+      <ul class="checklist">
+        <li>Einbindung in Betriebshandbuch und STS-Dokumentation</li>
+        <li>Nachvollziehbare Darstellung der Mitigations und Restrisiken</li>
+        <li>Bereitstellung für Behördenprüfung oder interne Audits</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul230-6">
+  <h3>230.6 Dokumentation & Behördenkommunikation</h3>
+
+  <p>
+    Eine vollständige und nachvollziehbare <strong>Dokumentation</strong> ist ein zentraler Bestandteil der STS‑Flugplanung.  
+    Sie ermöglicht es Behörden, Auditoren und internen Verantwortlichen, die Risikobewertung, die 
+    angewendeten Mitigations und die Einhaltung der STS‑Vorgaben transparent nachzuvollziehen.  
+    Gleichzeitig dient sie als Qualitätsinstrument für den eigenen Betrieb.
+  </p>
+
+  <h3>Dokumentationsanforderungen</h3>
+
+  <ul>
+    <li><strong>Einbindung in Betriebshandbuch und STS‑Dokumentation</strong>  
+      – Flugplanung, Checklisten, Risikobewertungen und SOP müssen konsistent integriert sein  
+      – klare Struktur und eindeutige Zuordnung der Dokumente  
+      – regelmäßige Aktualisierung bei Änderungen von Verfahren oder Technik</li>
+
+    <li><strong>Nachvollziehbare Darstellung der Mitigations und Restrisiken</strong>  
+      – Beschreibung der identifizierten Risiken (GRC/ARC)  
+      – Darstellung der angewendeten Mitigations und deren Wirksamkeit  
+      – Begründung des akzeptierten Restrisikos gemäß STS‑Vorgaben</li>
+
+    <li><strong>Bereitstellung für Behördenprüfung oder interne Audits</strong>  
+      – vollständige und geordnete Ablage aller relevanten Unterlagen  
+      – digitale oder physische Bereitstellung auf Anfrage  
+      – Nachweis der STS‑Konformität und der Einhaltung der betrieblichen Prozesse</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine saubere Dokumentation erleichtert nicht nur die Kommunikation mit Behörden, sondern stärkt 
+    auch die interne Qualitätssicherung.  
+    Sie schafft Transparenz, reduziert Rückfragen und bildet die Grundlage für einen professionellen, 
+    auditfähigen und regelkonformen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Flugplanung und Risikobewertung müssen nachvollziehbar dokumentiert werden:
+    <ul class="checklist">
+      <li>Einbindung in Betriebshandbuch und STS-Dokumentation</li>
+      <li>Nachvollziehbare Darstellung der Mitigations und Restrisiken</li>
+      <li>Bereitstellung für Behördenprüfung oder interne Audits</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch eine strukturierte und vollständige Dokumentation wird sichergestellt, dass jeder Einsatz 
+    transparent, überprüfbar und STS‑konform durchgeführt werden kann.
+  </p>
+</article>
+
+
+</section>
+
+<section>
+  <h2>Modul 240 – Notfallmanagement STS</h2>
+
+  <div class="keywords">Stichworte: Emergency Response Plan · Systemausfall · Fly Away · Sichtverlust · Kommunikationsausfall · Notlandung · Zwischenfallbericht · Behördenkontakt</div>
+
+<!--
+  <article>
+    <h3>240.1 Ziel des Notfallmanagements</h3>
+    <div class="highlight">
+      Das Notfallmanagement dient der strukturierten Reaktion auf kritische Situationen im STS-Betrieb:
+      <ul class="checklist">
+        <li>Minimierung von Schäden und Risiken</li>
+        <li>Sicherstellung der Handlungsfähigkeit bei Systemversagen</li>
+        <li>Nachvollziehbare Dokumentation für Behörden und Versicherungen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul240-1">
+  <h3>240.1 Ziel des Notfallmanagements</h3>
+
+  <p>
+    Das <strong>Notfallmanagement</strong> ist ein zentraler Bestandteil des STS‑Betriebs und stellt sicher,
+    dass das Einsatzteam in kritischen Situationen schnell, strukturiert und wirksam reagieren kann.  
+    Es definiert klare Abläufe, Verantwortlichkeiten und Kommunikationswege, um Schäden zu minimieren
+    und die Sicherheit von Personen, Infrastruktur und Luftfahrzeugen zu gewährleisten.
+  </p>
+
+  <h3>Aufgaben und Bedeutung des Notfallmanagements</h3>
+
+  <ul>
+    <li><strong>Minimierung von Schäden und Risiken</strong>  
+      – schnelle Reaktion auf technische Störungen, Fly‑Aways oder Kontrollverlust  
+      – definierte Maßnahmen zur Risikoreduktion (Failsafe, Landeverfahren, Abbruchkriterien)  
+      – Schutz von unbeteiligten Personen und kritischer Infrastruktur</li>
+
+    <li><strong>Sicherstellung der Handlungsfähigkeit bei Systemversagen</strong>  
+      – klare Rollenverteilung und Kommunikationswege  
+      – Nutzung redundanter Systeme und Notfallprotokolle  
+      – Vorbereitung auf Szenarien wie Sichtverlust, GNSS‑Ausfall oder Funkstörungen</li>
+
+    <li><strong>Nachvollziehbare Dokumentation für Behörden und Versicherungen</strong>  
+      – vollständige Erfassung von Zwischenfällen, Near‑Misses und Maßnahmen  
+      – Grundlage für interne Analysen, Audits und behördliche Prüfungen  
+      – Nachweis der STS‑Konformität und professionellen Einsatzführung</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Ein strukturiertes Notfallmanagement erhöht die Einsatzsicherheit, stärkt die Professionalität
+    des Teams und stellt sicher, dass auch in unerwarteten Situationen kontrolliert gehandelt wird.  
+    Es bildet damit einen unverzichtbaren Bestandteil eines sicheren und regelkonformen STS‑Betriebs.
+  </p>
+
+  <div class="highlight">
+    Das Notfallmanagement dient der strukturierten Reaktion auf kritische Situationen im STS-Betrieb:
+    <ul class="checklist">
+      <li>Minimierung von Schäden und Risiken</li>
+      <li>Sicherstellung der Handlungsfähigkeit bei Systemversagen</li>
+      <li>Nachvollziehbare Dokumentation für Behörden und Versicherungen</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch ein klar definiertes Notfallmanagement wird gewährleistet, dass jeder Einsatz auch unter
+    schwierigen Bedingungen sicher und nachvollziehbar bleibt.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>240.2 Emergency Response Plan (ERP)</h3>
+    <div class="highlight">
+      Der ERP ist ein verpflichtender Bestandteil des Betriebshandbuchs:
+      <ul class="checklist">
+        <li>Maßnahmen bei Systemausfall, Fly Away, Sichtverlust</li>
+        <li>Kommunikationsstruktur im Notfall (intern und extern)</li>
+        <li>Kontaktliste: Behörden, Rettungskräfte, Infrastrukturbetreiber</li>
+        <li>Rollenverteilung im Krisenfall</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul240-2">
+  <h3>240.2 Emergency Response Plan (ERP)</h3>
+
+  <p>
+    Der <strong>Emergency Response Plan (ERP)</strong> ist ein verpflichtender Bestandteil des Betriebshandbuchs 
+    und bildet die Grundlage für ein strukturiertes, schnelles und koordiniertes Handeln im Notfall.  
+    Er definiert klare Abläufe, Kommunikationswege und Verantwortlichkeiten, um Risiken zu minimieren 
+    und die Sicherheit von Personen, Infrastruktur und Luftfahrzeugen zu gewährleisten.
+  </p>
+
+  <h3>Inhalte des ERP</h3>
+
+  <ul>
+    <li><strong>Maßnahmen bei Systemausfall, Fly‑Away oder Sichtverlust</strong>  
+      – Aktivierung von Failsafe‑Funktionen (RTH, kontrollierte Landung, Hover)  
+      – sofortige interne Alarmierung (Pilot ↔ Beobachter ↔ Einsatzleitung)  
+      – Einleitung definierter Abbruchkriterien und Sicherung des Einsatzgebiets</li>
+
+    <li><strong>Kommunikationsstruktur im Notfall</strong>  
+      – interne Kommunikation: Pilot, Beobachter, Flughelfer, Einsatzleiter  
+      – externe Kommunikation: Polizei, Feuerwehr, Luftfahrtbehörde, Infrastrukturbetreiber  
+      – Nutzung redundanter Kommunikationsmittel (Funk, Mobilfunk)</li>
+
+    <li><strong>Kontaktliste</strong>  
+      – Behörden (z. B. BAZL, lokale Polizei)  
+      – Rettungskräfte und Feuerwehr  
+      – Betreiber kritischer Infrastruktur im Einsatzgebiet  
+      – interne Verantwortliche und technische Ansprechpartner</li>
+
+    <li><strong>Rollenverteilung im Krisenfall</strong>  
+      – klare Zuständigkeiten für Pilot, Beobachter, Einsatzleiter  
+      – definierte Entscheidungswege und Eskalationsstufen  
+      – Dokumentationsverantwortung für Zwischenfälle und Maßnahmen</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Ein gut ausgearbeiteter ERP stellt sicher, dass das Team auch in kritischen Situationen 
+    handlungsfähig bleibt.  
+    Er reduziert Reaktionszeiten, erhöht die Sicherheit und bildet die Grundlage für eine 
+    professionelle und nachvollziehbare Nachbearbeitung von Zwischenfällen.
+  </p>
+
+  <div class="highlight">
+    Der ERP ist ein verpflichtender Bestandteil des Betriebshandbuchs:
+    <ul class="checklist">
+      <li>Maßnahmen bei Systemausfall, Fly Away, Sichtverlust</li>
+      <li>Kommunikationsstruktur im Notfall (intern und extern)</li>
+      <li>Kontaktliste: Behörden, Rettungskräfte, Infrastrukturbetreiber</li>
+      <li>Rollenverteilung im Krisenfall</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet der ERP das zentrale Sicherheitsinstrument für den gesamten STS‑Betrieb 
+    und gewährleistet ein kontrolliertes Vorgehen in jeder kritischen Lage.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>240.3 Technische Notfallmaßnahmen</h3>
+    <div class="highlight">
+      Die Drohne muss über automatisierte Sicherheitsfunktionen verfügen:
+      <ul class="checklist">
+        <li>Failsafe bei Funkverlust: RTH, Hover oder Landung</li>
+        <li>Redundante GNSS-Module und Stromversorgung</li>
+        <li>Geo-Fencing zur Vermeidung von Flugverbotszonen</li>
+        <li>Automatische Flugprotokollierung zur Nachverfolgung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul240-3">
+  <h3>240.3 Technische Notfallmaßnahmen</h3>
+
+  <p>
+    Technische Notfallmaßnahmen stellen sicher, dass die Drohne auch bei unerwarteten Störungen 
+    kontrolliert bleibt und Risiken für Personen, Infrastruktur und den Luftraum minimiert werden.  
+    Automatisierte Sicherheitsfunktionen sind daher ein zentraler Bestandteil der STS‑Anforderungen 
+    und müssen zuverlässig, getestet und dokumentiert sein.
+  </p>
+
+  <h3>Automatisierte Sicherheitsfunktionen</h3>
+
+  <ul>
+    <li><strong>Failsafe bei Funkverlust</strong>  
+      – automatische Aktivierung definierter Sicherheitsmodi  
+      – Optionen: <em>Return‑to‑Home (RTH)</em>, <em>Hover</em> oder <em>sichere Landung</em>  
+      – Auswahl abhängig von Einsatzgebiet, SOP und Herstellerkonfiguration</li>
+
+    <li><strong>Redundante GNSS‑Module und Stromversorgung</strong>  
+      – erhöhte Ausfallsicherheit durch doppelte Navigationseinheiten  
+      – redundante Energieversorgung zur Vermeidung plötzlicher Abschaltungen  
+      – kontinuierliche Überwachung der Systemintegrität</li>
+
+    <li><strong>Geo‑Fencing</strong>  
+      – automatische Begrenzung des Flugbereichs  
+      – verhindert das Eindringen in Flugverbotszonen oder kritische Infrastruktur  
+      – wichtig für STS‑Konformität und Luftraumsicherheit</li>
+
+    <li><strong>Automatische Flugprotokollierung</strong>  
+      – Speicherung von Telemetrie‑, Positions‑ und Systemdaten  
+      – ermöglicht Nachverfolgung von Zwischenfällen und technische Analysen  
+      – essenziell für Behörden, Versicherungen und interne Qualitätssicherung</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Diese technischen Notfallmaßnahmen erhöhen die Robustheit des Systems und stellen sicher, 
+    dass auch bei Störungen ein kontrollierter und sicherer Betrieb möglich bleibt.  
+    Sie bilden die Grundlage für ein professionelles, auditfähiges und regelkonformes 
+    Notfallmanagement im STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Drohne muss über automatisierte Sicherheitsfunktionen verfügen:
+    <ul class="checklist">
+      <li>Failsafe bei Funkverlust: RTH, Hover oder Landung</li>
+      <li>Redundante GNSS-Module und Stromversorgung</li>
+      <li>Geo-Fencing zur Vermeidung von Flugverbotszonen</li>
+      <li>Automatische Flugprotokollierung zur Nachverfolgung</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch diese Funktionen bleibt die Drohne auch in kritischen Situationen steuerbar und 
+    unterstützt das Einsatzteam bei der sicheren Bewältigung von Notfällen.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>240.4 Operationelle Notfallmaßnahmen</h3>
+    <div class="highlight">
+      Das Einsatzteam muss auf kritische Situationen vorbereitet sein:
+      <ul class="checklist">
+        <li>Briefing mit Notfallrollen und Kommunikationsmitteln</li>
+        <li>Flughelfer zur visuellen Beobachtung und Warnung</li>
+        <li>Abbruchkriterien definieren (z. B. Windgrenze, Sichtverlust)</li>
+        <li>Notlandeplatz vorab festlegen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul240-4">
+  <h3>240.4 Operationelle Notfallmaßnahmen</h3>
+
+  <p>
+    Operationelle Notfallmaßnahmen stellen sicher, dass das Einsatzteam in kritischen Situationen 
+    schnell, koordiniert und wirksam reagieren kann.  
+    Sie ergänzen die technischen Sicherheitsfunktionen der Drohne und sorgen dafür, dass auch bei 
+    unerwarteten Ereignissen ein kontrollierter und sicherer Ablauf gewährleistet bleibt.
+  </p>
+
+  <h3>Vorbereitung des Einsatzteams</h3>
+
+  <ul>
+    <li><strong>Briefing mit Notfallrollen und Kommunikationsmitteln</strong>  
+      – klare Zuweisung von Verantwortlichkeiten (Pilot, Beobachter, Einsatzleiter)  
+      – Festlegung der Kommunikationswege und Rufzeichen  
+      – Durchgehen der Notfallprotokolle vor jedem Einsatz</li>
+
+    <li><strong>Flughelfer zur visuellen Beobachtung und Warnung</strong>  
+      – Unterstützung des Piloten bei der Luftraumbeobachtung  
+      – frühzeitige Erkennung von Hindernissen, Personen oder Luftfahrzeugen  
+      – wichtige Rolle bei BVLOS‑Einsätzen und komplexen Umgebungen</li>
+
+    <li><strong>Abbruchkriterien definieren</strong>  
+      – z. B. Überschreitung der Windgrenze, Sichtverlust, Telemetriefehler  
+      – klare Vorgaben, wann der Flug sofort beendet werden muss  
+      – Dokumentation der Kriterien im SOP und ERP</li>
+
+    <li><strong>Notlandeplatz vorab festlegen</strong>  
+      – Auswahl eines sicheren, zugänglichen Bereichs für eine kontrollierte Notlandung  
+      – Berücksichtigung von Personenverkehr, Hindernissen und Infrastruktur  
+      – Kommunikation des Notlandeplatzes an das gesamte Team</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Operationelle Notfallmaßnahmen erhöhen die Handlungssicherheit des Teams und reduzieren 
+    Reaktionszeiten im Ernstfall.  
+    Sie sind ein wesentlicher Bestandteil eines professionellen, sicheren und auditfähigen 
+    STS‑Betriebs.
+  </p>
+
+  <div class="highlight">
+    Das Einsatzteam muss auf kritische Situationen vorbereitet sein:
+    <ul class="checklist">
+      <li>Briefing mit Notfallrollen und Kommunikationsmitteln</li>
+      <li>Flughelfer zur visuellen Beobachtung und Warnung</li>
+      <li>Abbruchkriterien definieren (z. B. Windgrenze, Sichtverlust)</li>
+      <li>Notlandeplatz vorab festlegen</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch klare Abläufe und vorbereitete Maßnahmen bleibt der Einsatz auch in kritischen Momenten 
+    kontrolliert und sicher.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>240.5 Zwischenfallbericht & Nachbereitung</h3>
+    <div class="highlight">
+      Jeder Zwischenfall muss dokumentiert und analysiert werden:
+      <ul class="checklist">
+        <li>Bericht: Zeitpunkt, Ort, Ursache, Reaktion, Beteiligte</li>
+        <li>Einbindung in Qualitätssicherung und Betriebshandbuch</li>
+        <li>Meldung an BAZL oder zuständige Behörde bei meldepflichtigen Ereignissen</li>
+        <li>Ableitung von Verbesserungsmaßnahmen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul240-5">
+  <h3>240.5 Zwischenfallbericht & Nachbereitung</h3>
+
+  <p>
+    Jeder <strong>Zwischenfall</strong> im STS‑Betrieb muss vollständig, nachvollziehbar und zeitnah dokumentiert werden.  
+    Die strukturierte Nachbereitung dient nicht nur der Ursachenanalyse, sondern auch der kontinuierlichen 
+    Verbesserung der betrieblichen Abläufe und der Einhaltung regulatorischer Anforderungen.  
+    Ein professioneller Umgang mit Zwischenfällen stärkt die Sicherheit, Transparenz und Auditfähigkeit des Betriebs.
+  </p>
+
+  <h3>Dokumentation des Zwischenfalls</h3>
+
+  <ul>
+    <li><strong>Bericht mit allen relevanten Informationen</strong>  
+      – Zeitpunkt und Ort des Ereignisses  
+      – Beschreibung der Ursache oder vermuteten Ursache  
+      – Reaktion des Teams und eingeleitete Maßnahmen  
+      – beteiligte Personen und Systeme  
+      – Ergänzung durch Telemetrie‑ oder Logdaten, falls verfügbar</li>
+
+    <li><strong>Einbindung in Qualitätssicherung und Betriebshandbuch</strong>  
+      – Analyse im Rahmen interner Reviews oder Audits  
+      – Anpassung von SOP, ERP oder technischen Verfahren  
+      – Dokumentation der Änderungen im Betriebshandbuch</li>
+
+    <li><strong>Meldung an BAZL oder zuständige Behörde</strong>  
+      – erforderlich bei meldepflichtigen Ereignissen (z. B. Kontrollverlust, Personen- oder Sachschäden)  
+      – fristgerechte Übermittlung gemäß nationalen Vorgaben  
+      – Ablage der behördlichen Kommunikation im Dokumentationssystem</li>
+
+    <li><strong>Ableitung von Verbesserungsmaßnahmen</strong>  
+      – Identifikation von Schwachstellen in Technik, Organisation oder Kommunikation  
+      – Definition konkreter Maßnahmen zur Risikoreduktion  
+      – Überprüfung der Wirksamkeit bei zukünftigen Einsätzen</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine konsequente Zwischenfallanalyse trägt maßgeblich zur Weiterentwicklung des Sicherheitsniveaus bei.  
+    Sie schafft Transparenz gegenüber Behörden, Versicherungen und internen Stakeholdern und stellt sicher, 
+    dass aus jedem Ereignis gelernt wird.
+  </p>
+
+  <div class="highlight">
+    Jeder Zwischenfall muss dokumentiert und analysiert werden:
+    <ul class="checklist">
+      <li>Bericht: Zeitpunkt, Ort, Ursache, Reaktion, Beteiligte</li>
+      <li>Einbindung in Qualitätssicherung und Betriebshandbuch</li>
+      <li>Meldung an BAZL oder zuständige Behörde bei meldepflichtigen Ereignissen</li>
+      <li>Ableitung von Verbesserungsmaßnahmen</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch eine strukturierte Nachbereitung wird gewährleistet, dass der Betrieb kontinuierlich sicherer, 
+    professioneller und regelkonformer wird.
+  </p>
+</article>
+
+</section>
+
+<section>
+  <h2>Modul 250 – Qualifikationen & Schulungsnachweise STS</h2>
+
+  <div class="keywords">Stichworte: STS-Schulung · Fernpilotenkompetenz · Schulungsnachweis · Theorieprüfung · praktische Einweisung · Betriebshandbuch · Behördenanerkennung</div>
+
+<!--
+  <article>
+    <h3>250.1 Ziel der Qualifikationsnachweise</h3>
+    <div class="highlight">
+      Für STS-Flüge müssen Fernpiloten und Einsatzteams spezifische Kompetenzen nachweisen:
+      <ul class="checklist">
+        <li>Nachweis der theoretischen und praktischen Befähigung</li>
+        <li>Erfüllung der Anforderungen gemäß EU-Verordnung 2019/947</li>
+        <li>Behördlich anerkannte Schulung als Voraussetzung für genehmigungsfreien STS-Betrieb</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul240-5">
+  <h3>240.5 Zwischenfallbericht & Nachbereitung</h3>
+
+  <p>
+    Jeder <strong>Zwischenfall</strong> im STS‑Betrieb muss vollständig, nachvollziehbar und zeitnah dokumentiert werden.  
+    Die strukturierte Nachbereitung dient nicht nur der Ursachenanalyse, sondern auch der kontinuierlichen 
+    Verbesserung der betrieblichen Abläufe und der Einhaltung regulatorischer Anforderungen.  
+    Ein professioneller Umgang mit Zwischenfällen stärkt die Sicherheit, Transparenz und Auditfähigkeit des Betriebs.
+  </p>
+
+  <h3>Dokumentation des Zwischenfalls</h3>
+
+  <ul>
+    <li><strong>Bericht mit allen relevanten Informationen</strong>  
+      – Zeitpunkt und Ort des Ereignisses  
+      – Beschreibung der Ursache oder vermuteten Ursache  
+      – Reaktion des Teams und eingeleitete Maßnahmen  
+      – beteiligte Personen und Systeme  
+      – Ergänzung durch Telemetrie‑ oder Logdaten, falls verfügbar</li>
+
+    <li><strong>Einbindung in Qualitätssicherung und Betriebshandbuch</strong>  
+      – Analyse im Rahmen interner Reviews oder Audits  
+      – Anpassung von SOP, ERP oder technischen Verfahren  
+      – Dokumentation der Änderungen im Betriebshandbuch</li>
+
+    <li><strong>Meldung an BAZL oder zuständige Behörde</strong>  
+      – erforderlich bei meldepflichtigen Ereignissen (z. B. Kontrollverlust, Personen- oder Sachschäden)  
+      – fristgerechte Übermittlung gemäß nationalen Vorgaben  
+      – Ablage der behördlichen Kommunikation im Dokumentationssystem</li>
+
+    <li><strong>Ableitung von Verbesserungsmaßnahmen</strong>  
+      – Identifikation von Schwachstellen in Technik, Organisation oder Kommunikation  
+      – Definition konkreter Maßnahmen zur Risikoreduktion  
+      – Überprüfung der Wirksamkeit bei zukünftigen Einsätzen</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine konsequente Zwischenfallanalyse trägt maßgeblich zur Weiterentwicklung des Sicherheitsniveaus bei.  
+    Sie schafft Transparenz gegenüber Behörden, Versicherungen und internen Stakeholdern und stellt sicher, 
+    dass aus jedem Ereignis gelernt wird.
+  </p>
+
+  <div class="highlight">
+    Jeder Zwischenfall muss dokumentiert und analysiert werden:
+    <ul class="checklist">
+      <li>Bericht: Zeitpunkt, Ort, Ursache, Reaktion, Beteiligte</li>
+      <li>Einbindung in Qualitätssicherung und Betriebshandbuch</li>
+      <li>Meldung an BAZL oder zuständige Behörde bei meldepflichtigen Ereignissen</li>
+      <li>Ableitung von Verbesserungsmaßnahmen</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch eine strukturierte Nachbereitung wird gewährleistet, dass der Betrieb kontinuierlich sicherer, 
+    professioneller und regelkonformer wird.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>250.2 Inhalte der STS-Schulung</h3>
+    <div class="highlight">
+      Die Schulung für STS umfasst technische, rechtliche und operationelle Inhalte:
+      <ul class="checklist">
+        <li>Flugphysik, Systemfunktionen, Notfallmanagement</li>
+        <li>Rechtsgrundlagen, Luftraumstruktur, Datenschutz</li>
+        <li>Risikobewertung, Mitigations, Betriebsszenarien</li>
+        <li>Kommunikation, Rollenverteilung, SOPs</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul250-2">
+  <h3>250.2 Inhalte der STS‑Schulung</h3>
+
+  <p>
+    Die <strong>STS‑Schulung</strong> vermittelt alle theoretischen und praktischen Kompetenzen, die für einen 
+    sicheren, regelkonformen und professionellen Betrieb innerhalb der Standard‑Szenarien erforderlich sind.  
+    Sie deckt technische, rechtliche und operationelle Themen ab und stellt sicher, dass Fernpiloten und 
+    Einsatzteams in jeder Phase des Einsatzes handlungsfähig bleiben.
+  </p>
+
+  <h3>Schulungsinhalte im Überblick</h3>
+
+  <ul>
+    <li><strong>Flugphysik, Systemfunktionen, Notfallmanagement</strong>  
+      – Grundlagen der Aerodynamik und Flugmechanik  
+      – Verständnis der Drohnensysteme, Sensorik und Limitierungen  
+      – technische und operationelle Notfallmaßnahmen (Failsafe, ERP, Abbruchkriterien)</li>
+
+    <li><strong>Rechtsgrundlagen, Luftraumstruktur, Datenschutz</strong>  
+      – EU‑Verordnung 2019/947 und STS‑Spezifikationen  
+      – Luftraumklassen, Geo‑Zonen, Freigaben und Meldepflichten  
+      – Datenschutzanforderungen bei Bild‑ und Datenerfassung</li>
+
+    <li><strong>Risikobewertung, Mitigations, Betriebsszenarien</strong>  
+      – GRC/ARC‑Analyse und Ableitung der SAIL‑Stufe  
+      – technische, organisatorische und operationelle Mitigations  
+      – Anwendung der STS‑Szenarien (STS‑01/STS‑02) in der Praxis</li>
+
+    <li><strong>Kommunikation, Rollenverteilung, SOPs</strong>  
+      – strukturierte Teamkommunikation und Notfallkommunikation  
+      – Aufgaben von Pilot, Beobachter, Flughelfer und Einsatzleiter  
+      – Standard Operating Procedures (SOP) und deren Umsetzung im Einsatz</li>
+  </ul>
+
+  <h3>Bedeutung der STS‑Schulung</h3>
+
+  <p>
+    Die Schulung stellt sicher, dass alle Beteiligten über ein einheitliches Verständnis der 
+    sicherheitsrelevanten Prozesse verfügen.  
+    Sie bildet die Grundlage für einen genehmigungsfreien, aber dennoch hochstandardisierten 
+    und auditfähigen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Schulung für STS umfasst technische, rechtliche und operationelle Inhalte:
+    <ul class="checklist">
+      <li>Flugphysik, Systemfunktionen, Notfallmanagement</li>
+      <li>Rechtsgrundlagen, Luftraumstruktur, Datenschutz</li>
+      <li>Risikobewertung, Mitigations, Betriebsszenarien</li>
+      <li>Kommunikation, Rollenverteilung, SOPs</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit vermittelt die STS‑Schulung alle Kompetenzen, die für einen sicheren und professionellen 
+    Drohnenbetrieb erforderlich sind.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>250.3 Theorieprüfung & praktische Einweisung</h3>
+    <div class="highlight">
+      Die Qualifikation besteht aus einer theoretischen Prüfung und einer praktischen Einweisung:
+      <ul class="checklist">
+        <li>Theorieprüfung durch anerkannten Schulungsträger</li>
+        <li>Praktische Einweisung in STS-01 oder STS-02 Szenario</li>
+        <li>Nachweis der Fähigkeit zur sicheren Durchführung gemäß Betriebshandbuch</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul250-3">
+  <h3>250.3 Theorieprüfung & praktische Einweisung</h3>
+
+  <p>
+    Die Qualifikation für STS‑Flüge setzt sich aus zwei zentralen Bestandteilen zusammen: einer 
+    <strong>theoretischen Prüfung</strong> und einer <strong>praktischen Einweisung</strong>.  
+    Beide Elemente stellen sicher, dass Fernpiloten über das notwendige Wissen und die erforderlichen 
+    praktischen Fähigkeiten verfügen, um Einsätze gemäß den STS‑Vorgaben sicher und regelkonform 
+    durchzuführen.
+  </p>
+
+  <h3>Theorieprüfung</h3>
+
+  <ul>
+    <li><strong>Theorieprüfung durch anerkannten Schulungsträger</strong>  
+      – Durchführung durch eine behördlich anerkannte Ausbildungsorganisation (z. B. DTO/ATO)  
+      – Inhalte: Luftraumstruktur, Meteorologie, Technik, Notfallmanagement, STS‑Spezifikationen  
+      – schriftliche oder digitale Prüfung mit dokumentiertem Ergebnis</li>
+  </ul>
+
+  <h3>Praktische Einweisung</h3>
+
+  <ul>
+    <li><strong>Praktische Einweisung in STS‑01 oder STS‑02</strong>  
+      – realitätsnahe Übungen im jeweiligen Szenario  
+      – sichere Durchführung von Start, Flugmanövern, Notfallprozeduren und Landung  
+      – Einweisung in die spezifischen SOP‑ und ERP‑Prozesse des Betriebs</li>
+
+    <li><strong>Nachweis der Fähigkeit zur sicheren Durchführung gemäß Betriebshandbuch</strong>  
+      – Pilot muss zeigen, dass er alle Verfahren korrekt anwenden kann  
+      – Bewertung durch qualifizierte Ausbilder oder Prüfer  
+      – Dokumentation der Einweisung als Bestandteil der STS‑Nachweise</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Die Kombination aus Theorie und Praxis stellt sicher, dass Fernpiloten nicht nur über 
+    fundiertes Wissen verfügen, sondern dieses auch unter realen Einsatzbedingungen anwenden können.  
+    Damit bildet die Qualifikation die Grundlage für einen sicheren, professionellen und 
+    auditfähigen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Qualifikation besteht aus einer theoretischen Prüfung und einer praktischen Einweisung:
+    <ul class="checklist">
+      <li>Theorieprüfung durch anerkannten Schulungsträger</li>
+      <li>Praktische Einweisung in STS-01 oder STS-02 Szenario</li>
+      <li>Nachweis der Fähigkeit zur sicheren Durchführung gemäß Betriebshandbuch</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch diese strukturierte Qualifikation wird gewährleistet, dass alle STS‑Einsätze 
+    sicher, regelkonform und professionell durchgeführt werden.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>250.4 Schulungsnachweis & Dokumentation</h3>
+    <div class="highlight">
+      Der Schulungsnachweis muss jederzeit vorgelegt und dokumentiert werden:
+      <ul class="checklist">
+        <li>Zertifikat mit Name, Szenario, Ausstellungsdatum</li>
+        <li>Einbindung in Betriebshandbuch und Behördenunterlagen</li>
+        <li>Gültigkeit und Auffrischungsintervalle beachten</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul250-4">
+  <h3>250.4 Schulungsnachweis & Dokumentation</h3>
+
+  <p>
+    Der <strong>Schulungsnachweis</strong> bestätigt, dass Fernpiloten und Einsatzteams die erforderlichen 
+    Kompetenzen für STS‑Einsätze besitzen.  
+    Er muss jederzeit verfügbar, gültig und korrekt dokumentiert sein, um die behördlichen Anforderungen 
+    sowie die internen Qualitätsstandards des Betriebs zu erfüllen.
+  </p>
+
+  <h3>Anforderungen an den Schulungsnachweis</h3>
+
+  <ul>
+    <li><strong>Zertifikat mit Name, Szenario und Ausstellungsdatum</strong>  
+      – eindeutige Zuordnung zur geschulten Person  
+      – Angabe des absolvierten Szenarios (STS‑01 oder STS‑02)  
+      – Ausstellungsdatum und ggf. Ablaufdatum müssen klar ersichtlich sein</li>
+
+    <li><strong>Einbindung in Betriebshandbuch und Behördenunterlagen</strong>  
+      – Ablage des Zertifikats im betrieblichen Dokumentationssystem  
+      – Verweis im Betriebshandbuch auf Qualifikationsanforderungen  
+      – Bereitstellung bei Audits oder behördlichen Prüfungen</li>
+
+    <li><strong>Gültigkeit und Auffrischungsintervalle beachten</strong>  
+      – regelmäßige Aktualisierung der Kenntnisse gemäß regulatorischen Vorgaben  
+      – Wiederholungsschulungen oder Re‑Zertifizierungen dokumentieren  
+      – Überprüfung der Gültigkeit vor jedem STS‑Einsatz</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Ein aktueller und vollständiger Schulungsnachweis stellt sicher, dass alle Beteiligten 
+    über die notwendigen Kompetenzen verfügen und der Betrieb jederzeit auditfähig bleibt.  
+    Er stärkt die Professionalität, Transparenz und Rechtssicherheit des gesamten STS‑Betriebs.
+  </p>
+
+  <div class="highlight">
+    Der Schulungsnachweis muss jederzeit vorgelegt und dokumentiert werden:
+    <ul class="checklist">
+      <li>Zertifikat mit Name, Szenario, Ausstellungsdatum</li>
+      <li>Einbindung in Betriebshandbuch und Behördenunterlagen</li>
+      <li>Gültigkeit und Auffrischungsintervalle beachten</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet der Schulungsnachweis einen zentralen Bestandteil der betrieblichen 
+    Qualifikations- und Nachweispflichten im STS‑Betrieb.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>250.5 Anerkennung durch Behörden</h3>
+    <div class="highlight">
+      Die Schulung muss von der zuständigen Luftfahrtbehörde anerkannt sein:
+      <ul class="checklist">
+        <li>In der Schweiz: BAZL-anerkannte Schulungsträger</li>
+        <li>EU-weit: Schulung gemäß EASA-Vorgaben</li>
+        <li>Nachweis bei Einreichung von Betriebshandbuch und STS-Dokumentation</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul250-5">
+  <h3>250.5 Anerkennung durch Behörden</h3>
+
+  <p>
+    Für den genehmigungsfreien Betrieb innerhalb der Standard-Szenarien ist eine 
+    <strong>behördlich anerkannte Schulung</strong> zwingende Voraussetzung.  
+    Nur Schulungen, die den Vorgaben der zuständigen Luftfahrtbehörden entsprechen, dürfen 
+    als Qualifikationsnachweis für STS‑01 und STS‑02 verwendet werden.  
+    Dies stellt sicher, dass alle Piloten und Einsatzteams ein einheitliches, überprüfbares 
+    Kompetenzniveau erfüllen.
+  </p>
+
+  <h3>Behördliche Anerkennung</h3>
+
+  <ul>
+    <li><strong>In der Schweiz: BAZL‑anerkannte Schulungsträger</strong>  
+      – Schulungen müssen durch das Bundesamt für Zivilluftfahrt (BAZL) anerkannt sein  
+      – nur anerkannte Organisationen dürfen STS‑Zertifikate ausstellen  
+      – regelmäßige Überprüfung der Ausbildungsqualität durch das BAZL</li>
+
+    <li><strong>EU‑weit: Schulung gemäß EASA‑Vorgaben</strong>  
+      – Ausbildung nach den Standards der EASA und der EU‑Verordnung 2019/947  
+      – harmonisierte Anforderungen für STS‑Piloten in allen EU‑Mitgliedstaaten  
+      – Anerkennung der Qualifikationen innerhalb des europäischen Luftraums</li>
+
+    <li><strong>Nachweis bei Einreichung von Betriebshandbuch und STS‑Dokumentation</strong>  
+      – Schulungszertifikate müssen den Behörden auf Anfrage vorgelegt werden  
+      – Bestandteil der Audit‑ und Prüfprozesse  
+      – klare Zuordnung der Qualifikationen zu den im Betrieb eingesetzten Piloten</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Die behördliche Anerkennung stellt sicher, dass die Schulung den regulatorischen Anforderungen 
+    entspricht und ein hohes Sicherheitsniveau gewährleistet.  
+    Sie schafft Vertrauen bei Behörden, Kunden und internen Verantwortlichen und bildet die Grundlage 
+    für einen professionellen, regelkonformen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Schulung muss von der zuständigen Luftfahrtbehörde anerkannt sein:
+    <ul class="checklist">
+      <li>In der Schweiz: BAZL-anerkannte Schulungsträger</li>
+      <li>EU-weit: Schulung gemäß EASA-Vorgaben</li>
+      <li>Nachweis bei Einreichung von Betriebshandbuch und STS-Dokumentation</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist die behördliche Anerkennung ein zentraler Bestandteil der Qualifikations- 
+    und Nachweispflichten im STS‑Betrieb.
+  </p>
+</article>
+
+
+</section>
+
+<section>
+  <h2>Modul 260 – Versicherungsanforderungen & Haftung STS</h2>
+
+  <div class="keywords">Stichworte: Haftpflichtversicherung · Deckungssumme · EU-Verordnung · STS-Betrieb · Schadensfall · Betreiberhaftung · Nachweispflicht · Versicherungspolice</div>
+
+<!--
+  <article>
+    <h3>260.1 Versicherungspflicht im STS-Betrieb</h3>
+    <div class="highlight">
+      Für Flüge in der speziellen Kategorie (STS) ist eine Haftpflichtversicherung gesetzlich vorgeschrieben:
+      <ul class="checklist">
+        <li>Geregelt durch EU-Verordnung 785/2004 und nationale Luftfahrtgesetze</li>
+        <li>Gilt für alle UAS-Betreiber – unabhängig von Drohnengröße</li>
+        <li>Versicherung muss Personen- und Sachschäden abdecken</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul260-1">
+  <h3>260.1 Versicherungspflicht im STS‑Betrieb</h3>
+
+  <p>
+    Für den Betrieb von unbemannten Luftfahrzeugsystemen (UAS) in der <strong>spezifischen Kategorie (STS)</strong> 
+    besteht eine gesetzliche <strong>Haftpflichtversicherungspflicht</strong>.  
+    Diese Vorgabe stellt sicher, dass Personen‑ und Sachschäden, die durch den Betrieb entstehen können, 
+    finanziell abgedeckt sind und Betroffene angemessen entschädigt werden.
+  </p>
+
+  <h3>Rechtliche Grundlagen</h3>
+
+  <ul>
+    <li><strong>EU‑Verordnung 785/2004</strong>  
+      – legt Mindestanforderungen an die Haftpflichtversicherung für Luftfahrzeuge fest  
+      – gilt auch für UAS in der speziellen Kategorie  
+      – definiert Deckungssummen und Versicherungsumfang</li>
+
+    <li><strong>Nationale Luftfahrtgesetze</strong>  
+      – ergänzen die EU‑Vorgaben  
+      – in der Schweiz: Luftfahrtgesetz (LFG) und Luftfahrtverordnung (LFV)  
+      – verpflichten alle Betreiber zur ausreichenden Haftpflichtdeckung</li>
+
+    <li><strong>Gilt für alle UAS‑Betreiber – unabhängig von Drohnengröße</strong>  
+      – Versicherungspflicht besteht auch für leichte Drohnen  
+      – entscheidend ist der Betrieb in der speziellen Kategorie, nicht das Gewicht</li>
+  </ul>
+
+  <h3>Versicherungsumfang</h3>
+
+  <ul>
+    <li><strong>Abdeckung von Personen‑ und Sachschäden</strong>  
+      – Schäden an unbeteiligten Personen  
+      – Schäden an Gebäuden, Fahrzeugen oder Infrastruktur  
+      – Deckungssummen müssen den gesetzlichen Mindestanforderungen entsprechen</li>
+
+    <li><strong>Nachweis der Versicherung</strong>  
+      – muss jederzeit vorgelegt werden können  
+      – Bestandteil der STS‑Dokumentation und behördlicher Prüfungen  
+      – regelmäßige Überprüfung der Gültigkeit erforderlich</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Die Versicherungspflicht stellt sicher, dass der Betreiber finanziell abgesichert ist und 
+    potenzielle Schäden nicht zu existenziellen Risiken führen.  
+    Sie ist ein zentraler Bestandteil der betrieblichen Verantwortung und Voraussetzung für einen 
+    sicheren, professionellen und regelkonformen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Für Flüge in der speziellen Kategorie (STS) ist eine Haftpflichtversicherung gesetzlich vorgeschrieben:
+    <ul class="checklist">
+      <li>Geregelt durch EU-Verordnung 785/2004 und nationale Luftfahrtgesetze</li>
+      <li>Gilt für alle UAS-Betreiber – unabhängig von Drohnengröße</li>
+      <li>Versicherung muss Personen- und Sachschäden abdecken</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Versicherungspflicht eine unverzichtbare Grundlage für die rechtliche und 
+    finanzielle Sicherheit im STS‑Betrieb.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>260.2 Mindestdeckung & Leistungsumfang</h3>
+    <div class="highlight">
+      Die Versicherung muss eine angemessene Deckungssumme aufweisen:
+      <ul class="checklist">
+        <li>Empfohlene Mindestdeckung: CHF/EUR 1 Mio. pro Schadensfall</li>
+        <li>Deckung für direkte und indirekte Schäden</li>
+        <li>Geltungsbereich: Schweiz, EU, grenzüberschreitende Einsätze</li>
+        <li>Optionale Zusatzdeckung: Nutzlast, Datenverlust, Umweltschäden</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul260-2">
+  <h3>260.2 Mindestdeckung & Leistungsumfang</h3>
+
+  <p>
+    Für den sicheren und rechtskonformen Betrieb in der speziellen Kategorie (STS) ist eine 
+    <strong>ausreichende Haftpflichtdeckung</strong> zwingend erforderlich.  
+    Die Versicherung muss sowohl die gesetzlichen Mindestanforderungen erfüllen als auch den 
+    betrieblichen Risiken angemessen Rechnung tragen.  
+    Eine zu niedrige Deckungssumme kann im Schadensfall erhebliche finanzielle Folgen haben.
+  </p>
+
+  <h3>Deckungssumme und Leistungsumfang</h3>
+
+  <ul>
+    <li><strong>Empfohlene Mindestdeckung: CHF/EUR 1 Mio. pro Schadensfall</strong>  
+      – orientiert sich an branchenüblichen Standards  
+      – bietet ausreichenden Schutz bei Personen- und Sachschäden  
+      – höhere Deckungen sind je nach Einsatzgebiet sinnvoll</li>
+
+    <li><strong>Deckung für direkte und indirekte Schäden</strong>  
+      – direkte Schäden: Verletzungen, Sachschäden, Infrastruktur  
+      – indirekte Schäden: Folgeschäden, Betriebsunterbrüche, Drittkosten  
+      – wichtig für Einsätze in sensiblen oder dicht besiedelten Gebieten</li>
+
+    <li><strong>Geltungsbereich: Schweiz, EU, grenzüberschreitende Einsätze</strong>  
+      – Versicherung muss für alle geplanten Einsatzgebiete gültig sein  
+      – besonders relevant für Betreiber, die in mehreren Ländern tätig sind  
+      – Prüfung der territorialen Einschränkungen im Vertrag</li>
+
+    <li><strong>Optionale Zusatzdeckung</strong>  
+      – <em>Nutzlast</em>: Kamera, Sensoren oder Spezialausrüstung  
+      – <em>Datenverlust</em>: Schutz bei Verlust oder Beschädigung digitaler Daten  
+      – <em>Umweltschäden</em>: z. B. bei Einsätzen in Naturschutzgebieten  
+      – zusätzliche Module erhöhen die betriebliche Sicherheit</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine angemessene Deckung schützt Betreiber vor finanziellen Risiken und stellt sicher, 
+    dass Schäden an Personen oder Eigentum zuverlässig abgewickelt werden können.  
+    Sie ist damit ein zentraler Bestandteil der betrieblichen Verantwortung und Voraussetzung 
+    für einen professionellen und auditfähigen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Versicherung muss eine angemessene Deckungssumme aufweisen:
+    <ul class="checklist">
+      <li>Empfohlene Mindestdeckung: CHF/EUR 1 Mio. pro Schadensfall</li>
+      <li>Deckung für direkte und indirekte Schäden</li>
+      <li>Geltungsbereich: Schweiz, EU, grenzüberschreitende Einsätze</li>
+      <li>Optionale Zusatzdeckung: Nutzlast, Datenverlust, Umweltschäden</li>
+    </ul>
+  </div>
+
+  <p>
+    Durch eine sorgfältig gewählte Versicherungspolice wird der STS‑Betrieb rechtlich, finanziell 
+    und organisatorisch optimal abgesichert.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>260.3 Betreiberhaftung & Verantwortlichkeiten</h3>
+    <div class="highlight">
+      Der UAS-Betreiber trägt die rechtliche Verantwortung für den Betrieb:
+      <ul class="checklist">
+        <li>Haftung bei Fehlbedienung, Regelverstoß oder Systemversagen</li>
+        <li>Verantwortung für Schulung, Wartung und Einsatzplanung</li>
+        <li>Haftung kann nicht vollständig auf Dritte übertragen werden</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul260-3">
+  <h3>260.3 Betreiberhaftung & Verantwortlichkeiten</h3>
+
+  <p>
+    Der <strong>UAS‑Betreiber</strong> trägt die umfassende rechtliche Verantwortung für den gesamten Drohnenbetrieb 
+    in der speziellen Kategorie (STS).  
+    Diese Verantwortung umfasst sowohl organisatorische als auch technische und operationelle Aspekte 
+    und kann nicht vollständig an Dritte delegiert werden.  
+    Der Betreiber ist damit die zentrale Instanz für Sicherheit, Compliance und Risikomanagement.
+  </p>
+
+  <h3>Rechtliche und organisatorische Verantwortlichkeiten</h3>
+
+  <ul>
+    <li><strong>Haftung bei Fehlbedienung, Regelverstoß oder Systemversagen</strong>  
+      – Betreiber haftet für Schäden, die durch Bedienfehler, unzureichende Vorbereitung oder 
+        Verstöße gegen Vorschriften entstehen  
+      – Haftung gilt auch bei technischen Defekten, sofern Wartung oder Betrieb nicht den Vorgaben 
+        entsprachen  
+      – Versicherung deckt Schäden, entbindet aber nicht von der Betreiberverantwortung</li>
+
+    <li><strong>Verantwortung für Schulung, Wartung und Einsatzplanung</strong>  
+      – sicherstellen, dass alle Piloten und Teammitglieder gültige Qualifikationen besitzen  
+      – regelmäßige Wartung, Inspektion und Dokumentation der eingesetzten UAS  
+      – sorgfältige Einsatzplanung inkl. Risikobewertung, Wetteranalyse und Luftraumprüfung</li>
+
+    <li><strong>Haftung kann nicht vollständig auf Dritte übertragen werden</strong>  
+      – auch bei Beauftragung externer Piloten oder Dienstleister bleibt der Betreiber verantwortlich  
+      – Delegation einzelner Aufgaben ist möglich, nicht jedoch der Gesamtverantwortung  
+      – Betreiber muss sicherstellen, dass alle Beteiligten nach SOP, ERP und STS‑Vorgaben handeln</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Die Betreiberhaftung stellt sicher, dass der Betrieb strukturiert, sicher und regelkonform 
+    durchgeführt wird.  
+    Sie schafft klare Verantwortlichkeiten und stärkt die Professionalität sowie die 
+    Rechtssicherheit des gesamten UAS‑Betriebs.
+  </p>
+
+  <div class="highlight">
+    Der UAS-Betreiber trägt die rechtliche Verantwortung für den Betrieb:
+    <ul class="checklist">
+      <li>Haftung bei Fehlbedienung, Regelverstoß oder Systemversagen</li>
+      <li>Verantwortung für Schulung, Wartung und Einsatzplanung</li>
+      <li>Haftung kann nicht vollständig auf Dritte übertragen werden</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist der Betreiber die zentrale Instanz für Sicherheit, Compliance und Risikomanagement 
+    im STS‑Betrieb.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>260.4 Nachweispflicht & Dokumentation</h3>
+    <div class="highlight">
+      Der Versicherungsnachweis muss jederzeit vorgelegt werden können:
+      <ul class="checklist">
+        <li>Versicherungspolice mit Deckungssumme und Gültigkeitsbereich</li>
+        <li>Einbindung in Betriebshandbuch und Behördenunterlagen</li>
+        <li>Aktualisierung bei Vertragsänderung oder Erweiterung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul260-4">
+  <h3>260.4 Nachweispflicht & Dokumentation</h3>
+
+  <p>
+    Der <strong>Versicherungsnachweis</strong> ist ein verpflichtender Bestandteil des STS‑Betriebs und muss jederzeit 
+    verfügbar sein.  
+    Er dient als Beleg dafür, dass der Betreiber über eine gültige und ausreichende Haftpflichtdeckung 
+    verfügt und die gesetzlichen Anforderungen erfüllt.  
+    Eine saubere Dokumentation erleichtert zudem behördliche Prüfungen und interne Audits.
+  </p>
+
+  <h3>Anforderungen an den Versicherungsnachweis</h3>
+
+  <ul>
+    <li><strong>Versicherungspolice mit Deckungssumme und Gültigkeitsbereich</strong>  
+      – klare Angabe der Deckungssumme pro Schadensfall  
+      – definierter territorialer Geltungsbereich (Schweiz, EU, international)  
+      – Nachweis der aktuellen Gültigkeit der Police</li>
+
+    <li><strong>Einbindung in Betriebshandbuch und Behördenunterlagen</strong>  
+      – Ablage der Police im betrieblichen Dokumentationssystem  
+      – Verweis im Betriebshandbuch auf die Versicherungspflicht  
+      – Bereitstellung bei Audits, Inspektionen oder STS‑Prüfungen</li>
+
+    <li><strong>Aktualisierung bei Vertragsänderung oder Erweiterung</strong>  
+      – Anpassung der Dokumentation bei Änderungen der Deckungssumme oder des Geltungsbereichs  
+      – Ablage neuer Policen oder Nachträge  
+      – regelmäßige Überprüfung der Versicherungsunterlagen auf Aktualität</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine vollständige und aktuelle Versicherungsdokumentation stellt sicher, dass der Betreiber 
+    jederzeit nachweisen kann, dass alle gesetzlichen Anforderungen erfüllt sind.  
+    Sie stärkt die Rechtssicherheit, erleichtert die Kommunikation mit Behörden und trägt zu einem 
+    professionellen, auditfähigen STS‑Betrieb bei.
+  </p>
+
+  <div class="highlight">
+    Der Versicherungsnachweis muss jederzeit vorgelegt werden können:
+    <ul class="checklist">
+      <li>Versicherungspolice mit Deckungssumme und Gültigkeitsbereich</li>
+      <li>Einbindung in Betriebshandbuch und Behördenunterlagen</li>
+      <li>Aktualisierung bei Vertragsänderung oder Erweiterung</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Nachweispflicht einen zentralen Bestandteil der betrieblichen 
+    Sicherheits‑ und Compliance‑Struktur im STS‑Betrieb.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>260.5 Verhalten im Schadensfall</h3>
+    <div class="highlight">
+      Im Schadensfall gelten klare Melde- und Dokumentationspflichten:
+      <ul class="checklist">
+        <li>Sofortige Sicherung von Flugdaten und Einsatzprotokollen</li>
+        <li>Meldung an Versicherung und ggf. an BAZL oder Polizei</li>
+        <li>Erstellung eines Zwischenfallberichts mit Ursachenanalyse</li>
+        <li>Einleitung interner Verbesserungsmaßnahmen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul260-5">
+  <h3>260.5 Verhalten im Schadensfall</h3>
+
+  <p>
+    Im Schadensfall gelten klare, verbindliche Melde‑ und Dokumentationspflichten.  
+    Ziel ist es, den Vorfall vollständig nachzuvollziehen, rechtliche Anforderungen zu erfüllen 
+    und aus dem Ereignis zu lernen, um zukünftige Risiken zu reduzieren.  
+    Ein strukturiertes Vorgehen stellt sicher, dass alle relevanten Informationen gesichert und 
+    korrekt weitergeleitet werden.
+  </p>
+
+  <h3>Vorgehen im Schadensfall</h3>
+
+  <ul>
+    <li><strong>Sofortige Sicherung von Flugdaten und Einsatzprotokollen</strong>  
+      – Export von Telemetrie‑ und Logdaten  
+      – Sicherung von Fotos, Videos und Einsatzdokumentation  
+      – unveränderte Archivierung zur späteren Analyse</li>
+
+    <li><strong>Meldung an Versicherung und ggf. an BAZL oder Polizei</strong>  
+      – unverzügliche Kontaktaufnahme mit der Haftpflichtversicherung  
+      – Meldung an das BAZL bei meldepflichtigen Ereignissen  
+      – Einbezug der Polizei bei Personen‑ oder größeren Sachschäden</li>
+
+    <li><strong>Erstellung eines Zwischenfallberichts mit Ursachenanalyse</strong>  
+      – Beschreibung des Ereignisablaufs  
+      – Analyse der technischen, operationellen oder menschlichen Ursachen  
+      – Dokumentation der eingeleiteten Sofortmaßnahmen</li>
+
+    <li><strong>Einleitung interner Verbesserungsmaßnahmen</strong>  
+      – Ableitung organisatorischer oder technischer Optimierungen  
+      – Anpassung von SOP, ERP oder Wartungsprozessen  
+      – Nachverfolgung der Wirksamkeit der Maßnahmen</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Ein professionelles Vorgehen im Schadensfall stärkt die Rechtssicherheit, verbessert die 
+    interne Qualitätssicherung und trägt zur kontinuierlichen Erhöhung des Sicherheitsniveaus bei.  
+    Es stellt sicher, dass der Betrieb auch nach einem Vorfall transparent, regelkonform und 
+    auditfähig bleibt.
+  </p>
+
+  <div class="highlight">
+    Im Schadensfall gelten klare Melde- und Dokumentationspflichten:
+    <ul class="checklist">
+      <li>Sofortige Sicherung von Flugdaten und Einsatzprotokollen</li>
+      <li>Meldung an Versicherung und ggf. an BAZL oder Polizei</li>
+      <li>Erstellung eines Zwischenfallberichts mit Ursachenanalyse</li>
+      <li>Einleitung interner Verbesserungsmaßnahmen</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet das strukturierte Vorgehen im Schadensfall einen zentralen Bestandteil der 
+    betrieblichen Sicherheits‑ und Compliance‑Kultur im STS‑Betrieb.
+  </p>
+</article>
+
+</section>
+
+<section>
+  <h2>Modul 270 – Datenschutz & Fernidentifikation STS</h2>
+
+  <div class="keywords">Stichworte: Datenschutz · DSGVO · Fernidentifikation · UAS-Betreiber-ID · Echtzeitübertragung · Personenbezug · Datenminimierung · Behördenzugriff</div>
+
+<!--
+  <article>
+    <h3>270.1 Datenschutz im Drohnenbetrieb</h3>
+    <div class="highlight">
+      Der Schutz personenbezogener Daten ist auch im STS-Betrieb verpflichtend:
+      <ul class="checklist">
+        <li>Geregelt durch DSGVO (EU) und DSG (CH)</li>
+        <li>Verarbeitung nur bei rechtlicher Grundlage oder Einwilligung</li>
+        <li>Besondere Vorsicht bei Bild- und Videoaufnahmen über öffentlichem Raum</li>
+      </ul>
+    </div>
+  </article>
+-->
+
+
+<article id="Modul270-1">
+  <h3>270.1 Datenschutz im Drohnenbetrieb</h3>
+
+  <p>
+    Der Schutz <strong>personenbezogener Daten</strong> ist ein zentraler Bestandteil des Drohnenbetriebs in der 
+    speziellen Kategorie (STS).  
+    Da Drohnen häufig Bild‑, Video‑ oder Sensordaten erfassen, besteht ein erhöhtes Risiko, 
+    unbeabsichtigt personenbezogene Informationen zu verarbeiten.  
+    Betreiber müssen daher sicherstellen, dass alle datenschutzrechtlichen Vorgaben eingehalten werden.
+  </p>
+
+  <h3>Rechtliche Grundlagen</h3>
+
+  <ul>
+    <li><strong>Geregelt durch DSGVO (EU) und DSG (CH)</strong>  
+      – DSGVO: umfassende Datenschutzvorgaben für EU‑Mitgliedstaaten  
+      – DSG: Schweizer Datenschutzgesetz mit vergleichbaren Grundprinzipien  
+      – beide verlangen Transparenz, Zweckbindung und Datensparsamkeit</li>
+
+    <li><strong>Verarbeitung nur bei rechtlicher Grundlage oder Einwilligung</strong>  
+      – zulässig bei: Einwilligung, überwiegendem öffentlichen Interesse, Vertragserfüllung  
+      – Verarbeitung muss notwendig und verhältnismäßig sein  
+      – Einwilligungen müssen dokumentiert und widerrufbar sein</li>
+
+    <li><strong>Besondere Vorsicht bei Bild‑ und Videoaufnahmen über öffentlichem Raum</strong>  
+      – Risiko unbeabsichtigter Erfassung unbeteiligter Personen  
+      – Einsatz von Flugrouten, Höhen und Kamerawinkeln zur Minimierung  
+      – Kennzeichnung des Einsatzes oder Information der Öffentlichkeit, wenn möglich</li>
+  </ul>
+
+  <h3>Datenschutz im praktischen Betrieb</h3>
+
+  <p>
+    Betreiber müssen technische und organisatorische Maßnahmen ergreifen, um Datenschutzrisiken 
+    zu minimieren. Dazu gehören u. a. die Einschränkung der Auflösung, automatische Verpixelung, 
+    sichere Speicherung und begrenzte Aufbewahrungsfristen.  
+    Jede Datenverarbeitung muss dokumentiert und nachvollziehbar sein.
+  </p>
+
+  <div class="highlight">
+    Der Schutz personenbezogener Daten ist auch im STS-Betrieb verpflichtend:
+    <ul class="checklist">
+      <li>Geregelt durch DSGVO (EU) und DSG (CH)</li>
+      <li>Verarbeitung nur bei rechtlicher Grundlage oder Einwilligung</li>
+      <li>Besondere Vorsicht bei Bild- und Videoaufnahmen über öffentlichem Raum</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist Datenschutz ein integraler Bestandteil eines sicheren, verantwortungsvollen 
+    und rechtskonformen Drohnenbetriebs.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>270.2 Personenbezug & Aufzeichnung</h3>
+    <div class="highlight">
+      Drohnenaufnahmen können personenbezogene Daten enthalten:
+      <ul class="checklist">
+        <li>Gesichter, Kennzeichen, Bewegungsmuster gelten als personenbezogen</li>
+        <li>Datenerhebung muss zweckgebunden und verhältnismäßig sein</li>
+        <li>Aufzeichnung nur bei klarer Rechtsgrundlage oder Einwilligung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul270-2">
+  <h3>270.2 Personenbezug & Aufzeichnung</h3>
+
+  <p>
+    Drohnen erfassen häufig Bild‑, Video‑ oder Sensordaten, die Rückschlüsse auf einzelne Personen 
+    zulassen können.  
+    Sobald solche Informationen identifizierbar oder potenziell identifizierbar sind, gelten sie als 
+    <strong>personenbezogene Daten</strong> und unterliegen den Vorgaben der DSGVO (EU) bzw. des DSG (CH).  
+    Betreiber müssen daher besonders sorgfältig prüfen, ob eine Aufzeichnung zulässig und notwendig ist.
+  </p>
+
+  <h3>Wann Drohnenaufnahmen personenbezogene Daten enthalten</h3>
+
+  <ul>
+    <li><strong>Gesichter, Kennzeichen, Bewegungsmuster gelten als personenbezogen</strong>  
+      – Gesichter ermöglichen direkte Identifikation  
+      – Kennzeichen, Kleidung oder Bewegungsprofile erlauben indirekte Identifikation  
+      – auch Kombinationen aus mehreren Merkmalen können Personenbezug herstellen</li>
+
+    <li><strong>Datenerhebung muss zweckgebunden und verhältnismäßig sein</strong>  
+      – Daten dürfen nur erhoben werden, wenn sie für den Einsatz zwingend erforderlich sind  
+      – Minimierung durch Kamerawinkel, Flughöhe, Auflösung oder technische Filter  
+      – keine übermäßige oder unnötige Erfassung unbeteiligter Personen</li>
+
+    <li><strong>Aufzeichnung nur bei klarer Rechtsgrundlage oder Einwilligung</strong>  
+      – mögliche Rechtsgrundlagen: Einwilligung, öffentliches Interesse, Vertragserfüllung  
+      – Einwilligungen müssen freiwillig, informiert und dokumentiert sein  
+      – bei fehlender Rechtsgrundlage: keine Speicherung, nur Live‑Sicht zulässig</li>
+  </ul>
+
+  <h3>Praktische Hinweise für den STS‑Betrieb</h3>
+
+  <p>
+    Betreiber sollten technische und organisatorische Maßnahmen einsetzen, um den Personenbezug 
+    zu reduzieren – etwa automatische Verpixelung, eingeschränkte Auflösung oder definierte 
+    Flugrouten.  
+    Jede Aufzeichnung muss dokumentiert, geschützt und nur so lange gespeichert werden, wie es 
+    für den Zweck notwendig ist.
+  </p>
+
+  <div class="highlight">
+    Drohnenaufnahmen können personenbezogene Daten enthalten:
+    <ul class="checklist">
+      <li>Gesichter, Kennzeichen, Bewegungsmuster gelten als personenbezogen</li>
+      <li>Datenerhebung muss zweckgebunden und verhältnismäßig sein</li>
+      <li>Aufzeichnung nur bei klarer Rechtsgrundlage oder Einwilligung</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist der sorgfältige Umgang mit personenbezogenen Daten ein zentraler Bestandteil eines 
+    rechtskonformen und verantwortungsvollen Drohnenbetriebs.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>270.3 Fernidentifikation im STS-Betrieb</h3>
+    <div class="highlight">
+      STS-Drohnen müssen während des Fluges identifizierbar sein:
+      <ul class="checklist">
+        <li>Automatische Übertragung von UAS-Betreiber-ID, Position, Geschwindigkeit</li>
+        <li>Ermöglicht Echtzeitüberwachung durch Behörden</li>
+        <li>Verpflichtend für CE-Klassen C5 und C6</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul270-3">
+  <h3>270.3 Fernidentifikation im STS-Betrieb</h3>
+
+  <p>
+    Die <strong>Fernidentifikation</strong> ist ein zentrales Sicherheits- und Transparenzelement im STS‑Betrieb.  
+    Sie ermöglicht es Behörden, Drohnen während des Fluges eindeutig zuzuordnen und deren Position 
+    sowie Bewegungsdaten in Echtzeit zu überwachen.  
+    Damit trägt sie wesentlich zur Luftraumsicherheit und zur Nachvollziehbarkeit von Einsätzen bei.
+  </p>
+
+  <h3>Funktionen der Fernidentifikation</h3>
+
+  <ul>
+    <li><strong>Automatische Übertragung von UAS‑Betreiber‑ID, Position und Geschwindigkeit</strong>  
+      – eindeutige Identifikation des Betreibers über eine registrierte Remote‑ID  
+      – kontinuierliche Übermittlung von Position, Höhe, Geschwindigkeit und Richtung  
+      – ermöglicht schnelle Zuordnung bei Zwischenfällen oder Luftraumverletzungen</li>
+
+    <li><strong>Ermöglicht Echtzeitüberwachung durch Behörden</strong>  
+      – Behörden können Drohnenbewegungen live verfolgen  
+      – erhöht Transparenz und Sicherheit im kontrollierten und unkontrollierten Luftraum  
+      – erleichtert die Koordination bei sicherheitsrelevanten Ereignissen</li>
+
+    <li><strong>Verpflichtend für CE‑Klassen C5 und C6</strong>  
+      – STS‑Drohnen müssen über eine konforme Remote‑ID‑Funktion verfügen  
+      – Voraussetzung für den Betrieb in STS‑01 und STS‑02  
+      – Bestandteil der technischen Mindestanforderungen gemäß EU‑Regelwerk</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Die Fernidentifikation schafft Vertrauen, erhöht die Luftraumsicherheit und ermöglicht eine 
+    schnelle Reaktion bei sicherheitsrelevanten Ereignissen.  
+    Sie ist damit ein unverzichtbarer Bestandteil eines professionellen, regelkonformen und 
+    auditfähigen STS‑Betriebs.
+  </p>
+
+  <div class="highlight">
+    STS-Drohnen müssen während des Fluges identifizierbar sein:
+    <ul class="checklist">
+      <li>Automatische Übertragung von UAS-Betreiber-ID, Position, Geschwindigkeit</li>
+      <li>Ermöglicht Echtzeitüberwachung durch Behörden</li>
+      <li>Verpflichtend für CE-Klassen C5 und C6</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit stellt die Fernidentifikation ein wesentliches Element der technischen und regulatorischen 
+    Anforderungen im STS‑Betrieb dar.
+  </p>
+</article>
+
+
+<!--  <article>
+    <h3>270.4 Datenminimierung & Zweckbindung</h3>
+    <div class="highlight">
+      Die Verarbeitung von Flugdaten muss datenschutzkonform erfolgen:
+      <ul class="checklist">
+        <li>Nur notwendige Daten dürfen erhoben und gespeichert werden</li>
+        <li>Keine Weitergabe ohne Rechtsgrundlage</li>
+        <li>Speicherdauer muss begrenzt und dokumentiert sein</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul270-4">
+  <h3>270.4 Datenminimierung & Zweckbindung</h3>
+
+  <p>
+    Die Verarbeitung von Flugdaten im STS‑Betrieb unterliegt strengen datenschutzrechtlichen Vorgaben.  
+    Betreiber müssen sicherstellen, dass nur jene Daten erhoben, gespeichert und verarbeitet werden, 
+    die für den jeweiligen Einsatz tatsächlich erforderlich sind.  
+    Die Prinzipien der <strong>Datenminimierung</strong> und <strong>Zweckbindung</strong> stehen dabei im Zentrum.
+  </p>
+
+  <h3>Grundprinzipien der datenschutzkonformen Verarbeitung</h3>
+
+  <ul>
+    <li><strong>Nur notwendige Daten dürfen erhoben und gespeichert werden</strong>  
+      – Erfassung auf das Minimum beschränken, das für den Einsatzzweck erforderlich ist  
+      – technische Maßnahmen wie reduzierte Auflösung, eingeschränkte Sensorik oder Verpixelung nutzen  
+      – keine Speicherung von Daten, die für den Auftrag nicht relevant sind</li>
+
+    <li><strong>Keine Weitergabe ohne Rechtsgrundlage</strong>  
+      – Weitergabe nur bei gesetzlicher Verpflichtung, behördlicher Anordnung oder dokumentierter Einwilligung  
+      – keine Übermittlung an Dritte ohne klaren Zweck und rechtliche Grundlage  
+      – besondere Vorsicht bei Cloud‑Diensten oder externen Dienstleistern</li>
+
+    <li><strong>Speicherdauer muss begrenzt und dokumentiert sein</strong>  
+      – Daten nur so lange aufbewahren, wie es für den Zweck notwendig ist  
+      – klare Löschfristen im Betriebshandbuch definieren  
+      – Löschvorgänge dokumentieren und regelmäßig überprüfen</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Durch konsequente Datenminimierung und klare Zweckbindung wird das Risiko von Datenschutzverstößen 
+    erheblich reduziert.  
+    Gleichzeitig stärkt ein transparenter Umgang mit Flugdaten das Vertrauen von Behörden, Kunden 
+    und betroffenen Personen.  
+    Diese Prinzipien sind daher ein unverzichtbarer Bestandteil eines verantwortungsvollen und 
+    rechtskonformen Drohnenbetriebs.
+  </p>
+
+  <div class="highlight">
+    Die Verarbeitung von Flugdaten muss datenschutzkonform erfolgen:
+    <ul class="checklist">
+      <li>Nur notwendige Daten dürfen erhoben und gespeichert werden</li>
+      <li>Keine Weitergabe ohne Rechtsgrundlage</li>
+      <li>Speicherdauer muss begrenzt und dokumentiert sein</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die datenschutzkonforme Verarbeitung von Flugdaten einen zentralen Baustein 
+    der betrieblichen Compliance im STS‑Betrieb.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>270.5 Behördenzugriff & Transparenz</h3>
+    <div class="highlight">
+      Behörden haben unter bestimmten Voraussetzungen Zugriff auf Flugdaten:
+      <ul class="checklist">
+        <li>Fernidentifikation ermöglicht Echtzeitverfolgung durch Luftfahrtbehörden</li>
+        <li>Zugriffsrechte müssen im Betriebshandbuch dokumentiert sein</li>
+        <li>Betroffene Personen haben Auskunftsrecht über gespeicherte Daten</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul270-5">
+  <h3>270.5 Behördenzugriff & Transparenz</h3>
+
+  <p>
+    Der Zugriff von Behörden auf Flugdaten ist ein zentraler Bestandteil der regulatorischen 
+    Aufsicht im STS‑Betrieb.  
+    Er dient der Luftraumsicherheit, der Nachvollziehbarkeit von Einsätzen und der Aufklärung 
+    sicherheitsrelevanter Ereignisse.  
+    Betreiber müssen klar dokumentieren, welche Daten Behörden einsehen dürfen und unter 
+    welchen Voraussetzungen ein Zugriff erfolgt.
+  </p>
+
+  <h3>Behördliche Zugriffsrechte</h3>
+
+  <ul>
+    <li><strong>Fernidentifikation ermöglicht Echtzeitverfolgung durch Luftfahrtbehörden</strong>  
+      – Behörden können Drohnen während des Fluges identifizieren  
+      – Echtzeitüberwachung von Position, Höhe, Geschwindigkeit und Betreiber‑ID  
+      – erleichtert Eingriffe bei Luftraumverletzungen oder sicherheitsrelevanten Ereignissen</li>
+
+    <li><strong>Zugriffsrechte müssen im Betriebshandbuch dokumentiert sein</strong>  
+      – klare Beschreibung, welche Daten gespeichert werden und wer darauf zugreifen darf  
+      – Definition der rechtlichen Grundlagen für behördliche Einsicht  
+      – Transparenz gegenüber Prüfern und internen Verantwortlichen</li>
+
+    <li><strong>Betroffene Personen haben Auskunftsrecht über gespeicherte Daten</strong>  
+      – gemäß DSGVO (EU) und DSG (CH) können Personen Auskunft über sie betreffende Daten verlangen  
+      – Betreiber müssen nachvollziehbar dokumentieren, welche Daten erhoben und gespeichert wurden  
+      – Auskünfte müssen fristgerecht, vollständig und verständlich erteilt werden</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Klare Regeln zum Behördenzugriff schaffen Transparenz und stärken das Vertrauen in den 
+    Drohnenbetrieb.  
+    Gleichzeitig stellen sie sicher, dass Betreiber datenschutzkonform handeln und jederzeit 
+    nachweisen können, wie Flugdaten verarbeitet und geschützt werden.
+  </p>
+
+  <div class="highlight">
+    Behörden haben unter bestimmten Voraussetzungen Zugriff auf Flugdaten:
+    <ul class="checklist">
+      <li>Fernidentifikation ermöglicht Echtzeitverfolgung durch Luftfahrtbehörden</li>
+      <li>Zugriffsrechte müssen im Betriebshandbuch dokumentiert sein</li>
+      <li>Betroffene Personen haben Auskunftsrecht über gespeicherte Daten</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist der behördliche Zugriff ein wesentlicher Bestandteil eines transparenten, 
+    rechtskonformen und verantwortungsvollen STS‑Betriebs.
+  </p>
+</article>
+
+
+</section>
+
+<section>
+  <h2>Modul 280 – Kommunikation & Rollenstruktur STS</h2>
+
+  <div class="keywords">Stichworte: Rollenverteilung · Kommunikation · Flughelfer · Beobachter · Einsatzleiter · SOP · Briefing · Funkverbindung · Verantwortlichkeiten</div>
+
+<!--
+  <article>
+    <h3>280.1 Ziel der Rollenstruktur</h3>
+    <div class="highlight">
+      Eine klare Rollenverteilung erhöht die Sicherheit und Effizienz im STS-Betrieb:
+      <ul class="checklist">
+        <li>Vermeidung von Missverständnissen und Doppelverantwortung</li>
+        <li>Ermöglicht strukturierte Kommunikation und Notfallreaktion</li>
+        <li>Verbindlich im Betriebshandbuch dokumentiert</li>
+      </ul>
+    </div>
+  </article>
+-->
+ article id="Modul280-1">
+  <h3>280.1 Ziel der Rollenstruktur</h3>
+
+  <p>
+    Eine klar definierte <strong>Rollenstruktur</strong> ist ein wesentliches Element eines sicheren und 
+    professionellen STS‑Betriebs.  
+    Sie stellt sicher, dass alle Beteiligten ihre Aufgaben, Verantwortlichkeiten und Entscheidungsbefugnisse 
+    kennen und dadurch effizient und koordiniert handeln können.  
+    Eine eindeutige Rollenverteilung reduziert Risiken, verbessert die Kommunikation und stärkt die 
+    Gesamtqualität des Einsatzes.
+  </p>
+
+  <h3>Warum eine klare Rollenstruktur notwendig ist</h3>
+
+  <ul>
+    <li><strong>Vermeidung von Missverständnissen und Doppelverantwortung</strong>  
+      – eindeutige Zuständigkeiten verhindern widersprüchliche Entscheidungen  
+      – klare Aufgabenverteilung reduziert Fehlerquellen  
+      – Verantwortlichkeiten sind jederzeit nachvollziehbar</li>
+
+    <li><strong>Ermöglicht strukturierte Kommunikation und Notfallreaktion</strong>  
+      – definierte Kommunikationswege erleichtern Abstimmung im Team  
+      – schnelle und koordinierte Reaktion bei Zwischenfällen  
+      – klare Eskalationswege für Notfälle</li>
+
+    <li><strong>Verbindlich im Betriebshandbuch dokumentiert</strong>  
+      – Rollen, Aufgaben und Entscheidungsbefugnisse sind schriftlich festgelegt  
+      – Grundlage für Audits, Schulungen und interne Qualitätssicherung  
+      – schafft Transparenz für Behörden und Einsatzteams</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine gut definierte Rollenstruktur erhöht nicht nur die Sicherheit, sondern auch die Effizienz 
+    und Professionalität des gesamten Betriebs.  
+    Sie bildet die Grundlage für standardisierte Abläufe, klare Verantwortlichkeiten und eine 
+    verlässliche Einsatzkoordination.
+  </p>
+
+  <div class="highlight">
+    Eine klare Rollenverteilung erhöht die Sicherheit und Effizienz im STS-Betrieb:
+    <ul class="checklist">
+      <li>Vermeidung von Missverständnissen und Doppelverantwortung</li>
+      <li>Ermöglicht strukturierte Kommunikation und Notfallreaktion</li>
+      <li>Verbindlich im Betriebshandbuch dokumentiert</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist die Rollenstruktur ein zentraler Baustein eines sicheren, transparenten und 
+    auditfähigen STS‑Betriebs.
+  </p>
+</article>
+
+<!--
+ <article>
+    <h3>280.2 Rollen im STS-Einsatz</h3>
+    <div class="highlight">
+      Die wichtigsten Rollen im STS-Betrieb sind:
+      <ul class="checklist">
+        <li><strong>Pilot:</strong> Steuerung der Drohne, Einhaltung der SOPs</li>
+        <li><strong>Beobachter:</strong> visuelle Verfolgung bei BVLOS, Kommunikation mit Pilot</li>
+        <li><strong>Flughelfer:</strong> Unterstützung bei Start, Landung und Umfeldsicherung</li>
+        <li><strong>Einsatzleiter:</strong> Gesamtverantwortung, Koordination, Behördenkontakt</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul280-2">
+  <h3>280.2 Rollen im STS‑Einsatz</h3>
+
+  <p>
+    Im STS‑Betrieb übernehmen mehrere klar definierte Rollen spezifische Aufgaben, um einen sicheren, 
+    effizienten und regelkonformen Einsatz zu gewährleisten.  
+    Jede Rolle trägt mit eigenen Verantwortlichkeiten zur Gesamtleistung des Teams bei und ist 
+    verbindlich im Betriebshandbuch festgelegt.
+  </p>
+
+  <h3>Die wichtigsten Rollen im STS‑Betrieb</h3>
+
+  <ul>
+    <li><strong>Pilot</strong>  
+      – verantwortet die sichere Steuerung des UAS  
+      – hält alle SOP‑Vorgaben, Flugparameter und Sicherheitsabstände ein  
+      – führt Starts, Manöver, Notfallprozeduren und Landungen durch  
+      – kommuniziert kontinuierlich mit Beobachter und Einsatzleiter</li>
+
+    <li><strong>Beobachter</strong>  
+      – übernimmt die visuelle Verfolgung des UAS, insbesondere bei BVLOS‑Operationen  
+      – erkennt Gefahren, Luftraumverletzungen oder Hindernisse frühzeitig  
+      – informiert den Piloten über sicherheitsrelevante Beobachtungen  
+      – unterstützt bei der Einhaltung der Luftraumüberwachungspflichten</li>
+
+    <li><strong>Flughelfer</strong>  
+      – unterstützt Pilot und Team bei Start‑ und Landevorgängen  
+      – sichert das Umfeld, hält Personen fern und überwacht die Start‑/Landezone  
+      – hilft bei der Vorbereitung des UAS, z. B. Aufbau, Checklisten, Akkuwechsel  
+      – fungiert als zusätzliche Sicherheitsinstanz am Boden</li>
+
+    <li><strong>Einsatzleiter</strong>  
+      – trägt die Gesamtverantwortung für Planung, Durchführung und Nachbereitung  
+      – koordiniert das gesamte Einsatzteam und trifft operative Entscheidungen  
+      – ist primärer Ansprechpartner für Behörden, Grundstückseigentümer oder Einsatzpartner  
+      – überwacht die Einhaltung aller regulatorischen und betrieblichen Vorgaben</li>
+  </ul>
+
+  <h3>Bedeutung der Rollenverteilung</h3>
+
+  <p>
+    Die klare Zuordnung dieser Rollen stellt sicher, dass alle sicherheitsrelevanten Aufgaben 
+    abgedeckt sind und das Team in jeder Einsatzphase effizient zusammenarbeitet.  
+    Sie bildet die Grundlage für einen professionellen, auditfähigen und risikoarmen STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die wichtigsten Rollen im STS-Betrieb sind:
+    <ul class="checklist">
+      <li><strong>Pilot:</strong> Steuerung der Drohne, Einhaltung der SOPs</li>
+      <li><strong>Beobachter:</strong> visuelle Verfolgung bei BVLOS, Kommunikation mit Pilot</li>
+      <li><strong>Flughelfer:</strong> Unterstützung bei Start, Landung und Umfeldsicherung</li>
+      <li><strong>Einsatzleiter:</strong> Gesamtverantwortung, Koordination, Behördenkontakt</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Rollenstruktur ein zentrales Element eines sicheren und professionellen STS‑Einsatzes.
+  </p>
+</article>
+
+<!--
+  <article>
+    <h3>280.3 Kommunikationsmittel & -wege</h3>
+    <div class="highlight">
+      Die Kommunikation muss zuverlässig, redundant und dokumentiert sein:
+      <ul class="checklist">
+        <li>Primär: Funkgeräte mit klaren Rufzeichen</li>
+        <li>Sekundär: Mobilfunk, visuelle Signale, Handzeichen</li>
+        <li>Kommunikationsprotokoll im Betriebshandbuch festhalten</li>
+        <li>Störungsfreie Verbindung zwischen Pilot und Beobachter erforderlich</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul280-3">
+  <h3>280.3 Kommunikationsmittel & ‑wege</h3>
+
+  <p>
+    Eine zuverlässige und klar strukturierte Kommunikation ist entscheidend für einen sicheren und 
+    effizienten STS‑Einsatz.  
+    Sie stellt sicher, dass alle Teammitglieder jederzeit informiert sind, schnell reagieren können 
+    und sicherheitsrelevante Informationen ohne Verzögerung übermittelt werden.  
+    Redundante Kommunikationswege erhöhen zusätzlich die Ausfallsicherheit.
+  </p>
+
+  <h3>Kommunikationsmittel im STS‑Betrieb</h3>
+
+  <ul>
+    <li><strong>Primär: Funkgeräte mit klaren Rufzeichen</strong>  
+      – definierte Rufzeichen für Pilot, Beobachter, Flughelfer und Einsatzleiter  
+      – störungsfreie, direkte Kommunikation in Echtzeit  
+      – Nutzung standardisierter Funkphrasen zur Vermeidung von Missverständnissen</li>
+
+    <li><strong>Sekundär: Mobilfunk, visuelle Signale, Handzeichen</strong>  
+      – Mobilfunk als Backup‑Kanal bei Funkstörungen  
+      – visuelle Signale für laute oder komplexe Einsatzumgebungen  
+      – standardisierte Handzeichen für Start, Landung und Notfallkommunikation</li>
+
+    <li><strong>Kommunikationsprotokoll im Betriebshandbuch festhalten</strong>  
+      – klare Vorgaben zu Rufzeichen, Funkdisziplin und Eskalationswegen  
+      – Dokumentation der primären und sekundären Kommunikationsmittel  
+      – Grundlage für Schulung, Audits und Einsatzvorbereitung</li>
+
+    <li><strong>Störungsfreie Verbindung zwischen Pilot und Beobachter erforderlich</strong>  
+      – kontinuierlicher Informationsfluss über Luftraum, Hindernisse und Flugstatus  
+      – unverzichtbar bei BVLOS‑Operationen  
+      – sofortige Meldung bei Störungen oder Kommunikationsabbrüchen</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Einsatz</h3>
+
+  <p>
+    Eine robuste Kommunikationsstruktur stellt sicher, dass sicherheitsrelevante Informationen 
+    schnell und eindeutig übermittelt werden.  
+    Sie bildet die Grundlage für koordinierte Teamarbeit, effiziente Abläufe und eine 
+    verlässliche Notfallreaktion.
+  </p>
+
+  <div class="highlight">
+    Die Kommunikation muss zuverlässig, redundant und dokumentiert sein:
+    <ul class="checklist">
+      <li>Primär: Funkgeräte mit klaren Rufzeichen</li>
+      <li>Sekundär: Mobilfunk, visuelle Signale, Handzeichen</li>
+      <li>Kommunikationsprotokoll im Betriebshandbuch festhalten</li>
+      <li>Störungsfreie Verbindung zwischen Pilot und Beobachter erforderlich</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit ist eine klare Kommunikationsstruktur ein zentraler Bestandteil eines sicheren, 
+    professionellen und auditfähigen STS‑Betriebs.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>280.4 Briefing & Debriefing</h3>
+    <div class="highlight">
+      Vor und nach jedem Einsatz sind strukturierte Besprechungen durchzuführen:
+      <ul class="checklist">
+        <li><strong>Briefing:</strong> Rollenverteilung, Flugprofil, Notfallplan, Wetterlage</li>
+        <li><strong>Debriefing:</strong> Ablaufbewertung, Zwischenfälle, Verbesserungspotenzial</li>
+        <li>Dokumentation im Flugprotokoll und Qualitätssicherung</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul280-4">
+  <h3>280.4 Briefing & Debriefing</h3>
+
+  <p>
+    Strukturierte Besprechungen vor und nach jedem Einsatz sind ein zentraler Bestandteil eines 
+    sicheren, effizienten und professionellen STS‑Betriebs.  
+    Sie stellen sicher, dass das gesamte Team über alle relevanten Informationen verfügt, Risiken 
+    frühzeitig erkannt werden und aus jedem Einsatz kontinuierlich gelernt wird.
+  </p>
+
+  <h3>Briefing vor dem Einsatz</h3>
+
+  <ul>
+    <li><strong>Rollenverteilung</strong>  
+      – klare Zuweisung von Pilot, Beobachter, Flughelfer und Einsatzleiter  
+      – Sicherstellung, dass alle Beteiligten ihre Aufgaben kennen</li>
+
+    <li><strong>Flugprofil</strong>  
+      – Besprechung der geplanten Route, Flughöhen, Manöver und Einsatzparameter  
+      – Abgleich mit Luftraumrestriktionen, Gefahrenbereichen und Missionszielen</li>
+
+    <li><strong>Notfallplan</strong>  
+      – Durchgehen der relevanten Notfallprozeduren (Lost Link, Fly‑Away, technische Störung)  
+      – Festlegung der Kommunikationswege und Eskalationsschritte</li>
+
+    <li><strong>Wetterlage</strong>  
+      – Analyse aktueller und prognostizierter Wetterbedingungen  
+      – Bewertung möglicher Risiken wie Wind, Niederschlag oder Sichtbeschränkungen</li>
+  </ul>
+
+  <h3>Debriefing nach dem Einsatz</h3>
+
+  <ul>
+    <li><strong>Ablaufbewertung</strong>  
+      – Analyse des Missionsverlaufs im Vergleich zur Planung  
+      – Identifikation von Abweichungen und deren Ursachen</li>
+
+    <li><strong>Zwischenfälle</strong>  
+      – Besprechung sicherheitsrelevanter Ereignisse oder Beinahe‑Zwischenfälle  
+      – Bewertung der Wirksamkeit der eingeleiteten Maßnahmen</li>
+
+    <li><strong>Verbesserungspotenzial</strong>  
+      – Ableitung organisatorischer, technischer oder prozeduraler Optimierungen  
+      – Anpassung von SOP, ERP oder Checklisten, falls erforderlich</li>
+  </ul>
+
+  <h3>Dokumentation & Qualitätssicherung</h3>
+
+  <p>
+    Alle relevanten Erkenntnisse aus Briefing und Debriefing müssen im <strong>Flugprotokoll</strong> 
+    dokumentiert werden.  
+    Diese Dokumentation dient der internen Qualitätssicherung, unterstützt Audits und trägt zur 
+    kontinuierlichen Verbesserung des STS‑Betriebs bei.
+  </p>
+
+  <div class="highlight">
+    Vor und nach jedem Einsatz sind strukturierte Besprechungen durchzuführen:
+    <ul class="checklist">
+      <li><strong>Briefing:</strong> Rollenverteilung, Flugprofil, Notfallplan, Wetterlage</li>
+      <li><strong>Debriefing:</strong> Ablaufbewertung, Zwischenfälle, Verbesserungspotenzial</li>
+      <li>Dokumentation im Flugprotokoll und Qualitätssicherung</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bilden Briefing und Debriefing die Grundlage für einen sicheren, lernorientierten 
+    und auditfähigen STS‑Einsatz.
+  </p>
+</article>
+
+
+
+<!--
+  <article>
+    <h3>280.5 Verantwortlichkeiten & Nachweisführung</h3>
+    <div class="highlight">
+      Die Zuständigkeiten müssen eindeutig zugewiesen und dokumentiert sein:
+      <ul class="checklist">
+        <li>Jede Rolle trägt Verantwortung für ihren Aufgabenbereich</li>
+        <li>Nachweis der Schulung und Befähigung erforderlich</li>
+        <li>Verantwortlichkeiten im Betriebshandbuch und Einsatzprotokoll festhalten</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul280-5">
+  <h3>280.5 Verantwortlichkeiten & Nachweisführung</h3>
+
+  <p>
+    Eine klare und nachvollziehbare Zuweisung von Verantwortlichkeiten ist essenziell für einen 
+    sicheren, regelkonformen und auditfähigen STS‑Betrieb.  
+    Jede Rolle im Einsatzteam trägt spezifische Aufgaben und muss nachweisen können, dass sie 
+    über die notwendige Qualifikation und Befähigung verfügt.  
+    Die Dokumentation dieser Zuständigkeiten schafft Transparenz und stärkt die interne 
+    Qualitätssicherung.
+  </p>
+
+  <h3>Verantwortlichkeiten im STS‑Betrieb</h3>
+
+  <ul>
+    <li><strong>Jede Rolle trägt Verantwortung für ihren Aufgabenbereich</strong>  
+      – Pilot, Beobachter, Flughelfer und Einsatzleiter handeln innerhalb klar definierter Zuständigkeiten  
+      – Verantwortlichkeiten umfassen Vorbereitung, Durchführung und Nachbereitung des Einsatzes  
+      – Rollen müssen jederzeit nachvollziehbar zugewiesen sein</li>
+
+    <li><strong>Nachweis der Schulung und Befähigung erforderlich</strong>  
+      – alle Teammitglieder benötigen gültige Qualifikationen (z. B. STS‑Theorie, Praxistraining, interne Schulungen)  
+      – regelmäßige Auffrischungen und Kompetenznachweise  
+      – Dokumentation der Schulungen im betrieblichen Qualifikationsregister</li>
+
+    <li><strong>Verantwortlichkeiten im Betriebshandbuch und Einsatzprotokoll festhalten</strong>  
+      – Rollenbeschreibungen, Aufgaben und Entscheidungsbefugnisse im Betriebshandbuch dokumentiert  
+      – im Einsatzprotokoll wird festgehalten, wer welche Rolle im konkreten Einsatz übernommen hat  
+      – Grundlage für Audits, Nachvollziehbarkeit und interne Qualitätssicherung</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine eindeutige Verantwortlichkeitsstruktur stellt sicher, dass alle sicherheitsrelevanten 
+    Aufgaben abgedeckt sind und das Team effizient zusammenarbeitet.  
+    Gleichzeitig ermöglicht die lückenlose Nachweisführung eine transparente, auditfähige und 
+    rechtssichere Betriebsführung.
+  </p>
+
+  <div class="highlight">
+    Die Zuständigkeiten müssen eindeutig zugewiesen und dokumentiert sein:
+    <ul class="checklist">
+      <li>Jede Rolle trägt Verantwortung für ihren Aufgabenbereich</li>
+      <li>Nachweis der Schulung und Befähigung erforderlich</li>
+      <li>Verantwortlichkeiten im Betriebshandbuch und Einsatzprotokoll festhalten</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die klare Verantwortlichkeits- und Nachweisstruktur einen zentralen Pfeiler 
+    eines professionellen und sicheren STS‑Betriebs.
+  </p>
+</article>
+
+</section>
+
+<section>
+  <h2>Modul 290 – Qualitätssicherung & Audit STS</h2>
+
+  <div class="keywords">Stichworte: Qualitätssicherung · Audit · Betriebshandbuch · Zwischenfallanalyse · Dokumentation · Verbesserungsmaßnahmen · Behördenprüfung · Nachvollziehbarkeit</div>
+
+<!--
+  <article>
+    <h3>290.1 Ziel der Qualitätssicherung</h3>
+    <div class="highlight">
+      Qualitätssicherung gewährleistet einen sicheren, regelkonformen und kontinuierlich verbesserten STS-Betrieb:
+      <ul class="checklist">
+        <li>Erkennung und Behebung von Schwachstellen</li>
+        <li>Nachweis gegenüber Behörden und Versicherungen</li>
+        <li>Förderung einer lernenden Einsatzkultur</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul290-1">
+  <h3>290.1 Ziel der Qualitätssicherung</h3>
+
+  <p>
+    Die <strong>Qualitätssicherung</strong> bildet das Fundament eines sicheren, effizienten und dauerhaft 
+    regelkonformen STS‑Betriebs.  
+    Sie stellt sicher, dass Abläufe, Rollen, technische Systeme und Dokumentationen kontinuierlich 
+    überprüft, bewertet und verbessert werden.  
+    Durch systematische Qualitätssicherung entsteht ein Betrieb, der nicht nur Vorschriften erfüllt, 
+    sondern aktiv aus Erfahrungen lernt und Risiken nachhaltig reduziert.
+  </p>
+
+  <h3>Kernziele der Qualitätssicherung</h3>
+
+  <ul>
+    <li><strong>Erkennung und Behebung von Schwachstellen</strong>  
+      – Identifikation technischer, organisatorischer oder prozeduraler Mängel  
+      – Analyse von Zwischenfällen, Beinahe‑Ereignissen und Abweichungen  
+      – Umsetzung gezielter Verbesserungsmaßnahmen zur Risikominimierung</li>
+
+    <li><strong>Nachweis gegenüber Behörden und Versicherungen</strong>  
+      – dokumentierte Prozesse, Schulungen und Einsatzprotokolle  
+      – transparente Darstellung der betrieblichen Sicherheitsmaßnahmen  
+      – erleichtert Audits, Bewilligungen und Versicherungsabklärungen</li>
+
+    <li><strong>Förderung einer lernenden Einsatzkultur</strong>  
+      – systematisches Lernen aus jedem Einsatz  
+      – offene Kommunikation über Fehler und Verbesserungspotenzial  
+      – kontinuierliche Weiterentwicklung von SOP, ERP und Schulungsinhalten</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine konsequente Qualitätssicherung stärkt die Professionalität des gesamten Betriebs und 
+    schafft Vertrauen bei Behörden, Kunden und Einsatzpartnern.  
+    Sie ermöglicht einen strukturierten, transparenten und auditfähigen Betrieb, der sich 
+    kontinuierlich weiterentwickelt und langfristig sicher bleibt.
+  </p>
+
+  <div class="highlight">
+    Qualitätssicherung gewährleistet einen sicheren, regelkonformen und kontinuierlich verbesserten STS-Betrieb:
+    <ul class="checklist">
+      <li>Erkennung und Behebung von Schwachstellen</li>
+      <li>Nachweis gegenüber Behörden und Versicherungen</li>
+      <li>Förderung einer lernenden Einsatzkultur</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Qualitätssicherung einen zentralen Pfeiler eines professionellen, 
+    verantwortungsvollen und zukunftsfähigen STS‑Betriebs.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>290.2 Dokumentationspflichten</h3>
+    <div class="highlight">
+      Alle relevanten Betriebsdaten müssen nachvollziehbar dokumentiert werden:
+      <ul class="checklist">
+        <li>Flugprotokolle, Checklisten, Zwischenfallberichte</li>
+        <li>Wartungs- und Schulungsnachweise</li>
+        <li>Versionierung des Betriebshandbuchs</li>
+        <li>Archivierung gemäß behördlicher Vorgaben</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul290-2">
+  <h3>290.2 Dokumentationspflichten</h3>
+
+  <p>
+    Eine lückenlose und nachvollziehbare Dokumentation ist ein zentraler Bestandteil der 
+    Qualitätssicherung im STS‑Betrieb.  
+    Sie ermöglicht die Rückverfolgbarkeit aller sicherheitsrelevanten Abläufe, unterstützt 
+    behördliche Prüfungen und bildet die Grundlage für kontinuierliche Verbesserungen.  
+    Alle relevanten Betriebsdaten müssen vollständig, korrekt und revisionssicher erfasst werden.
+  </p>
+
+  <h3>Erforderliche Dokumentationen im STS‑Betrieb</h3>
+
+  <ul>
+    <li><strong>Flugprotokolle, Checklisten, Zwischenfallberichte</strong>  
+      – vollständige Erfassung jedes Einsatzes inkl. Flugverlauf, Rollenverteilung und Besonderheiten  
+      – Nutzung standardisierter Checklisten zur Sicherstellung der SOP‑Konformität  
+      – detaillierte Zwischenfallberichte für Ereignisse und Beinahe‑Zwischenfälle</li>
+
+    <li><strong>Wartungs- und Schulungsnachweise</strong>  
+      – Dokumentation aller Wartungsarbeiten, Inspektionen und Reparaturen  
+      – Nachweis der Qualifikation und regelmäßigen Schulung aller Teammitglieder  
+      – zentrale Ablage im betrieblichen Qualifikations‑ und Wartungsregister</li>
+
+    <li><strong>Versionierung des Betriebshandbuchs</strong>  
+      – jede Änderung an SOP, ERP oder Rollenstrukturen muss versioniert werden  
+      – klare Kennzeichnung von Versionsnummer, Datum und Verantwortlichem  
+      – Nachvollziehbarkeit der Entwicklung des Betriebssystems</li>
+
+    <li><strong>Archivierung gemäß behördlicher Vorgaben</strong>  
+      – Einhaltung gesetzlicher Aufbewahrungsfristen  
+      – sichere, manipulationsgeschützte Ablage aller relevanten Dokumente  
+      – strukturierte Archivierung für schnelle Auffindbarkeit bei Audits</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Die Dokumentationspflichten gewährleisten Transparenz, Nachvollziehbarkeit und 
+    Rechtssicherheit.  
+    Sie ermöglichen es dem Betreiber, jederzeit nachzuweisen, dass der Betrieb sicher, 
+    regelkonform und professionell geführt wird.  
+    Gleichzeitig bilden sie die Grundlage für eine lernende Organisation, die sich 
+    kontinuierlich weiterentwickelt.
+  </p>
+
+  <div class="highlight">
+    Alle relevanten Betriebsdaten müssen nachvollziehbar dokumentiert werden:
+    <ul class="checklist">
+      <li>Flugprotokolle, Checklisten, Zwischenfallberichte</li>
+      <li>Wartungs- und Schulungsnachweise</li>
+      <li>Versionierung des Betriebshandbuchs</li>
+      <li>Archivierung gemäß behördlicher Vorgaben</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Dokumentation einen unverzichtbaren Bestandteil eines auditfähigen, 
+    sicheren und professionellen STS‑Betriebs.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>290.3 Zwischenfallanalyse & Verbesserungsmaßnahmen</h3>
+    <div class="highlight">
+      Zwischenfälle müssen systematisch ausgewertet und dokumentiert werden:
+      <ul class="checklist">
+        <li>Ursachenanalyse: Technik, Mensch, Umfeld</li>
+        <li>Ableitung konkreter Verbesserungsmaßnahmen</li>
+        <li>Einbindung in SOPs und Betriebshandbuch</li>
+        <li>Feedbackkultur im Team fördern</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul290-3">
+  <h3>290.3 Zwischenfallanalyse & Verbesserungsmaßnahmen</h3>
+
+  <p>
+    Die systematische Analyse von Zwischenfällen ist ein zentraler Bestandteil der Qualitätssicherung 
+    im STS‑Betrieb.  
+    Sie ermöglicht es, Ursachen zu identifizieren, Risiken zu reduzieren und den Betrieb kontinuierlich 
+    zu verbessern.  
+    Jeder Zwischenfall – auch Beinahe‑Ereignisse – liefert wertvolle Erkenntnisse für die Weiterentwicklung 
+    von Prozessen, Technik und Teamkompetenzen.
+  </p>
+
+  <h3>Vorgehen bei der Zwischenfallanalyse</h3>
+
+  <ul>
+    <li><strong>Ursachenanalyse: Technik, Mensch, Umfeld</strong>  
+      – technische Faktoren: Systemfehler, Sensorstörungen, Wartungsmängel  
+      – menschliche Faktoren: Bedienfehler, Kommunikationsprobleme, Stresssituationen  
+      – Umfeldfaktoren: Wetter, Gelände, unvorhergesehene externe Einflüsse  
+      – Kombination mehrerer Ursachen ist häufig</li>
+
+    <li><strong>Ableitung konkreter Verbesserungsmaßnahmen</strong>  
+      – technische Anpassungen (z. B. Wartungsintervalle, Firmware‑Updates)  
+      – organisatorische Optimierungen (z. B. Rollenverteilung, Einsatzplanung)  
+      – prozedurale Anpassungen (z. B. Checklisten, Notfallabläufe)  
+      – Maßnahmen müssen dokumentiert, umgesetzt und nachverfolgt werden</li>
+
+    <li><strong>Einbindung in SOPs und Betriebshandbuch</strong>  
+      – relevante Erkenntnisse müssen in bestehende Prozesse integriert werden  
+      – Aktualisierung von SOP, ERP, Checklisten und Schulungsunterlagen  
+      – Versionierung und Dokumentation aller Änderungen</li>
+
+    <li><strong>Feedbackkultur im Team fördern</strong>  
+      – offener Umgang mit Fehlern und Beinahe‑Zwischenfällen  
+      – regelmäßige Besprechungen zur Analyse und Verbesserung  
+      – Förderung eines lernorientierten, sicheren Arbeitsumfelds</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine konsequente Zwischenfallanalyse stärkt die Sicherheit, verbessert die Einsatzqualität 
+    und erhöht die Professionalität des gesamten Betriebs.  
+    Sie stellt sicher, dass aus jedem Ereignis gelernt wird und der Betrieb langfristig 
+    sicher, transparent und auditfähig bleibt.
+  </p>
+
+  <div class="highlight">
+    Zwischenfälle müssen systematisch ausgewertet und dokumentiert werden:
+    <ul class="checklist">
+      <li>Ursachenanalyse: Technik, Mensch, Umfeld</li>
+      <li>Ableitung konkreter Verbesserungsmaßnahmen</li>
+      <li>Einbindung in SOPs und Betriebshandbuch</li>
+      <li>Feedbackkultur im Team fördern</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bildet die Zwischenfallanalyse einen wesentlichen Baustein der kontinuierlichen 
+    Verbesserung im STS‑Betrieb.
+  </p>
+</article>
+
+
+
+<!--
+  <article>
+    <h3>290.4 Interne Audits</h3>
+    <div class="highlight">
+      Regelmäßige interne Audits sichern die Einhaltung der STS-Vorgaben:
+      <ul class="checklist">
+        <li>Überprüfung von Dokumentation, Rollenverteilung, Mitigations</li>
+        <li>Vergleich mit geltenden Vorschriften und Szenariobedarf</li>
+        <li>Auditprotokoll mit Bewertung und Maßnahmenplan</li>
+        <li>Auditverantwortliche im Betriebshandbuch benennen</li>
+      </ul>
+    </div>
+  </article>
+-->
+
+<article id="Modul290-4">
+  <h3>290.4 Interne Audits</h3>
+
+  <p>
+    Regelmäßige interne Audits sind ein zentrales Instrument der Qualitätssicherung im STS‑Betrieb.  
+    Sie stellen sicher, dass alle betrieblichen Abläufe, Dokumentationen und Mitigationsmaßnahmen 
+    den geltenden Vorschriften entsprechen und kontinuierlich verbessert werden.  
+    Interne Audits schaffen Transparenz, erhöhen die Betriebssicherheit und stärken die 
+    Nachvollziehbarkeit gegenüber Behörden und Versicherungen.
+  </p>
+
+  <h3>Inhalte und Ablauf interner Audits</h3>
+
+  <ul>
+    <li><strong>Überprüfung von Dokumentation, Rollenverteilung, Mitigations</strong>  
+      – Kontrolle der Vollständigkeit und Aktualität aller Betriebsunterlagen  
+      – Abgleich der Rollenverteilung mit Betriebshandbuch und Einsatzpraxis  
+      – Bewertung der Wirksamkeit technischer und organisatorischer Mitigationsmaßnahmen</li>
+
+    <li><strong>Vergleich mit geltenden Vorschriften und Szenariobedarf</strong>  
+      – Prüfung der Konformität mit STS‑01/STS‑02‑Vorgaben  
+      – Abgleich mit EU‑ und nationalen Anforderungen  
+      – Sicherstellung, dass der Betrieb weiterhin den Szenariobedarf erfüllt</li>
+
+    <li><strong>Auditprotokoll mit Bewertung und Maßnahmenplan</strong>  
+      – strukturierte Dokumentation aller Feststellungen  
+      – Bewertung nach Schweregrad und Dringlichkeit  
+      – Erstellung eines verbindlichen Maßnahmenplans mit Verantwortlichkeiten und Fristen</li>
+
+    <li><strong>Auditverantwortliche im Betriebshandbuch benennen</strong>  
+      – klare Definition, wer Audits plant, durchführt und nachverfolgt  
+      – Sicherstellung der Unabhängigkeit und Fachkompetenz der Auditverantwortlichen  
+      – Dokumentation im Betriebshandbuch als Teil der betrieblichen Governance</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Interne Audits ermöglichen eine objektive Bewertung des Betriebs und fördern eine 
+    kontinuierliche Weiterentwicklung.  
+    Sie stärken die Compliance, erhöhen die Sicherheit und schaffen eine belastbare Grundlage 
+    für externe Prüfungen und behördliche Inspektionen.
+  </p>
+
+  <div class="highlight">
+    Regelmäßige interne Audits sichern die Einhaltung der STS-Vorgaben:
+    <ul class="checklist">
+      <li>Überprüfung von Dokumentation, Rollenverteilung, Mitigations</li>
+      <li>Vergleich mit geltenden Vorschriften und Szenariobedarf</li>
+      <li>Auditprotokoll mit Bewertung und Maßnahmenplan</li>
+      <li>Auditverantwortliche im Betriebshandbuch benennen</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit bilden interne Audits einen unverzichtbaren Bestandteil eines sicheren, 
+    professionellen und auditfähigen STS‑Betriebs.
+  </p>
+</article>
+
+
+<!--
+  <article>
+    <h3>290.5 Behördenprüfung & Nachvollziehbarkeit</h3>
+    <div class="highlight">
+      Die Qualitätssicherung muss gegenüber Behörden transparent und prüfbar sein:
+      <ul class="checklist">
+        <li>Vollständige und aktuelle Dokumentation bereitstellen</li>
+        <li>Nachvollziehbare Abläufe und Zuständigkeiten</li>
+        <li>Reaktion auf behördliche Rückfragen und Auflagen</li>
+        <li>Auditprotokolle und Verbesserungsmaßnahmen offenlegen</li>
+      </ul>
+    </div>
+  </article>
+-->
+<article id="Modul290-5">
+  <h3>290.5 Behördenprüfung & Nachvollziehbarkeit</h3>
+
+  <p>
+    Für einen regelkonformen und auditfähigen STS‑Betrieb ist es entscheidend, dass alle 
+    qualitätssichernden Maßnahmen gegenüber Behörden vollständig, transparent und jederzeit 
+    nachvollziehbar sind.  
+    Behörden müssen in der Lage sein, Prozesse, Zuständigkeiten und Dokumentationen klar 
+    nachzuvollziehen, um die Einhaltung der STS‑Vorgaben zu bestätigen.
+  </p>
+
+  <h3>Anforderungen an die behördliche Prüfbarkeit</h3>
+
+  <ul>
+    <li><strong>Vollständige und aktuelle Dokumentation bereitstellen</strong>  
+      – Bereitstellung aller relevanten Unterlagen wie Flugprotokolle, Checklisten, SOPs, ERP  
+      – Nachweis aktueller Versionen und revisionssicherer Archivierung  
+      – strukturierte Ablage für schnelle Auffindbarkeit während Inspektionen</li>
+
+    <li><strong>Nachvollziehbare Abläufe und Zuständigkeiten</strong>  
+      – klare Darstellung der Rollenverteilung und Verantwortlichkeiten  
+      – dokumentierte Prozesse für Planung, Durchführung und Nachbereitung  
+      – transparente Darstellung der internen Entscheidungswege</li>
+
+    <li><strong>Reaktion auf behördliche Rückfragen und Auflagen</strong>  
+      – fristgerechte und vollständige Beantwortung von Behördenanfragen  
+      – Umsetzung behördlicher Auflagen und Nachweis der Maßnahmen  
+      – Dokumentation aller Kommunikation mit Behörden</li>
+
+    <li><strong>Auditprotokolle und Verbesserungsmaßnahmen offenlegen</strong>  
+      – Bereitstellung interner Auditberichte und deren Ergebnisse  
+      – Nachweis der Umsetzung beschlossener Verbesserungsmaßnahmen  
+      – Darstellung der kontinuierlichen Weiterentwicklung des Betriebssystems</li>
+  </ul>
+
+  <h3>Bedeutung für den STS‑Betrieb</h3>
+
+  <p>
+    Eine transparente und nachvollziehbare Qualitätssicherung stärkt das Vertrauen der Behörden 
+    und zeigt, dass der Betreiber seine Verantwortung ernst nimmt.  
+    Sie bildet die Grundlage für einen professionellen, sicheren und langfristig genehmigungsfähigen 
+    STS‑Betrieb.
+  </p>
+
+  <div class="highlight">
+    Die Qualitätssicherung muss gegenüber Behörden transparent und prüfbar sein:
+    <ul class="checklist">
+      <li>Vollständige und aktuelle Dokumentation bereitstellen</li>
+      <li>Nachvollziehbare Abläufe und Zuständigkeiten</li>
+      <li>Reaktion auf behördliche Rückfragen und Auflagen</li>
+      <li>Auditprotokolle und Verbesserungsmaßnahmen offenlegen</li>
+    </ul>
+  </div>
+
+  <p>
+    Damit wird die behördliche Prüfbarkeit zu einem zentralen Element eines sicheren, 
+    regelkonformen und auditfähigen STS‑Betriebs.
+  </p>
+</article>
+
+</section>
+

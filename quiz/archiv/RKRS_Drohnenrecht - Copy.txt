@@ -1,0 +1,134 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>Drohnenbestimmungen</h1>-->
+<p><strong>Zielgruppe:</strong> Freizeitpiloten, gewerbliche Betreiber, Behörden, Technikinteressierte</p>
+<p><strong>Ziel:</strong> Verständnis der rechtlichen Grundlagen für den sicheren und regelkonformen Betrieb von Drohnen in Europa (mit Fokus auf Schweiz und EU)</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir die wichtigsten rechtlichen Bestimmungen für den Betrieb von Drohnen, insbesondere im Kontext der EU-Drohnenverordnung und der schweizerischen Regelungen. Du lernst, welche Kategorien es gibt, welche Pflichten du als Pilot hast und wie du sicher und rechtskonform fliegst.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>EU-Drohnenverordnung und Schweizer Regelungen verstehen</li>
+  <li>Betriebskategorien (Offen, Speziell, Zulassungspflichtig) kennen</li>
+  <li>Registrierung, Schulung und Kennzeichnungspflichten anwenden</li>
+  <li>Flugverbotszonen und Datenschutz beachten</li>
+  <li>Sanktionen und Haftungsfragen einschätzen</li>
+</ul>
+
+<h2>Kapitel 1: Überblick über die Drohnenregulierung</h2>
+<p><strong>Stichworte:</strong> EASA · BAZL · EU-Drohnenverordnung · Luftfahrtgesetz · UAS</p>
+<p>Die Regulierung von Drohnen (UAS) erfolgt in Europa durch die EU-Drohnenverordnung (VO 2019/947), koordiniert durch die EASA. In der Schweiz ist das BAZL zuständig, das die EU-Regeln weitgehend übernommen hat.</p>
+<p>Drei Betriebskategorien:</p>
+<ul>
+  <li>Offene Kategorie: risikoarme Flüge ohne Genehmigung</li>
+  <li>Spezielle Kategorie: Flüge mit erhöhtem Risiko</li>
+  <li>Zulassungspflichtige Kategorie: komplexe Einsätze wie Transport oder autonome Flüge</li>
+</ul>
+<p>Die offene Kategorie gliedert sich in:</p>
+<ul>
+  <li>A1: über Personen, nicht über Menschenansammlungen</li>
+  <li>A2: nahe an Personen, mit Zusatzanforderungen</li>
+  <li>A3: fern von Personen und Gebäuden</li>
+</ul>
+<div class="highlight">
+✅ EU-Verordnung gilt auch in der Schweiz<br>
+✅ Drei Betriebskategorien: Offen, Speziell, Zulassungspflichtig<br>
+✅ Offene Kategorie unterteilt in A1, A2, A3<br>
+✅ BAZL ist zuständig in der Schweiz<br>
+✅ EASA koordiniert europaweit
+</div>
+
+<h2>Kapitel 2: Registrierung, Schulung und Kennzeichnung</h2>
+<p><strong>Stichworte:</strong> UAS-Betreiber · Online-Schulung · Fernpiloten-ID · CE-Kennzeichnung · Drohnenklasse</p>
+<p>Registrierungspflicht für Drohnen mit Kamera oder über 250 g. Nach Registrierung erhält man eine UAS-Betreiber-ID, die auf der Drohne angebracht werden muss.</p>
+<p>Schulungsanforderungen:</p>
+<ul>
+  <li>A1/A3: Online-Test</li>
+  <li>A2: zusätzliches Selbststudium und Praxisteil</li>
+</ul>
+<p>CE-Kennzeichnung mit Klassenangabe (C0–C4):</p>
+<ul>
+  <li>C0: <250 g – keine Kennzeichnungspflicht</li>
+  <li>C1: <900 g – geeignet für A1</li>
+  <li>C2: <4 kg – geeignet für A2 mit Schulung</li>
+</ul>
+<div class="highlight">
+✅ Registrierungspflicht ab 250 g oder Kamera<br>
+✅ UAS-Betreiber-ID muss angebracht werden<br>
+✅ Online-Schulung für A1/A3, Zusatzprüfung für A2<br>
+✅ CE-Kennzeichnung mit Drohnenklasse (C0–C4)<br>
+✅ Fernpiloten-ID ist verpflichtend
+</div>
+
+<h2>Kapitel 3: Flugverbotszonen und geografische Einschränkungen</h2>
+<p><strong>Stichworte:</strong> Kontrollzonen · Flughäfen · Naturschutzgebiete · Menschenansammlungen · Geo-Zonen</p>
+<p>Flugverbotszonen gelten aus Sicherheits-, Umwelt- oder Datenschutzgründen. Beispiele:</p>
+<ul>
+  <li>Flughäfen und Helikopterlandeplätze</li>
+  <li>Militäranlagen</li>
+  <li>Naturschutzgebiete</li>
+  <li>Menschenansammlungen</li>
+</ul>
+<p>Geo-Zonen sind digital abrufbar über Apps wie „DroneMaps“, „UAV Forecast“ oder <em>map.geo.admin.ch</em>.</p>
+<div class="highlight">
+✅ Flugverbotszonen gelten z. B. bei Flughäfen, Menschenansammlungen, Naturschutz<br>
+✅ Geo-Zonen sind digital abrufbar<br>
+✅ Kontrollzonen erfordern Genehmigung<br>
+✅ Verstöße führen zu Sanktionen<br>
+✅ Pilot trägt die Verantwortung
+</div>
+
+<h2>Kapitel 4: Datenschutz und Persönlichkeitsrechte</h2>
+<p><strong>Stichworte:</strong> DSGVO · Bildrechte · Privatsphäre · Personenaufnahmen · Einwilligung</p>
+<p>Drohnen mit Kamera unterliegen dem Datenschutzrecht. Personen dürfen nicht ohne Einwilligung gefilmt oder fotografiert werden. Auch Grundstücke und Privatbereiche dürfen nicht ohne Genehmigung überflogen oder aufgenommen werden.</p>
+<p>Für gewerbliche Anwendungen gelten zusätzliche Anforderungen:</p>
+<ul>
+  <li>Datenschutzkonzept</li>
+  <li>Einwilligung der Betroffenen</li>
+  <li>Sicherung der Daten</li>
+  <li>Löschungspflichten</li>
+</ul>
+<div class="highlight">
+✅ DSGVO und DSG regeln Drohnenaufnahmen<br>
+✅ Personen dürfen nicht ohne Einwilligung gefilmt werden<br>
+✅ Privatsphäre muss gewahrt bleiben<br>
+✅ Bildrechte liegen bei der abgebildeten Person<br>
+✅ Verstöße können teuer werden
+</div>
+
+<h2>Kapitel 5: Sanktionen, Haftung und Versicherung</h2>
+<p><strong>Stichworte:</strong> Bußgelder · Strafrecht · Haftpflicht · Versicherungspflicht · Fahrlässigkeit</p>
+<p>Typische Verstöße:</p>
+<ul>
+  <li>Fliegen in Flugverbotszonen</li>
+  <li>Missachtung von Sichtflugregeln</li>
+  <li>Verletzung der Privatsphäre</li>
+  <li>Betrieb ohne Registrierung oder Schulung</li>
+</ul>
+<p>Versicherungspflicht ab 250 g oder Kamera. Mindestdeckung: 1 Mio. CHF/EUR. Pilot haftet bei Fahrlässigkeit – z. B. bei ungeprüfter Wetterlage oder GPS-Störung.</p>
+<p>Gewerbliche Betreiber benötigen:</p>
+<ul>
+  <li>Betriebshaftpflicht</li>
+  <li>Sicherheitskonzept</li>
+  <li>Schulungsnachweise</li>
+  <li>Flugprotokolle</li>
+</ul>
+<div class="highlight">
+✅ Verstöße führen zu Bußgeldern oder Strafverfahren<br>
+✅ Versicherungspflicht ab 250 g oder Kamera<br>
+✅ Pilot haftet bei Fahrlässigkeit<br>
+✅ Mindestdeckungssumme meist 1 Mio. CHF/EUR<br>
+✅ Gewerbliche Betreiber brauchen zusätzliche Nachweise
+</div>
+
+</body>
+</html>

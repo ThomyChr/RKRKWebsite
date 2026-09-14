@@ -1,0 +1,6 @@
+# Map editor: serve start HTML through overlay PHP (branding/features).
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^index\.html$ rkrk_map_overlay.php [L,QSA]
+  RewriteRule ^map_editor\.html$ rkrk_map_overlay.php [L,QSA]
+</IfModule>

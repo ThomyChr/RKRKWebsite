@@ -1,0 +1,16 @@
+<?php
+/**
+ * FlightHub 2 OpenAPI (optional). Copy to flighthub.local.php — never commit secrets.
+ *
+ * Keys: FlightHub 2 → Meine Organisation → Organisationseinstellungen → FlightHub Sync → Organization Key
+ * Project UUID: Projektliste der Organisation (data.list.uuid).
+ *
+ * api_base examples:
+ *   EU  https://es-flight-api-eu.djigate.com
+ *   US  https://es-flight-api-us.djigate.com
+ */
+return [
+    'org_key' => '',
+    'project_uuid' => '',
+    'api_base' => 'https://es-flight-api-eu.djigate.com',
+];

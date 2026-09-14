@@ -1,0 +1,175 @@
+  <style>
+   .keywords {
+      font-style: italic;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+    .highlight {
+      background-color: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 0.5rem 1rem;
+      margin: 1rem 0;
+    }
+    ul.checklist {
+      list-style: none;
+      padding-left: 0;
+    }
+    ul.checklist li::before {
+      content: "✅ ";
+      color: green;
+    }
+    section {
+      margin-bottom: 3rem;
+    }
+  </style>
+
+<!--<h1>Rehkitzrettung</h1>-->
+<p><strong>Zielgruppe:</strong> Landwirte, Jäger, Drohnenpiloten, Tierschutzorganisationen, Naturfreunde</p>
+<p><strong>Ziel:</strong> Verständnis der Methoden, Abläufe und rechtlichen sowie ethischen Grundlagen zur Rettung von Rehkitzen vor der Mahd</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir die Grundlagen und praktischen Abläufe der Rehkitzrettung – insbesondere vor der Frühjahrsmahd. Du lernst, warum Rehkitze gefährdet sind, wie man sie effektiv schützt und welche technischen, organisatorischen und rechtlichen Aspekte dabei zu beachten sind.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Biologische Hintergründe zum Verhalten von Rehkitzen verstehen</li>
+  <li>Gefahren durch landwirtschaftliche Mahd erkennen</li>
+  <li>Methoden zur Rehkitzrettung kennen und anwenden</li>
+  <li>Einsatz von Drohnen und Wärmebildtechnik beurteilen</li>
+  <li>Zusammenarbeit mit Landwirten, Jägern und Behörden organisieren</li>
+</ul>
+
+<section id="kapitel1">
+<h2>Kapitel 1: Biologie und Verhalten von Rehkitzen</h2>
+<p><strong>Stichworte:</strong> Setzzeit · Tarnverhalten · Mutter-Kitz-Bindung · Fluchtinstinkt · Lebensraum</p>
+   <p>Rehkitze werden in Mitteleuropa meist zwischen Ende April und Anfang Juni geboren – die sogenannte Setzzeit. In den ersten Lebenswochen sind sie besonders gefährdet, da sie sich bei Gefahr nicht aktiv in Sicherheit bringen, sondern instinktiv regungslos im hohen Gras verharren.</p>
+
+    <p>Dieses Verhalten – das sogenannte Tarnverhalten – schützt sie vor natürlichen Feinden, wird aber zur tödlichen Falle bei der Mahd. Die Kitze sind kaum sichtbar und fliehen nicht vor herannahenden Mähmaschinen.</p>
+
+    <p>Die Bindung zur Mutter ist locker: Die Ricke legt das Kitz im hohen Gras ab und kehrt nur zum Säugen zurück. Dadurch sind die Kitze oft allein und schwer auffindbar. Ihr Lebensraum sind Wiesen, Waldränder und Felder – genau dort, wo im Frühjahr gemäht wird.</p>
+
+    <p>Die ersten Lebenswochen sind entscheidend: Kitze haben noch keinen ausgeprägten Fluchtinstinkt und sind auf Schutz angewiesen. Ohne menschliches Eingreifen sterben jedes Jahr tausende Rehkitze durch Mähwerke.</p>
+
+    <ul class="checklist">
+      <li>Setzzeit: April–Juni</li>
+      <li>Tarnverhalten = regungslos bei Gefahr</li>
+      <li>Kitze fliehen nicht vor Mähmaschinen</li>
+      <li>Mutter besucht Kitz nur zum Säugen</li>
+      <li>Lebensraum = Wiesen, Waldränder</li>
+    </ul>
+  </section>
+
+
+<section id="kapitel2">
+<h2>Kapitel 2: Gefahren durch die Frühjahrsmahd</h2>
+    <p>Die Frühjahrsmahd ist für Landwirte notwendig, um Futter für Nutztiere zu gewinnen. Sie fällt jedoch genau in die Setzzeit der Rehkitze. Moderne Mähtechnik ist effizient, aber auch gefährlich: Mähwerke arbeiten schnell und mit hoher Sogwirkung – ein regungsloses Kitz wird nicht erkannt und tödlich verletzt.</p>
+
+    <p>Der Mahdzeitpunkt ist entscheidend: Frühmorgens oder bei feuchtem Wetter sind Kitze besonders gefährdet, da sie sich kaum bewegen. Auch die Flächenstruktur spielt eine Rolle – große, zusammenhängende Wiesen ohne Deckung sind besonders riskant.</p>
+
+    <p>Das Tierschutzgesetz verpflichtet zur Vermeidung vermeidbarer Leiden. Landwirte müssen Maßnahmen ergreifen, um Wildtiere zu schützen – etwa durch vorherige Absprache mit Jägern oder Tierschutzgruppen.</p>
+
+    <p>In vielen Regionen besteht eine Meldepflicht: Landwirte müssen geplante Mahdtermine frühzeitig bekanntgeben, damit Rettungsteams aktiv werden können. Die Zusammenarbeit zwischen Landwirtschaft, Jagd und Tierschutz ist essenziell.</p>
+
+    <ul class="checklist">
+      <li>Mahd fällt in Setzzeit</li>
+      <li>Mähtechnik = tödliche Gefahr für Kitze</li>
+      <li>Frühmorgens = höchste Gefährdung</li>
+      <li>Tierschutzgesetz verpflichtet zu Schutzmaßnahmen</li>
+      <li>Meldepflicht für Mahdtermine</li>
+    </ul>
+  </section>
+
+
+
+<section id="kapitel3">
+<h2>Kapitel 3: Methoden der Rehkitzrettung</h2>
+<p><strong>Stichworte:</strong> Vergrämung · Absuchen · Drohneneinsatz · Wärmebildkamera · Markierung</p>
+
+    <p>Zur Rettung von Rehkitzen vor der Mahd gibt es verschiedene Methoden, die je nach Gelände, Zeit und Ressourcen eingesetzt werden können. Ziel ist es, die Kitze vor dem Mähen zu finden und in Sicherheit zu bringen.</p>
+
+    <p>Eine einfache Methode ist die Vergrämung: Dabei wird das Wild durch optische oder akustische Reize aus dem Gebiet vertrieben – z. B. durch flatternde Bänder, Radios oder Duftstoffe. Diese Methode ist kostengünstig, aber nicht immer zuverlässig.</p>
+
+    <p>Die klassische Methode ist das Absuchen der Wiesen durch Helfergruppen. Dabei gehen Menschen in Reihen durch das Gras und suchen nach Kitzen. Diese Methode ist effektiv, aber zeitaufwendig und personalintensiv.</p>
+
+    <p>Moderne Technik bietet neue Möglichkeiten: Der Einsatz von Drohnen mit Wärmebildkamera hat sich als besonders effizient erwiesen. Frühmorgens, wenn die Temperaturdifferenz zwischen Kitz und Umgebung am größten ist, können Kitze zuverlässig erkannt werden.</p>
+
+    <p>Die Drohne fliegt automatisiert oder manuell über die Fläche, die Kamera zeigt Wärmequellen. Wird ein Kitz entdeckt, wird es markiert – z. B. mit einem Korb oder einer Kiste – und nach der Mahd wieder freigelassen. Wichtig: Die Tiere dürfen nicht unnötig gestresst oder verletzt werden.</p>
+
+    <p>Die Organisation erfolgt meist durch lokale Jägervereine, Tierschutzgruppen oder spezialisierte Rehkitzrettungsteams. Eine gute Abstimmung mit dem Landwirt ist entscheidend – idealerweise am Vortag der Mahd.</p>
+
+    <ul class="checklist">
+      <li>Vergrämung durch Reize möglich</li>
+      <li>Absuchen durch Helfergruppen</li>
+      <li>Drohnen mit Wärmebildkamera besonders effektiv</li>
+      <li>Kitze markieren und nach Mahd freilassen</li>
+      <li>Zusammenarbeit mit Landwirten und Jägern wichtig</li>
+    </ul>
+  </section>
+
+
+<section id="kapitel4">
+<h2>Kapitel 4: Organisation und Ablauf der Rettung</h2>
+<p><strong>Stichworte:</strong> Einsatzplanung · Kommunikation · Flugfreigabe · Teamstruktur · Dokumentation</p>
+
+    <p>Eine erfolgreiche Rehkitzrettung erfordert gute Organisation. Der Ablauf beginnt mit der Ankündigung der Mahd durch den Landwirt – idealerweise 24–48 Stunden vorher. Danach erfolgt die Einsatzplanung durch das Rettungsteam.</p>
+
+    <p>Die Fläche wird kartiert, die Flugroute der Drohne festgelegt und die Helfer eingeteilt. Wichtig ist die Kommunikation zwischen Landwirt, Jäger, Drohnenpilot und Helfern. Ein zentraler Ansprechpartner koordiniert den Ablauf.</p>
+
+    <p>Vor dem Flug muss ggf. eine Flugfreigabe eingeholt werden – z. B. bei Nähe zu Flugplätzen oder in kontrollierten Lufträumen. Die Drohne muss registriert und versichert sein, der Pilot geschult.</p>
+
+  <div class="highlight">
+    <p>Die Teamstruktur umfasst:</p>
+    <ul>
+      <li>Drohnenpilot</li>
+      <li>Wärmebild-Operator</li>
+      <li>Bodenhelfer</li>
+      <li>Dokumentationsperson</li>
+    </ul>
+  </div>
+  
+    <p>Die Suche beginnt frühmorgens, meist zwischen 4:30 und 7:00 Uhr. Die Drohne fliegt die Fläche ab, die Wärmebildkamera zeigt mögliche Kitze. Diese werden durch Bodenhelfer lokalisiert und gesichert.</p>
+
+    <p>Nach der Mahd werden die Kitze wieder freigelassen. Der Einsatz wird dokumentiert – z. B. mit Fotos, GPS-Daten und Einsatzprotokoll. Dies dient der Nachvollziehbarkeit und Qualitätssicherung.</p>
+
+    <ul class="checklist">
+      <li>Mahd frühzeitig ankündigen</li>
+      <li>Einsatzplanung und Kommunikation zentral</li>
+      <li>Flugfreigabe ggf. erforderlich</li>
+      <li>Teamstruktur mit klaren Rollen</li>
+      <li>Dokumentation des Einsatzes empfohlen</li>
+    </ul>
+  </section>
+
+<section id="kapitel5">
+<h2>Kapitel 5: Rechtliche und ethische Grundlagen</h2>
+<p><strong>Stichworte:</strong> Tierschutzgesetz · Jagdrecht · Flugrecht · Datenschutz · Verantwortung</p>
+  <section>
+  
+    <p>Die Rehkitzrettung berührt mehrere rechtliche Bereiche. Zentrale Grundlage ist das Tierschutzgesetz, das vermeidbares Leid verbietet. Wer eine Mahd durchführt, muss sicherstellen, dass keine Wildtiere verletzt werden – andernfalls drohen Bußgelder oder strafrechtliche Konsequenzen.</p>
+
+    <p>Auch das Jagdrecht spielt eine Rolle: Rehkitze sind jagdbare Tiere, ihre Sicherung und Freilassung muss mit dem zuständigen Jagdpächter abgestimmt werden. Eine eigenmächtige Entnahme ist nicht erlaubt.</p>
+
+     <div class="highlight">
+   <p>Beim Einsatz von Drohnen gelten die Regeln des Flugrechts:</p>
+    <ul>
+      <li>Registrierungspflicht</li>
+      <li>Versicherungspflicht</li>
+      <li>Sichtflugregel</li>
+      <li>Flugverbotszonen beachten</li>
+    </ul>
+  </div>
+  
+    <p>Zudem ist der Datenschutz zu beachten: Wärmebildaufnahmen dürfen keine Personen zeigen oder speichern. Die Daten müssen sicher verwahrt und ggf. gelöscht werden.</p>
+
+    <p>Die Verantwortung liegt bei allen Beteiligten: Landwirt, Jäger, Drohnenpilot und Helfer. Eine gute Abstimmung und Einhaltung der Regeln ist essenziell für den Erfolg und die Akzeptanz der Maßnahme.</p>
+
+    <ul class="checklist">
+      <li>Tierschutzgesetz verbietet vermeidbares Leid</li>
+      <li>Jagdrecht regelt Umgang mit Wildtieren</li>
+      <li>Flugrecht für Drohneneinsatz beachten</li>
+      <li>Datenschutz bei Wärmebildaufnahmen</li>
+      <li>Verantwortung liegt bei allen Beteiligten</li>
+    </ul>
+  </section>
+

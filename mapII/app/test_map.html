@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Polygon Editor with Lat/Lon/Height</title>
+    <style>
+        #map {
+            width: 100%;
+            height: 600px;
+        }
+        #info {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            white-space: pre;
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #panel {
+            padding: 8px;
+            background: #f5f5f5;
+            border-top: 1px solid #ccc;
+        }
+        button {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+    <div>Location / Vertices (LAT, LON, HEIGHT[m]):</div>
+    <textarea id="info" readonly></textarea>
+    <label>Flight height (m): <input id="flightHeight" type="number" value="60" min="10" step="5"></label>
+    <label>Track distance (m): <input id="trackDistance" type="number" value="30" min="5" step="1"></label>
+    <label>Border factor: <input id="borderFactor" type="number" value="0.4" min="0" max="1" step="0.05"></label>
+    <button id="setStartPoint">Set Start Point</button>
+    <button id="calcFlightPath" disabled>Calc Flight Path (test)</button>
+    <button id="clearPolygon">Clear polygon</button>
+    <button id="loadElevation">Load heights for vertices</button>
+    <button id="enableMoveSelected" disabled>Move selected object</button>
+    <button id="deleteSelected" disabled>Delete selected object</button>
+</div>
+
+<script>
+    let map;
+    let drawingManager;
+    let polygon = null;
+    let selectedOverlay = null;
+    let elevationService = null;
+    let startMarker = null;
+    let startPointMode = false;
+    let flightPolyline = null;
+    let flightPathPoints = [];
+    let flightPointMarkers = [];
+    let addPointMarkers = [];
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: {lat: 47.3769, lng: 8.5417},
+            zoom: 10,
+            mapTypeId: "terrain"
+        });
+
+        elevationService = new google.maps.ElevationService();
+
+        drawingManager = new google.maps.drawing.DrawingManager({
+            drawingMode: google.maps.drawing.OverlayType.POLYGON,
+            drawingControl: true,
+            drawingControlOptions: {
+                position: google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: ["polygon"]
+            },
+            polygonOptions: {
+                editable: true,
+                draggable: false,
+                strokeColor: "#FF0000",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: "#FF0000",
+                fillOpacity: 0.35
+            }
+        });
+
+        drawingManager.setMap(map);
+        map.addListener("click", function (evt) {
+            if (!startPointMode) return;
+            setStartPoint(evt.latLng);
+            startPointMode = false;
+            document.getElementById("setStartPoint").textContent = "Set Start Point";
+        });
+
+        google.maps.event.addListener(drawingManager, "overlaycomplete", function (event) {
+            if (event.type === google.maps.drawing.OverlayType.POLYGON) {
+                if (polygon) polygon.setMap(null);
+                polygon = event.overlay;
+                drawingManager.setDrawingMode(null);
+                registerOverlay(polygon);
+                attachPathListeners(polygon.getPath());
+                updateVertexInfo();
+                updateCalcButtonState();
+            }
+        });
+
+        document.getElementById("setStartPoint").addEventListener("click", function () {
+            startPointMode = !startPointMode;
+            this.textContent = startPointMode ? "Click on map..." : "Set Start Point";
+        });
+
+        document.getElementById("calcFlightPath").addEventListener("click", function () {
+            calculateFlightPathTest();
+        });
+
+        document.getElementById("clearPolygon").addEventListener("click", function () {
+            if (polygon) {
+                polygon.setMap(null);
+                polygon = null;
+                setSelectedOverlay(null);
+                document.getElementById("info").value = "";
+                drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+            }
+            clearFlightPathOverlays();
+            updateCalcButtonState();
+        });
+
+        document.getElementById("loadElevation").addEventListener("click", function () {
+            if (!polygon) return;
+            loadElevationForVertices();
+        });
+
+        document.getElementById("enableMoveSelected").addEventListener("click", function () {
+            if (!selectedOverlay) return;
+            if (typeof selectedOverlay.setDraggable === "function") selectedOverlay.setDraggable(true);
+            if (typeof selectedOverlay.setEditable === "function") selectedOverlay.setEditable(true);
+        });
+
+        document.getElementById("deleteSelected").addEventListener("click", function () {
+            if (!selectedOverlay) return;
+            if (selectedOverlay.__kind === "flightPoint") {
+                const idx = selectedOverlay.__index;
+                if (idx >= 0 && idx < flightPathPoints.length) {
+                    flightPathPoints.splice(idx, 1);
+                    redrawFlightPath();
+                }
+            } else if (selectedOverlay.__kind === "flightLine") {
+                clearFlightPathOverlays();
+            } else {
+                selectedOverlay.setMap(null);
+            }
+            if (selectedOverlay === polygon) {
+                polygon = null;
+                document.getElementById("info").value = "";
+                drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+            }
+            if (selectedOverlay === startMarker) startMarker = null;
+            setSelectedOverlay(null);
+            updateCalcButtonState();
+        });
+    }
+
+    function registerOverlay(overlay) {
+        google.maps.event.addListener(overlay, "click", function () {
+            setSelectedOverlay(overlay);
+        });
+    }
+
+    function setSelectedOverlay(overlay) {
+        selectedOverlay = overlay;
+        const hasSelection = !!selectedOverlay;
+        document.getElementById("enableMoveSelected").disabled = !hasSelection;
+        document.getElementById("deleteSelected").disabled = !hasSelection;
+    }
+
+    function attachPathListeners(path) {
+        google.maps.event.addListener(path, "set_at", updateVertexInfo);
+        google.maps.event.addListener(path, "insert_at", updateVertexInfo);
+        google.maps.event.addListener(path, "remove_at", updateVertexInfo);
+        google.maps.event.addListener(path, "set_at", updateCalcButtonState);
+        google.maps.event.addListener(path, "insert_at", updateCalcButtonState);
+        google.maps.event.addListener(path, "remove_at", updateCalcButtonState);
+    }
+
+    function updateVertexInfo(heights) {
+        if (!polygon) {
+            document.getElementById("info").value = startMarker
+                ? `Start LAT: ${startMarker.getPosition().lat().toFixed(7)} LON: ${startMarker.getPosition().lng().toFixed(7)}`
+                : "";
+            return;
+        }
+        const path = polygon.getPath();
+        let text = "";
+        if (startMarker) {
+            text += `Start LAT: ${startMarker.getPosition().lat().toFixed(7)} LON: ${startMarker.getPosition().lng().toFixed(7)}\n`;
+            text += "----\n";
+        }
+        for (let i = 0; i < path.getLength(); i++) {
+            const latLng = path.getAt(i);
+            const lat = latLng.lat().toFixed(7);
+            const lng = latLng.lng().toFixed(7);
+            const h = heights && heights[i] != null ? heights[i].toFixed(2) : "n/a";
+            text += `${i + 1}\tLAT: ${lat}\tLON: ${lng}\tHEIGHT: ${h}\n`;
+        }
+        if (flightPathPoints.length > 0) {
+            text += "----\nFlight path points:\n";
+            flightPathPoints.forEach((p, i) => {
+                text += `${i + 1}\tLAT: ${p.lat().toFixed(7)}\tLON: ${p.lng().toFixed(7)}\n`;
+            });
+        }
+        document.getElementById("info").value = text;
+    }
+
+    function loadElevationForVertices() {
+        const path = polygon.getPath();
+        if (path.getLength() === 0) return;
+        const locations = [];
+        for (let i = 0; i < path.getLength(); i++) locations.push(path.getAt(i));
+        elevationService.getElevationForLocations({locations: locations}, function (results, status) {
+            if (status !== "OK" || !results) {
+                updateVertexInfo();
+                return;
+            }
+            const heights = results.map(r => r.elevation);
+            updateVertexInfo(heights);
+        });
+    }
+
+    function setStartPoint(latLng) {
+        if (startMarker) startMarker.setMap(null);
+        startMarker = new google.maps.Marker({
+            position: latLng,
+            map: map,
+            draggable: true,
+            label: "S",
+            title: "Start point"
+        });
+        startMarker.__kind = "startPoint";
+        registerOverlay(startMarker);
+        startMarker.addListener("dragend", function () { updateVertexInfo(); });
+        updateCalcButtonState();
+        updateVertexInfo();
+    }
+
+    function updateCalcButtonState() {
+        const hasPolygon = polygon && polygon.getPath().getLength() >= 3;
+        const hasStart = !!startMarker;
+        document.getElementById("calcFlightPath").disabled = !(hasPolygon && hasStart);
+    }
+
+    function metersToLatDeg(m) { return m / 111320; }
+    function metersToLngDeg(m, latDeg) {
+        const c = Math.cos(latDeg * Math.PI / 180);
+        const denom = Math.max(111320 * Math.max(c, 0.01), 1);
+        return m / denom;
+    }
+    function polygonVertices() {
+        const arr = [];
+        const path = polygon.getPath();
+        for (let i = 0; i < path.getLength(); i++) arr.push(path.getAt(i));
+        return arr;
+    }
+    function horizontalIntersections(vertices, y) {
+        const xs = [];
+        for (let i = 0; i < vertices.length; i++) {
+            const a = vertices[i], b = vertices[(i + 1) % vertices.length];
+            const y1 = a.lat(), y2 = b.lat(), x1 = a.lng(), x2 = b.lng();
+            if (y1 === y2) continue;
+            const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+            if (!(y >= minY && y < maxY)) continue;
+            const t = (y - y1) / (y2 - y1);
+            xs.push(x1 + t * (x2 - x1));
+        }
+        xs.sort((a, b) => a - b);
+        return xs;
+    }
+
+    function calculateFlightPathTest() {
+        if (!polygon || !startMarker) return;
+        const height = Number(document.getElementById("flightHeight").value || 60);
+        const trackDistance = Math.max(Number(document.getElementById("trackDistance").value || 30), 5);
+        const borderFactor = Math.max(0, Math.min(1, Number(document.getElementById("borderFactor").value || 0.4)));
+        const border = trackDistance * borderFactor;
+        const vertices = polygonVertices();
+        const lats = vertices.map(v => v.lat());
+        const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+        const latStep = metersToLatDeg(trackDistance), latMargin = metersToLatDeg(border);
+        const points = [];
+        let rowIndex = 0;
+        for (let y = minLat + latMargin; y <= maxLat - latMargin; y += latStep) {
+            const xs = horizontalIntersections(vertices, y);
+            if (xs.length < 2) continue;
+            const rowSegs = [];
+            for (let i = 0; i + 1 < xs.length; i += 2) {
+                const marginLon = metersToLngDeg(border, y);
+                const xA = xs[i] + marginLon;
+                const xB = xs[i + 1] - marginLon;
+                if (xB <= xA) continue;
+                rowSegs.push([xA, xB]);
+            }
+            if (rowSegs.length === 0) continue;
+            if (rowIndex % 2 === 0) {
+                rowSegs.forEach(seg => {
+                    points.push(new google.maps.LatLng(y, seg[0]));
+                    points.push(new google.maps.LatLng(y, seg[1]));
+                });
+            } else {
+                for (let i = rowSegs.length - 1; i >= 0; i--) {
+                    points.push(new google.maps.LatLng(y, rowSegs[i][1]));
+                    points.push(new google.maps.LatLng(y, rowSegs[i][0]));
+                }
+            }
+            rowIndex++;
+        }
+        if (points.length === 0) {
+            alert("No valid flight lines inside polygon.");
+            return;
+        }
+        flightPathPoints = [startMarker.getPosition(), ...points];
+        redrawFlightPath();
+        updateVertexInfo();
+        console.log("Flight height (m):", height);
+    }
+
+    function clearFlightPathOverlays() {
+        if (flightPolyline) {
+            flightPolyline.setMap(null);
+            flightPolyline = null;
+        }
+        flightPointMarkers.forEach(m => m.setMap(null));
+        addPointMarkers.forEach(m => m.setMap(null));
+        flightPointMarkers = [];
+        addPointMarkers = [];
+        flightPathPoints = [];
+    }
+
+    function redrawFlightPath() {
+        if (flightPolyline) flightPolyline.setMap(null);
+        flightPointMarkers.forEach(m => m.setMap(null));
+        addPointMarkers.forEach(m => m.setMap(null));
+        flightPointMarkers = [];
+        addPointMarkers = [];
+        if (flightPathPoints.length < 2) return;
+
+        flightPolyline = new google.maps.Polyline({
+            path: flightPathPoints,
+            map: map,
+            strokeColor: "#ff0000",
+            strokeOpacity: 0.95,
+            strokeWeight: 2
+        });
+        flightPolyline.__kind = "flightLine";
+        registerOverlay(flightPolyline);
+
+        for (let i = 0; i < flightPathPoints.length; i++) {
+            const marker = new google.maps.Marker({
+                position: flightPathPoints[i],
+                map: map,
+                draggable: true,
+                label: String(i + 1),
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 6,
+                    fillColor: "#1d4ed8",
+                    fillOpacity: 1,
+                    strokeColor: "#ffffff",
+                    strokeWeight: 1.5
+                }
+            });
+            marker.__kind = "flightPoint";
+            marker.__index = i;
+            marker.addListener("drag", function () {
+                flightPathPoints[i] = marker.getPosition();
+                if (flightPolyline) flightPolyline.setPath(flightPathPoints);
+            });
+            marker.addListener("dragend", function () {
+                redrawFlightPath();
+                updateVertexInfo();
+            });
+            registerOverlay(marker);
+            flightPointMarkers.push(marker);
+        }
+
+        for (let i = 0; i < flightPathPoints.length - 1; i++) {
+            const a = flightPathPoints[i], b = flightPathPoints[i + 1];
+            const mid = new google.maps.LatLng((a.lat() + b.lat()) / 2, (a.lng() + b.lng()) / 2);
+            const plusMarker = new google.maps.Marker({
+                position: mid,
+                map: map,
+                label: "+",
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 5,
+                    fillColor: "#16a34a",
+                    fillOpacity: 1,
+                    strokeColor: "#ffffff",
+                    strokeWeight: 1
+                }
+            });
+            plusMarker.addListener("click", function () {
+                flightPathPoints.splice(i + 1, 0, plusMarker.getPosition());
+                redrawFlightPath();
+                updateVertexInfo();
+            });
+            addPointMarkers.push(plusMarker);
+        }
+    }
+</script>
+
+<script
+    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&libraries=drawing,geometry&callback=initMap"
+    async defer></script>
+</body>
+</html>

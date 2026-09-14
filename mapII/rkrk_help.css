@@ -1,0 +1,223 @@
+/* Always-on help drawer for editor and analyse views. */
+.rkrk-help-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  font-size: 12px;
+  color: #1f78d1;
+  background: #eaf2fb;
+  border: 1px solid #c7d7ea;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+  font-family: inherit;
+}
+.rkrk-help-link:hover { background: #dceaf8; }
+.rkrk-help-fab {
+  position: absolute;
+  top: 8px;
+  right: 48px;
+  z-index: 40;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 16px;
+  line-height: 34px;
+  text-align: center;
+  background: rgba(255,255,255,0.96);
+  color: #1f78d1;
+  border: 1px solid #cfd6de;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+.rkrk-help-fab[aria-expanded="true"] {
+  background: #1f78d1;
+  color: #fff;
+}
+.rkrk-help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  background: rgba(11, 24, 37, 0.28);
+  display: none;
+}
+.rkrk-help-backdrop.show { display: block; }
+.rkrk-help-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 90;
+  height: 100vh;
+  width: min(var(--rkrk-help-width, 420px), 96vw);
+  background: #fff;
+  border-left: 1px solid #cfd6de;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.18);
+  display: none;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  color: #23384d;
+}
+.rkrk-help-drawer.show { display: flex; }
+.rkrk-help-resize {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+}
+.rkrk-help-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 10px 16px;
+  border-bottom: 1px solid #e1e7ef;
+  background: #f4f8fc;
+}
+.rkrk-help-head h2 {
+  margin: 0;
+  font-size: 16px;
+  color: #1b3552;
+  flex: 1;
+}
+.rkrk-help-head button {
+  width: auto;
+  min-width: 32px;
+  padding: 4px 8px;
+  border: 1px solid #9fb0c2;
+  border-radius: 6px;
+  background: #fff;
+  color: #1b3552;
+  cursor: pointer;
+}
+.rkrk-help-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #e1e7ef;
+}
+.rkrk-help-tabs button {
+  flex: 1;
+  width: auto;
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: #fff;
+  color: #46617d;
+  cursor: pointer;
+  font-size: 12px;
+}
+.rkrk-help-tabs button.active {
+  color: #1b3552;
+  font-weight: bold;
+  border-bottom-color: #1f78d1;
+}
+.rkrk-help-search {
+  padding: 8px 12px;
+  border-bottom: 1px solid #edf1f5;
+}
+.rkrk-help-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 8px;
+  border: 1px solid #d9dde2;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.rkrk-help-body {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 14px 18px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.rkrk-help-view-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: bold;
+  color: #1f78d1;
+  background: #e8f2fc;
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-bottom: 8px;
+}
+.rkrk-help-card {
+  border: 1px solid #d9dde2;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0 0 10px;
+  background: #f8fbff;
+}
+.rkrk-help-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: #1b3552;
+}
+.rkrk-help-card h4 {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #5b6f86;
+}
+.rkrk-help-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.rkrk-help-card li { margin: 2px 0; }
+.rkrk-help-fn {
+  border: 1px solid #e1e7ef;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 8px;
+  background: #fff;
+}
+.rkrk-help-fn h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #1b3552;
+}
+.rkrk-help-fn .meta {
+  font-size: 11px;
+  color: #5b6f86;
+  margin-bottom: 4px;
+}
+.rkrk-help-input {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  font-size: 12px;
+  padding: 3px 0;
+  border-bottom: 1px dotted #edf1f5;
+}
+.rkrk-help-input:last-child { border-bottom: 0; }
+.rkrk-help-input .req {
+  color: #a22b2b;
+  font-weight: bold;
+  font-size: 11px;
+}
+.rkrk-help-input .opt {
+  color: #5b6f86;
+  font-size: 11px;
+}
+.rkrk-help-empty { color: #5b6f86; font-size: 13px; padding: 12px 4px; }
+.rkrk-help-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+@media (max-width: 720px) {
+  .rkrk-help-drawer {
+    width: 100vw !important;
+    height: min(88vh, 100%);
+    top: auto;
+    bottom: 0;
+    border-left: 0;
+    border-top: 1px solid #cfd6de;
+    border-radius: 12px 12px 0 0;
+  }
+  .rkrk-help-resize { display: none; }
+}

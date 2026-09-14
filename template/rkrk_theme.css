@@ -1,0 +1,330 @@
+/**
+ * Zentrale CI-Farben — zwei Grundfarben:
+ *   rkrk  = Grün aus dem Top-Menü (--mid_green / --brand)
+ *   rkrs  = Grautöne für ./rkrs, portal.rehkitzrettung.ch, tool.rehkitzrettung.ch
+ *
+ * html[data-rkrk-theme="rkrk"|"rkrs"] wird von headerpage() gesetzt.
+ * Favicons folgen dem Unterverzeichnis/Server getrennt (rkrk_favicon.php).
+ */
+
+:root,
+html[data-rkrk-theme="rkrk"] {
+	--brand: #96B588;
+	--brand-dark: #48673A;
+	--brand-hover: #3d5632;
+	--brand-mid: #96B588;
+	--brand-light: #C5E0B4;
+	--brand-vlight: #ECF7EC;
+	--brand-text: #ffffff;
+	--brand-on-light: #2F3E28;
+
+	--vdark_green: #48673A;
+	--dark_green: #527642;
+	--mid_green: #96B588;
+	--light_green: #C5E0B4;
+	--vlight_green: #ECF7EC;
+
+	--green-dark: #48673A;
+	--green-mid: #96B588;
+	--green-light: #C5E0B4;
+	--green-vlight: #ECF7EC;
+
+	--rkrk-brand: #48673A;
+	--rkrk-brand-mid: #96B588;
+	--rkrk-bg: #f6f7f6;
+	--rkrk-border: #d5e0d2;
+	--rkrk-muted: #5a675a;
+
+	--accent: #48673A;
+	--accent-hover: #3d5632;
+
+	--rkrk-nav-h: 56px;
+}
+
+html[data-rkrk-theme="rkrs"] {
+	--brand: #b3b8bf;
+	--brand-dark: #676f7b;
+	--brand-hover: #5c6572;
+	--brand-mid: #b5bec9;
+	--brand-light: #dfe5ec;
+	--brand-vlight: #f4f7fa;
+	--brand-text: #ffffff;
+	--brand-on-light: #1a2027;
+
+	--vdark_green: #676f7b;
+	--dark_green: #5c6572;
+	--mid_green: #b5bec9;
+	--light_green: #dfe5ec;
+	--vlight_green: #f4f7fa;
+
+	--green-dark: #717b89;
+	--green-mid: #b5bec9;
+	--green-light: #e8edf2;
+	--green-vlight: #fafbfd;
+
+	--rkrk-brand: #676f7b;
+	--rkrk-brand-mid: #b5bec9;
+	--rkrk-bg: #fbfcfd;
+	--rkrk-border: #dee4eb;
+	--rkrk-muted: #5f6875;
+
+	--accent-hover: #5c6572;
+}
+
+/* Aktions-Buttons: dunklerer Ton der jeweiligen Grundfarbe */
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+.btn,
+a.btn,
+.rkrk-btn,
+.rkrk-login-primary,
+.rkrk-cfg-bar button[type="submit"] {
+	background-color: var(--brand-dark);
+	color: var(--brand-text);
+	border-color: var(--brand-dark);
+}
+
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover,
+.btn:hover,
+a.btn:hover,
+.rkrk-btn:hover,
+.rkrk-login-primary:hover,
+.rkrk-cfg-bar button[type="submit"]:hover {
+	background-color: var(--brand-hover);
+	color: var(--brand-text);
+	border-color: var(--brand-hover);
+}
+
+.rkrk-map27-panel .btn,
+.rkrk-share-btn {
+	background-color: var(--brand-dark) !important;
+	color: var(--brand-text) !important;
+	border-color: var(--brand-dark) !important;
+}
+.rkrk-map27-panel .btn:hover,
+.rkrk-share-btn:hover {
+	background-color: var(--brand-hover) !important;
+	color: var(--brand-text) !important;
+	border-color: var(--brand-hover) !important;
+}
+
+.btn.secondary,
+.rkrk-btn-secondary,
+.rkrk-map27-panel .btn.secondary {
+	background-color: var(--brand);
+	color: var(--brand-text);
+	border-color: var(--brand);
+}
+
+.btn.secondary:hover,
+.rkrk-btn-secondary:hover,
+.rkrk-map27-panel .btn.secondary:hover {
+	background-color: var(--brand-dark);
+	color: var(--brand-text);
+}
+
+.btn-danger,
+.buttonR,
+button.btn-danger {
+	background-color: #C00000;
+	color: #fff;
+}
+
+.btn-danger:hover,
+.buttonR:hover,
+button.btn-danger:hover {
+	background-color: #a00000;
+	color: #fff;
+}
+
+/* Top-Menü bleibt auf der Menü-Grundfarbe (inherit von .bar.black) */
+.top button,
+.top .btn,
+.top .button,
+.bar button,
+.bar .btn,
+.bar .button,
+.bar-block .button,
+.bar-block .btn,
+.dropdown-hover > .button,
+.dropdown-click > .button {
+	background-color: inherit !important;
+	color: inherit !important;
+	border: none;
+}
+
+.top button:hover,
+.top .btn:hover,
+.top .button:hover,
+.bar button:hover,
+.bar .btn:hover,
+.bar .button:hover,
+.dropdown-hover > .button:hover,
+.dropdown-click > .button:hover {
+	background-color: inherit !important;
+	color: inherit !important;
+}
+
+/* Fixed top menu is out of document flow — keep titles/content below it */
+body:has(.rkrk-shell-header),
+html.rkrk-has-nav body {
+	padding-top: var(--rkrk-nav-h, 56px) !important;
+}
+html.rkrk-map27 body,
+html.rkrk-map27-embed body,
+html.rkrk-embed body,
+body.rkrk-map27-page {
+	padding-top: 0;
+}
+.rkrk-shell-header.top {
+	z-index: 1000;
+}
+
+/* Keep the top bar on one line; if it does not fit, JS switches to compact then mobile.
+   .card on the bar must not pick up module CSS (e.g. ar/public .card { background:#fff }). */
+.rkrk-shell-header > .bar.black,
+.rkrk-shell-header > .bar.black.card {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 0 2px;
+	overflow: visible;
+	min-height: var(--rkrk-nav-h, 52px);
+	background-color: var(--brand, #96B588) !important;
+	color: #fff !important;
+	padding: 0 8px 0 4px;
+	border-radius: 0;
+	box-shadow: none;
+}
+.rkrk-shell-header > .bar .bar-item,
+.rkrk-shell-header > .bar .dropdown-hover,
+.rkrk-shell-header > .bar .button {
+	float: none;
+	white-space: nowrap;
+	flex: 0 0 auto;
+}
+.rkrk-shell-header .rkrk-shell-logo {
+	margin-left: auto;
+	height: 40px;
+	width: auto;
+	flex: 0 0 auto;
+	padding: 4px 8px 4px 12px;
+	object-fit: contain;
+}
+.rkrk-shell-nav-label {
+	white-space: nowrap;
+}
+html.rkrk-nav-compact .bar-item > .rkrk-shell-nav-label {
+	display: none;
+}
+html.rkrk-nav-mobile .rkrk-nav-desktop {
+	display: none !important;
+}
+html.rkrk-nav-mobile .rkrk-nav-toggle {
+	display: inline-flex !important;
+}
+
+.rkrk-mobile-panel {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 100%;
+	margin: 0 !important;
+	max-height: calc(100dvh - var(--rkrk-nav-h, 52px));
+	overflow-y: auto;
+	z-index: 1001;
+	background: var(--brand-vlight, #ECF7EC) !important;
+	color: var(--brand-on-light, #2F3E28) !important;
+	box-shadow: 0 8px 18px rgba(47, 62, 40, 0.16);
+}
+.rkrk-mobile-panel.show {
+	display: block !important;
+}
+.rkrk-mobile-group {
+	border-bottom: 1px solid var(--brand-light, #C5E0B4);
+}
+.rkrk-mobile-group-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 12px 16px;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--brand-on-light, #2F3E28);
+	list-style: none;
+	cursor: pointer;
+	user-select: none;
+	background: var(--brand-light, #C5E0B4);
+}
+.rkrk-mobile-group-title::-webkit-details-marker {
+	display: none;
+}
+.rkrk-mobile-group-title::after {
+	content: "▸";
+	font-size: 14px;
+	opacity: 0.7;
+	color: var(--brand-dark, #48673A);
+}
+.rkrk-mobile-group[open] > .rkrk-mobile-group-title {
+	background: var(--brand, #96B588);
+}
+.rkrk-mobile-group[open] > .rkrk-mobile-group-title::after {
+	content: "▾";
+}
+.rkrk-mobile-group-items {
+	background: #fff;
+	padding: 4px 0 8px;
+}
+.rkrk-mobile-panel a.rkrk-mobile-link,
+.rkrk-mobile-panel a.bar-item {
+	display: flex !important;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 16px 10px 28px;
+	color: var(--brand-on-light, #2F3E28) !important;
+	text-decoration: none !important;
+	border-bottom: 0;
+	width: auto;
+	float: none;
+}
+.rkrk-mobile-panel > a.rkrk-mobile-link {
+	padding-left: 16px;
+	font-weight: 700;
+	background: var(--brand-light, #C5E0B4);
+}
+.rkrk-mobile-panel a.rkrk-mobile-link:hover,
+.rkrk-mobile-group-title:hover {
+	background: var(--brand, #96B588);
+}
+
+.rkrk-iframe-scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	max-width: 100%;
+}
+
+/* Tab labels stay dark (theme buttons are white-on-green) */
+.tab button,
+.tab button:hover,
+.tab button.active,
+button.tablinks {
+	color: #111 !important;
+	background-image: none !important;
+	box-shadow: none !important;
+}
+.tab button {
+	background-color: inherit !important;
+	border: none !important;
+}
+.tab button:hover {
+	background-color: #ddd !important;
+}
+.tab button.active {
+	background-color: #ccc !important;
+}

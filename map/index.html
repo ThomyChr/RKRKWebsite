@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RKRS Overlay-Editor</title>
+  <script src="rkrk_env_branding.js"></script>
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+      color-scheme: light;
+      --accent: #96B588;
+      --accent-dark: #527642;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(160deg, #f4f7f2 0%, #e8efe4 100%);
+      color: #222;
+    }
+    .card {
+      text-align: center;
+      background: #fff;
+      border: 1px solid #dde5d8;
+      border-radius: 12px;
+      padding: 32px 40px;
+      max-width: 420px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
+    .card img {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 8px;
+    }
+    p {
+      margin: 0 0 20px;
+      color: #555;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    a.start-btn {
+      display: inline-block;
+      padding: 12px 28px;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      border: 1px solid var(--accent-dark);
+      font-weight: 700;
+      font-size: 15px;
+    }
+    a.start-btn:hover {
+      background: #7ea56f;
+    }
+    .copy {
+      margin-top: 18px;
+      font-size: 11px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img id="startLogo" alt="Logo" width="72" height="72" />
+    <h1 id="startTitle">RKRS Overlay-Editor</h1>
+    <p>Karten-Overlays zeichnen, speichern und exportieren.</p>
+    <a class="start-btn" id="startLink" href="rkrk_map_overlay.php">Editor starten</a>
+    <p class="copy" id="startCopyright"></p>
+  </main>
+  <script>
+    (function () {
+      var brand = window.__RKR_BRAND__ || {};
+      var title = brand.title || brand.heading || document.title;
+      document.title = title;
+      var h1 = document.getElementById("startTitle");
+      if (h1) h1.textContent = brand.heading || title;
+      var logo = document.getElementById("startLogo");
+      if (logo && brand.logoSrc) {
+        logo.src = brand.logoSrc + (brand.logoSrc.indexOf("?") >= 0 ? "&" : "?") + "v=20260722g";
+      }
+      if (logo && brand.logoAlt) logo.alt = brand.logoAlt;
+      var copy = document.getElementById("startCopyright");
+      if (copy && brand.copyright) copy.textContent = "© " + brand.copyright;
+      if (brand.mode === "rkrk") {
+        document.documentElement.style.setProperty("--accent", "#5a7a9a");
+        document.documentElement.style.setProperty("--accent-dark", "#3d5568");
+      }
+    })();
+  </script>
+</body>
+</html>

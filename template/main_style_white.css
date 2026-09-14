@@ -1,0 +1,325 @@
+<STYLE TYPE="text/css"><!--
+:root {
+	--vdark_green: #48673A;
+	--dark_green: #527642;
+	--mid_green: #96B588;
+	--light_green: #C5E0B4;
+	--vlight_green: #ECF7EC;
+	--dark_grey: #A0A0A0;
+	--grey: #C0C0C0;
+	--light_grey: #F0F0F0;
+	--white: #FFFFFF;
+}
+
+H1, H2, H3, H4, H5{ 
+  font-family: tahoma, helvetica, sans-serif ;    /* Value: [[<family-name> | <generic-family>],]* [<family-name> | <generic-family>] */
+  font-style: normal;                           /* Value: normal | italic | oblique */
+  font-weight: bold;                            /* Value: normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 */
+  color: var(--mid_green);                                  /* Value: <color> */
+  line-height: 120%;                            /* relative to 'font-size', i.e. 12pt - 120% */
+  background: transparent;                      /* Value: <background-color> || <background-image> || <background-repeat> || <background-attachment> || <background-position> */
+  text-transform: none;                         /* Value: capitalize | uppercase | lowercase | none */
+  text-decoration: none;                        /* Value: none | [ underline || overline || line-through || blink ] */
+  letter-spacing: normal;                       /* normal | <length>, e.g BLOCKQUOTE { letter-spacing: 0.1em }*/
+  word-spacing: normal;                         /* lue: normal | <length>, e.g. H1 { word-spacing: 1em }*/
+}
+
+
+H1 {
+    /*font-size: 14pt;                           /* relative to 'font-size', i.e. 16pt */
+    font-size: 130%;                           /* relative to 'font-size', i.e. 16pt */
+    line-height: 110%                          /* relative to 'font-size', i.e. 12pt - 120% */
+    /*font-variant: small-caps;*/
+    }
+H1.ticker {
+  color: var(--light_grey);                                 /* Value: <color> */
+  font-size: 70%;                              /* relative to 'font-size', i.e. 12pt */
+}
+
+
+H2 {
+  /*font-size: 12pt;                           /* relative to 'font-size', i.e. 14pt */
+    font-size: 120%;                           /* relative to 'font-size', i.e. 16pt */
+    line-height: 110%                          /* relative to 'font-size', i.e. 12pt - 120% */
+    /*font-variant: small-caps;*/
+    }
+H2.ticker {
+  color: var(--light_grey);                                 /* Value: <color> */
+  font-size: 70%;                              /* relative to 'font-size', i.e. 12pt */
+}
+
+H3 {
+  /*font-size: 11pt;                           /* relative to 'font-size', i.e. 12pt */
+    font-size: 100%;                           /* relative to 'font-size', i.e. 16pt */
+    line-height: 110%                          /* relative to 'font-size', i.e. 12pt - 120% */
+    /*font-variant: small-caps;*/
+    }
+H3.ticker {
+  color: var(--light_grey);                                 /* Value: <color> */
+  font-size: 70%;                              /* relative to 'font-size', i.e. 12pt */
+}
+
+H4 {
+  /*font-size: 10pt;                           /* relative to 'font-size', i.e. 11pt */
+    font-size: 100%;                           /* relative to 'font-size', i.e. 16pt */
+    line-height: 110%                          /* relative to 'font-size', i.e. 12pt - 120% */
+    /*font-variant: small-caps;*/
+    }
+
+HR {
+  color: var(--white);                                 /* Value: <color> */
+  width: 150;
+  text-align: center;
+    /*font-variant: small-caps;*/
+}
+
+BODY, PRE { 
+  color: black;                                 /* Value: <color> */
+/*  background-image: url(index_background.gif);  */                /* Initial: none (e.g. BODY { background-image: url(marble.gif) }*/
+  font-size: 100%;                              /* relative to 'font-size', i.e. 12pt */
+  background-color: var(--white);                      /* Value: <color> | transparent */
+  font-weight: normal;                          /* Value: normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 */
+  background-repeat: no-repeat;                 /* Value: repeat | repeat-x | repeat-y | no-repeat */
+  background-position: center, top;                  /* Value: [<percentage> | <length>]{1,2} | [top | center | bottom] || [left | center | right], Initial: 0% */
+  background-attachment: fixed;
+  font-family: tahoma, helvetica, sans-serif;
+}
+
+TABLE.rkredit,TD.rkredit,TR.rkredit {
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+  font-size: 60%;                              /* relative to 'font-size', i.e. 12pt */
+  /*font: Tahoma;                                 /* Value: Fontname */
+  line-height: 100%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+  color: black;                                 /* Value: <color> */
+  background-color: var(--white);                 /* Value: <color> | transparent */
+  border-style: none;                           /* Value: none | dotted | dashed | solid | double | groove | ridge | inset | outset */
+  border-color: white;                          /* Value: <color> */
+  /*width: 100%;*/
+  border: 0;
+  spacing: 0;
+  padding: 5;
+  empty-cells: show;
+}
+
+TR.rkredit:nth-child(even) {
+  background: #Lightgreen;
+}
+
+TR.rkredit:nth-child(odd) {
+  background: #0030ff;
+}
+
+
+TABLE{
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+  font-size: 100%;                              /* relative to 'font-size', i.e. 12pt */
+  /*font: Tahoma;                                 /* Value: Fontname */
+  line-height: 110%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+  color: black;                                 /* Value: <color> */
+  background-color: var(--white);                 /* Value: <color> | transparent */
+  border-style: none;                           /* Value: none | dotted | dashed | solid | double | groove | ridge | inset | outset */
+  border-color: white;                          /* Value: <color> */
+  width: 100%;*/
+  max-width: 1080px;
+  border: 0;
+  spacing: 0;
+  padding: 5;
+  empty-cells: show;
+}
+
+TABLE.big, TD.big, TR.big{
+  font-size: 14pt;                              /* relative to 'font-size', i.e. 12pt */
+/*  font-size: 100%;                              /* relative to 'font-size', i.e. 12pt */
+  /*font: Tahoma;                                 /* Value: Fontname */
+  line-height: 110%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+  color: black;                                 /* Value: <color> */
+  background-color: var(--white);                 /* Value: <color> | transparent */
+  border-style: none;                           /* Value: none | dotted | dashed | solid | double | groove | ridge | inset | outset */
+  border-color: white;                          /* Value: <color> */
+/*  width: 100%;*/
+  max-width: 1080px;
+  border: 0;
+  spacing: 0;
+  padding: 5;
+  empty-cells: show;
+}
+
+TABLE.narrow, TD.narrow,TR.narrow{
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+  font-size: 100%;                              /* relative to 'font-size', i.e. 12pt */
+  /*font: Tahoma;                                 /* Value: Fontname */
+  line-height: 100%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+  color: black;                                 /* Value: <color> */
+  background-color: none;                 /* Value: <color> | transparent */
+  border-style: none;                           /* Value: none | dotted | dashed | solid | double | groove | ridge | inset | outset */
+  border-color: white;                          /* Value: <color> */
+  border: 0;
+  spacing: 0;
+  padding: 5;
+  empty-cells: show;
+}
+
+TABLE.grey,TD.grey,TR.grey {
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+  font-size: 90%;                              /* relative to 'font-size', i.e. 12pt */
+  /*font: Tahoma;                                 /* Value: Fontname */
+  line-height: 100%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+  color: black;                                 /* Value: <color> */
+  background-color: var(--white);                 /* Value: <color> | transparent */
+  border-style: none;                           /* Value: none | dotted | dashed | solid | double | groove | ridge | inset | outset */
+  border-color: white;                          /* Value: <color> */
+  /*width: 100%;*/
+  border: 0;
+  spacing: 0;
+  padding: 5;
+  empty-cells: show;
+}
+
+TABLE.small,TD.small,TR.small {
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+  font-size: 60%;                              /* relative to 'font-size', i.e. 12pt */
+  /*font: Tahoma;                                 /* Value: Fontname */
+  line-height: 90%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+  color: black;                                 /* Value: <color> */
+  background-color: var(--white);                 /* Value: <color> | transparent */
+  border-style: none;                           /* Value: none | dotted | dashed | solid | double | groove | ridge | inset | outset */
+  border-color: white;                          /* Value: <color> */
+  /*width: 100%;*/
+  border: 0;
+  spacing: 0;
+  padding: 5;
+  empty-cells: show;
+}
+
+
+
+INPUT {
+  color: black;                                 /* Value: <color> */
+  
+}
+
+TH {
+    /*font-variant: small-caps;*/
+}
+
+TR {
+	border-bottom: 1px solid #BLACK;
+}
+
+
+P { 
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+  font-size: 100%;                              /* relative to 'font-size', i.e. 12pt */
+  font: tahoma;                                 /* Value: Fontname */
+  line-height: 110%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+}                          
+
+P.ticker { 
+  color: #000000;                                 /* Value: <color> */
+  font-size: 70%;                              /* relative to 'font-size', i.e. 12pt */
+  font: tahoma;                                 /* Value: Fontname */
+  line-height: 110%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+}                          
+
+
+
+IMG.link {
+  border: none;
+}
+
+MENU { 
+  margin:0;                                     /* tight formatting */
+ }              
+
+A:link {                                        /* unvisited link */
+  color: #6b9955;                                  /* Value: <color> */
+  font-weight: bold;                            /* Value: normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 */
+    /*font-variant: small-caps;*/
+}          
+A:visited {                                    /* visited links */
+  color: #527642;                                   /* Value: <color> */
+  font-weight: bold;                            /* Value: normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 */
+    /*font-variant: small-caps;*/
+}          
+A:hover {                                    /* visited links */
+  color: #c5362e;                                   /* Value: <color> */
+  font-weight: bold;                            /* Value: normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 */
+    /*font-variant: small-caps;*/
+}          
+A:active  {                                      /* active links */
+  color: #922618;                                  /* Value: <color> */
+  font-weight: bold;                            /* Value: normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 */
+    /*font-variant: small-caps;*/
+}          
+
+  table {
+/*  font-size: 10pt;                              /* relative to 'font-size', i.e. 12pt */
+   font-size: 90%;                              /* relative to 'font-size', i.e. 12pt */
+   font: Tahoma;                                 /* Value: Fontname */
+   line-height: 100%;                            /* relative to 'font-size', i.e. 12pt or 120% */
+   color: black;                                 /* Value: <color> */
+   border-collapse: collapse;
+   border: none;
+   border-color: black;                          /* Value: <color> */
+   width: 100%; 
+ }
+  tr.bordertop {
+  border-top: 1px solid var(--dark_grey);
+  }
+  tr:first-child {
+    border-top: none;
+
+
+.input[type=button],
+ input[type=submit]  {
+  background-color: var(--grey);
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.buttonG {background-color: var(--grey);} // green
+.buttonR {background-color: #C00000;} // Red  
+
+
+img.small {
+	max-width:350px;
+    max-height:350px;
+    width:auto;
+    height:auto;
+    /*
+	width:300;
+    height:300;
+    */
+	
+}
+img.big {
+    max-width:600px;
+    max-height:600px;
+    width:auto;
+    height:auto;
+/*    
+    width:600;
+    height:600;
+*/	
+
+/* NEW NEW NEW*/ 
+
+
+</style>
+<body>
+}
+--></STYLE>
+
+
+
+
+
+

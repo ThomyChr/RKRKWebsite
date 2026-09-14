@@ -1,0 +1,199 @@
+  <style>
+   .keywords {
+      font-style: italic;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+    .highlight {
+      background-color: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 0.5rem 1rem;
+      margin: 1rem 0;
+    }
+    ul.checklist {
+      list-style: none;
+      padding-left: 0;
+    }
+    ul.checklist li::before {
+      content: "✅ ";
+      color: green;
+    }
+    section {
+      margin-bottom: 3rem;
+    }
+
+
+<!--<h1>Allgemeine Drohnenflugsicherheit</h1>-->
+<p><strong>Zielgruppe:</strong> Drohnenpiloten in der offenen Kategorie (A1–A3)</p>
+<p><strong>Grundlage:</strong> Allgemeine Sicherheitsrichtlinien und EU-Drohnenverordnung</p>
+
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir praxisnahes Wissen zur sicheren Durchführung von Drohnenflügen in der offenen Kategorie. Du lernst technische Grundlagen, rechtliche Rahmenbedingungen, meteorologische Risiken und betriebliche Verfahren kennen – unabhängig vom Drohnentyp.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Grundlegende Sicherheitsprinzipien beim Drohnenflug verstehen</li>
+  <li>Wetterrisiken und Umwelteinflüsse richtig einschätzen</li>
+  <li>Rechtliche Vorgaben und Flugverbotszonen kennen</li>
+  <li>Betriebsverfahren und Flugvorbereitung korrekt durchführen</li>
+  <li>Verantwortung und Risikobewusstsein als Pilot stärken</li>
+</ul>
+
+
+  <section id="kapitel1">
+    <h2>Kapitel 1: Grundprinzipien der Flugsicherheit</h2>
+    <p class="keywords">Stichworte: Sichtflug · Mindestabstand · Flugverhalten · Eigenverantwortung · Risikobewertung</p>
+
+    <p>Die Flugsicherheit beginnt mit dem Verständnis der grundlegenden Prinzipien: Drohnenflüge müssen stets in Sichtlinie (VLOS – Visual Line of Sight) erfolgen. Der Pilot muss die Drohne jederzeit mit dem bloßen Auge erkennen können – technische Hilfsmittel wie Kamera oder Fernglas sind nicht zulässig.</p>
+
+    <p>Ein sicherer Flug setzt voraus, dass der Pilot die Umgebung kennt und potenzielle Risiken frühzeitig erkennt. Dazu gehören Hindernisse wie Bäume, Stromleitungen, Gebäude oder Menschenansammlungen. Der Mindestabstand zu unbeteiligten Personen beträgt in der offenen Kategorie mindestens 50 m (A3) bzw. 30 m (A2). In der Subkategorie A1 darf nur mit sehr leichten Drohnen (&lt;250 g) über Personen geflogen werden.</p>
+
+    <p>Das Flugverhalten muss jederzeit kontrolliert, vorausschauend und angepasst sein. Plötzliche Richtungswechsel, hohe Geschwindigkeiten oder riskante Manöver sind zu vermeiden. Der Pilot trägt die volle Verantwortung für den sicheren Betrieb – auch bei automatisierten Flugmodi wie RTH oder Wegpunktflug.</p>
+
+    <div class="highlight">
+      <strong>Risikobewertung vor jedem Flug:</strong>
+      <ul>
+        <li>Einschätzung der Wetterlage</li>
+        <li>Kenntnis der Flugumgebung</li>
+        <li>Zustand der Drohne und Akkus</li>
+        <li>Vorhandensein von Flugverbotszonen</li>
+        <li>Möglichkeit zur Notlandung</li>
+      </ul>
+    </div>
+
+    <ul class="checklist">
+      <li>VLOS ist gesetzlich vorgeschrieben</li>
+      <li>Mindestabstand zu Personen beachten</li>
+      <li>Pilot trägt volle Verantwortung</li>
+      <li>Risikobewertung vor jedem Flug durchführen</li>
+    </ul>
+  </section>
+
+  <section id="kapitel2">
+    <h2>Kapitel 2: Wetter & Umwelteinflüsse</h2>
+    <p class="keywords">Stichworte: Wind · Regen · Nebel · Temperatur · KP-Index · Luftdichte</p>
+
+    <p>Wetterbedingungen haben einen direkten Einfluss auf die Flugsicherheit. Besonders kritisch ist Wind über 10 m/s (Beaufort 5), da er die Steuerbarkeit der Drohne stark beeinträchtigen kann. Seitenwind, Böen und thermische Aufwinde sind gefährlich – insbesondere in bergigem Gelände oder über offenen Flächen.</p>
+
+    <p>Regen und hohe Luftfeuchtigkeit können zu Kurzschlüssen oder Sensorstörungen führen. VPS-Systeme reagieren empfindlich auf Wasserreflexionen. Nebel reduziert die Sichtweite und macht VLOS-Flüge unmöglich.</p>
+
+    <div class="highlight">
+      <strong>Temperatur & Akkuleistung:</strong>
+      <ul>
+        <li>Bei Kälte sinkt die Kapazität</li>
+        <li>Bei Hitze droht Überhitzung</li>
+      </ul>
+    </div>
+
+    <p>Der KP-Index zeigt die geomagnetische Aktivität. Ab einem Wert von 5 ist mit GPS-Störungen zu rechnen. Auch die Luftdichte spielt eine Rolle: Bei großer Höhe oder Hitze sinkt sie, was den Auftrieb reduziert.</p>
+
+    <ul class="checklist">
+      <li>Wind &gt;10 m/s = hohes Risiko</li>
+      <li>Nebel = VLOS nicht möglich</li>
+      <li>KP-Index &gt;5 = GPS-Störung</li>
+      <li>Temperatur beeinflusst Akkuleistung</li>
+    </ul>
+  </section>
+
+  <section id="kapitel3">
+    <h2>Kapitel 3: Rechtliche Rahmenbedingungen</h2>
+    <p class="keywords">Stichworte: EU-Drohnenverordnung · Kategorien · Registrierung · CE-Kennzeichnung · Flugverbotszonen</p>
+
+    <p>Die EU-Drohnenverordnung unterscheidet drei Betriebskategorien: offen, speziell und zertifiziert. Für Freizeit- und einfache gewerbliche Flüge gilt die offene Kategorie, unterteilt in A1, A2 und A3.</p>
+
+    <p>Alle Drohnen ab 250 g müssen registriert werden. Der Betreiber erhält eine UAS-Betreiber-ID, die sichtbar an der Drohne angebracht werden muss. Zusätzlich ist eine Haftpflichtversicherung mit ausreichender Deckung vorgeschrieben.</p>
+
+    <p>Drohnen müssen eine CE-Kennzeichnung tragen, die ihre Klassifizierung (C0–C4) angibt. Diese Kennzeichnung ist Voraussetzung für den Betrieb in bestimmten Subkategorien.</p>
+
+    <div class="highlight">
+      <strong>Flugverbotszonen:</strong>
+      <ul>
+        <li>Flughäfen</li>
+        <li>Militärische Einrichtungen</li>
+        <li>Menschenansammlungen</li>
+        <li>Naturschutzgebiete</li>
+        <li>Industrieanlagen</li>
+      </ul>
+    </div>
+
+    <p>Die RPAS-Karte zeigt aktuelle Einschränkungen. DABS und NOTAMs informieren über temporäre Sperrungen. Verstöße können zu Bußgeldern oder strafrechtlichen Konsequenzen führen.</p>
+
+    <ul class="checklist">
+      <li>Registrierungspflicht ab 250 g</li>
+      <li>CE-Kennzeichnung ist vorgeschrieben</li>
+      <li>Flugverbotszonen unbedingt beachten</li>
+      <li>Versicherung ist gesetzlich vorgeschrieben</li>
+    </ul>
+  </section>
+
+  <section id="kapitel4">
+    <h2>Kapitel 4: Betriebsverfahren & Flugvorbereitung</h2>
+    <p class="keywords">Stichworte: Preflight-Check · RTH · CSC · VLOS · Nachtflug · RPAS-Karte · Flughelfer</p>
+
+    <div class="highlight">
+      <strong>Preflight-Check:</strong>
+      <ul>
+        <li>Akkustand und Ladezustand prüfen</li>
+        <li>Sensorstatus (Kompass, GNSS, VPS)</li>
+        <li>Wetterbedingungen und KP-Index</li>
+        <li>Flugverbotszonen (RPAS-Karte, DABS, NOTAM)</li>
+        <li>RTH-Höhe und Startpunkt festlegen</li>
+        <li>VLOS und Umgebungssicherheit prüfen</li>
+      </ul>
+    </div>
+
+    <p>Die Drohne muss in Sichtlinie (VLOS) geflogen werden. FPV-Flüge sind nur mit Flughelfer erlaubt. Nachtflüge sind erlaubt mit grünem Blinklicht.</p>
+
+    <p>Der RTH-Modus sorgt bei Signalverlust oder niedrigem Akku für automatische Rückkehr. Die RTH-Höhe muss Hindernisse sicher überfliegen.</p>
+
+    <p>CSC ermöglicht eine Notabschaltung der Motoren – nur im äußersten Notfall. VPS sollte über Wasser deaktiviert werden.</p>
+
+    <p>Die Flugplanung erfolgt mit digitalen Tools wie UAV-Editor oder App-basierten Karten. Nach dem Flug: Postflight-Kontrolle durchführen.</p>
+
+    <ul class="checklist">
+      <li>VLOS ist Pflicht – FPV nur mit Flughelfer</li>
+      <li>RTH-Höhe muss Hindernisse überfliegen</li>
+      <li>CSC = Notabschaltung bei Gefahr</li>
+      <li>VPS über Wasser deaktivieren</li>
+      <li>RPAS-Karte & Preflight-Check sind Pflicht</li>
+    </ul>
+  </section>
+
+  <section id="kapitel5">
+    <h2>Kapitel 5: Wetterrisiken und Sicherheitsaspekte</h2>
+    <p class="keywords">Stichworte: Sichtflug · Windrisiken · Thermik · Vereisung · Wetterbedingte Flugverbote · Sicherheitsabstand</p>
+
+    <div class="highlight">
+		<p>Die <strong>EU-Drohnenverordnung</strong> unterscheidet drei Betriebskategorien:</p>
+		<ul>
+		  <li><strong>Offen:</strong> für Freizeit und einfache gewerbliche Flüge</li>
+		  <li><strong>Speziell:</strong> für komplexe Einsätze mit erhöhtem Risiko</li>
+		  <li><strong>Zertifiziert:</strong> für große, bemannte oder autonome Systeme</li>
+		</ul>
+	</div>
+    <p>Die <strong>offene Kategorie</strong> ist unterteilt in <strong>A1, A2 und A3</strong>. Die Einordnung hängt von Gewicht, Flugort und Abstand zu Personen ab. Für Drohnen ab <strong>250 g</strong> gilt <strong>Registrierungspflicht</strong>. Der Betreiber erhält eine <strong>UAS-ID</strong>, die sichtbar an der Drohne angebracht werden muss. Eine <strong>Haftpflichtversicherung</strong> mit ausreichender Deckung ist gesetzlich vorgeschrieben.</p>
+
+    <p>Drohnen müssen eine <strong>CE-Kennzeichnung</strong> tragen, die ihre Klassifizierung (<strong>C0–C4</strong>) angibt. Diese Kennzeichnung ist Voraussetzung für den Betrieb in bestimmten Subkategorien. <strong>C2-Drohnen</strong> dürfen z. B. in <strong>A2</strong> betrieben werden, wenn der Pilot über das entsprechende Zertifikat verfügt.</p>
+
+    <div class="highlight">
+		<p><strong>Flugverbotszonen</strong> sind unbedingt zu beachten. Dazu gehören:</p>
+		<ul>
+		  <li>Flughäfen</li>
+		  <li>Militärische Einrichtungen</li>
+		  <li>Menschenansammlungen</li>
+		  <li>Naturschutzgebiete</li>
+		  <li>Industrieanlagen</li>
+		</ul>
+	</div>
+    <p>Die <strong>RPAS-Karte</strong> zeigt aktuelle Einschränkungen. Zusätzlich informieren <strong>DABS</strong> und <strong>NOTAMs</strong> über temporäre Sperrungen. Verstöße gegen Flugverbote können zu Bußgeldern oder strafrechtlichen Konsequenzen führen.</p>
+
+    <p><strong>VLOS</strong> ist Pflicht – <strong>FPV-Flüge</strong> sind nur mit einem Flughelfer erlaubt, der die Drohne visuell überwacht. <strong>Nachtflüge</strong> sind erlaubt, wenn ein grünes Blinklicht vorhanden ist, das die Drohne sichtbar macht.</p>
+
+    <ul class="checklist">
+      <li>Registrierungspflicht ab 250 g</li>
+      <li>CE-Kennzeichnung ist vorgeschrieben</li>
+      <li>VLOS ist gesetzlich vorgeschrieben</li>
+      <li>Flugverbotszonen unbedingt beachten</li>
+      <li>Versicherung ist Pflicht</li>
+    </ul>
+  </section>

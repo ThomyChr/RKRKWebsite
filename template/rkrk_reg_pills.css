@@ -1,0 +1,205 @@
+/* Standard selector style: pill toggles for checkbox/radio groups. */
+.rkrk-sels,
+.rkrk-reg-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 6px;
+}
+.rkrk-sel,
+.rkrk-reg-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 22px;
+  min-width: 2.15em;
+  padding: 2px 10px;
+  margin: 0;
+  border: 1px solid #c5cdd4;
+  border-radius: 999px;
+  background: #fff;
+  color: #9aa4ae;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+}
+.rkrk-sel img,
+.rkrk-reg-pill img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.45;
+  flex: 0 0 auto;
+}
+.rkrk-sel input[type="checkbox"],
+.rkrk-sel input[type="radio"],
+.rkrk-reg-pill input[type="checkbox"],
+.rkrk-reg-pill input[type="radio"] {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  pointer-events: none;
+}
+.rkrk-sel:hover,
+.rkrk-reg-pill:hover {
+  border-color: #9aa4ae;
+  color: #6b7682;
+}
+a.rkrk-sel,
+a.rkrk-reg-pill {
+  text-decoration: none;
+  color: #9aa4ae;
+}
+.rkrk-sel.is-active,
+.rkrk-reg-pill.is-active,
+.rkrk-sel:has(input:checked),
+.rkrk-reg-pill:has(input:checked) {
+  border-color: #4d6b3e;
+  color: #3f5a32;
+  background: #fff;
+}
+.rkrk-sel:has(input:checked) img,
+.rkrk-reg-pill:has(input:checked) img {
+  opacity: 1;
+}
+.rkrk-sel:has(input:checked):hover,
+.rkrk-reg-pill:has(input:checked):hover,
+.rkrk-sel.is-active:hover,
+.rkrk-reg-pill.is-active:hover {
+  border-color: #3f5a32;
+}
+.rkrk-sel-exclusive,
+.rkrk-reg-pill-exclusive {
+  font-weight: 700;
+}
+.rkrk-sel-exclusive:hover,
+.rkrk-reg-pill-exclusive:hover {
+  border-color: #7a93a8;
+  color: #5a7388;
+}
+.rkrk-sel-exclusive:has(input:checked),
+.rkrk-reg-pill-exclusive:has(input:checked) {
+  border-color: #2a7aad;
+  color: #1e6491;
+}
+.rkrk-sel-exclusive:has(input:checked):hover,
+.rkrk-reg-pill-exclusive:has(input:checked):hover {
+  border-color: #1e6491;
+}
+.rkrk-sel:has(input:focus-visible),
+.rkrk-reg-pill:has(input:focus-visible) {
+  outline: 2px solid #2a7aad;
+  outline-offset: 2px;
+}
+.rkrk-sel:has(input:disabled),
+.rkrk-reg-pill:has(input:disabled) {
+  opacity: 0.45;
+  cursor: default;
+}
+.rkrk-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  min-width: 2.15em;
+  padding: 2px 10px;
+  margin: 0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+}
+.rkrk-status-pill.is-ok {
+  background: #e7f1fb;
+  border: 1px solid #6f9fc9;
+  color: #1d4d78;
+}
+.rkrk-status-pill.is-missing {
+  background: #f2efea;
+  border: 1px solid #c4bdb3;
+  color: #6a6358;
+}
+.rkrk-filter-form td {
+  vertical-align: top;
+  padding: 6px 8px;
+  border: none;
+}
+.rkrk-filter-form td.rkrk-filter-label {
+  font-weight: 700;
+  white-space: nowrap;
+  width: 1%;
+  padding-top: 10px;
+}
+.rkrk-sel-icononly {
+  padding-left: 6px;
+  padding-right: 6px;
+  min-width: 28px;
+  z-index: 0;
+}
+.rkrk-sel-icononly .rkrk-sel-text {
+  display: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  pointer-events: none;
+}
+/* Selected: name stays in the pill. No extra hover copy. */
+.rkrk-sel-icononly:has(input:checked) .rkrk-sel-text,
+.rkrk-sel-icononly.is-active .rkrk-sel-text {
+  display: inline;
+  position: static;
+  margin-left: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  transform: none;
+  opacity: 1;
+}
+/* Unselected hover: floating name, pill size unchanged (no flicker). */
+.rkrk-sel-icononly:hover,
+.rkrk-sel-icononly:focus-within {
+  z-index: 6;
+}
+.rkrk-sel-icononly:hover:not(:has(input:checked)):not(.is-active) .rkrk-sel-text,
+.rkrk-sel-icononly:focus-within:not(:has(input:checked)):not(.is-active) .rkrk-sel-text {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: auto;
+  top: auto;
+  bottom: calc(100% + 4px);
+  transform: none;
+  margin: 0;
+  padding: 3px 8px;
+  background: #fff;
+  border: 1px solid #c5cdd4;
+  border-radius: 999px;
+  color: #3f5a32;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  opacity: 1;
+  z-index: 7;
+}
+.rkrk-sel-icononly img {
+  width: 16px;
+  height: 16px;
+}

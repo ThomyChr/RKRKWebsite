@@ -1,0 +1,237 @@
+{
+  "meta": {
+    "title": "Schrittweise Algorithmus-Requirements",
+    "version": "2.1",
+    "last_updated": "2026-04-26"
+  },
+  "steps": [
+    {
+      "id": "S1_HEIGHT_PROFILE",
+      "name": "Hoehenprofil des Feldes",
+      "enabled": true,
+      "description": "Hoehenpunkte als Feldraster mit 20m ueber die gesamte Flaeche sowie entlang der Flugbahn via map.geo.admin.ch (DTM2 bevorzugt).",
+      "helper_parameters": [
+        { "key": "height_control_step_m", "label": "Kontrollpunkt-Abstand", "value": 20, "unit": "m" },
+        { "key": "profile_height_source", "label": "Hoehenquelle", "value": "DTM2", "unit": "-" },
+        { "key": "max_profile_points", "label": "Max Profile Punkte", "value": 5000, "unit": "-" },
+        { "key": "api_min_delay_s", "label": "API Delay", "value": 0.05, "unit": "s" }
+      ],
+      "requirements": [
+        {
+          "id": "S1-R1",
+          "priority": "must",
+          "formula": "control_step_m = 20",
+          "description": "Kontrollpunkte fuer das Hoehenprofil mit 20 m Abstand setzen."
+        },
+        {
+          "id": "S1-R2",
+          "priority": "must",
+          "formula": "height_source = DTM2",
+          "description": "Wenn verfuegbar ist DTM2 als Hoehenquelle zu verwenden."
+        },
+        {
+          "id": "S1-R3",
+          "priority": "must",
+          "formula": "control_points_field = grid(field_polygon, control_step_m)",
+          "description": "Kontrollpunkte sind nicht nur entlang der Bahnen, sondern als Raster ueber die gesamte Feldflaeche zu erzeugen."
+        }
+      ]
+    },
+    {
+      "id": "S2_DIRECTION",
+      "name": "Formanalyse des Feldes",
+      "enabled": true,
+      "description": "Best-Fit-Formanalyse mit prioritaer einem gedrehten Haupt-Grundmuster und optionaler Sektionierung nur bei klarer Richtungsabweichung. Kernwerte kommen aus requirements_data.json.",
+      "helper_parameters": [
+        { "key": "form_fit_mode", "label": "Form-Fit Modus", "value": "basic_shapes", "unit": "-" },
+        { "key": "primary_pattern_mode", "label": "Primaeres Muster", "value": "single_rotated", "unit": "-" },
+        { "key": "shape_types_allowed", "label": "Erlaubte Grundformen", "value": "rund,oval,rechteck,parallelogramm,dreieck,zusammengesetzt", "unit": "-" },
+        { "key": "use_field_reference_agl", "label": "Feld-Referenzflughöhe verwenden", "value": true, "unit": "-" }
+      ],
+      "requirements": [
+        {
+          "id": "S2-R1",
+          "priority": "must",
+          "formula": "primary_shape = best_fit_rotated_shape(field_polygon)",
+          "description": "Als Standard ist ein einzelnes gedrehtes Haupt-Grundmuster (Rechteck/Parallelogramm) zu bestimmen, das die Feldform bestmoeglich beschreibt."
+        },
+        {
+          "id": "S2-R2",
+          "priority": "must",
+          "formula": "coverage(primary_shape, field_polygon) >= min_shape_coverage_ratio",
+          "description": "Das Haupt-Grundmuster soll das Feld moeglichst gut abdecken; als Mindestziel gilt die konfigurierte Mindestabdeckung."
+        },
+        {
+          "id": "S2-R3",
+          "priority": "must",
+          "formula": "if |dir(section_i)-dir(section_j)| > section_direction_split_deg then enable_multi_section",
+          "description": "Sektionierung in mehrere Teilflaechen ist nur dann erforderlich, wenn zwischen Teilbereichen eine klare Richtungsabweichung ueber der Schwellgrenze vorliegt."
+        },
+        {
+          "id": "S2-R4",
+          "priority": "must",
+          "formula": "max_overlap(shape_polygon, field_polygon) <= 0.5 * S",
+          "description": "Grundmuster duerfen den Feldrand ueberlappen, aber maximal um 1/2 Spurabstand S."
+        },
+        {
+          "id": "S2-R5",
+          "priority": "must",
+          "formula": "draw(primary_shape or sections, color=lightblue)",
+          "description": "Das gewaehlt beste Grundmuster (oder bei Bedarf die Sektionen) ist in der Karte hellblau darzustellen."
+        },
+        {
+          "id": "S2-R6",
+          "priority": "must",
+          "formula": "h_step2 = StdFlughoehe(field) if enabled(use_field_reference_agl)",
+          "description": "Die Formanalyse verwendet standardmaessig dieselbe Referenz-Flughoehe wie das Feld (StdFlughoehe), sofern die Option aktiv ist."
+        },
+        {
+          "id": "S2-R7",
+          "priority": "must",
+          "formula": "draw(section_heading_i, dashed_dark_blue) and toggle(show_section_directions)",
+          "description": "Die Flugrichtung je Feldsektor ist als gestrichelte, dunklere Richtungslinie darzustellen und per Anzeige-Kontrolle ein-/auszublenden."
+        },
+        {
+          "id": "S2-R8",
+          "priority": "must",
+          "formula": "if coverage(primary_shape) < 0.80 then enable additional objects/sectors",
+          "description": "Wenn das primaere Grundmuster weniger als 80% abdeckt, muessen zusaetzliche Grundobjekte/Sektoren erzeugt und bewertet werden."
+        },
+        {
+          "id": "S2-R9",
+          "priority": "must",
+          "formula": "for non-primary sections: area(section_i) <= 0.20 * area(max_section)",
+          "description": "Fuer Spezialfaelle (z.B. 26-004) gilt: kleinere Sektionen duerfen hoechstens 20% der Flaeche der groessten Sektion haben."
+        }
+      ]
+    },
+    {
+      "id": "S3_COVERAGE",
+      "name": "Abdeckung und Randabstand",
+      "enabled": true,
+      "description": "Bahnenmuster, Spurabstand und Randregel. Kernwerte kommen aus requirements_data.json.",
+      "helper_parameters": [
+        { "key": "lawnmower_mode", "label": "Bahnmuster", "value": "boustrophedon", "unit": "-" },
+        { "key": "narrow_field_factor", "label": "Schmalfeld-Faktor", "value": 2.0, "unit": "*S" },
+        { "key": "narrow_field_sections", "label": "Schmalfeld-Sektionen (max)", "value": 3, "unit": "-" },
+        { "key": "narrow_segmentation_mode", "label": "Schmalfeld-Segmentierung", "value": "centerline_local", "unit": "-" }
+      ],
+      "requirements": [
+        {
+          "id": "S3-R1",
+          "priority": "must",
+          "formula": "overlap = 0.15; S = (1-overlap) * W",
+          "description": "Spurabstand aus Sichtbreite und 15% Ueberlappung (Default)."
+        },
+        {
+          "id": "S3-R2",
+          "priority": "must",
+          "formula": "d_rand <= edge_factor * S",
+          "description": "Bahnen muessen nicht bis zum Rand gehen, aber max Randabstand einhalten."
+        },
+        {
+          "id": "S3-R3",
+          "priority": "must",
+          "formula": "if field_width_m < narrow_field_factor * S then lanes parallel to major_axis(field_polygon)",
+          "description": "Schmales Feld Regel: Ist die Feldbreite kleiner als 2*S, verlaufen die Flugbahnen einfach laengs der Feldform (parallel zur Hauptachse)."
+        },
+        {
+          "id": "S3-R4",
+          "priority": "must",
+          "formula": "if exists local_width(s) < narrow_field_factor * S then narrow-field decision applies",
+          "description": "Schmalfeld als Entscheidungsfaktor ist auch lokal entlang des Feldverlaufs zu pruefen (inkl. schlangenfoermiger Felder)."
+        },
+        {
+          "id": "S3-R5",
+          "priority": "must",
+          "formula": "if narrow_field and needed then sections = segment_along_centerline(field, n<=narrow_field_sections) else single pattern",
+          "description": "Bei Schmalfeld sind mehrere Sektionen nur bei Bedarf einzusetzen. Falls kein Bedarf vorliegt, bleibt ein einzelnes Grundmuster; sonst Segmentierung entlang lokaler Feld-Mittellinie."
+        },
+        {
+          "id": "S3-R6",
+          "priority": "must",
+          "formula": "heading(section_i) = local_tangent(centerline, section_i)",
+          "description": "Schmalfeld-Sektionen muessen lokal entlang des Feldverlaufs ausgerichtet sein, damit die Muster dem Feld folgen."
+        },
+        {
+          "id": "S3-R7",
+          "priority": "must",
+          "formula": "if used_multi_section then use section headings as guidance while planning path on full field",
+          "description": "Bei Mehr-Sektionen steuern die Sektorrichtungen die Ausrichtung, aber der Wegpunktflug wird weiterhin auf der Gesamtflaeche geplant."
+        },
+        {
+          "id": "S3-R8",
+          "priority": "must",
+          "formula": "escalate objects: n = n+1 while coverage < 0.80 and n <= max_objects",
+          "description": "Wird die Mindestabdeckung von 80% nicht erreicht, ist die Anzahl Objekte/Sektoren iterativ zu erhoehen, bis die Schwelle erreicht ist oder die maximale Objektzahl erreicht wurde."
+        },
+        {
+          "id": "S3-R9",
+          "priority": "must",
+          "formula": "plan(path) on full_field_polygon from start_point; section headings are guidance only",
+          "description": "Die Wegpunktplanung erfolgt immer auf der gesamten Originalflaeche ab Startpunkt. Sektionsrichtungen duerfen die Ausrichtung vorgeben, aber die Teilflaechen werden nicht getrennt beflogen."
+        },
+        {
+          "id": "S3-R10",
+          "priority": "must",
+          "formula": "for i>=2: waypoint_i in field_polygon",
+          "description": "Ab dem zweiten Feldwegpunkt muessen alle Wegpunkte innerhalb der Feldflaeche liegen (Ausnahme nur Startsegment)."
+        },
+        {
+          "id": "S3-R11",
+          "priority": "must",
+          "formula": "working_lanes_parallel = true and spacing = S",
+          "description": "Die Arbeitsbahnen sind parallel zu fuehren und mit dem Spurabstand S zu setzen, damit die Ueberlappung entlang der ganzen Bahn konsistent bleibt."
+        },
+        {
+          "id": "S3-R12",
+          "priority": "must",
+          "formula": "coverage = moving_band(W, VFOV_forward) union start_rect(W,VFOV) union end_half_rect(W,VFOV) union turn_circles(D)",
+          "description": "Die Abdeckung kombiniert den Flugweg-Bandkorridor (Breite W aus HFOV plus Vorblick aus VFOV), Start-/End-Footprint und zusaetzliche Drehpunkt-Kreise mit Durchmesser D aus DFOV."
+        },
+        {
+          "id": "S3-R13",
+          "priority": "must",
+          "formula": "if uncovered_cells > 0 then apply path_corrections and recompute_coverage",
+          "description": "Bei nicht abgedeckten Restflaechen muessen Korrekturen am Flugpfad (Bahnen verlaengern oder Korrekturpunkte einfuegen) erfolgen und die Abdeckung erneut bewertet werden."
+        }
+      ]
+    },
+    {
+      "id": "S4_WAYPOINTS",
+      "name": "Wegpunktzahl und AGL-Grenze",
+      "enabled": true,
+      "description": "Wegpunktreduktion bei harter AGL-Grenze und Startpunkt-Prioritaet. Kernwerte kommen aus requirements_data.json.",
+      "helper_parameters": [
+        { "key": "waypoint_reduction", "label": "Wegpunktreduktion", "value": "enabled", "unit": "-" }
+      ],
+      "requirements": [
+        {
+          "id": "S4-R1",
+          "priority": "must",
+          "formula": "max_t |AGL_path(t) - AGL_target| <= agl_tolerance_m",
+          "description": "Der kontinuierliche Abstand Flugpfad-Boden entlang des Segments darf die Toleranz nie ueberschreiten; bei Ueberschreitung sind Stuetzwegpunkte einzufuegen."
+        },
+        {
+          "id": "S4-R2",
+          "priority": "must",
+          "formula": "path_start = start_point; start_point darf ausserhalb field_polygon liegen",
+          "description": "Der Flugweg beginnt zwingend beim definierten Startpunkt. Ein Startpunkt ausserhalb des Feldes ist als Ausnahme erlaubt."
+        },
+        {
+          "id": "S4-R3",
+          "priority": "must",
+          "formula": "first_infield_waypoint = nearest_endpoint_to_start(path)",
+          "description": "Der erste Wegpunkt im Feld ist stets der dem Startpunkt naechstgelegene Endpunkt des geplanten Feldpfads."
+        },
+        {
+          "id": "S4-R4",
+          "priority": "must",
+          "formula": "t_wp(i)=sum(segment_length/speed)+n_turns*turn_delay_s",
+          "description": "Die Flugzeit ist fuer jeden Wegpunkt kumulativ zu berechnen. Je erkannter Drehung wird der konfigurierte Zuschlag aus den Kernvariablen addiert."
+        }
+      ]
+    }
+  ]
+}
+

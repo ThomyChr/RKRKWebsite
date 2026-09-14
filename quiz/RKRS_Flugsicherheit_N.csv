@@ -1,0 +1,86 @@
+Nr;Frage;Loesungsauswahl;Bereich;Frage-Bild;Bildformat;Loesungs-Bild;Loesungstext;Loesung;Antwort;Audienz;Aktiv;Locked
+1;Welche maximale Startmasse darf eine C2-Drohne laut EU-Verordnung haben?;2 kg|250 g|4 kg|500 g;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. C2-Drohnen dürfen laut EU-Verordnung eine maximale Startmasse von 4 kg inklusive Nutzlast nicht überschreiten.;C;;alle;Ja;Nein
+2;Was ist die 1:1-Regel im Drohnenbetrieb der Subkategorie A2?;Flughöhe = Mindestabstand zu Personen|Flughöhe = Windgeschwindigkeit|Flughöhe = Akkukapazität|Flughöhe = Flugzeit;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort A ist richtig. Die horizontale Entfernung zu Personen muss mindestens der Flughöhe entsprechen.;A;;alle;Ja;Nein
+3;Welche Funktion hat der RTH-Modus (Return to Home)?;Kamera einschalten|Positionsdaten senden|Rückkehr zum Startpunkt|Fluggeschwindigkeit erhöhen;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. Der RTH-Modus sorgt für automatische Rückkehr bei Signalverlust oder niedrigem Akku.;C;;alle;Ja;Nein
+4;Was zeigt der KP-Index an?;Geomagnetische Aktivität|Temperaturverlauf|Windrichtung|Luftfeuchtigkeit;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort A ist richtig. Der KP-Index zeigt geomagnetische Aktivität – ab Wert 5 drohen GPS-Störungen.;A;;alle;Ja;Nein
+5;Welche Voraussetzung gilt für Nachtflüge mit C2-Drohnen?;VPS aktiviert|Flughelfer erforderlich|Grünes Blinklicht|CE-Kennzeichnung;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. Nachtflüge sind erlaubt, wenn ein grünes Blinklicht vorhanden ist.;C;;alle;Ja;Nein
+6;Was misst das Barometer in der Drohne?;Geschwindigkeit|Luftdruck|GPS|Magnetfeld;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. Der Luftdruck wird zur Höhenbestimmung genutzt.;B;;alle;Ja;Nein
+7;Wann muss der Kompass neu kalibriert werden?;Nach jedem Flug|Bei Akkuwechsel|Bei Standortwechsel >100 km|Bei Regen;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. Ortsmissweisung kann die Ausrichtung verfälschen.;C;;alle;Ja;Nein
+8;Was passiert bei Nebel?;GPS verbessert sich|Sichtlinie nicht möglich|Akku lädt schneller|VPS wird stabiler;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. VLOS ist gesetzlich vorgeschrieben – bei Nebel nicht möglich.;B;;alle;Ja;Nein
+9;Was bewirkt CSC?;Kameraaktivierung|Notabschaltung|GPS-Neustart|Flugmoduswechsel;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. CSC schaltet die Motoren sofort ab – nur im Notfall verwenden.;B;;alle;Ja;Nein
+10;Was ist bei Gewässerüberflug zu beachten?;VPS aktivieren|VPS deaktivieren|RTH deaktivieren|Akku halb voll;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. Wasserreflexionen stören VPS – daher deaktivieren.;B;;alle;Ja;Nein
+11;Welche Kennzeichnung muss eine C2-Drohne tragen?;TÜV|CE|ISO|EU-Label;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. CE-Kennzeichnung für neue Drohnen ist gesetzlich vorgeschrieben.;B;;alle;Ja;Nein
+12;Was ist die Funktion von Remote ID?;Fluggeschwindigkeit erhöhen|Identifikationsdaten senden|Signalverlust verhindern|Nachtflug erlauben;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. Remote ID überträgt Daten an Behörden und Luftverkehrsteilnehmer.;B;;alle;Ja;Nein
+13;Welche Ausbildung ist für Subkategorie A2 erforderlich?;Keine|A1/A3|A2-Präsenztest|Fluglizenz;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. A2 erfordert Online-Test A1/A3 + Präsenztest A2.;C;;alle;Ja;Nein
+14;Was ist die maximale Flughöhe in der offenen Kategorie?;50 m|120 m|150 m|500 m;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. Die maximale Flughöhe beträgt 120 m über Grund.;B;;alle;Ja;Nein
+15;Welche Wetterlage ist kritisch für Drohnenflüge?;Leichter Regen|Starker Wind >10 m/s|Bewölkt|Klares Wetter;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. Wind über 10 m/s kann die Steuerbarkeit gefährden.;B;;alle;Ja;Nein
+16;Was ist ein Downwash?;GPS-Ausfall|Luftdruckabfall|Abwind durch Rotoren|Signalverlust;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. Rotorabwind erzeugt Turbulenzen – besonders über Wasser.;C;;alle;Ja;Nein
+17;Was ist bei Flügen über Menschenmengen zu beachten?;Erlaubt mit C2|Immer erlaubt|Nur mit Sondergenehmigung|Erlaubt bei gutem Wetter;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort C ist richtig. Flüge über Menschenmengen sind nur mit Sondergenehmigung erlaubt.;C;;alle;Ja;Nein
+18;Was ist VPS?;Visuelle Positionsstabilisierung|Flugplaneditor|Wetterprognose|Akkuüberwachung;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort A ist richtig. VPS stabilisiert die Drohne bei niedriger Flughöhe.;A;;alle;Ja;Nein
+19;Was ist die Funktion des UAV-Editors?;Kameraeinstellungen|Flugplanung mit Wegpunkten|Akkuüberwachung|Wetteranalyse;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. UAV-Editor dient der Flugplanung mit Wegpunkten und Höhenprofilen.;B;;alle;Ja;Nein
+20;Was zeigt die RPAS-Karte an?;Akkustand|Flugverbotszonen|Windrichtung|Kamerawinkel;Flugsicherheit;flugsicherheit.png;schmal;;Die Antwort B ist richtig. Die RPAS-Karte zeigt Flugverbotszonen und Einschränkungen.;B;;alle;Ja;Nein
+21;Ab wann besteht Registrierungspflicht für Drohnen in der Schweiz;Ab 500 g|Ab 250 g oder mit Kamera|Nur für gewerbliche Flüge|Nur für Drohnen über 1 kg;Flugsicherheit;flugsicherheit.png;schmal;;Antwort B ist richtig. Eine Registrierung ist erforderlich, wenn die Drohne 250 g oder mehr wiegt oder eine Kamera besitzt, unabhängig vom Gewicht.;B;;alle;Ja;Nein
+22;Wie dürfen Drohnen ohne CE?Klasse ab 2024 betrieben werden?;Nur in A1|Nur in A2|Nur in A3|Gar nicht mehr;Flugsicherheit;flugsicherheit.png;schmal;;Antwort C ist richtig. Bestandsdrohnen ohne CE?Klasse dürfen weiterhin betrieben werden, jedoch ausschließlich in der Unterkategorie A3.;C;;alle;Ja;Nein
+23;Welche Funktion hat Geo?Awareness?;Automatische Höhenregelung|Warnung vor geografischen Flugbeschränkungen|Optimierung der Akkuleistung|Stabilisierung bei Wind;Flugsicherheit;flugsicherheit.png;schmal;;Antwort B ist richtig. Geo?Awareness erkennt geografische Einschränkungen wie Flugverbotszonen und warnt den Piloten rechtzeitig.;B;;alle;Ja;Nein
+24;Was sendet Remote ID?;Kameradaten|Identifikationsdaten der Drohne|Wetterdaten|Akkustatus;Flugsicherheit;flugsicherheit.png;schmal;;Antwort B ist richtig. Remote ID übermittelt während des Fluges Identifikationsdaten der Drohne und des Betreibers, damit Behörden sie eindeutig zuordnen können.;B;;alle;Ja;Nein
+25;Wie sind Flüge über Menschenansammlungen in der offenen Kategorie geregelt;Erlaubt mit C0|Erlaubt mit CE?Kennzeichnung|Verboten|Nur bei gutem Wetter erlaubt;Flugsicherheit;flugsicherheit.png;schmal;;Antwort C ist richtig. In der offenen Kategorie sind Flüge über Menschenansammlungen strikt verboten.;C;;alle;Ja;Nein
+26;Was bedeutet VLOS?;Flug mit Kamera|Flug innerhalb der Sichtlinie|Flug mit GPS|Flug über 120 m;Flugsicherheit;flugsicherheit.png;schmal;;Antwort B ist richtig. VLOS bedeutet, dass der Pilot die Drohne mit dem bloßen Auge jederzeit sehen und kontrollieren können muss.;B;;alle;Ja;Nein
+27;Welcher Mindestabstand gilt in A2 ohne Langsamflugmodus;5 m|10 m|30 m|50 m;Flugsicherheit;flugsicherheit.png;schmal;;Antwort C ist richtig. In der Subkategorie A2 müssen Drohnen mindestens 30 m Abstand zu unbeteiligten Personen einhalten.;C;;alle;Ja;Nein
+28;Wie nah darf eine C2?Drohne im Langsamflugmodus (;1 m|3 m|5 m|10 m;Flugsicherheit;flugsicherheit.png;schmal;;Antwort C ist richtig. Mit aktiviertem Langsamflugmodus darf der Abstand zu unbeteiligten Personen auf 5 m reduziert werden.;C;;alle;Ja;Nein
+29;Wie hoch darf eine Drohne in der offenen Kategorie maximal fliegen;50 m|120 m|300 m|500 m;Flugsicherheit;flugsicherheit.png;schmal;;Antwort B ist richtig. Die maximale erlaubte Flughöhe beträgt 120 m über Grund, um Konflikte mit bemanntem Luftverkehr zu vermeiden;B;;alle;Ja;Nein
+30;Wann sind FPV?Flüge erlaubt?;Immer|Nur mit CE?Kennzeichnung|Nur mit Flughelfer, der Sichtkontakt hält|Nur bei Nacht;Flugsicherheit;flugsicherheit.png;schmal;;Antwort C ist richtig. FPV?Flüge sind nur erlaubt, wenn ein Flughelfer die Drohne ständig visuell beobachtet und eingreifen kann.;C;;alle;Ja;Nein
+31;Wann gilt eine Gruppe von Personen als Menschenansammlung im Sinne der EU?Drohnenverordnung?;Wenn Personen im Freien stehen und sich frei bewegen können|Wenn Personen sich nicht sofort aus dem Bereich entfernen können|Wenn weniger als fünf Personen anwesend sind|Wenn alle Personen dem Flug zugestimmt haben;Flugsicherheit;flugsicherheit.png;schmal;;Antwort B ist richtig. Eine Menschenansammlung liegt vor, wenn es für Personen schwierig oder unmöglich ist, sich sofort aus dem Bereich zu entfernen. Dies erhöht das Risiko und macht Überflüge in der offenen Kategorie verboten;B;;alle;Ja;Nein
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;
+;;;;;;;;;;;;

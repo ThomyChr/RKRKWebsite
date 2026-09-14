@@ -1,0 +1,85 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>Störung des Erdmagnetfelds</h1>-->
+<p><strong>Zielgruppe:</strong> Drohnenpiloten, Outdoor-Aktive, Technikinteressierte, Sicherheitskräfte</p>
+<p><strong>Ziel:</strong> Verständnis der Ursachen, Auswirkungen und Schutzmaßnahmen bei geomagnetischen Störungen</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir die Grundlagen des Erdmagnetfelds, die Ursachen für geomagnetische Störungen und deren Auswirkungen auf Technik, Navigation und Sicherheit. Du lernst, wie du Störungen erkennst, Risiken einschätzt und geeignete Schutzmaßnahmen ergreifst.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Aufbau und Funktion des Erdmagnetfelds verstehen</li>
+  <li>Ursachen geomagnetischer Störungen kennen</li>
+  <li>Auswirkungen auf GPS, Drohnen und Kommunikation beurteilen</li>
+  <li>Frühwarnsysteme und Indizes interpretieren</li>
+  <li>Schutzmaßnahmen und Verhaltensempfehlungen anwenden</li>
+</ul>
+
+<h2>Kapitel 1: Das Erdmagnetfeld – Ursprung und Funktion</h2>
+<p><strong>Stichworte:</strong> Geodynamo · Magnetosphäre · Sonnenwind · Polarlichter · Schutzschild</p>
+<p>Das Erdmagnetfeld entsteht durch den Geodynamo im äußeren Erdkern. Die Magnetosphäre schützt die Erde vor Sonnenwind und kosmischer Strahlung. Polarlichter entstehen durch Teilcheneinwirkung in den Polarregionen. Das Magnetfeld ist dynamisch und beeinflusst technische Systeme.</p>
+<div class="highlight">
+✅ Geodynamo erzeugt das Erdmagnetfeld<br>
+✅ Magnetosphäre schützt vor Sonnenwind<br>
+✅ Polarlichter entstehen durch Teilcheneinwirkung<br>
+✅ Magnetfeld ist dynamisch und nicht überall gleich stark
+</div>
+
+<h2>Kapitel 2: Ursachen geomagnetischer Störungen</h2>
+<p><strong>Stichworte:</strong> Sonnenstürme · koronale Massenauswürfe · KP-Index · Flare-Klassen · Magnetsturm</p>
+<p>Geomagnetische Störungen entstehen durch Sonnenaktivität, insbesondere durch koronale Massenauswürfe (CME). Der KP-Index zeigt die Stärke der Aktivität. Flare-Klassen (C, M, X) geben Hinweise auf mögliche Störungen. Frühwarnsysteme wie SWPC und GFZ informieren über aktuelle Ereignisse.</p>
+<div class="highlight">
+✅ CME = koronaler Massenauswurf → Magnetsturm<br>
+✅ KP-Index >5 = kritische geomagnetische Aktivität<br>
+✅ Flare-Klassen zeigen Sonnenaktivität<br>
+✅ Magnetstürme entstehen durch Sonnenwind-Einwirkung
+</div>
+
+<h2>Kapitel 3: Auswirkungen geomagnetischer Störungen auf Technik und Navigation</h2>
+<p><strong>Stichworte:</strong> GPS-Störungen · Kompassabweichung · Funkprobleme · Satellitenausfall · Drohnenflugrisiken</p>
+<p>Störungen beeinflussen GPS, Kompasssensoren, Funkverbindungen und Satelliten. GPS-Signale werden verzerrt, Kompasse zeigen falsche Richtungen, Funkverbindungen verlieren Reichweite und Satelliten sind durch Teilchenbeschuss gefährdet. Drohnenflugmodi können versagen.</p>
+<div class="highlight">
+✅ GPS-Signale werden durch Ionosphäre gestört<br>
+✅ Kompassabweichung bei Magnetfeldverzerrung<br>
+✅ Funkprobleme durch Sonnenaktivität<br>
+✅ Satelliten gefährdet durch Teilchenbeschuss<br>
+✅ Drohnenflugmodi können versagen
+</div>
+
+<h2>Kapitel 4: Frühwarnsysteme und Indikatoren</h2>
+<p><strong>Stichworte:</strong> KP-Index · Dst-Index · SWPC · GFZ Potsdam · Space Weather Alerts · Sonnenzyklus</p>
+<p>KP-Index und Dst-Index zeigen die Stärke geomagnetischer Aktivität. SWPC und GFZ liefern Echtzeitdaten und Warnungen. Space Weather Alerts informieren über Flare-Klassen und CME-Ankunft. Sonnenmaximum-Phasen erhöhen die Störungsgefahr.</p>
+<ul>
+  <li>KP-Werte regelmäßig prüfen</li>
+  <li>Warnsysteme abonnieren</li>
+  <li>Flüge bei KP >5 vermeiden</li>
+  <li>Kompass vor jedem Flug kalibrieren</li>
+  <li>GPS-Backup oder manuelle Steuerung bereithalten</li>
+</ul>
+<div class="highlight">
+✅ KP-Index >5 = Magnetsturm<br>
+✅ Dst-Index zeigt Magnetfeldkompression<br>
+✅ SWPC und GFZ liefern Echtzeitdaten<br>
+✅ Sonnenmaximum = erhöhte Störungsgefahr<br>
+✅ Frühwarnsysteme helfen bei Flugplanung
+</div>
+
+<h2>Kapitel 5: Schutzmaßnahmen und Verhaltensempfehlungen</h2>
+<p><strong>Stichworte:</strong> Flugverzicht · manuelle Steuerung · Kompasskalibrierung · Abschirmung · Backup-Systeme</p>
+<p>Bei KP >5 sollte auf GPS-gestützte Flüge verzichtet werden. Manuelle Steuerung, Kompasskalibrierung und Backup-Systeme wie VPS und IMU sind empfohlen. In sicherheitskritischen Bereichen gelten zusätzliche Vorschriften. Auch Outdoor-Nutzer sollten Karten und analoge Navigation bereithalten.</p>
+<div class="highlight">
+✅ Flugverzicht bei KP >5<br>
+✅ Manuelle Steuerung statt GPS-Modi<br>
+✅ Kompasskalibrierung vor jedem Flug<br>
+✅ VPS und IMU als Backup nutzen<br>
+✅ Notfallprotokolle bei Signalverlust
+</div>

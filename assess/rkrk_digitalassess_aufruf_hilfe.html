@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Digital Assess RKRS — Aufruf &amp; Schulungen</title>
+	<style>
+		:root {
+			--text: #1e293b;
+			--muted: #64748b;
+			--border: #d8e0d7;
+			--card: #fff;
+			--brand: #48673a;
+			--brand-bg: #f4f7f3;
+			--code-bg: #f1f5f9;
+			--warn-bg: #fffbeb;
+			--warn-border: #f59e0b;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+			font-size: 16px;
+			line-height: 1.55;
+			color: var(--text);
+			background: #f8faf8;
+		}
+		.wrap {
+			max-width: 920px;
+			margin: 0 auto;
+			padding: 24px 18px 48px;
+		}
+		h1 {
+			font-size: 1.65rem;
+			color: var(--brand);
+			margin: 0 0 0.35em;
+			line-height: 1.25;
+		}
+		.lead {
+			color: var(--muted);
+			margin: 0 0 1.5rem;
+			font-size: 1.02rem;
+		}
+		h2 {
+			font-size: 1.2rem;
+			margin: 2rem 0 0.75rem;
+			padding-bottom: 0.35rem;
+			border-bottom: 2px solid var(--border);
+			color: #334155;
+		}
+		h3 {
+			font-size: 1.05rem;
+			margin: 1.25rem 0 0.5rem;
+			color: #475569;
+		}
+		.card {
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 16px 18px;
+			margin: 1rem 0;
+			box-shadow: 0 1px 3px rgba(0,0,0,.04);
+		}
+		.card--hint {
+			background: var(--brand-bg);
+			border-color: #c5d4c0;
+		}
+		.card--warn {
+			background: var(--warn-bg);
+			border-color: var(--warn-border);
+		}
+		code, .url {
+			font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+			font-size: 0.9em;
+			background: var(--code-bg);
+			border-radius: 4px;
+		}
+		code { padding: 0.1em 0.35em; }
+		.url {
+			display: block;
+			padding: 10px 12px;
+			margin: 0.5rem 0;
+			word-break: break-all;
+			border: 1px solid #e2e8f0;
+		}
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 0.95rem;
+			margin: 0.75rem 0;
+		}
+		th, td {
+			border: 1px solid var(--border);
+			padding: 8px 10px;
+			text-align: left;
+			vertical-align: top;
+		}
+		th {
+			background: var(--brand-bg);
+			font-weight: 600;
+		}
+		ul, ol { margin: 0.4rem 0 0.8rem; padding-left: 1.35rem; }
+		li { margin: 0.25rem 0; }
+		.flow {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			align-items: center;
+			margin: 0.75rem 0;
+		}
+		.flow span {
+			background: var(--brand-bg);
+			border: 1px solid #c5d4c0;
+			border-radius: 999px;
+			padding: 6px 12px;
+			font-size: 0.92rem;
+		}
+		.flow .arrow { background: none; border: none; color: var(--muted); padding: 0 2px; }
+		.inactive { opacity: 0.65; }
+		.tag {
+			display: inline-block;
+			font-size: 0.78rem;
+			padding: 2px 7px;
+			border-radius: 4px;
+			background: #e2e8f0;
+			color: #475569;
+		}
+		.tag--yes { background: #dcfce7; color: #166534; }
+		.tag--no { background: #fee2e2; color: #991b1b; }
+		.tag--rkrk { background: #e0e7ff; color: #3730a3; }
+		dl { margin: 0.5rem 0; }
+		dt { font-weight: 600; margin-top: 0.6rem; }
+		dd { margin: 0.2rem 0 0 0; color: var(--muted); }
+		footer {
+			margin-top: 2.5rem;
+			padding-top: 1rem;
+			border-top: 1px solid var(--border);
+			font-size: 0.88rem;
+			color: var(--muted);
+		}
+		pre {
+			background: #1e293b;
+			color: #e2e8f0;
+			padding: 12px 14px;
+			border-radius: 8px;
+			overflow-x: auto;
+			font-size: 0.82rem;
+			line-height: 1.45;
+			margin: 0.75rem 0;
+		}
+		pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+		.docnav {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin: 0 0 1.25rem;
+			font-size: 0.92rem;
+		}
+		.docnav a {
+			padding: 6px 12px;
+			border-radius: 6px;
+			border: 1px solid var(--border);
+			text-decoration: none;
+			color: var(--text);
+			background: var(--card);
+		}
+		.docnav a.is-active {
+			background: var(--brand);
+			color: #fff;
+			border-color: var(--brand);
+		}
+		.docnav a:hover { opacity: 0.9; }
+	</style>
+</head>
+<body>
+<div class="wrap">
+
+	<h1>Digital Assess RKRS — Aufruf &amp; Schulungen</h1>
+	<nav class="docnav" aria-label="Dokumentationsvarianten">
+		<a href="rkrk_digitalassess_aufruf_hilfe.php" class="is-active">RKRS extern (diese Seite)</a>
+	</nav>
+	<p class="lead">
+		Anleitung für <strong>Instruktoren und Administratoren</strong> auf dem RKRS-Portal:
+		<strong>Einsatzschulung</strong> (<code>RKRSp-EP</code>) und <strong>Einsatzprüfung RKRS+</strong>
+		(<code>RKRSp-EP-preuf</code>) — inkl. Drohnenauswahl, Ergebnisablage und Schulungs-HTML.
+		Alle übrigen Schulungen und Quiz (Saisonvorbereitung, STS, A2, …) sind <strong>RKRK intern</strong>
+		(nur mit <code>ADMIN</code> und <code>?RKRK</code> im Digital-Assess-Aufruf).
+	</p>
+
+	<div class="card card--hint">
+		<strong>Einstieg Digital Assess (RKRS Portal)</strong>
+		<span class="url">https://portal.rehkitzrettung.ch/…/assess/public/rkrk_digitalassess.php</span>
+		<p style="margin:0.75rem 0 0;font-size:0.95rem;color:var(--muted);">
+			Exakter PHP-Pfad auf dem Portal vom Betrieb bestätigen lassen. Assess-<strong>Daten</strong>
+			(CSV, HTML, Bilder, Resultate) liegen unter Web-Pfad
+			<code>/rkrsplusassessment/data/assess/</code>.
+		</p>
+		<p style="margin:0.75rem 0 0;font-size:0.92rem;color:var(--muted);">
+			<strong>Sichtbarkeit:</strong> Ohne Kanal-Parameter in der URL zeigt Digital Assess nur
+			<strong>externe RKRS-Inhalte</strong> (Standard auf dem Portal). Mit <code>?RKRK</code> in der URL
+			erscheinen zusätzlich alle <strong>RKRK-internen</strong> Schulungen und Quiz.
+			Interne Vollversion nur mit <code>ADMIN</code> (Fragen Manager).
+		</p>
+	</div>
+
+	<h2>0. Aufrufbeispiele Einsatzprüfung RKRS+</h2>
+	<p>
+		Basis: <code>{BASE}</code> = Portal-URL zu <code>rkrk_digitalassess.php</code>
+		(siehe Kasten oben). <strong>Kein</strong> Kanal-Parameter nötig — ohne <code>RKRK</code> in der URL
+		sind nur externe RKRS-Inhalte sichtbar (inkl. Einsatzschulung und Einsatzprüfung).
+		Pro Teilnehmer <code>Name</code> und <code>Drone</code> in der URL setzen (URL-encoded).
+	</p>
+
+	<table>
+		<thead>
+			<tr><th>Szenario</th><th>Key</th><th>Versuche</th><th>Beispiel-URL</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><strong>Schulung</strong> zur Vorbereitung auf die Einsatzprüfung</td>
+				<td><code>RKRSp-EP</code></td>
+				<td><strong>2</strong> (je <code>EXAM</code>-Code ein Durchgang)</td>
+				<td>
+					<code>{BASE}?quiz=RKRSp-EP&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=EP-VERSUCH-1&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</code><br>
+					<code>{BASE}?quiz=RKRSp-EP&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=EP-VERSUCH-2&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</code>
+				</td>
+			</tr>
+			<tr>
+				<td><strong>Offizielle Prüfung</strong></td>
+				<td><code>RKRSp-EP-preuf</code></td>
+				<td><strong>1</strong> (pro <code>EXAM</code>-Code und <b>Name</b>, danach für diesen Namen gesperrt (Code für andere Namen weiter nutzbar))</td>
+				<td>
+					<code>{BASE}?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=EP-PRUEF-2026-001&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</code>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<div class="card card--hint">
+		<strong>Platzhalter in den Beispielen:</strong>
+		<code>Name=Max%20Muster</code> = Pilotenname «Max Muster»;
+		<code>Drone=DJI%20Mavic%203T</code> = Drohnentyp aus der Tabelle in Abschnitt&nbsp;0.4
+		(muss exakt übereinstimmen). Alternativ <code>Drohne=…</code> statt <code>Drone=…</code>.
+		Unbekannter Drohnenwert → nur allgemeine Fragen.
+	</div>
+
+	<div class="card card--warn">
+		<strong>EXAM-Codes:</strong> Ein <code>EXAM</code>-Code kann für mehrere Teilnehmer (Namen) verwendet werden — jeder Name darf denselben Code nur einmal absolvieren
+		(z.&nbsp;B. <code>EP-PRUEF-2026-001</code>). Gleicher Code = gleicher Fragenkatalog; nach Abschluss
+		kein Neustart. Ohne <code>EXAM</code> startet bei jedem Besuch ein neuer Zufallskatalog (Übung).
+	</div>
+
+	<h3>0.1 Kanal &amp; Sichtbarkeit</h3>
+
+	<div class="card card--hint">
+		<strong>Regel (Portal / externer RKRS-Zugriff):</strong>
+		<table style="margin:0.5rem 0 0;">
+			<tbody>
+				<tr>
+					<td><strong>Ohne Kanal-Parameter</strong></td>
+					<td>Nur <strong>externe RKRS-Inhalte</strong> (Standard: <code>RKRS</code>).
+						Einsatzschulung und Einsatzprüfung sind darin enthalten.
+						RKRK-interne Schulungen werden <em>nicht</em> angezeigt.</td>
+				</tr>
+				<tr>
+					<td><strong><code>?RKRK</code> in der URL</strong></td>
+					<td><strong>Alle</strong> Assessments — externe RKRS-Inhalte <em>und</em>
+						RKRK-interne Schulungen/Quiz (Saison, STS, A2, Test-Varianten, …).</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<ul>
+		<li>
+			<strong>Optionale Kanäle</strong> zur gezielten Filterung (<code>Audienz</code> in AssessmentListe):
+			<ul>
+				<li><code>RKRSplus</code> — nur RKRS+ (Einsatzprüfung, Einsatzschulung)</li>
+				<!--<li><code>RKRS</code> / <code>RKRSprev</code> — explizit setzen (auf dem Portal meist schon Standard)</li>-->
+				<li><code>INSTR</code> — Instruktor-Vorschau gesperrter aber aktiver Inhalte</li>
+				<!--<li><code>ADMIN</code> — inaktive/gesperrte Assessments sichtbar (nur Admin-Vorschau)</li>-->
+			</ul>
+		</li>
+		<li>
+			Parameter ohne Wert: <code>?Schulung</code> reicht. Gesetzte Kanal-Parameter werden in Folgelinks mitgeführt.
+		</li>
+		<li>
+			<strong>Nicht für Teilnehmer-Links:</strong> <code>?RKRK</code> nur für interne Verwaltung und Entwicklung.
+		</li>
+	</ul>
+
+	<h3>0.2 Wichtige Endpunkte</h3>
+	<table>
+		<thead>
+			<tr><th>Skript</th><th>Zweck</th><th>Typischer Aufruf</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>rkrk_digitalassess.php</code></td>
+				<td><strong>Haupt-UI</strong>: Quiz-Hub, Schulung, Prüfung, interaktive Fragen</td>
+				<td><code>?quiz=KEY&amp;Schulung</code> (ohne <code>RKRK</code> = nur extern)</td>
+			</tr>
+			<tr>
+				<td><code>rkrk_digitalassess_learn.php</code></td>
+				<td>Schulungs-HTML für iframe (Theme, Bildpfade)</td>
+				<td><code>?quiz=RKRSp-EP-preuf</code></td>
+			</tr>
+			<tr>
+				<td><code>rkrk_digitalassess_quiz_progress.php</code></td>
+				<td>JSON-API Fortschritt (<code>check</code>, <code>save</code>, <code>delete</code>)</td>
+				<td><code>?action=check</code> + POST-Body</td>
+			</tr>
+			<tr>
+				<td><code>rkrk_digitalassess_admin.php</code></td>
+				<td>Fragen Manager, CSV-Pflege</td>
+				<td><code>?mode=manage&amp;selected_quiz=…&amp;ADMIN</code></td>
+			</tr>
+			<tr>
+				<td><code>rkrk_assess_admin.php?page=results</code></td>
+				<td>Ergebnisübersicht (<code>QuizResultate.json</code>)</td>
+				<td>Browser / intern</td>
+			</tr>
+			<tr>
+				<td><code>rkrk_assess.php</code></td>
+				<td><em>Live Assessments</em> (praktische Beurteilungen vor Ort) — <strong>nicht</strong> Digital Quiz</td>
+				<td>Separates Modul</td>
+			</tr>
+			<tr>
+				<td><code>rkrk_assess_live.php</code></td>
+				<td><em>Beurteilungen</em> / Checklisten — <strong>nicht</strong> Digital Quiz</td>
+				<td>Separates Modul</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>0.3 Weitere Aufruf-URLs (Einsatzprüfung)</h3>
+	<p>Basis: <code>{BASE}</code> = Portal-URL zu <code>rkrk_digitalassess.php</code>.</p>
+
+	<table>
+		<thead>
+			<tr><th>Szenario</th><th>URL</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Schulungs-Hub (externe RKRS-Schulungen)</td>
+				<td><code>{BASE}?Schulung</code></td>
+			</tr>
+			<tr>
+				<td>Quiz-Hub (externe RKRS-Quiz)</td>
+				<td><code>{BASE}</code></td>
+			</tr>
+			<tr>
+				<td><strong>Einsatzprüfung</strong> mit Lerninhalt</td>
+				<td><code>{BASE}?quiz=RKRSp-EP-preuf&amp;Schulung&amp;PersPick=on</code></td>
+			</tr>
+			<tr>
+				<td>Einsatzprüfung, Prüfungsmodus (kein Sofort-Feedback)</td>
+				<td><code>{BASE}?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung</code></td>
+			</tr>
+			<tr>
+				<td>Fester Fragebogen (Kurscode)</td>
+				<td><code>{BASE}?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=TEAM-2026-01</code></td>
+			</tr>
+			<tr>
+				<td>Ohne Schulungstext, mit Drohne</td>
+				<td><code>{BASE}?quiz=RKRSp-EP-preuf&amp;Schulung&amp;ohne_lerntext=1&amp;Drone=DJI%20Mavic%203T</code></td>
+			</tr>
+			<tr>
+				<td>Direkt in Fragen (Name/Drohne im UI)</td>
+				<td><code>{BASE}?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;direkt=1</code></td>
+			</tr>
+			<tr>
+				<td>Lesemodus (kein interaktiver Lauf)</td>
+				<td><code>{BASE}?quiz=RKRSp-EP-preuf&amp;read_only=1&amp;Schulung</code></td>
+			</tr>
+			<tr>
+				<td>Schulungs-HTML (iframe-Rohquelle)</td>
+				<td><code>…/rkrk_digitalassess_learn.php?quiz=RKRSp-EP-preuf</code></td>
+			</tr>
+			<tr>
+				<td>Verwandte Keys (nur RKRS+ Einsatzprüfung)</td>
+				<td><code>RKRSp-EP</code> (Schulung), <code>RKRSp-EP-preuf</code> (Prüfung)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>0.4 Drohnenauswahl (Einsatzschulung &amp; Einsatzprüfung)</h3>
+	<p>
+		Fragenpool = <strong>allgemeine Fragen</strong> (<code>Drone</code> leer oder <code>Alle</code>) plus
+		<strong>typ-spezifische Fragen</strong> der gewählten Drohne. Parameter <code>Drone</code> oder
+		<code>Drohne</code> (GET/POST, URL-encoded). Ohne Angabe wählt der Teilnehmer im UI.
+	</p>
+	<p>
+		<strong>Einsatzschulung</strong> (<code>RKRSp-EP</code>) und <strong>Einsatzprüfung</strong>
+		(<code>RKRSp-EP-preuf</code>) verwenden dieselbe Fragen-CSV
+		(<code>RKRS Einsatzpruefung.csv</code>) — die <strong>gleichen neun Drohnentypen</strong>
+		gelten für beide. <em>Weitere Typen gibt es nicht:</em>
+	</p>
+	<table>
+		<thead>
+			<tr><th>Drohnentyp (exakt wie in CSV)</th><th>URL-Beispiel (<code>Drone=…</code>)</th></tr>
+		</thead>
+		<tbody>
+			<tr><td>Autel EVOII640T</td><td><code>Drone=Autel%20EVOII640T</code></td></tr>
+			<tr><td>DJI Matrice 30</td><td><code>Drone=DJI%20Matrice%2030</code></td></tr>
+			<tr><td>DJI Matrice 300</td><td><code>Drone=DJI%20Matrice%20300</code></td></tr>
+			<tr><td>DJI Matrice 350</td><td><code>Drone=DJI%20Matrice%20350</code></td></tr>
+			<tr><td>DJI Matrice 4</td><td><code>Drone=DJI%20Matrice%204</code></td></tr>
+			<tr><td>DJI Matrice 4TD</td><td><code>Drone=DJI%20Matrice%204TD</code></td></tr>
+			<tr><td>DJI Mavic 2 Zoom</td><td><code>Drone=DJI%20Mavic%202%20Zoom</code></td></tr>
+			<tr><td>DJI Mavic 2EA</td><td><code>Drone=DJI%20Mavic%202EA</code></td></tr>
+			<tr><td>DJI Mavic 3T</td><td><code>Drone=DJI%20Mavic%203T</code></td></tr>
+		</tbody>
+	</table>
+
+	<div class="card card--warn">
+		<strong>Drohne nicht in der Liste:</strong> Piloten mit einer Drohne, die <em>nicht</em> in der Tabelle
+		steht (oder ein falscher <code>Drone=…</code>-Wert in der URL), erhalten <strong>nur die allgemeinen
+		Fragen</strong> — also Fragen mit <code>Drone=Alle</code> bzw. leerem Feld, ohne typ-spezifische
+		Zusatzfragen. Im UI-Dropdown sind ausschliesslich die neun aufgeführten Typen wählbar.
+	</div>
+
+	<h3>0.5 Link-Generator (im Admin)</h3>
+	<p>
+		<code>rkrk_assess.php?mode=digitalquizlinkbuilder&amp;ADMIN</code> —
+		baut URLs interaktiv; <code>EXAM=…</code> und <code>QuizModus=pruefung</code> ggf. anhängen.
+	</p>
+
+	<div class="card card--hint" style="margin-top:1rem;">
+		<strong>Basis-URL (Kurzform)</strong>
+		<span class="url">…/assess/public/rkrk_digitalassess.php</span>
+		<p style="margin:0.75rem 0 0;">
+			Parameter werden mit <code>&amp;</code> angehängt. Kanal- und Admin-Parameter
+			(<code>RKRS</code>, <code>ADMIN</code>, <code>PersPick</code>) bleiben beim Navigieren
+			erhalten und werden automatisch an Folgelinks angehängt.
+		</p>
+	</div>
+
+	<h2>1. Grundbegriffe</h2>
+
+	<table>
+		<thead>
+			<tr><th>Modus</th><th>URL-Hinweis</th><th>Verhalten</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><strong>Quiz</strong></td>
+				<td><code>quiz=KEY</code></td>
+				<td>Interaktives Übungsquiz. Antworten werden sofort aufgelöst (grün/rot). Bei jedem Start neuer Zufallskatalog (ohne <code>EXAM</code>).</td>
+			</tr>
+			<tr>
+				<td><strong>Schulung</strong></td>
+				<td><code>quiz=KEY&amp;Schulung</code></td>
+				<td>Zuerst Schulungstext (Lern-HTML im iframe), danach Namenseingabe und Prüfungs-/Quizteil. Bezeichnung in der Oberfläche: «Schulungsprüfung».</td>
+			</tr>
+			<tr>
+				<td><strong>Prüfung</strong> (Exam-Modus)</td>
+				<td><code>QuizModus=pruefung</code></td>
+				<td>Wie Schulung/Quiz, aber Antworten werden <em>nicht</em> sofort bewertet. Erst am Ende Gesamtergebnis. Button: «Antwort übernehmen» statt «eingeben und auflösen».</td>
+			</tr>
+			<tr>
+				<td><strong>Fester Fragebogen</strong></td>
+				<td><code>EXAM=CODE</code></td>
+				<td>Einmal gemischter Katalog pro Code; bei Wiederaufruf dieselben Fragen. Nach Abschluss nur noch Ergebnis, kein Neustart.</td>
+			</tr>
+			<tr>
+				<td><strong>Direkt Training</strong></td>
+				<td><code>QuizModus=quiz</code></td>
+				<td>Überspringt den Lerninhalt, Sofort-Auflösung wie Übungsquiz.</td>
+			</tr>
+			<tr>
+				<td><strong>Direkt Prüfung</strong></td>
+				<td><code>QuizModus=pruefung&amp;direkt=1</code></td>
+				<td>Überspringt den Lerninhalt, Prüfungsmodus ohne Sofort-Feedback.</td>
+			</tr>
+			<tr>
+				<td><strong>Lesemodus</strong></td>
+				<td><code>read_only=1</code></td>
+				<td>Nur Anzeige aller Fragen und Lösungen — ohne interaktiven Durchlauf.</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>2. Typischer Ablauf (Schulung mit Drohnenauswahl)</h2>
+
+	<div class="flow">
+		<span>Link öffnen</span>
+		<span class="arrow">→</span>
+		<span>Schulungstext lesen</span>
+		<span class="arrow">→</span>
+		<span>Name eingeben</span>
+		<span class="arrow">→</span>
+		<span>Drohne wählen</span>
+		<span class="arrow">→</span>
+		<span>Fragen beantworten</span>
+		<span class="arrow">→</span>
+		<span>Ergebnis</span>
+	</div>
+
+	<p>
+		<strong>Einsatzschulung</strong> und <strong>Einsatzprüfung</strong> kennen dieselben
+		<strong>neun Drohnentypen</strong> (Abschnitt&nbsp;3.3, gemeinsame Fragen-CSV). Der Teilnehmer
+		wählt einen davon — oder der Typ wird per URL gesetzt. Der Fragenpool setzt sich zusammen aus:
+	</p>
+	<ul>
+		<li><strong>allgemeinen Fragen</strong> (<code>Drone</code> leer oder <code>Alle</code>) — für jeden Typ, und</li>
+		<li><strong>typ-spezifischen Fragen</strong> der gewählten Drohne (exakter Abgleich mit CSV-Wert).</li>
+	</ul>
+	<p>
+		Hat ein Pilot eine Drohne, die <strong>nicht</strong> in der Liste steht, fallen die typ-spezifischen
+		Fragen weg — es bleiben <strong>mehr bzw. nur allgemeine Fragen</strong> (kleinerer Pool).
+	</p>
+
+	<h2>3. Drohnenoptionen</h2>
+
+	<h3>3.1 Auswahl im Formular (Standard)</h3>
+	<p>
+		Nach dem Schulungstext (bzw. direkt beim Quiz-Start) erscheint ein Dropdown mit den
+		<strong>neun</strong> in Abschnitt&nbsp;3.3 aufgeführten Drohnentypen — keine weiteren Optionen.
+		Erst mit Name <em>und</em> Drohne startet die Fragerunde.
+	</p>
+
+	<h3>3.2 Drohne per URL vorgeben</h3>
+	<p>Parameter <code>Drone</code> oder <code>Drohne</code> (GET oder POST), zusammen mit <code>Name</code>:</p>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</span>
+	<p>
+		Sinnvoll für «Direkt Prüfung»-Links, wenn Drohne und Name schon bekannt sind. Wert muss einem der
+		neun Typen entsprechen (Gross/Kleinschreibung wird toleriert). Ist der Wert <em>nicht</em> in der Liste,
+		gilt intern kein Typ — der Pilot erhält <strong>nur allgemeine Fragen</strong>.
+	</p>
+
+	<h3>3.3 Drohnentypen — Schulung &amp; Prüfung (identisch)</h3>
+	<p>
+		<strong>Gemeinsame, abschliessende Liste</strong> für <code>RKRSp-EP</code> (Schulung) und
+		<code>RKRSp-EP-preuf</code> (Prüfung) aus <code>RKRS Einsatzpruefung.csv</code> (Spalte <code>Drone</code>).
+		Beide Assessments teilen dieselbe Fragen-Datei — daher dieselben neun Typen:
+	</p>
+	<table>
+		<thead>
+			<tr><th>#</th><th>Drohnentyp</th></tr>
+		</thead>
+		<tbody>
+			<tr><td>1</td><td>Autel EVOII640T</td></tr>
+			<tr><td>2</td><td>DJI Matrice 30</td></tr>
+			<tr><td>3</td><td>DJI Matrice 300</td></tr>
+			<tr><td>4</td><td>DJI Matrice 350</td></tr>
+			<tr><td>5</td><td>DJI Matrice 4</td></tr>
+			<tr><td>6</td><td>DJI Matrice 4TD</td></tr>
+			<tr><td>7</td><td>DJI Mavic 2 Zoom</td></tr>
+			<tr><td>8</td><td>DJI Mavic 2EA</td></tr>
+			<tr><td>9</td><td>DJI Mavic 3T</td></tr>
+		</tbody>
+	</table>
+	<p class="card card--hint" style="margin-top:0.75rem;">
+		<strong>Allgemeine vs. typ-spezifische Fragen:</strong> Zusätzlich zu den neun Typen gibt es
+		allgemeine Fragen mit <code>Drone=Alle</code> (für jeden Typ). Piloten mit einer Drohne ausserhalb
+		der Liste bekommen <strong>nur diese allgemeinen Fragen</strong> — weniger Fragen insgesamt, kein
+		typ-spezifischer Anteil.
+	</p>
+
+	<h3>3.4 Direkt in die Fragen (ohne Schulungstext / mit vorgewählter Drohne)</h3>
+	<p><strong>Direkt Training</strong> (Sofort-Feedback, Lerninhalt überspringen):</p>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=quiz&amp;Drone=DJI%20Matrice%20350</span>
+	<p><strong>Direkt Prüfung</strong> (kein Sofort-Feedback):</p>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;direkt=1&amp;Drone=DJI%20Matrice%20350</span>
+	<p>Schulungstext zusätzlich überspringen (Namenseingabe bleibt): <code>ohne_lerntext=1</code></p>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=quiz&amp;ohne_lerntext=1&amp;Drone=DJI%20Matrice%20350</span>
+
+	<h2>4. Wichtige URL-Parameter</h2>
+
+	<table>
+		<thead>
+			<tr><th>Parameter</th><th>Werte / Beispiel</th><th>Bedeutung</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>quiz</code></td>
+				<td><code>RKRSp-EP-preuf</code></td>
+				<td>Assessment-Key aus <code>AssessmentListe.csv</code> (Pflicht für gezielten Aufruf).</td>
+			</tr>
+			<tr>
+				<td><code>Schulung</code></td>
+				<td>(ohne Wert)</td>
+				<td>Schulungsmodus: Lerninhalt + Schulungsprüfung statt reinem Quiz.</td>
+			</tr>
+			<tr>
+				<td><code>QuizModus</code></td>
+				<td><code>quiz</code>, <code>pruefung</code></td>
+				<td><code>quiz</code>: Übungsmodus mit Sofort-Auflösung; <code>QuizModus=quiz</code> springt direkt in die Fragen (ersetzt früher <code>Status=Quiz</code>). <code>pruefung</code>: keine Sofort-Auflösung; mit <code>direkt=1</code> direkter Einstieg in die Fragen.</td>
+			</tr>
+			<tr>
+				<td><code>direkt</code></td>
+				<td><code>1</code></td>
+				<td>Zusammen mit <code>QuizModus=pruefung</code>: Lerninhalt überspringen («Direkt Prüfung»).</td>
+			</tr>
+			<tr>
+				<td><code>EXAM</code></td>
+				<td><code>TEIL01</code>, <code>KURS-2026-A</code></td>
+				<td>Fester Fragebogen pro Code (Buchstaben, Ziffern, <code>_</code>, <code>-</code>, max. 48 Zeichen). Parallel zu allen anderen Parametern.</td>
+			</tr>
+			<tr>
+				<td><code>Drone</code> / <code>Drohne</code></td>
+				<td><code>DJI Mavic 3T</code></td>
+				<td>Nur einer der neun Typen (Abschnitt&nbsp;3.3). Unbekannter Wert → nur allgemeine Fragen.</td>
+			</tr>
+			<tr>
+				<td><code>Name</code></td>
+				<td><code>Max%20Muster</code></td>
+				<td>Teilnehmername vorab (optional).</td>
+			</tr>
+			<tr>
+				<td><code>PilotID</code></td>
+				<td>Piloten-ID</td>
+				<td>Optional; wird bei <code>PersPick=on</code> oft aus der Pilotenliste ergänzt.</td>
+			</tr>
+			<tr>
+				<td><code>Status</code></td>
+				<td><code>Quiz</code>, <code>resultat</code>, …</td>
+				<td>Intern im Formular (POST), nicht für neue Links. Legacy-URL <code>Status=Quiz</code> wird weiterhin akzeptiert (→ <code>QuizModus=quiz</code> bzw. Direkt-Prüfung mit <code>QuizModus=pruefung</code>).</td>
+			</tr>
+			<tr>
+				<td><code>ohne_lerntext</code></td>
+				<td><code>1</code></td>
+				<td>Schulungstext überspringen, direkt zur Namens-/Prüfungseingabe.</td>
+			</tr>
+			<tr>
+				<td><code>ohne_bilder</code></td>
+				<td><code>1</code></td>
+				<td>Fragebilder im Quiz ausblenden (Lösungsbilder bei Feedback bleiben sichtbar).</td>
+			</tr>
+			<tr>
+				<td><code>read_only</code></td>
+				<td><code>1</code></td>
+				<td>Lesemodus (Fragenübersicht).</td>
+			</tr>
+			<tr>
+				<td><code>sortiert</code></td>
+				<td>(ohne Wert)</td>
+				<td>Feste CSV-Reihenfolge statt Zufallsmischung.</td>
+			</tr>
+			<tr>
+				<td><code>PersPick</code></td>
+				<td><code>on</code> / <code>off</code></td>
+				<td>Namensvorschläge aus <code>pilotenliste.json</code> ein/aus.</td>
+			</tr>
+			<tr>
+				<td><code>ADMIN</code></td>
+				<td>(ohne Wert)</td>
+				<td>Admin-Zugang (gesperrte/inaktive Inhalte sichtbar).</td>
+			</tr>
+			<tr>
+				<td><code>INSTR</code></td>
+				<td>(ohne Wert)</td>
+				<td>Instruktor-Vorschau (gesperrte aber aktive Assessments).</td>
+			</tr>
+			<tr>
+				<td><code>RKRSplus</code> / <code>RKRS</code> / <code>RKRSprev</code></td>
+				<td>(Kanal)</td>
+				<td>Portal-/Audienz-Kontext; filtert sichtbare Assessments und Fragen (<code>Audienz</code>-Spalte).</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>5. Beispiel-URLs (Einsatzprüfung RKRS+)</h2>
+
+	<h3>5.1 Schulung zur Einsatzprüfung — zwei Versuche (<code>RKRSp-EP</code>)</h3>
+	<p>Beispiel Teilnehmer «Max Muster», Drohne «DJI Mavic 3T» — je Versuch eigener <code>EXAM</code>-Code:</p>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=EP-VERSUCH-1&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</span>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=EP-VERSUCH-2&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</span>
+	<p>Gleicher Schulungsinhalt, fester Fragenkatalog pro <code>EXAM</code>-Code. Name und Drohne pro Teilnehmer anpassen.</p>
+
+	<h3>5.2 Offizielle Prüfung — ein Versuch (<code>RKRSp-EP-preuf</code>)</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=EP-PRUEF-2026-001&amp;Name=Max%20Muster&amp;Drone=DJI%20Mavic%203T</span>
+	<div class="card card--warn">
+		<strong>EXAM-Verhalten:</strong>
+		<ul style="margin-bottom:0;">
+			<li>Beim <em>ersten</em> Start wird der gemischte Katalog erzeugt und gespeichert.</li>
+			<li>Jeder Aufruf mit gleichem <code>EXAM</code>-Code liefert dieselben Fragen (Fortschritt kann fortgesetzt werden).</li>
+			<li>Nach Abschluss: nur Ergebnisansicht, kein neuer Durchgang.</li>
+			<li>Ohne <code>EXAM</code>: bei jedem Start neuer Zufallskatalog (Übung).</li>
+		</ul>
+	</div>
+
+	<h3>5.3 Schulung mit Lerninhalt (ohne festen EXAM-Code)</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;PersPick=on</span>
+
+	<h3>5.4 Schulungsprüfung ohne Lerninhalt</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;ohne_lerntext=1</span>
+
+	<h3>5.5 Prüfung (keine Sofort-Auflösung, ohne EXAM)</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung</span>
+
+	<h3>5.6 Fester Fragebogen für einen Kurs / Teilnehmer</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;EXAM=KURS24-TEAM3&amp;Name=Max%20Muster&amp;Drone=DJI%20Matrice%20350</span>
+	<div class="card card--warn">
+		<strong>Hinweis:</strong> Für die offizielle Einsatzprüfung siehe Abschnitt 5.2 (<code>RKRSp-EP-preuf</code>).
+	</div>
+
+	<h3>5.7 Direkt Prüfung mit vorgewählter Drohne</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;QuizModus=pruefung&amp;direkt=1&amp;ohne_lerntext=1&amp;Name=Max%20Muster&amp;Drone=Autel%20EVOII640T</span>
+
+	<h3>5.8 Übungs-Quiz (Training, mit Sofort-Feedback)</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf</span>
+	<p>Ohne <code>Schulung</code> und ohne <code>QuizModus=pruefung</code> — reines Übungsquiz.</p>
+
+	<h3>5.9 Admin-Vorschau</h3>
+	<span class="url">…/rkrk_digitalassess.php?quiz=RKRSp-EP-preuf&amp;Schulung&amp;ADMIN&amp;PersPick=on</span>
+
+	<h2>6. Unterschied Training vs. Prüfung (in der Quiz-Übersicht)</h2>
+	<p>Auf der Startseite ohne <code>quiz</code>-Parameter bietet die Liste pro Eintrag typischerweise:</p>
+	<ul>
+		<li><strong>Training</strong> — Übungsmodus, Antworten werden sofort aufgelöst.</li>
+		<li><strong>Prüfung</strong> — setzt <code>QuizModus=pruefung</code> (Exam-Modus).</li>
+		<li><strong>Direkt Training</strong> — <code>QuizModus=quiz</code> (schneller Einstieg, Sofort-Feedback).</li>
+		<li><strong>Direkt Prüfung</strong> — <code>QuizModus=pruefung&amp;direkt=1</code> (schneller Einstieg, kein Sofort-Feedback).</li>
+		<li><strong>ohne Schulungstext</strong> — nur bei Schulungs-Assessments: <code>ohne_lerntext=1</code>.</li>
+		<li><strong>ohne Bilder</strong> — Fragebilder ausblenden: <code>ohne_bilder=1</code>.</li>
+		<li><strong>Lesen</strong> — <code>read_only=1</code>.</li>
+	</ul>
+
+	<h2>7. Link-Generator im Admin</h2>
+	<p>
+		Unter <strong>Assessments → URL Generator</strong> (<code>rkrk_assess.php</code>, Modus Link-Builder)
+		lässt sich die URL interaktiv zusammenstellen: Quiz, Drohne, Name, Piloten-ID, Schulung,
+		Direkt-Quiz (<code>QuizModus=quiz</code>), Lesemodus, PersPick, ADMIN/INSTR.
+	</p>
+	<p>
+		<strong>EXAM</strong> und <code>QuizModus=pruefung</code> können dort manuell an die erzeugte URL
+		angehängt werden (z.&nbsp;B. <code>&amp;EXAM=MEINCODE</code>).
+	</p>
+
+	<h2>8. Kurz-Checkliste für Instruktoren</h2>
+	<ol>
+		<li>Richtigen <code>quiz</code>-Key wählen (z.&nbsp;B. <code>RKRSp-EP-preuf</code> für die Einsatzprüfung).</li>
+		<li>Für Schulungen <code>&amp;Schulung</code> setzen.</li>
+		<li>Für echte Prüfungen <code>&amp;QuizModus=pruefung</code> setzen.</li>
+		<li>Für Direkt-Einstieg: <code>&amp;QuizModus=quiz</code> (Training) oder <code>&amp;QuizModus=pruefung&amp;direkt=1</code> (Prüfung).</li>
+		<li>Für feste Klausurfragen pro Teilnehmer <code>&amp;EXAM=EINDEUTIGER_CODE</code> vergeben.</li>
+		<li><code>&amp;Name=…</code> und <code>&amp;Drone=…</code> pro Teilnehmer setzen — nur Werte aus Abschnitt&nbsp;3.3.</li>
+		<li>Für RKRK-interne Inhalte <code>&amp;RKRK</code> setzen — nicht in Teilnehmer-Links verwenden.</li>
+		<li>Externe RKRS-Links brauchen keinen Kanal-Parameter (Standardfilter reicht).</li>
+		<li>Optional: <code>PersPick=on</code> für Namensauswahl aus der Pilotenliste.</li>
+	</ol>
+
+	<h2>9. Datenablage &amp; Ergebnisse</h2>
+
+	<p>
+		Alle Digital-Assess-Daten liegen unter dem Assess-Stammverzeichnis auf dem Portal:
+		Web-Pfad <code>/rkrsplusassessment/data/assess/</code>.
+	</p>
+
+	<h3>9.1 Verzeichnisstruktur (Portal)</h3>
+
+	<table>
+		<thead>
+			<tr><th>Web-URL (Portal)</th><th>Inhalt</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>/rkrsplusassessment/data/assess/</code></td>
+				<td>Stammordner: Konfiguration, Fragen, Schulungs-HTML, Bilder</td>
+			</tr>
+			<tr>
+				<td><code>…/AssessmentListe.csv</code></td>
+				<td><strong>Zentrale Konfiguration</strong> aller Quiz/Schulungen (Keys, Titel, LernDatei, FragenDatei, …)</td>
+			</tr>
+			<tr>
+				<td><code>…/*.csv</code></td>
+				<td>Fragenkataloge (Spalte <code>FragenDatei</code> in der AssessmentListe)</td>
+			</tr>
+			<tr>
+				<td><code>…/*.html</code></td>
+				<td>Schulungs-Lerninhalte (Spalte <code>LernDatei</code>)</td>
+			</tr>
+			<tr>
+				<td><code>…/images/</code></td>
+				<td>Frage-, Lösungs- und Titelbilder (Unterordner = <code>DriveLocation</code>)</td>
+			</tr>
+			<tr>
+				<td><code>…/results/</code></td>
+				<td>Ergebnisse, Zwischenspeicher, EXAM-Sitzungen (nur Server/Admin)</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>9.2 Abgeschlossene Quiz-/Prüfungsergebnisse</h3>
+	<p>
+		Nach dem Absenden eines Ergebnisses schreibt <code>rkrk_digitalassess.php</code> eine Zeile in:
+	</p>
+	<span class="url">…/data/assess/results/QuizResultate.json</span>
+	<p>Format: JSON (<code>rkropen_quiz_results_v1</code>), eine Zeile pro Durchlauf. Typische Felder:</p>
+	<ul>
+		<li><code>Name</code>, <code>PilotID</code> / <code>PilotenID</code></li>
+		<li><code>Quiz</code> — Assessment-Key (z.&nbsp;B. <code>RKRSp-EP-preuf</code>)</li>
+		<li><code>Zeit</code> — Zeitstempel des Abschlusses</li>
+		<li><code>AnzFragen</code>, <code>Richtig</code>, <code>Erfuellungsfaktor</code>, <code>Erfuellung</code> (Ja/Nein)</li>
+		<li><code>FalscheAntworten</code> — Textuelle Zusammenfassung falscher Fragen</li>
+	</ul>
+	<p>
+		<strong>Auswertung im Browser:</strong> Administration →
+		<a href="rkrk_assess_admin.php?page=results">Ergebnisübersicht</a>
+		(<code>rkrk_assess_admin.php?page=results</code>).
+	</p>
+	<p>
+		Bei Prüfungen mit <code>EXAM=CODE</code> wird das Ergebnis <em>zusätzlich</em> in der EXAM-Sitzung
+		gespeichert (siehe unten). In <code>QuizResultate.json</code> entfällt bei reinem EXAM-Wiederaufruf
+		der doppelte Eintrag.
+	</p>
+
+	<h3>9.3 Zwischenspeicher (Fortschritt während des Quiz)</h3>
+	<span class="url">…/data/assess/results/progress/&lt;hash&gt;.json</span>
+	<p>
+		Unvollständige Durchläufe (Autosave, Wiederaufnehmen nach Unterbruch). Dateiname = Hash aus
+		Quiz-Key, Name, Drohne, Kanal, Schulung, Prüfungsmodus und ggf. <code>exam_code</code>.
+		Alte Dateien werden nach ca. 24&nbsp;h automatisch bereinigt.
+	</p>
+
+	<h3>9.4 Feste EXAM-Fragebögen</h3>
+	<span class="url">…/data/assess/results/exams/&lt;code&gt;_&lt;pilotname&gt;.json</span>
+	<p>
+		Pro <code>EXAM</code>-Code und Teilnehmer eine Datei mit festem Fragenkatalog (Snapshots), Kontext
+		(Quiz, Name, Drohne) und nach Abschluss dem gespeicherten Ergebnis
+		(<code>status: completed</code>). Beispiel: <code>ep-versuch-1-1_thomas_christen.json</code>.
+	</p>
+
+	<h2>10. AssessmentListe — RKRS+ Einsatzprüfung</h2>
+
+	<p>
+		Auf dem RKRS-Portal relevant sind nur die Einträge mit <code>Audienz=RKRSplus</code> für die
+		<strong>Einsatzschulung</strong> und <strong>Einsatzprüfung</strong>. Alle weiteren Assessments
+		(Saison-Quiz, STS, A2, Drohnenkunde, Test, …) sind <strong>RKRK intern</strong> — nur mit
+		<code>?RKRK</code> in der Digital-Assess-URL sichtbar (interne Doku nur mit <code>ADMIN</code>).
+	</p>
+
+	<h3>10.1 Relevante Spalten</h3>
+	<table>
+		<thead>
+			<tr><th>Spalte</th><th>Bedeutung</th></tr>
+		</thead>
+		<tbody>
+			<tr><td><code>Key</code></td><td>Eindeutiger Parameter für <code>?quiz=…</code></td></tr>
+			<tr><td><code>Titel</code></td><td>Anzeigename in der Übersicht</td></tr>
+			<tr><td><code>Schulung</code></td><td><code>Ja</code> = Eintrag erscheint im Schulungs-Hub (mit <code>&amp;Schulung</code> aufrufbar)</td></tr>
+			<tr><td><code>Quiz</code></td><td><code>Ja</code> = interaktiver Fragenkatalog vorhanden</td></tr>
+			<tr><td><code>LernDatei</code></td><td>HTML-Datei mit Schulungstext (relativ zu <code>data/assess/</code>); leer = kein Lerninhalt</td></tr>
+			<tr><td><code>FragenDatei</code></td><td>CSV mit Fragenpool</td></tr>
+			<tr><td><code>DriveLocation</code></td><td>Unterordner unter <code>images/</code> für Bilder</td></tr>
+			<tr><td><code>AnzQuestions</code></td><td>Anzahl gezogener Fragen pro Durchlauf (Obergrenze)</td></tr>
+			<tr><td><code>Audienz</code></td><td>Sichtbarkeit pro Kanal (RKRSplus, RKRK, Alle, …)</td></tr>
+			<tr><td><code>Aktiv</code> / <code>Locked</code></td><td>Freigabe / Sperre für Teilnehmer</td></tr>
+		</tbody>
+	</table>
+
+	<h3>10.2 Schulungs-HTML (RKRS+)</h3>
+	<p>
+		Liegen im Assess-Stammordner. Schulung und Prüfung nutzen unterschiedliche Lern-HTML-Dateien,
+		aber dieselbe Fragen-CSV — und damit dieselben Drohnentypen (Abschnitt&nbsp;3.3).
+	</p>
+
+	<table>
+		<thead>
+			<tr>
+				<th>LernDatei (HTML)</th>
+				<th>Assessment-Key</th>
+				<th>Titel</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>RKRSplus_Schulung.html</code></td>
+				<td><code>RKRSp-EP</code></td>
+				<td>RKRSplus Einsatzschulung</td>
+			</tr>
+			<tr>
+				<td><code>RKRS Einsatzpruefung.html</code></td>
+				<td><code>RKRSp-EP-preuf</code></td>
+				<td>RKRSplus Einsatzprüfung</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>10.3 Zuordnung (RKRS+ auf dem Portal)</h3>
+	<table>
+		<thead>
+			<tr>
+				<th>Key</th>
+				<th>Titel</th>
+				<th>Schulung</th>
+				<th>LernDatei</th>
+				<th>FragenDatei</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr><td><code>RKRSp-EP</code></td><td>RKRSplus Einsatzschulung</td><td>Ja</td><td>RKRSplus_Schulung.html</td><td>RKRS Einsatzpruefung.csv</td></tr>
+			<tr><td><code>RKRSp-EP-preuf</code></td><td>RKRSplus Einsatzprüfung</td><td>Ja</td><td>RKRS Einsatzpruefung.html</td><td>RKRS Einsatzpruefung.csv</td></tr>
+		</tbody>
+	</table>
+
+	<div class="card card--hint">
+		<strong>RKRK intern:</strong> Weitere Einträge in <code>AssessmentListe.csv</code> (z.&nbsp;B.
+		Saisonvorbereitung 2026, STS, A2, Drohnenkunde, Varianten <code>RKRSp-EP-Alain</code> /
+		<code>RKRSp-EP-Team</code>) gehören zum Knonaueramt und sind nur mit <code>?RKRK</code> in der URL sichtbar.
+	</div>
+
+	<footer>
+		Stand: Juni 2026 · RKRS Produktion
+	</footer>
+
+</div>
+</body>
+</html>

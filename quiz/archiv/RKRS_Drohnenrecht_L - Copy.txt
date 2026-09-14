@@ -1,0 +1,166 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>Selbstlernkurs: Rehkitzrettung</h1>-->
+<p><strong>Zielgruppe:</strong> Landwirte, Jäger, Drohnenpiloten, Tierschutzorganisationen, Naturfreunde</p>
+<p><strong>Ziel:</strong> Verständnis der Methoden, Abläufe und rechtlichen sowie ethischen Grundlagen zur Rettung von Rehkitzen vor der Mahd</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir die Grundlagen und praktischen Abläufe der Rehkitzrettung – insbesondere vor der Frühjahrsmahd. Du lernst, warum Rehkitze gefährdet sind, wie man sie effektiv schützt und welche technischen, organisatorischen und rechtlichen Aspekte dabei zu beachten sind.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Biologische Hintergründe zum Verhalten von Rehkitzen verstehen</li>
+  <li>Gefahren durch landwirtschaftliche Mahd erkennen</li>
+  <li>Methoden zur Rehkitzrettung kennen und anwenden</li>
+  <li>Einsatz von Drohnen und Wärmebildtechnik beurteilen</li>
+  <li>Zusammenarbeit mit Landwirten, Jägern und Behörden organisieren</li>
+</ul>
+
+<h2>Kapitel 1: Biologie und Verhalten von Rehkitzen</h2>
+<p><strong>Stichworte:</strong> Setzzeit · Tarnverhalten · Mutter-Kitz-Bindung · Fluchtinstinkt · Lebensraum</p>
+<p>Rehkitze werden in Mitteleuropa meist zwischen Ende April und Anfang Juni geboren – die sogenannte Setzzeit. In den ersten Lebenswochen sind sie besonders gefährdet, da sie sich bei Gefahr nicht aktiv in Sicherheit bringen, sondern instinktiv regungslos im hohen Gras verharren.</p>
+<p>Dieses Verhalten schützt sie vor natürlichen Feinden, wird aber zur tödlichen Falle bei der Mahd. Die Kitze sind kaum sichtbar und fliehen nicht vor herannahenden Mähmaschinen.</p>
+<p>Die Bindung zur Mutter ist locker: Die Ricke legt das Kitz im hohen Gras ab und kehrt nur zum Säugen zurück. Dadurch sind die Kitze oft allein und schwer auffindbar. Ihr Lebensraum sind Wiesen, Waldränder und Felder – genau dort, wo im Frühjahr gemäht wird.</p>
+<div class="highlight">
+✅ Setzzeit: April–Juni<br>
+✅ Tarnverhalten = regungslos bei Gefahr<br>
+✅ Kitze fliehen nicht vor Mähmaschinen<br>
+✅ Mutter besucht Kitz nur zum Säugen<br>
+✅ Lebensraum = Wiesen, Waldränder
+</div>
+
+<h2>Kapitel 2: Gefahren durch die Frühjahrsmahd</h2>
+<p><strong>Stichworte:</strong> Mähtechnik · Mahdzeitpunkt · Flächenstruktur · Tierschutzgesetz · Meldepflicht</p>
+<p>Die Frühjahrsmahd fällt genau in die Setzzeit der Rehkitze. Moderne Mähtechnik ist effizient, aber auch gefährlich: Mähwerke arbeiten schnell und mit hoher Sogwirkung – ein regungsloses Kitz wird nicht erkannt und tödlich verletzt.</p>
+<p>Frühmorgens oder bei feuchtem Wetter sind Kitze besonders gefährdet. Große, offene Wiesen ohne Deckung erhöhen das Risiko. Das Tierschutzgesetz verpflichtet zur Vermeidung vermeidbarer Leiden – Landwirte müssen Schutzmaßnahmen ergreifen.</p>
+<p>In vielen Regionen besteht eine Meldepflicht für Mahdtermine, damit Rettungsteams aktiv werden können.</p>
+<div class="highlight">
+✅ Mahd fällt in Setzzeit<br>
+✅ Mähtechnik = tödliche Gefahr für Kitze<br>
+✅ Frühmorgens = höchste Gefährdung<br>
+✅ Tierschutzgesetz verpflichtet zu Schutzmaßnahmen<br>
+✅ Meldepflicht für Mahdtermine
+</div>
+
+<h2>Kapitel 3: Methoden der Rehkitzrettung</h2>
+<p><strong>Stichworte:</strong> Vergrämung · Absuchen · Drohneneinsatz · Wärmebildkamera · Markierung</p>
+<p>Zur Rettung von Rehkitzen gibt es verschiedene Methoden:</p>
+<ul>
+  <li><strong>Vergrämung:</strong> optische/akustische Reize (Bänder, Radios, Duftstoffe)</li>
+  <li><strong>Absuchen:</strong> Helfergruppen gehen systematisch durch die Fläche</li>
+  <li><strong>Drohneneinsatz:</strong> mit Wärmebildkamera frühmorgens</li>
+</ul>
+<p>Gefundene Kitze werden markiert und nach der Mahd freigelassen. Die Organisation erfolgt durch Jägervereine, Tierschutzgruppen oder spezialisierte Teams – in enger Abstimmung mit dem Landwirt.</p>
+<div class="highlight">
+✅ Vergrämung durch Reize möglich<br>
+✅ Absuchen durch Helfergruppen<br>
+✅ Drohnen mit Wärmebildkamera besonders effektiv<br>
+✅ Kitze markieren und nach Mahd freilassen<br>
+✅ Zusammenarbeit mit Landwirten und Jägern wichtig
+</div>
+
+<h2>Kapitel 4: Organisation und Ablauf der Rettung</h2>
+<p><strong>Stichworte:</strong> Einsatzplanung · Kommunikation · Flugfreigabe · Teamstruktur · Dokumentation</p>
+<p>Der Ablauf beginnt mit der Mahd-Ankündigung durch den Landwirt. Danach erfolgt die Einsatzplanung: Flächenkartierung, Flugroute, Helfereinteilung. Kommunikation zwischen allen Beteiligten ist entscheidend.</p>
+<p>Vor dem Flug ggf. Flugfreigabe einholen. Die Drohne muss registriert und versichert sein. Die Teamstruktur umfasst:</p>
+<ul>
+  <li>Drohnenpilot</li>
+  <li>Wärmebild-Operator</li>
+  <li>Bodenhelfer</li>
+  <li>Dokumentationsperson</li>
+</ul>
+<p>Die Suche beginnt frühmorgens. Nach der Mahd werden die Kitze freigelassen. Der Einsatz wird dokumentiert – z. B. mit Fotos, GPS-Daten und Protokoll.</p>
+<div class="highlight">
+✅ Mahd frühzeitig ankündigen<br>
+✅ Einsatzplanung und Kommunikation zentral<br>
+✅ Flugfreigabe ggf. erforderlich<br>
+✅ Teamstruktur mit klaren Rollen<br>
+✅ Dokumentation des Einsatzes empfohlen
+</div>
+
+<h2>Kapitel 5: Haftung, Sanktionen und Versicherungspflichten</h2>
+<p><strong>Stichworte:</strong> Haftpflicht · Fahrlässigkeit · Bußgeld · Strafrecht · Versicherungssumme</p>
+<p>Der Betrieb von Drohnen bringt eine erhebliche Verantwortung mit sich. Wer eine Drohne fliegt, haftet für Schäden – sowohl Sach- als auch Personenschäden. Die Haftung ist meist verschuldensunabhängig, d. h. sie gilt auch ohne Vorsatz oder Fahrlässigkeit.</p>
+
+<p>Typische Haftungsfälle:</p>
+<ul>
+  <li>Kollision mit Fahrzeugen oder Gebäuden</li>
+  <li>Absturz auf Personen</li>
+  <li>Störung des Luftverkehrs</li>
+  <li>Verletzung von Persönlichkeitsrechten durch Bildaufnahmen</li>
+</ul>
+
+<p>In der Schweiz und EU ist eine Haftpflichtversicherung vorgeschrieben – unabhängig von der Nutzungsart. Mindestdeckung: 1 Mio. CHF bzw. 1 Mio. EUR.</p>
+
+<p>Versicherung muss abdecken:</p>
+<ul>
+  <li>Sach- und Personenschäden</li>
+  <li>Datenschutzverletzungen</li>
+  <li>Fehlfunktionen und Bedienfehler</li>
+</ul>
+
+<p>Verstöße gegen die Versicherungspflicht oder gegen die EU-Drohnenverordnung können zu Bußgeldern, Flugverboten oder strafrechtlichen Konsequenzen führen.</p>
+
+<p>Typische Sanktionen:</p>
+<ul>
+  <li>Flug in verbotenen Zonen</li>
+  <li>Betrieb ohne Registrierung</li>
+  <li>Missachtung von Sichtflugregeln</li>
+  <li>Flug ohne Schulungsnachweis</li>
+</ul>
+
+<div class="highlight">
+✅ Haftung auch ohne Verschulden möglich<br>
+✅ Versicherungspflicht mit Mindestdeckungssumme<br>
+✅ Bußgelder und strafrechtliche Konsequenzen bei Verstößen<br>
+✅ Datenschutzverletzungen sind haftungsrelevant<br>
+✅ Gewerbliche Betreiber tragen erhöhte Verantwortung
+</div>
+
+<h2>Kapitel 6: Technische Anforderungen und CE-Klassifizierung</h2>
+<p><strong>Stichworte:</strong> CE-Kennzeichnung · Drohnenklassen · Geo-Awareness · Fernidentifikation · Sicherheitsfunktionen</p>
+<p>Seit 2023 müssen neue Drohnen eine CE-Kennzeichnung mit Klassifizierung tragen. Diese beschreibt technische Ausstattung und Sicherheitsfunktionen.</p>
+
+<p>CE-Klassen:</p>
+<ul>
+  <li><strong>C0:</strong> <250 g – keine Registrierungspflicht</li>
+  <li><strong>C1:</strong> <900 g – geeignet für A1, mit Geo-Awareness und Fernidentifikation</li>
+  <li><strong>C2:</strong> <4 kg – geeignet für A2, mit Schulungsnachweis</li>
+  <li><strong>C3/C4:</strong> <25 kg – geeignet für A3, meist ohne Sensorik</li>
+</ul>
+
+<p>CE-Kennzeichnung muss sichtbar und dauerhaft angebracht sein. Sie enthält Angaben zu:</p>
+<ul>
+  <li>Gewicht und Abmessungen</li>
+  <li>Maximale Geschwindigkeit</li>
+  <li>Lärmpegel</li>
+  <li>Seriennummer und Hersteller</li>
+  <li>Sicherheitsfunktionen</li>
+</ul>
+
+<p>Wichtige Funktionen:</p>
+<ul>
+  <li><strong>Geo-Awareness:</strong> erkennt Flugverbotszonen und warnt oder blockiert Flug</li>
+  <li><strong>Fernidentifikation:</strong> sendet digitale Kennung während des Fluges</li>
+</ul>
+
+<p>Für Altgeräte ohne CE-Kennzeichnung gelten Übergangsregelungen bis Ende 2024 – danach nur noch eingeschränkter Betrieb möglich (z. B. A3 mit Abstand).</p>
+
+<p>Beim Kauf einer Drohne sollte die CE-Klasse beachtet werden. Regelmäßige Software- und Firmware-Updates sind notwendig, um Sicherheitsfunktionen aktuell zu halten.</p>
+
+<div class="highlight">
+✅ CE-Kennzeichnung ist seit 2023 Pflicht für neue Drohnen<br>
+✅ Drohnenklassen C0–C4 definieren Einsatzbereiche<br>
+✅ Geo-Awareness und Fernidentifikation erhöhen Sicherheit<br>
+✅ CE-Klasse bestimmt, in welcher Kategorie die Drohne betrieben werden darf<br>
+✅ Übergangsregelungen für Altgeräte gelten bis Ende 2024
+</div>
+

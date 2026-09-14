@@ -1,0 +1,557 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" >
+<?php
+	//session_start();
+	include_once('scripts/rkrk_gen.php');
+	include_once('scripts/rkrk_csvfiles.php');
+	include_once('scripts/rkrk_inputforms.php');
+	$AdressTableType="Users";
+	include_once('scripts/rkrk_adr.php');
+	include_once('scripts/rkrk_menu.php');
+	include_once('rkrk_access_control.php'); 
+	
+	$pagetitle = "Webseiten Benutzer";
+	headerpage($pagetitle , false);
+	GrantAccess();
+	CreateTopMenu();
+	PrintRKRKHeader($pagetitle);
+
+
+
+	//check impropriate IP addresses accessing page
+	CheckIPandExit();
+	GrantAccess();
+
+	SetMissionLocation();
+	$MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
+	//echo "Loc: " . $RKRKMissionSelected . " - MDB: " .$csvDocLocation . "<br>";
+
+	//Write to LOGfile
+	WriteToLog("get", basename($_SERVER['PHP_SELF']), "öffnen ",$RKRKMissionSelected,"","");
+
+
+	// ===========================================
+	// Gobal Defintions
+	// ===========================================
+
+	$csv_desc = ';';
+	$csv_file= $RKRK_Users;
+
+	//Read CSV file
+	//transferGoogleSheetToCSV();
+	$data = csv_to_array($csvDocLocation.$csv_file,$csv_desc);
+	$data = GetAdrListUsers ($data);
+	//pre_r($data);
+
+	// ===========================================
+	// Defintions
+	// ===========================================
+		$fileoutput = "";
+		$debugoutput = false;
+
+
+	// ===========================================
+	// Paramters
+	// ===========================================
+	if ($_SERVER["REQUEST_METHOD"] == "POST") {
+		$SetAll = false;
+	} else {
+		$SetAll = true;
+	}
+	if (isset($_POST["ListenWahl"])) {
+		$ListenWahl = $_POST["ListenWahl"];
+	} else	{
+		$ListenWahl = '';
+	}
+
+	if (isset($_GET["EnableDelete"])) {
+	   if (strtolower($_GET["EnableDelete"])=="on") {
+			//echo "EnableDelete=on";
+			$EnableDelete= true;
+		} else {
+			//echo "EnableDelete=off";
+			$EnableDelete= false;
+		}
+	}
+
+	IF ($EnableDelete) {
+		$EnableDeleteSet = "EnableDelete=on";
+	} else {
+		$EnableDeleteSet = "EnableDelete=off";
+	}
+	
+	if ($_GET["DoSafe"]=="Y") {
+		$dosafe= true;
+	} else {
+		$dosafe= false;
+	}
+
+	if (isset($_GET["delete"]) && isset($_GET["ID"]) ) { 
+		if ($_GET["delete"]=="Y") {
+			$dodelete= $_GET["ID"];
+			$dosafe = true;
+		} else {
+			$dodelete= false;
+		}
+	} else {
+		$dodelete= false;
+	}
+
+	if (isset($_GET["Sortieren"])) {
+		$ColSort = $_GET["Sortieren"];
+	} else {
+		$ColSort = "ID";
+	}
+
+///////////////////////////////////////
+// Process Input Data
+///////////////////////////////////////
+	if (
+		($_SERVER["REQUEST_METHOD"] == "POST")
+		) {
+		// safe history
+		$file = $csvDocLocation . $RKRK_Users;
+		$Min =  intval(date("i")/10)*10;
+		$newfile = $historyfilelocation . date("YmdH") . sprintf("%02d", $Min) . "_" . $RKRK_Users;
+		//echo "<br>History: " . $file . " to  " . $newfile;
+
+		for ($i = 1; $i <= $_POST["NumEntries"]; $i++) {
+			if (
+				$_POST["Initialen-" . $i]!="" or
+				//$_POST["Jagdgebiet-" . $i]!="" or
+				$_POST["Name-" . $i]!=""
+				) {
+				//echo "ID: " . $_POST["ID-" . $i] . " - " . $_POST["Initialen-" . $i] . " - " . $_POST["Jagdgebiet-" . $i]. " - " . $_POST["RKRS-" . $i]  . " - " . $_POST["Typ-" . $i]. "<br>";
+				if ($_POST["ID-" . $i]=="") {
+					$IDField = GetNextID($data);
+				} else { 
+					$IDField = $_POST["ID-" . $i];
+				}
+				// copy input data to internal array
+				foreach ($TableSetup AS $TableEntry) {
+					//echo $TableEntry["Field"] . " - " . $_POST[$TableEntry["Field"]."-" . $i] . "<br>"; 
+					if ($TableEntry["Field"]=="ID") {
+						$data[$IDField][$TableEntry["Field"]] =$IDField;
+					} else {	
+						$data[$IDField][$TableEntry["Field"]] =cleanString($_POST[$TableEntry["Field"]."-" . $i]);
+					}
+				}
+			}
+		}	
+		//pre_r($data);
+
+		//new configuration, safe configuration file
+		//echo "NumE: " . $_POST["NumEntries"] .  "<br>" . chr(10);
+		$i= 1;
+
+		$filecontent = "";
+		//$filecontent = 'ID;Initialen;JG;Jagdgebiet;Name;Kontaktnummer;P Telefon;Mail;Adresse;RKRS;Typ;Bemerkung' . chr(13) . chr(10);
+		foreach ($TableSetup AS $TableEntry) {
+			$filecontent .= $TableEntry["Field"] . ";";
+		}
+		$filecontent = substr($filecontent, 0, -1). chr(13) . chr(10); 
+
+		//pre_r($data);
+		unset($_SESSION[$SessNme_UserList]);
+		foreach ($data as $key => $dataline) {
+			//echo "ID: ". $dataline["ID"] . "<br>";
+			IF ($dodelete!= $dataline["ID"]) {
+				// delete marked line
+				
+				//Add AdressID if Missing
+				if ($dataline["ID"]=="") {
+					$dataline["ID"]=GetNextID($data);
+				}
+				//Add Passwort_hashed (where missing)
+				$dataline["Passwort_hashed"]=password_hash($dataline["Passwort"], PASSWORD_DEFAULT);
+				//$rowcontent = chr(34);
+				$rowcontent = "";
+				//$rowcontent .= CheckForKomma($i) . $csv_desc;
+
+				//collecting output data
+				foreach ($TableSetup AS $TableEntry) {
+					$rowcontent .= CheckForSemicolon($dataline[$TableEntry["Field"]]) . $csv_desc;
+					//update internal userlist
+					$_SESSION[$SessNme_UserList][$dataline["Benutzername"]][$TableEntry["Field"]] = $dataline[$TableEntry["Field"]];
+				}
+				//cut last descriminator
+				$rowcontent= substr($rowcontent, 0, -1);
+				//$rowcontent .= chr(34). chr(13) . chr(10);
+				$rowcontent .= chr(13) . chr(10);
+				//echo $dataline["ID"] . " - " . $rowcontent . "<br>";
+				$i++;
+				$filecontent .= $rowcontent;
+			} 
+			//else {
+			//	// delete line as requested
+			//	echo "unset " . $key;
+			//}
+		}
+		
+		//pre_r($data);
+		if (($dosafe)) {
+			$filepath= $csvDocLocation . $csv_file;
+
+			// safe history
+			$file = $filepath;
+			//$newfile = $historyfilelocation . date("YmdH") . "00_" . $csv_file;
+			//echo "<br>History: " . $file . " to  " . $newfile;
+			if (!copy($file, $newfile)) {
+				$SystemInfo .= "failed to copy $file...\n";
+			}
+
+			// safe file
+			//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
+			//echo  $filecontent;
+			$df = fopen($filepath, 'w');
+			file_put_contents($df, "");
+			fputs($df, $filecontent);
+			fclose($df);
+		} else {
+			//echo "output: <br><br>" . $filecontent;
+
+		}
+
+	}
+
+	//read file (again after writing to file
+	//transferGoogleSheetToCSV($csvDocLocation.$csv_file);
+	$data = csv_to_array($csvDocLocation.$csv_file,$csv_desc);
+	$data = GetAdrListKntkt ($data, $ColSort);
+	//pre_r($data);
+
+		// ===========================================
+		// Print Page content
+		// ===========================================
+		$output = "";
+		
+		// Printing all the keys and values one by one
+
+// =====================
+// Prepare Page output
+///=====================
+
+
+	//pre_r(array_keys($Feldkatalog));
+	//control elements
+	if (isset($_POST["AnzLinesPPage"])) {
+		if ($_POST["AnzLinesPPage"]=="all") {
+			$AnzLinesPPage= 999;
+		} else {
+			$AnzLinesPPage= $_POST["AnzLinesPPage"];
+		}
+	} else {
+		$AnzLinesPPage= 30;
+	}
+	if (isset($_GET["ActPage"]) and $_GET["ActPage"]!="") {
+		$ActPage= $_GET["ActPage"];
+	} else {
+		$ActPage= 1;
+	}
+	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
+		$FontSize= $_POST["FontSize"];
+	} else {
+		$FontSize= "100%";
+	}
+
+
+	// ===========================================
+	// FORM
+	// ===========================================
+
+    
+//Initialen,JG,Jagdgebiet,Name,Kontaktnummer,P Telefon,Mail,Adresse,RKRS,Bemerkung
+	$FontSizeInPoints = 11;
+	if ($FontSize== "") {
+		$FontSize= "100%";
+	}
+	$TableColor =  GetTableColor ("");
+	AlternateLineTable($TableColor['even'], $FontSize, $FontSizeInPoints, $TableColor['odd']);
+	SetTableWidth("100%");
+
+	$i=1;
+	$pageline = 1;
+
+	$DataSetFound = false;
+
+	echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">'. chr(10);
+	echo "<table>";
+	echo "<tr><td width=80% colspan=3>";
+	echo "</td>";
+	echo "</tr><tr>";
+	echo "<td>";
+	//echo "Typ:";
+	echo "</td>";
+	echo "<td>";
+	$EnabledOption = Array();
+	$SearchOption = Array();
+	$ListOfTyp="";
+	$i=1;
+	//pre_R($AddressTypeOptions);
+	foreach ($AddressTypeOptions as $Opt ) {
+	//foreach (array_diff($AddressTypeOptions,Array("-")) as $Opt ) {
+		if ((($_POST["Opt-".$i])=="on") or $SetAll) {
+			$checked = "checked";
+			$EnabledOption[$Opt["Text"]] = 1;
+			$SearchOption[] = $Opt["Text"];
+			$ListOfTyp.= $Opt["Text"] .","; 
+		} else {
+			$checked = "";
+			$EnabledOption[$Opt["Text"]] = 0;
+		}
+		echo '<input type="checkbox" name="'. "Opt-".$i. '" ' . $checked . '>'. $Opt["Text"]. chr(10);
+		$i++;
+	}
+	//pre_R($EnabledOption);
+	//pre_R($SearchOption);
+	echo "</td>";
+	echo "<td>";
+	$ListOfTyp= substr($ListOfTyp,0,-1);
+	if ($Layout!=2023) {
+		echo CreateSiteLink ("Home", "");
+		echo CreateSiteLink ("GoBack", "");
+	}
+	//Enable Delete
+	if (GetAccess("DeleteData")) {
+		if ($EnableDelete) {
+			//echo "ED - ON";
+			echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_on.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" . $MissionSelectionParameter. "&EnableDelete=off' height='" . $ButtonHeight . "'  title='Delete Moduls ausschalten'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
+		} else {
+			//echo "ED - OFF";
+			echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_off.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" . $MissionSelectionParameter . "&EnableDelete=on' height='" . $ButtonHeight . "'title='Delete Moduls einschalten'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
+		}
+	}
+	//Not needed on this page
+	//echo  MissionLibraryButtons("&ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" . "DBW=off&" . $EnableDeleteSet,true);
+	if (GetAccess("TestOnly")) {
+		echo "<span id='exceldwnld'><a href='".$csvDocLocation.$RKRK_Users."' ><image src='" . $IconLoc . "/excel.png' height='" . $ButtonHeight. "'  title='Excel Userliste herunterladen'></a></span> ";
+		//$csvDocLocation.$RKRK_Users = "Rehitzrettung - Users.csv";
+	}
+
+	echo "</td>";
+
+	echo "<tr><td>";
+		echo "Felder: ";
+		echo "</td><td>";
+		foreach ($TableSetup as $Feld ) {
+			if ($_SERVER["REQUEST_METHOD"] == "POST") {
+			//if (isset($_POST[$Feld["Field"] . "_en"])) {
+				//echo $Feld["Field"] . " ". ($_POST[$Feld["Field"] . "_en"]) . "/ ";
+				//echo "post  ";
+				if (($_POST[$Feld["Field"] . "_en"])=="on") {
+					$checked = "checked";
+					$TableSetup[$Feld["Field"]]["Show"] = true;
+				} else {
+					$checked = "";
+					$TableSetup[$Feld["Field"]]["Show"] = false;
+				}
+				echo '<input type="checkbox" name="'. $Feld["Field"] . "_en" . '" ' . $checked . '>'. $Feld["Text"]. chr(10);
+			}	else {
+				//echo "default settings  ";
+				//echo $Feld["Field"] . " ". $Feld["Show"] . "/ ";
+				if ($Feld["Show"]==true) {
+					$checked = "checked";
+				} else {
+					$checked = "";
+				}
+				echo '<input type="checkbox" name="'. $Feld["Field"] . "_en" . '" ' . $checked . '>'. $Feld["Text"]. chr(10);
+			}
+		}
+		echo '<br>'. chr(10);
+		$i++;
+
+	echo "</tr><tr>";
+	echo "<td>";
+	echo "Suche:";
+	echo "</td>";
+	echo "<td>";
+	echo InputField("ListenWahl", $ListenWahl, 20);
+	echo "</td>";
+	echo "</tr>";
+	echo "</table>";
+	if (GetAccess("DebugDataBase")) {
+		echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?' .'DBW=' . $_GET["DBW"]. '"> '. chr(10);
+	} else {
+		echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?' .'"> '. chr(10);
+	}
+	echo "</br>";
+	echo "</br>";
+	//echo '		<button type="submit" >Adressen speichern</button>'. chr(10);
+	//echo "<input type='submit' value='Speichern' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?" . $MissionSelectionParameter . "&" . $EnableDeleteSet . "'>" .chr(10);
+	//echo "ActPage: " . $ActPage;
+
+	//form to change setting
+	if ($fileloaded=true) {
+		// ===========================================
+		// Spezielle Filter
+		// ===========================================
+		//echo "FeldNamenWahl: " . $ListenWahl . "<br>";
+		$i=1;
+		//pre_r($SearchOption);
+		
+		foreach ($data as $Key => $dataline) {
+			//echo $dataline["Betrieb"] . "-" . like($dataline["Betrieb"], $ListenWahl). "<br>";
+			if (
+					($ListenWahl == "" 
+					or like($dataline["Initialen"], $ListenWahl)
+					or like($dataline["Benutzername"], $ListenWahl)
+					or like($dataline["Bemerkung"], $ListenWahl))
+					//and in_array($dataline["Typ"], $SearchOption)
+				) 
+			{
+				$data[$Key]["ListNr"]= $i;
+				$i++;
+			} else {
+				$data[$Key]["ListNr"]= "";
+			}
+		}
+		$MaxSelectedEntries = $i;
+	}
+	//pre_r($data);
+	//"MaxEntries: " . $MaxSelectedEntries . "<br>";
+	$i=1;
+	$MaxPages = ceil($MaxSelectedEntries/$AnzLinesPPage);
+	$showfrom = ($ActPage-1)*$AnzLinesPPage;
+	$showto = $showfrom + $AnzLinesPPage;
+	$FontSizeInPoints = 11;
+	if ($FontSize== "") {
+		$FontSize= "100%";
+	}
+
+	PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, false, "Speichern", false, "&" . "Sortieren="  . $ColSort);
+
+	echo "<table>" .chr(10);
+	echo "<tr >" .chr(10);
+	if ($EnableDelete) {
+		echo "<th></th>" .chr(10);
+	}
+	echo "<th>#</th>" .chr(10);
+	foreach ($TableSetup AS $TableEntry) {
+		if ($TableEntry["Show"]== true) {
+			echo "<th>" .chr(10);
+			if ($TableEntry["Sort"]!="") {
+				echo "<input type='image' value='Sortieren' src='" . $IconLoc . "/sortieren.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&" . "Sortieren="  . $TableEntry["Sort"] . "&" . $MissionSelectionParameter . "&" . $EnableDeleteSet . "' height='" . $ButtonHeight*0.7 . "'  title='Spalte sortieren'  style='background-color:transparent; bOrder-color:transparent;'>" .chr(10);
+			}
+			echo $TableEntry["Text"] . " </th>" .chr(10);
+
+		}
+	}
+	echo "</tr >" .chr(10);
+	
+	foreach ($data as $dataline) {
+		//pre_R($dataline);
+		//echo "ID. " . $dataline["ID"] . " .<br>";
+		if ($dataline["ListNr"]!="" && 
+			$dataline["ListNr"]>=$showfrom && 
+			$dataline["ListNr"]<$showto){
+		// Existing Data
+			echo '<tr>' .chr(10);
+			if ($EnableDelete) {
+				echo '<td>' .chr(10);
+				// delete
+				if (GetAccess("DeleteData")) {
+					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" . "ID=" . $dataline['ID'] . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "&DBW=" . $_GET["DBW"]. "' height='" . $ButtonHeightSmall . "' title='Linie " . $i . " löschen'>" .chr(10);
+				} else {
+					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" .  "delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "' height='" . $ButtonHeightSmall . "'  title='Linie " . $i . " löschen'>" .chr(10);
+				}
+			echo '</td>' .chr(10);
+			}
+			
+
+			echo '<td>' .chr(10);
+			echo $i;
+			echo '</td>' .chr(10);
+			foreach ($TableSetup AS $TableEntry) {
+				if ($TableEntry["Show"]== true) {
+					// show entries
+					if ($TableEntry["Type"]=="input") {
+						echo '<td>' .chr(10);
+						echo InputField($TableEntry["Field"]."-" . $i, $dataline[$TableEntry["Field"]], $TableEntry["Length"] , $TableEntry["Align"]);
+						echo '</td>' .chr(10);
+					}
+					if ($TableEntry["Type"]=="Name") {
+						echo '<td>' .chr(10);
+						echo $dataline[$TableEntry["Field"]];
+						echo InputField($TableEntry["Field"]."-" . $i, $dataline[$TableEntry["Field"]], $TableEntry["Length"] , $TableEntry["Align"], "hidden");
+						echo '</td>' .chr(10);
+					}
+					if ($TableEntry["Type"]=="InputArea") {
+						echo '<td>' .chr(10);
+						echo InputTextarea($TableEntry["Field"]."-" . $i, $dataline[$TableEntry["Field"]], $TableEntry["Length"], 1, $TableEntry["Length"]);
+						echo '</td>' .chr(10);
+					}
+					if ($TableEntry["Type"]=="select") {
+						echo '<td>' .chr(10);
+						echo SelectField($TableEntry["Field"]."-" . $i, strval($dataline[$TableEntry["Field"]]) ,$TableEntry["Options"] );
+						echo "</td>" .chr(10);
+					}
+				} else {
+					//hidden
+					echo '<input type="hidden" name="'.$TableEntry['Field'] . '-' . $i . '" id="'. $TableEntry['Field'] . '-' . $i . '" value="'. $dataline[$TableEntry['Field']] . '" />'. chr(10);
+				}
+			}
+			
+			
+		}
+		$i++;
+	}
+	//new data
+	echo "<tr><td colspan='12'><i>Neue Einträge:</i><td></tr>". chr(10);
+	$MaxEntry = $i+5;
+	while ($i <= $MaxEntry)  {
+		if (true) {
+		// Configsform empty
+		// Existing Data
+			echo '<tr>' .chr(10);
+			if ($EnableDelete) {
+				echo "<td></td>" .chr(10);
+			}
+			echo '<td>' .chr(10);
+			echo $i;
+			echo '</td>' .chr(10);
+			foreach ($TableSetup AS $TableEntry) {
+				if ($TableEntry["Show"]== true) {
+					// show entries
+					if ($TableEntry["Type"]=="input") {
+						echo '<td>' .chr(10);
+						echo InputField($TableEntry["Field"]."-" . $i, "", $TableEntry["Length"] , $TableEntry["Align"]);
+						echo '</td>' .chr(10);
+					}
+					if ($TableEntry["Type"]=="text") {
+						echo '<td>' .chr(10);
+						echo $dataline[$TableEntry["Field"]];
+						echo InputField($TableEntry["Field"]."-" . $i, "", $TableEntry["Length"] , $TableEntry["Align"], "hidden");
+						echo '</td>' .chr(10);
+					}
+					if ($TableEntry["Type"]=="InputArea") {
+						echo '<td>' .chr(10);
+						echo InputTextarea($TableEntry["Field"]."-" . $i, "", $TableEntry["Length"], 1, $TableEntry["Length"]);
+						echo '</td>' .chr(10);
+					}
+					
+					if ($TableEntry["Type"]=="select") {
+						echo '<td>' .chr(10);
+						echo SelectField($TableEntry["Field"]."-" . $i, "" ,$TableEntry["Options"] );
+						echo "</td>" .chr(10);
+					}
+				} else {
+					//hidden
+					echo '<input type="hidden" name="'.$TableEntry['Field'] . '-' . $i . '" id="'. $TableEntry['Field'] . '-' . $i . '" value="" />'. chr(10);
+				}
+			}
+		}
+		$i++;
+	}
+	echo "</table>" .chr(10);
+	echo '<input type="hidden" name="NumEntries" id="NumEntries" value="'. $i. '" />'. chr(10);
+
+//	echo '		<button type="submit" >Adressen speichern</button>'. chr(10);
+//	echo "<input type='submit' value='Speichern' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?" . $MissionSelectionParameter . "&" . $EnableDeleteSet . "'>" .chr(10);
+	PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, true, "Speichern", false, "&" . "Sortieren="  . $ColSort);
+	
+
+	echo '</form>'. chr(10);
+?>
+
+</body>
+</HTML>

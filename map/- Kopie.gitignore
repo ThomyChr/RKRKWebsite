@@ -1,0 +1,21 @@
+# Runtime / local data
+/data/
+*.json.bak
+
+# Legacy local backups (use git commits instead)
+*.bak
+*.bak*
+*.bak_*
+
+# Recovery file copies (scripts stay tracked; checkpoints are git commits)
+/_recovery/checkpoints/
+/_recovery/LATEST.txt
+
+# OS / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/

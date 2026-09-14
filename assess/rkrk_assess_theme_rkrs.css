@@ -1,0 +1,323 @@
+/**
+ * RKRS / RKRSplus / RKRSprev — neutrale CI-Farben (Grautöne).
+ * Funktionale Farben (danger, Timer, Ampel/Direct-Check, OK/Warn) bleiben in rkrk_assess_theme.css.
+ * Wird nach rkrk_assess_theme.css eingebunden und überschreibt nur :root-Variablen.
+ */
+:root{
+  --brand:#b3b8bf;
+  --brand-dark:#676f7b;
+  --text:#1a2027;
+  --muted:#f1f3f5;
+  --bg:#fbfcfd;
+  --border:#e8ebef;
+  --footer-link:#5f6875;
+  --table-head-bg:#f6f8fa;
+  --table-row-border:#eff2f5;
+  --input-border:#d9dee5;
+  --kpi-bg:#fcfdfe;
+  --kpi-border:#e6eaf0;
+  --toolbar-bg:#f5f8fa;
+  --toolbar-bd:#dee4eb;
+  --toolbar-btn-bd:#ced6df;
+  --toolbar-text:#4a5463;
+  --toolbar-hover-bg:#edf2f6;
+  --toolbar-hover-bd:#adb8c5;
+  --toolbar-focus:#676f7b;
+  --print-accent:#666f7c;
+  --print-section-border:#666f7c;
+  --print-field-border:#c1c9d3;
+  --print-value-meta:#727b88;
+  --print-highlight-text:#4a5463;
+  --print-options-bg:#fcfdfe;
+  --print-options-border:#e0e6ed;
+  --option-fill:#f3f6f9;
+  --option-selected-text:#1a2027;
+  --flow-bg-from:#fcfdfe;
+  --flow-bg-to:#f6f9fc;
+  --flow-border:#dfe5ec;
+  --flow-border-left:#676f7b;
+  --flow-head:#5b6573;
+  --flow-code-bg:#edf2f7;
+  --flow-check-border:#e7ecf2;
+  --sum-box-border:#dfe5ec;
+  --sum-box-bg:#fcfdfe;
+  /* ../template/flex.css :root — zweites rkrs-Link nach flex gewinnt */
+  --green-dark:#717b89;
+  --green-mid:#b5bec9;
+  --green-light:#e8edf2;
+  --green-vlight:#fafbfd;
+  --white:#ffffff;
+  --text-dark:#1a2027;
+  --text-mid:#4a5568;
+  /* main_scratch.css / main_green.css — gleiche Token wie Grün-Layout, Werte neutral (RKRS) */
+  --vdark_green:#676f7b;
+  --dark_green:#5c6572;
+  --mid_green:#b5bec9;
+  --light_green:#dfe5ec;
+  --vlight_green:#f4f7fa;
+  --list-info-orange:#c2410c;
+}
+
+/*
+ * Portal / Admin — gleiche Regeln wie in rkrk_assess_theme.css (CI über :root).
+ * RKRS-Modus: zweites Einbinden dieser Datei nach flex.css hält .btn / Kopf / Sektionen stabil.
+ */
+.rkrk-wrap .cl-header{
+  position:relative;
+  min-height:84px;
+  margin-bottom:14px;
+  padding-right:100px;
+  box-sizing:border-box;
+}
+.rkrk-wrap .cl-header h1{
+  margin:0;
+  font-size:24px;
+  line-height:1.25;
+  font-weight:700;
+  color:var(--text);
+}
+.rkrk-wrap .cl-header img{
+  height:80px;
+  width:auto;
+  max-width:42%;
+  position:absolute;
+  top:0;
+  right:0;
+  object-fit:contain;
+}
+.rkrk-wrap a.btn,
+.rkrk-wrap button.btn{
+  display:inline-block;
+  box-sizing:border-box;
+  padding:10px 16px;
+  border-radius:8px;
+  border:1px solid var(--input-border);
+  background:#fff;
+  color:var(--text);
+  font-size:15px;
+  font-weight:600;
+  font-family:inherit;
+  line-height:1.25;
+  text-align:center;
+  text-decoration:none;
+  cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,color .15s ease;
+}
+.rkrk-wrap a.btn:hover,
+.rkrk-wrap button.btn:hover{
+  background:var(--toolbar-hover-bg);
+  border-color:var(--toolbar-hover-bd);
+  color:var(--text);
+}
+.rkrk-wrap .btn.btn-primary,
+.rkrk-wrap a.btn.btn-primary,
+.rkrk-wrap button.btn.btn-primary{
+  background:var(--brand);
+  border-color:var(--brand-dark);
+  color:#fff;
+}
+.rkrk-wrap .btn.btn-primary:hover,
+.rkrk-wrap a.btn.btn-primary:hover,
+.rkrk-wrap button.btn.btn-primary:hover{
+  background:var(--brand-dark);
+  border-color:var(--brand-dark);
+  color:#fff;
+}
+.rkrk-wrap .btn-newfield{
+  display:inline-block;
+  padding:8px 12px;
+  border-radius:8px;
+  border:1px solid var(--toolbar-btn-bd);
+  background:var(--toolbar-bg);
+  color:var(--brand-dark);
+  font-size:14px;
+  font-weight:600;
+  font-family:inherit;
+  cursor:pointer;
+  line-height:1.2;
+}
+.rkrk-wrap .btn-newfield:hover{
+  background:var(--toolbar-hover-bg);
+  border-color:var(--toolbar-hover-bd);
+}
+.rkrk-card.danger{
+  border-color:#f5c2c2;
+  background:#fff5f5;
+  color:var(--text);
+}
+.rkrk-card h2{
+  margin:0 0 12px;
+  font-size:1.2rem;
+  font-weight:700;
+  color:var(--text);
+}
+.rkrk-card h3{
+  margin:16px 0 8px;
+  font-size:1.05rem;
+  font-weight:700;
+  color:var(--text);
+}
+.rkrk-card h2:first-child,
+.rkrk-card h3:first-child{
+  margin-top:0;
+}
+.rkrk-card p{
+  margin:0 0 12px;
+  line-height:1.5;
+}
+.rkrk-card ul{
+  margin:0 0 12px;
+  padding-left:1.25em;
+  line-height:1.45;
+}
+.rkrk-card code{
+  font-family:ui-monospace,"Cascadia Code","Source Code Pro",Menlo,Consolas,monospace;
+  font-size:0.88em;
+  background:var(--flow-code-bg);
+  padding:2px 7px;
+  border-radius:5px;
+}
+.rkrk-wrap .section-row{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin-bottom:20px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--border);
+}
+.rkrk-wrap .section-title-box{
+  font-weight:700;
+  font-size:1.02rem;
+  line-height:1.3;
+  color:var(--text);
+  margin:0;
+  padding:10px 12px;
+  background:var(--table-head-bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-sizing:border-box;
+  width:100%;
+}
+.rkrk-wrap .section-fields{
+  min-width:0;
+  width:100%;
+}
+
+/* flex.css: fest kodierte Grün-Hex */
+.nr-chip.active {
+  background: var(--brand-dark);
+  color: #fff;
+  border-color: var(--brand-dark);
+}
+.nr-chip.active:hover {
+  background: #3d4754;
+  border-color: #3d4754;
+}
+.btn-newfield {
+  background: #eceff2;
+  border: 1px solid #c5cad2;
+  color: var(--brand-dark);
+}
+::placeholder {
+  color: #8892a0;
+  opacity: 0.9;
+}
+
+/* rkrk_digitalassess.php Inline-Footerlinks */
+.rkrk-footer a {
+  color: var(--footer-link) !important;
+}
+
+/* RKRS mode: keep clear pass/fail affordance for checklist chips. */
+.notfulfilled-btn{
+  border-color:#c8d0da;
+  background:#f2f5f8;
+  color:#556171;
+}
+.notfulfilled-btn.selected{
+  background:#c86a6a;
+  border-color:#c86a6a;
+  color:#fff;
+}
+
+/* Keep icon sizes identical when both theme CSS files are loaded. */
+.info-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  line-height:1;
+  font-size:16px;
+  vertical-align:text-top;
+  position:relative;
+  flex-shrink:0;
+  cursor:help;
+}
+.chk-toolbar .chk-tbtn svg.chk-ico,
+a.chk-tbtn svg.chk-ico,
+button.chk-tbtn svg.chk-ico{
+  width:18px;
+  height:18px;
+  min-width:18px;
+  min-height:18px;
+  flex-shrink:0;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  color:inherit;
+}
+.chk-act svg.chk-ico{
+  width:17px;
+  height:17px;
+  min-width:17px;
+  min-height:17px;
+  flex-shrink:0;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  color:inherit;
+}
+
+/*
+ * Nach template/main_green.css: Einheitliche Rahmen/Ecken für Text-, Datumsfelder und Selects
+ * (entspricht dem flex.css-/Assess-Grünverhalten, Farben über --mid_green / Theme).
+ */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="search"],
+textarea,
+select,
+input.text-input,
+select.text-input,
+textarea.text-input,
+.filters input[type="text"],
+.filters input[type="date"],
+.filters input[type="search"],
+.filters select,
+.filters textarea {
+  box-sizing: border-box;
+  border: 1px solid var(--mid_green, var(--input-border)) !important;
+  border-radius: 6px !important;
+  background-color: #fff !important;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus,
+input.text-input:focus,
+select.text-input:focus,
+textarea.text-input:focus,
+.filters input:focus,
+.filters select:focus,
+.filters textarea:focus {
+  border-color: var(--vdark_green, var(--toolbar-focus)) !important;
+  outline: none !important;
+  box-shadow: 0 0 4px var(--light_green, var(--muted)) !important;
+}

@@ -1,0 +1,972 @@
+{
+    "connectedPlanningData": {
+        "name": "Rehkitzsaison 2026",
+        "pilotId": "BLqZ5HfcHLOQFb",
+        "pilotObject": {
+            "_id": "BLqZ5HfcHLOQFb",
+            "login": "thomas.christen@chwu.ch",
+            "email": {
+                "address": "thomas.christen@chwu.ch",
+                "verified": true
+            },
+            "profile": {
+                "name": "Christen",
+                "firstname": "Thomas",
+                "phone": "+41795104265",
+                "address": {
+                    "zip": "8934",
+                    "formatted": "Baumgartenweg 7",
+                    "city": "Knonau",
+                    "coordinates": [
+                        8.4580736,
+                        47.22513989999999
+                    ]
+                },
+                "copterProfile": "dji-pilot-2"
+            },
+            "id": "BLqZ5HfcHLOQFb"
+        }
+    },
+    "_id": "ZQ2HhUcrOz",
+    "name": "ExpertMode_Koordinierte Drehung_Gekrümte_Flugroute_Gerät_überspringt_wegpunkt",
+    "owner": "BLqZ5HfcHLOQFb",
+    "missionSettings": {
+        "dji": {
+            "directionMode": "next-point",
+            "endAction": "none",
+            "pathModus": "curve",
+            "travelSpeed": 20,
+            "maxFlySpeed": 30,
+            "photoCaptureInterval": 0,
+            "repeat": 0,
+            "version": 11,
+            "unused": 0,
+            "curveSize": 12,
+            "gimbal": "none",
+            "photoCaptureType": "d"
+        },
+        "djiPilot": {
+            "droneType": "other",
+            "advancedSettings": false,
+            "directionMode": "next-point",
+            "endAction": "none",
+            "pathModus": "straight",
+            "speed": 1,
+            "height": 0,
+            "curveSize": 0,
+            "gimbal": "none",
+            "powerSavingMode": false
+        },
+        "djiPilot2": {
+            "easyModeForm": false,
+            "easyModeSpeed": 5,
+            "droneType": "mavic3T",
+            "directionMode": "followWayline",
+            "endAction": "noAction",
+            "pathModus": "straight",
+            "speed": 4,
+            "height": 80,
+            "curveSize": 0,
+            "defaultCurveSize": 5,
+            "gimbalControl": "manuel",
+            "gimbal": "none",
+            "powerSavingMode": false,
+            "flightHeightMode": "relativeToStartPoint",
+            "flyToWaylineMode": false,
+            "waypointType": "toPointAndPassWithContinuityCurvature",
+            "takeOffSecurityHeight": 2,
+            "transitionalSpeed": 4.5,
+            "transitionalSpeedActive": true
+        },
+        "px": {
+            "hoverSpeed": 0,
+            "cruiseSpeed": 1
+        },
+        "plan": {
+            "hoverSpeed": 1,
+            "cruiseSpeed": 1
+        },
+        "mk": {
+            "comingHomeAltitude": 0,
+            "failSafeAltitude": 0,
+            "triggerDelay": false,
+            "rcLost": false,
+            "triggerMode": 0
+        }
+    },
+    "contributedField": true,
+    "contributionInfo": {
+        "status": 0
+    },
+    "contributor": {
+        "name": "Christen",
+        "firstname": "Thomas",
+        "address": {
+            "zip": "8934",
+            "formatted": "Baumgartenweg 7",
+            "city": "Knonau",
+            "coordinates": [
+                8.4580736,
+                47.22513989999999
+            ]
+        },
+        "email": "thomas.christen@chwu.ch",
+        "phone": "+41795104265"
+    },
+    "contributionNumber": 318633,
+    "contributionReference": "2026-318633",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "createdBy": {
+        "type": "user",
+        "id": "BLqZ5HfcHLOQFb"
+    },
+    "bbox": [
+        8.477738257585242,
+        47.242950371303145,
+        8.48427211874552,
+        47.246344471997126
+    ],
+    "center": [
+        8.481005188165382,
+        47.244647421650136
+    ],
+    "lineString": "mwvr@ioj_Hk\\nEkJiDd@eAzV`J~@w@uWoJ`Aw@tWlJt@m@{UcJlBa@`UdIdAu@wSsH",
+    "polygonLineString": "moj_H{xvr@eH_WdCcLrEuBtDfKtCxLiEdF",
+    "area": 10.418736801340076,
+    "featureCount": {
+        "waypoints": 15
+    },
+    "staticImageUpToDate": false,
+    "copterProfile": "dji-pilot-2",
+    "opened": true,
+    "sortAndQueryHelper": {
+        "droneType": "mavic3T"
+    },
+    "edited": true,
+    "geojson": {
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "type": 1
+                },
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [
+                            8.477738257585242,
+                            47.24486595271917
+                        ],
+                        [
+                            8.481579180894569,
+                            47.246344471997126
+                        ],
+                        [
+                            8.483682032762244,
+                            47.24567440926027
+                        ],
+                        [
+                            8.48427211874552,
+                            47.24461103143137
+                        ],
+                        [
+                            8.48231410616465,
+                            47.243700581739084
+                        ],
+                        [
+                            8.480098601518348,
+                            47.242950371303145
+                        ],
+                        [
+                            8.478950616059974,
+                            47.2439555139154
+                        ]
+                    ]
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.477512952027991,
+                        47.24485138582149
+                    ]
+                },
+                "properties": {
+                    "type": 6
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.477512952027991,
+                        47.24485138582149
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 108,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 108,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 561,
+                        "lat": 47.24485138582149,
+                        "lng": 8.477512952027991
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.482206473777387,
+                        47.24381487617321
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 55.6,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 55,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 574,
+                        "lat": 47.24381487617321,
+                        "lng": 8.482206473777387
+                    },
+                    "type": 1,
+                    "alignmentAircraft": "followBadArc",
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.48403120207325,
+                        47.244663353196636
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 339.4,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 339,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 577,
+                        "lat": 47.244663353196636,
+                        "lng": 8.48403120207325
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.483838957502849,
+                        47.24500979336972
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 235.6,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 235,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 577,
+                        "lat": 47.24500979336972,
+                        "lng": 8.483838957502849
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.480023792871135,
+                        47.24323572520352
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 322.2,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 322,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 565,
+                        "lat": 47.24323572520352,
+                        "lng": 8.480023792871135
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.47969868585057,
+                        47.24352038238006
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 55.6,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 55,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 565,
+                        "lat": 47.24352038238006,
+                        "lng": 8.47969868585057
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.483646710409452,
+                        47.24535623318961
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 322.1,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 322,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 578,
+                        "lat": 47.24535623318961,
+                        "lng": 8.483646710409452
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.483320769370534,
+                        47.245640509860706
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 235.6,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 235,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 581,
+                        "lat": 47.245640509860706,
+                        "lng": 8.483320769370534
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.479373575341803,
+                        47.243805038606446
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 322.2,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 322,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 565,
+                        "lat": 47.243805038606446,
+                        "lng": 8.479373575341803
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.479104769913896,
+                        47.24404039290444
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 54.4,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 54,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 566,
+                        "lat": 47.24404039290444,
+                        "lng": 8.479104769913896
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.482764596660958,
+                        47.245817734778086
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 295.1,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 295,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 584,
+                        "lat": 47.245817734778086,
+                        "lng": 8.482764596660958
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.482208420258837,
+                        47.24599495697602
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 235.6,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 235,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 587,
+                        "lat": 47.24599495697602,
+                        "lng": 8.482208420258837
+                    },
+                    "alignmentAircraft": "followBadArc",
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.478684507337345,
+                        47.244356287535055
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 317.9,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 317,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 565,
+                        "lat": 47.244356287535055,
+                        "lng": 8.478684507337345
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.478326082275661,
+                        47.24462545291871
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 55.6,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "_gm_helper_direction": 55,
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 564,
+                        "lat": 47.24462545291871,
+                        "lng": 8.478326082275661
+                    },
+                    "type": 1,
+                    "alignmentAircraft": "followBadArc",
+                    "_height": 80
+                }
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        8.481652240164193,
+                        47.24617217645449
+                    ]
+                },
+                "properties": {
+                    "prefix": "P",
+                    "cameraAngle": 0,
+                    "gimbalAngle": -90,
+                    "gimbalYaw": 0,
+                    "gimbalNod": 0,
+                    "cameraModeTime": 1,
+                    "directionType": "followWayline",
+                    "wpEvent": 0,
+                    "autoTrigger": 0,
+                    "climbRate": 0.1,
+                    "tolerance": 10,
+                    "rotation": "clockwise",
+                    "useMissionDirectionMode": true,
+                    "direction": 0,
+                    "curveSize": 0,
+                    "useMissionPathMode": true,
+                    "useMissionYawDirection": true,
+                    "useMissionWaypointType": true,
+                    "speed": 4,
+                    "useMissionSpeed": true,
+                    "height": 80,
+                    "useMissionHeight": true,
+                    "autoHeight": true,
+                    "yawDirection": "followWayline",
+                    "waypointType": "coordinateTurn",
+                    "pathMode": "straight",
+                    "aboveSea": {
+                        "value": 585,
+                        "lat": 47.24617217645449,
+                        "lng": 8.481652240164193
+                    },
+                    "type": 1,
+                    "_height": 80
+                }
+            }
+        ]
+    },
+    "lastModified": "2026-05-13T11:53:25.194Z",
+    "lastModifiedBy": {
+        "type": "user",
+        "id": "BLqZ5HfcHLOQFb"
+    },
+    "controlFlights": [],
+    "data": {
+        "owner": {
+            
+        }
+    },
+    "exportSettings": {
+        
+    },
+    "id": "ZQ2HhUcrOz",
+    "orderData": {
+        
+    },
+    "lastAutoGenerateSettings": {
+        "properties": {
+            "prefix": "P",
+            "cameraAngle": 0,
+            "gimbalAngle": -90,
+            "gimbalYaw": 0,
+            "gimbalNod": 0,
+            "cameraModeTime": 1,
+            "directionType": "none",
+            "wpEvent": 0,
+            "autoTrigger": 0,
+            "climbRate": 0.1,
+            "tolerance": 10,
+            "rotation": "clockwise",
+            "useMissionDirectionMode": true,
+            "direction": 0,
+            "curveSize": 0,
+            "useMissionPathMode": true,
+            "useMissionYawDirection": true,
+            "useMissionWaypointType": true,
+            "speed": 5,
+            "useMissionSpeed": true,
+            "height": 60,
+            "useMissionHeight": true,
+            "autoHeight": true,
+            "yawDirection": "followWayline",
+            "waypointType": "coordinateTurn"
+        },
+        "settings": {
+            "az": -1,
+            "easyModeHeight": 0,
+            "easyModeHeightSelect": 60,
+            "spacing": 40,
+            "border": 15,
+            "easyModeForm": false,
+            "easyModeSpeed": 5
+        }
+    },
+    "aboveSeaLevel": {
+        "lat": 47.24485138582149,
+        "lng": 8.477512952027991,
+        "value": 561
+    },
+    "removed": false,
+    "archive": false,
+    "planningInfos": [
+        {
+            "status": 0,
+            "pilotId": "BLqZ5HfcHLOQFb",
+            "planningName": "Rehkitzsaison 2026",
+            "fromDate": "2025-12-31T23:00:00.000Z",
+            "toDate": "2026-12-31T22:59:59.999Z",
+            "planningId": "UVV0pboxf"
+        }
+    ],
+    "hasValidConnection": true,
+    "originalName": "ExpertMode_Koordinierte Drehung_Gekrümte_Flugroute_Gerät_überspringt_wegpunkt",
+    "fileNameComplete": "ExpertMode_Koordinierte Drehung_Gekrümte_Flugroute_Gerät_überspringt_wegpunkt",
+    "fileNameCompleteForExport": "ExpertMode_Koordinierte Drehung_Gekrümte_Flugroute_Gerät_überspringt_wegpunkt",
+    "fileName": "ExpertMode_Koordinierte Drehung_Gekrümte_Flugroute_Gerät_überspringt_wegpunkt"
+}

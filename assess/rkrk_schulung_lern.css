@@ -1,0 +1,71 @@
+/**
+ * RKRS Schulungs-Standard (Ergänzung zu lernunterlagen.css)
+ * Tabellen und Overrides – wird von learn.php und dem Editor geladen.
+ */
+
+body table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  border: 1px solid #d8dfd6;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  background: #fff;
+}
+
+body table thead th {
+  background: linear-gradient(90deg, #003366, #1a5a8a);
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border: none;
+  vertical-align: top;
+}
+
+body table tbody td,
+body table tbody th {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid #ecefec;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  vertical-align: top;
+  text-align: left;
+}
+
+body table tbody tr:last-child td,
+body table tbody tr:last-child th {
+  border-bottom: none;
+}
+
+body table tbody tr:nth-child(even) {
+  background: #f8faf8;
+}
+
+body table tbody tr:hover {
+  background: #eef6ff;
+}
+
+.tabellen-lead + table {
+  margin-top: 0.35rem;
+}
+
+@media (max-width: 720px) {
+  body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 0.88rem;
+  }
+
+  body table thead th,
+  body table tbody td,
+  body table tbody th {
+    padding: 0.5rem 0.65rem;
+  }
+}

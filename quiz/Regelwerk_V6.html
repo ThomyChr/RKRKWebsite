@@ -1,0 +1,537 @@
+<!-- KAPITEL 1: Allgemeine Drohnenkunde -->
+<section id="Kapitel 01">
+    <h1>1. Allgemeine Drohnenkunde</h1>
+
+    <h2>1.1 Drohnenphysik</h2>
+    <p>Eine Drohne (UAV – Unmanned Aerial Vehicle / UAS – Unmanned Aircraft System) ist ein Fluggerät, bei dem der nötige Auf- und Vortrieb durch mehrere unabhängig steuerbare Motoren realisiert wird. Richtungsänderungen erfolgen über die Drehzahlsteuerung der einzelnen Motoren.</p>
+    <p>Die jeweils <strong>diagonal</strong> gegenüber liegenden Motoren drehen in <strong>dieselbe Richtung</strong>. Auch ist die Anzahl aller rechts- sowie linksdrehenden Propeller gleich. Das um die Hochachse entstehende Drehmoment kann somit neutralisiert werden. Die Drohne hält eine stabile Fluglage ein.</p>
+
+    <h3>1.1.1 Fluglageregler</h3>
+    <p>Das Herzstück, bzw. die Zentrale der Drohne ist der <strong>Fluglageregler</strong>. Dieser misst permanent die Abweichung der aktuellen Fluglage zur gewünschten Fluglage mittels diverser Sensoren. Folglich wird die Drehzahl der einzelnen Motoren geregelt. Da die bürstenlosen Brushless-Motoren ein elektrisches Drehfeld benötigen, hat jeder Motor als fester Bestandteil einen eigenen ESC (Electronic Speed Controller). Dieser steuert die Drehzahl des jeweiligen Motors.</p>
+
+    <h3>1.1.2 Propeller</h3>
+    <p>Die Propeller werden für den Antrieb und die Steuerung der Drohne verwendet. Diese sind wie die Schaufeln eines Ventilators, die Luft in Richtung Boden drücken. An der <strong>Vorder- und Oberkante</strong> des Propellerblattes entsteht ein Unterdruck. Die Drohne saugt sich so buchstäblich selbst in die Luft.</p>
+
+    <h3>1.1.3 Achsen</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/achsen_flugzeug.png" alt="Achsen einer Drohne">
+        <figcaption class="lerncaption">Flugzeugachsen</figcaption>
+    </figure>
+    <ul>
+        <li><strong>Längsachse:</strong> Eine gedachte Linie vom Heck zur Nase des Flugzeugs.</li>
+        <li><strong>Querachse:</strong> Verläuft von einer Flügelspitze zur anderen.</li>
+        <li><strong>Hochachse:</strong> Steht senkrecht auf der durch Längs- und Querachse aufgespannten Ebene.</li>
+    </ul>
+    <p>Alle drei Achsen gehen durch den Schwerpunkt des Luftfahrzeuges und stehen senkrecht aufeinander.</p>
+
+    <h3>1.1.4 Schweben</h3>
+    <p>Während dem Schwebeflug drehen alle Motoren mit <strong>derselben Drehzahl</strong> und liefern somit denselben Schub.</p>
+
+    <h3>1.1.5 Steigen und Sinken</h3>
+    <p>Beim Steigen wird die Drehzahl aller Motoren <strong>gleichzeitig erhöht</strong>. Beim Sinken wird die Drehzahl aller Motoren gedrosselt.</p>
+
+    <h3>1.1.6 Nicken</h3>
+    <p>Beim Vorwärtsflug <strong>senkt</strong> sich die Drehzahl <strong>der vorderen Motoren</strong>, während sich die Drehzahl <strong>der hinteren Motoren erhöht</strong>. Beim Rückwärtsflug senkt sich die Drehzahl der hinteren Motoren, während sich die Drehzahl der vorderen Motoren erhöht.</p>
+
+    <h3>1.1.7 Rollen</h3>
+    <p>Bei einer Rollbewegung nach rechts (Steuerbord) erhöht sich die Drehzahl der linken Motoren, während die Drehzahl der rechten Motoren reduziert wird. Bei einer Rollbewegung nach links (Backbord) <strong>erhöht</strong> sich die Drehzahl der <strong>rechten Motoren</strong>, während die Drehzahl der linken Motoren reduziert wird.</p>
+
+    <h3>1.1.8 Gieren</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/motoren_drehrichtung.png" alt="Drehrichtung der Motoren">
+        <figcaption class="lerncaption">Motorendrehrichtung & Gieren</figcaption>
+    </figure>
+    <p>Beim Gieren werden die Motoren, die sich <strong>diagonal gegenüberstehen</strong>, angesteuert.</p>
+    <ul>
+        <li>Giert die Drohne nach rechts, erhöht sich die Drehzahl des linken vorderen sowie des diagonal gegenüber liegenden Motors.</li>
+        <li>Giert die Drohne nach links, erhöht sich die Drehzahl des rechten vorderen sowie des diagonal gegenüber liegenden Motors.</li>
+    </ul>
+
+    <h2>1.2 Positionsbestimmung</h2>
+
+    <h3>1.2.1 Global Navigation Satellite System (GNSS)</h3>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/gnss_systeme.png" alt="GNSS Systeme">
+        <figcaption class="lerncaption">GNSS Übersicht</figcaption>
+    </figure>
+    <p>Beim globalen Navigationssatellitensystem (GNSS) handelt es sich um einen <strong>Sammelbegriff</strong> von verschiedenen Satellitennavigationssystemen (GPS, GALILEO, GLONASS, BEIDOU).</p>
+    <p>GNSS-Empfänger bestimmen ihren Standort durch die Entfernungsmessung zu mindestens <strong>vier Satelliten</strong>. Dazu wird die Zeit bestimmt, welche die Radiowellen vom Satelliten bis zum Empfänger benötigen. Diese wird mit der Signalausbreitungsgeschwindigkeit multipliziert und ergibt so die Entfernung zwischen Sender und Empfänger.</p>
+
+    <h3>1.2.2 Kompass</h3>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/erdmagnetfeld.png" alt="Erdmagnetfeld und Kompass">
+        <figcaption class="lerncaption">Geografischer vs. Magnetischer Pol</figcaption>
+    </figure>
+    <p>Damit die Drohne weiss in welche Himmelsrichtung sie ausgerichtet ist und welche Motoren angesteuert werden müssen, ist ein Magnetkompass notwendig. Mit diesem misst sie das Erdmagnetfeld und erkennt, wo Norden liegt.</p>
+    <p>Die Entfernung zwischen dem geografischen und dem magnetischen Nordpol variiert je nach Ort und Zeit, nennt sich <strong>Ortsmissweisung</strong> (Deklination, Variation) und <strong>zeigt den Winkelunterschied</strong> der beiden Pole auf. Aufgrund der Ortsmissweisung sollte der Kompass einer Drohne neu kalibriert werden, wenn sich der Startplatz mehr als <strong>100km</strong> vom letzten Startort entfernt befindet.</p>
+
+    <h3>1.2.3 Barometer</h3>
+    <p>Mit einem Barometer oder Luftdrucksensor kann mittels Luftdruckmessung die Höhe der Drohne erkannt werden.</p>
+
+    <h2>1.3 Betriebsverfahren</h2>
+
+    <h3>1.3.1 VLOS (Visual Line of Sight)</h3>
+    <p>VLOS besagt, dass Drohnenoperationen in der offenen Kategorie nur <strong>innerhalb der Sichtweite</strong> zwischen Fernpilot und Drohne stattfinden dürfen. Die <strong>Ausrichtung</strong> der Drohne muss klar erkennbar und ein rechtzeitiges Ausweichen bei Luftverkehr möglich sein.</p>
+
+    <h3>1.3.2 ALOS (Attitude Line of Sight)</h3>
+    <p>ALOS beschreibt unter Berücksichtigung der Drohnengrösse den Punkt, an welchem die Drohne für den Fernpiloten noch gut <strong>zu erkennen</strong> ist. Position, bzw. <strong>Flugausrichtung und Orientierung</strong> lassen sich noch bestimmen.</p>
+
+    <h3>1.3.3 DLOS (Detection Line of Sight)</h3>
+    <p>DLOS bezeichnet unter Berücksichtigung der allgemeinen Sichtbedingungen am Flugort die Distanz zwischen Fernpilot und Drohne, bei welcher der Fernpilot noch erfolgreich einem anderen Luftfahrzeug ausweichen kann.</p>
+
+    <h3>1.3.4 Berechnung VLOS</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/drohne_vlos.png" alt="Drohne im Flug">
+        <figcaption class="lerncaption">VLOS Berechnung</figcaption>
+    </figure>
+    <p>Die VLOS-Distanz, bzw. die maximale Entfernung kann unter Anwendung von zwei Formeln berechnet werden. Die VLOS-Distanz bezieht sich in der Folge immer auf den <strong>kleineren der beiden errechneten Werte</strong>.</p>
+    <div class="highlight">
+        <ul>
+            <li>Formel ALOS (in m): 327 x CD (m) + 20m</li>
+            <li>Formel DLOS (in m): 0.3 x GV</li>
+        </ul>
+    </div>
+    <p>Die Variable CD (characteristic dimension) definiert die Diagonale zwischen zwei Propellerspitzen.<br>
+    Die Variable GV (Ground Visibility) definiert die aktuelle Sichtweite am Flugort.</p>
+
+    <h3>1.3.5 BVLOS (Beyond Visual Line of Sight)</h3>
+    <p>Drohnenoperation bei welcher die Drohne <strong>ausserhalb des Sichtkontaktes</strong> betrieben wird (Spezielle Kategorie).</p>
+
+    <h3>1.3.6 EVLOS (Extended Visual Line of Sight)</h3>
+    <p>Drohnenoperation mit <strong>erweitertem Sichtkontakt</strong>. Der Fernpilot wird dabei von einem oder mehreren <strong>Luftraumbeobachtern</strong>, in der Regel über Funk, unterstützt (Spezielle Kategorie).</p>
+
+    <h2>1.4 Flug-Modi und Systeme</h2>
+
+    <h3>1.4.1 N-Mode (Normal Mode) / P-Mode (Position Mode)</h3>
+    <p>Der N-Mode oder auch P-Mode genannt, ist der Standard-Modus. Alle <strong>Hilfssysteme und Sensoren sind aktiv</strong>.</p>
+
+    <h3>1.4.2 OPTI-Mode (Optical Mode)</h3>
+    <p>Im OPTI-Mode hält die Drohne ihre Position lediglich aufgrund der visuellen Informationen, die durch die <strong>optischen Kameras und Infrarotsensoren</strong> aufgezeichnet werden.</p>
+
+    <h3>1.4.3 ATTI-Mode (Attitude Mode)</h3>
+    <p>Im ATTI-Mode hält die Drohne durch <strong>barometrische Luftdruckmessung ausschliesslich die Höhe</strong>. Sie wirkt instabil.</p>
+
+    <h3>1.4.4 APAS (Advanced Pilote Assistance System)</h3>
+    <p>Die Drohne weicht Hindernissen selbständig aus indem sie diese <strong>um- oder überfliegt</strong>.</p>
+
+    <h3>1.4.5 RTH-Mode (Return to Home)</h3>
+    <p>Die RTH-Funktion sorgt dafür, dass die Drohne <strong>autonom</strong> zum Startpunkt zurückkehrt. Die Funktion wird ausgelöst bei <strong>geringer Akkuleistung</strong>, <strong>Abbruch der Funkverbindung</strong> oder manuell. Sie funktioniert nur bei <strong>GPS-Empfang</strong> und wenn <strong>kein Kompassfehler</strong> vorliegt.</p>
+
+    <h3>1.4.6 VPS (Vision Positioning System)</h3>
+    <p>Das VPS fungiert als <strong>Sichtpositionierungssystem</strong> und stabilisiert die Drohne in geringen Höhen.</p>
+
+    <h3>1.4.7 CSC (Combination Stick Command)</h3>
+    <p>Ein Notfallbefehl (beide Steuerknüppel schräg nach unten). Führt zu einem <strong>sofortigen Notstopp</strong> der Motoren (Absturz).</p>
+
+    <h3>1.4.8 Status LED</h3>
+    <p>In Flugrichtung ist die Befeuerung an Steuerbord (rechts) <strong>grün</strong>, an Backbord (links) <strong>rot</strong> und am Heck <strong>weiss</strong>.</p>
+
+    <h3>1.4.9 ADS-B (DJI AirSense)</h3>
+    <p>Empfänger für Signale von bemannten Luftfahrzeugen (Warnung vor Kollisionen).</p>
+
+    <h3>1.4.10 FLARM</h3>
+    <p>Ein <strong>Kollisionswarngerät</strong>, ursprünglich für Segelflieger. Das Modell «Aurora» ist für Drohnen geeignet.</p>
+
+    <h2>1.5 Faustformeln</h2>
+
+    <h3>1.5.1 Umrechnung Knoten (kn)</h3>
+    <p>1 Knoten = 1.852 km/h.</p>
+    <div class="highlight">
+        Faustformel: kn x 2 – 10% = km/h
+    </div>
+
+    <h3>1.5.2 Umrechnung Meter in Sekunde (m/s)</h3>
+    <p>1 m/s = 3.6 km/h (genauer 3.3 in der Faustformel Kontext oft verwendet für Kopfrechnen).</p>
+    <div class="highlight">
+        Faustformel: m/s x 4 – 10% = km/h
+    </div>
+
+    <h3>1.5.3 Längenmass Fuss (ft)</h3>
+    <p>1 Fuss = 30.48 cm.</p>
+
+    <h2>1.6 Sichere Flugdurchführung</h2>
+
+    <h3>1.6.1 Items und Checklisten</h3>
+    <p>Items sind Handlungen aus dem <strong>Gedächtnis</strong>. Checklisten dienen der <strong>Strukturierung</strong> und sollten <strong>nicht auswendig gelernt</strong> werden.</p>
+
+    <h3>1.6.2 Flugvorbereitung</h3>
+    <ul class="checklist">
+        <li>Check Dokumente (Lizenzen / Haftpflicht / Versicherung / Bewilligungen)</li>
+        <li>Check Flugverbotszonen (RPAS-Karte / NOTAM / DABS)</li>
+        <li>Check Vorhersage Meteo (MeteoSwiss / METAR / TAF)</li>
+        <li>Check Topografie und Störer Fluggebiet (SwissTopo)</li>
+    </ul>
+    <p><strong>NOTAM (Notice to Airmen):</strong> Temporäre oder permanente Änderungen im Luftraum.<br>
+    <strong>DABS (Daily Airspace Bulletin Switzerland):</strong> Grafische Übersicht des Luftraumstatus (kein Ersatz für NOTAM).</p>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/notam_karte.png" alt="NOTAM Karte">
+        <figcaption class="lerncaption">NOTAM Karte Schweiz</figcaption>
+    </figure>
+    <p><strong>RPAS-Karte:</strong> Interaktive Drohnenkarte mit Flugeinschränkungen. Der Fernpilot <strong>ist verpflichtet</strong>, diese vor jedem Flug zu prüfen.</p>
+
+    <h3>1.6.3 Startvorbereitungen (Preflight-Check)</h3>
+    <ul class="checklist">
+        <li>Check Start- und Landeplatz / Notlandeplatz</li>
+        <li>Check Luftraum, Topografie und Störer in Flugzone</li>
+        <li>Check Wind und KP-Wert (UAV Forecast)</li>
+        <li>Check technischer Zustand Drohne</li>
+        <li>Check Akku Controller und Drohne</li>
+        <li>Check Flugparameter (Flugmode / RTH-Höhe / Sensoren / Gimbalsperre)</li>
+    </ul>
+
+    <h3>1.6.4 Start und Flug</h3>
+    <ul class="checklist">
+        <li>Check Wind</li>
+        <li>Check Sektor Startplatz (Startwarnung)</li>
+        <li>Check Funktion Drohnensteuerung</li>
+        <li>Check Boden- und Luftraum nach «see and avoid concept» (Bemannte Luftfahrt hat Vortritt)</li>
+    </ul>
+
+    <h3>1.6.5 Landung</h3>
+    <ul class="checklist">
+        <li>Check Wind</li>
+        <li>Check Sektor Landeplatz (Landewarnung)</li>
+    </ul>
+
+    <h3>1.6.6 Meldewesen Flugunfälle</h3>
+    <p>Meldepflicht bei schweren Verletzungen oder Involvierung bemannter Luftfahrzeuge. <strong>Unverzüglich</strong> an REGA (1414) / SUST und <strong>innert 72h</strong> an BAZL (ECCAIRS).</p>
+
+    <h2>1.7 Gefahren</h2>
+
+    <h3>1.7.1 Meteo</h3>
+    <p>Temperatur, Wind und Luftdichte haben massgeblichen Einfluss.</p>
+    <ul>
+        <li><strong>Temperatur:</strong> Einsatzbereich ca. -20° bis +40°.</li>
+        <li><strong>Wind:</strong> Max. ca. 10m/s (Beaufort 5). Über Bergen oft <strong>Aufwinde</strong>, über Wäldern/Gewässern <strong>Abwinde</strong>.</li>
+        <li><strong>Luftdruck/Dichte:</strong> Bei sinkendem Druck (Höhe) sinkt die Leistung.</li>
+    </ul>
+
+    <h3>1.7.2 Fehlfunktionen Drohne</h3>
+    <p>Als Backup dient meist der <strong>ATTI-Mode</strong>.</p>
+    <ul>
+        <li><strong>Ausfall Controller:</strong> RTH-Mode wird aktiviert.</li>
+        <li><strong>Ausfall N-Mode:</strong> System schaltet in VPS-Mode.</li>
+        <li><strong>Ausfall VPS/OPTI:</strong> System schaltet in ATTI-Mode.</li>
+        <li><strong>Ausfall GPS/Kompass:</strong> Wechsel in ATTI-Mode.</li>
+    </ul>
+
+    <h3>1.7.3 Downwash</h3>
+    <p>Technischer <strong>Abwind</strong> durch die Rotoren. Gefahr von Strömungsabriss in Bodennähe oder Ansaugen von Objekten.</p>
+
+    <h3>1.7.4 Fly Away</h3>
+    <p>Drohne reagiert nicht mehr. Sofortmassnahme: <strong>Controller ausschalten</strong> (löst ggf. RTH aus).</p>
+
+    <h3>1.7.5 Gewässerflug</h3>
+    <p>Mindestflughöhe <strong>1.5 m über Wasser</strong> (wegen Downwash und Sensorstörungen). VPS deaktivieren.</p>
+</section>
+
+<!-- KAPITEL 2: UAV-Editor -->
+<section id="Kapitel 02">
+    <h1>2. Wegpunktflug UAV-Editor</h1>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/uav_editor_screenshot.png" alt="UAV Editor Oberfläche">
+        <figcaption class="lerncaption">UAV Editor Planung</figcaption>
+    </figure>
+    <p>Mit dem Wegpunkteplaner können Flugmissionen präzise und vollautomatisch erstellt werden.</p>
+
+    <h2>2.1 Startplatz</h2>
+    <p>Unabhängig der Meereshöhe setzt die Drohne ihre interne Höhenberechnung <strong>immer auf 0m AGL</strong> (Above Ground Level). Es ist sinnvoll, den ersten Wegpunkt auf <strong>gleicher Höhe AGL</strong> wie den Startplatz zu setzen.</p>
+
+    <h2>2.2 Höheneinstellungen</h2>
+    <p>Die Drohne fliegt Wegpunkte <strong>linear</strong> an. Bei abschüssigem Gelände kann die relative Höhe zum Boden variieren. Die erste Höhenangabe im Editor ist die programmierte Höhe, die zweite (in Klammern) die relative Höhe zum Startplatz.</p>
+
+    <h2>2.3 Datentransfer</h2>
+    <p>Das Höhenmodell (Schweiz: 2m Raster) ermöglicht den Export als KMZ-Datei auf den Controller.</p>
+</section>
+
+<!-- KAPITEL 3: Entfernungen einschätzen -->
+<section id="Kapitel 03">
+    <h1>3. Entfernungen einschätzen</h1>
+
+    <table border="1" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #008000; color: white;">
+                <th colspan="2">Fehlerquellen beim Entfernungsschätzen</th>
+            </tr>
+            <tr style="background-color: #008000; color: white;">
+                <th>Unterschätzen: bei...</th>
+                <th>Überschätzen: bei...</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>klarer Luft</td>
+                <td>trüber Luft</td>
+            </tr>
+            <tr>
+                <td>hellem Hintergrund</td>
+                <td>dunklem Hintergrund</td>
+            </tr>
+            <tr>
+                <td>über Taler und Schluchten</td>
+                <td>Nebel</td>
+            </tr>
+            <tr>
+                <td>Sonnenschein im Rücken</td>
+                <td>Dämmerung/Dunkelheit</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="highlight">
+        <strong>Erkennbarkeits-Grenzen (Normale Sehschärfe):</strong>
+        <ul>
+            <li>50m: Augen, Mund, Nase deutlich</li>
+            <li>100m: Augen als Punkte</li>
+            <li>200m: Einzelheiten der Kleidung</li>
+            <li>ab 1000m: Ende des Schätzvermögens</li>
+        </ul>
+    </div>
+
+    <h2>3.1 Verfahren</h2>
+
+    <h3>3.1.1 Daumensprung</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/daumensprung.png" alt="Daumensprung Verfahren">
+        <figcaption class="lerncaption">Prinzip Daumensprung</figcaption>
+    </figure>
+    <p>Arm ausstrecken, linkes Auge zu -> Daumen auf linke Objektseite. Augen wechseln -> Daumen springt nach rechts. <strong>Daumenversatz x 10 = Entfernung</strong>.</p>
+
+    <h3>3.1.2 Eingabelung</h3>
+    <p>Minimale + Maximale geschätzte Entfernung addieren und durch zwei teilen (Mittelwert).</p>
+
+    <h3>3.1.3 Addition & 3.1.4 Vergleich</h3>
+    <p>Strecke in bekannte Grössen unterteilen (z.B. Fussballfelder) oder mit bekannten Objekten vergleichen (z.B. Windradhöhe).</p>
+
+    <h3>3.1.5 Entfernungsmessung mittels Gimbal (Trigonometrie)</h3>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/trigonometrie_gimbal.png" alt="Messen mit Gimbal">
+        <figcaption class="lerncaption">Trigonometrie Messung</figcaption>
+    </figure>
+    <ul>
+        <li><strong>≤120m:</strong> Kamera <strong>45° nach unten</strong>. Höhe verändern bis Objekt in Bildmitte. Höhe = Entfernung.</li>
+        <li><strong>>120m:</strong> Objekt in Bildmitte. Werte (Höhe/Winkel) auf PocketCard übertragen.</li>
+    </ul>
+</section>
+
+<!-- KAPITEL 4: Meteo -->
+<section id="Kapitel 04">
+    <h1>4. Meteo</h1>
+
+    <h2>4.1 Temperatur</h2>
+    <p>Als Lufttemperatur wird die Temperatur der bodennahen Atmosphäre bezeichnet. Sie nimmt mit der Höhe ab (ca. 2 Kelvin pro 1'000 Fuss / 304m).</p>
+
+    <h3>4.1.1 Sonneneinstrahlung und Atmosphäre</h3>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/atmosphaerenschichten.png" alt="Atmosphärenschichten">
+        <figcaption class="lerncaption">Atmosphärenschichten</figcaption>
+    </figure>
+    <p>Die Sonne erwärmt den Erdboden (Kurzwellen), dieser strahlt Wärme ab (Langwellen) und erwärmt die Luftschichten (Thermik). Die Atmosphäre verhindert das sofortige Entweichen der Wärme (Treibhauseffekt: Durchschnittstemperatur 15°C statt -18°C).</p>
+
+    <h3>4.1.2 Temperaturverlauf</h3>
+    <p>Die <strong>Minimaltemperatur</strong> ist ca. eine Stunde nach Sonnenaufgang erreicht. Die <strong>Maximaltemperatur</strong> ca. zwei Stunden nach Sonnenhöchststand.</p>
+
+    <h3>4.1.3 Taupunkt & 4.1.4 Spread</h3>
+    <p>Der <strong>Taupunkt</strong> ist die Temperatur, bei der Luftfeuchtigkeit kondensiert (Wolken/Nebel).<br>
+    Der <strong>Spread</strong> ist die Differenz zwischen aktueller Temperatur und Taupunkt.
+    <div class="highlight">
+        Spread ≤ 2°C = Hohe Wahrscheinlichkeit für Nebel/Wolken.
+    </div>
+    </p>
+
+    <h2>4.2 Luftdruck</h2>
+    <p>Der Luftdruck nimmt mit der Höhe exponentiell ab (ca. 1hPa pro 8m). Normaldruck auf Meereshöhe: 1013.25 hPa.</p>
+
+    <h3>4.2.1 Hoch- und Tiefdruck</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/hoch_tiefdruck.png" alt="Hoch- und Tiefdruckgebiete">
+        <figcaption class="lerncaption">Luftströmungen in Druckgebieten</figcaption>
+    </figure>
+    <ul>
+        <li><strong>Hochdruck:</strong> Sinkende Luftmassen (erwärmen/trocknen ab). Dreht im Uhrzeigersinn (Nordhalbkugel).</li>
+        <li><strong>Tiefdruck:</strong> Steigende Luftmassen (kühlen ab/kondensieren -> Wolken). Dreht gegen den Uhrzeigersinn.</li>
+    </ul>
+
+    <h3>4.2.2 Corioliskraft</h3>
+    <p>Ablenkung durch Erdrotation. Nordhalbkugel: Ablenkung nach <strong>rechts</strong>.</p>
+
+    <h2>4.3 Luftdichte</h2>
+    <p>Abhängig von Druck, Temperatur, Höhe und Feuchtigkeit.</p>
+    <div class="highlight">
+        <strong>Dichte nimmt ab bei:</strong>
+        <ul>
+            <li>Zunehmender Höhe</li>
+            <li>Tiefdruck</li>
+            <li>Steigender Temperatur (warme Luft dehnt sich aus)</li>
+        </ul>
+    </div>
+
+    <h2>4.4 Luftfeuchtigkeit</h2>
+    <p>Warme Luft kann mehr Feuchtigkeit aufnehmen als kalte.</p>
+
+    <h3>4.4.2 Sublimation und Resublimation</h3>
+    <ul>
+        <li><strong>Sublimation:</strong> Fest zu Gasförmig (z.B. Schnee schwindet ohne zu schmelzen).</li>
+        <li><strong>Resublimation:</strong> Gasförmig zu Fest (z.B. Eisblumen, Reif).</li>
+    </ul>
+
+    <h2>4.5 Prozesse</h2>
+    <h3>4.5.3 Inversion</h3>
+    <p>Boden kühlt nachts stark aus -> untere Luftschicht kälter als die obere. Kein Austausch.
+    <br><strong>Folge:</strong> Nebel/Smog im Tal, warm auf dem Berg.</p>
+
+    <h2>4.6 Wolken und Niederschlag</h2>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/wolkenarten.png" alt="Wolkenklassifikation">
+        <figcaption class="lerncaption">Wolkenarten und Höhen</figcaption>
+    </figure>
+    <ul>
+        <li><strong>Cumulus/Cirrus:</strong> Schönwetter.</li>
+        <li><strong>Cirrostratus:</strong> Kündigen Warmfront an.</li>
+        <li><strong>Altocumulus:</strong> Wetteränderung binnen 36h.</li>
+        <li><strong>Nimbostratus:</strong> Regen.</li>
+        <li><strong>Cumulonimbus:</strong> Gewitter (Gefahr!).</li>
+    </ul>
+
+    <h2>4.7 Wind</h2>
+    <p>Ausgleich zwischen Druckgebieten. Fliesst von Hoch zu Tief.</p>
+
+    <h3>4.7.1 Windmessung</h3>
+    <div class="highlight">
+        <strong>Windsack-Regeln:</strong>
+        <ul>
+            <li>Schmale Streifen: 1 Ring = 3 Knoten</li>
+            <li>Breite Streifen: 1 Ring = 5 Knoten</li>
+        </ul>
+    </div>
+
+    <h3>4.7.3 Auf- und Abwinde</h3>
+    <ul>
+        <li><strong>Aufwinde:</strong> Über dunklen Feldern, Asphalt, Bergen (Luv).</li>
+        <li><strong>Abwinde:</strong> Über hellen Feldern, Wasser, Wald.</li>
+    </ul>
+
+    <h3>4.7.5 See- und Landwind</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/see_landwind.png" alt="Zirkulation See-Land-Wind">
+        <figcaption class="lerncaption">Tag (Seewind) vs. Nacht (Landwind)</figcaption>
+    </figure>
+    <ul>
+        <li><strong>Tag (Seewind):</strong> Land heizt schneller auf -> Wind von See zu Land.</li>
+        <li><strong>Nacht (Landwind):</strong> Land kühlt schneller ab -> Wind von Land zu See.</li>
+    </ul>
+
+    <h3>4.7.7 Luv und Lee</h3>
+    <p><strong>Luv:</strong> Windzugewandt (Stau, Niederschlag).<br>
+    <strong>Lee:</strong> Windabgewandt (Fallwinde, Turbulenzen).</p>
+
+    <h3>4.7.8 Turbulenzen</h3>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/turbulenzen_lee.png" alt="Lee-Turbulenzen">
+        <figcaption class="lerncaption">Lee-Turbulenzen am Berg</figcaption>
+    </figure>
+    <p>Besonders gefährlich im Lee von Bergen (Hydraulischer Sprung).
+    <div class="highlight">
+        Faustregel: Turbulenzen bis <strong>2.5 x Hindernishöhe</strong> möglich.
+    </div>
+    </p>
+
+    <h2>4.8 Meteorologische Gefahren</h2>
+
+    <h3>4.8.1 Gewitter</h3>
+    <p>Entstehen in Cumulonimbus-Wolken. Gefahren: Böen, Hagel, Blitz (bis 30'000°C), Starkregen.</p>
+    <div class="highlight">
+        Faustformel Entfernung: (Sekunden zwischen Blitz und Donner) / 3 = km.
+        <br>Sicherheitsabstand: <strong>20 NM (ca. 37km)</strong>.
+    </div>
+
+    <h3>4.8.2 Sturm & 4.8.3 Nebel</h3>
+    <ul>
+        <li>Sturm ab Beaufort 9 (>75 km/h).</li>
+        <li>Nebel = Sichtweite unter 1 km.</li>
+    </ul>
+
+    <h3>4.9 Wetterinformationen</h3>
+    <p>Quellen: MeteoSchweiz, TAF (Flughafenprognose), METAR (Aktuelle Messwerte).</p>
+</section>
+
+<!-- KAPITEL 5: Erdmagnetfeld -->
+<section id="Kapitel 05">
+    <h1>5. Erdmagnetfeld</h1>
+    <p>Schützt die Erde vor Sonnenwind und kosmischer Strahlung.</p>
+
+    <h2>5.3 KP-Index</h2>
+    <figure>
+        <img class="lernimagesmall" src="PFAD_ANPASSEN/kp_index.png" alt="KP Index Skala">
+        <figcaption class="lerncaption">KP-Index und Sonnensturm</figcaption>
+    </figure>
+    <p>Mass für geomagnetische Aktivität (0-9).
+    <div class="highlight">
+        Ab <strong>KP-Index 5</strong>: Grosse Vorsicht (GPS/Funk-Störungen möglich).
+    </div>
+    </p>
+</section>
+
+<!-- KAPITEL 6: Flugrecht -->
+<section id="Kapitel 06">
+    <h1>6. Flugrecht</h1>
+
+    <h2>6.1 Behörden</h2>
+    <p><strong>EASA</strong> (Europa) und <strong>BAZL</strong> (Schweiz).</p>
+
+    <h2>6.3 Drohnenverordnung</h2>
+    <p>Gilt im gesamten Luftraum (Innenräume ausgenommen).</p>
+
+    <h3>6.3.1 Definitionen</h3>
+    <ul>
+        <li><strong>Drohnenbetreiber:</strong> Person/Firma, die Drohne besitzt/einsetzt.</li>
+        <li><strong>Fernpilot:</strong> Person, die steuert.</li>
+    </ul>
+
+    <h3>6.3.2 Registrierungspflicht (via dLIS)</h3>
+    <p>Pflicht für Betreiber von Drohnen (auch <250g, wenn Kamera vorhanden). UAS-Betreibernummer muss an Drohne angebracht werden.</p>
+
+    <h3>6.3.4 Direkte Remote-ID</h3>
+    <p>Digitales Nummernschild (WiFi/Bluetooth). Pflicht ab Klasse C1 (ab 01.01.2024).</p>
+
+    <h3>6.3.6 Mindestalter</h3>
+    <p>Offene Kategorie: <strong>12 Jahre</strong> (Schweiz). Darunter nur unter Aufsicht (16+).</p>
+
+    <h3>6.3.7 Versicherung</h3>
+    <div class="highlight">
+        Drohnen >250g: Haftpflichtversicherung (Deckung mind. <strong>1 Mio. CHF</strong>) obligatorisch.
+    </div>
+
+    <h3>6.3.11 Personen</h3>
+    <ul>
+        <li><strong>Menschenansammlung:</strong> Dicht gedrängt, können nicht sofort weg. Überflug verboten.</li>
+        <li><strong>Unbeteiligte Personen:</strong> Dritte ohne Kenntnis/Schutz.</li>
+    </ul>
+
+    <h3>6.3.12 Allgemeine Flugeinschränkungen</h3>
+    <ul class="checklist">
+        <li>Nur in Sichtweite (VLOS)</li>
+        <li>Max. Höhe 120m AGL</li>
+        <li>Kein Überflug von Menschenansammlungen</li>
+        <li>Abstand zu Flugplätzen (5km Radius / Flugverbotszonen)</li>
+        <li>Privatsphäre beachten</li>
+    </ul>
+
+    <h3>6.3.13 Drohneneinteilung (Offene Kategorie)</h3>
+    <figure>
+        <img class="lernimage" src="PFAD_ANPASSEN/kategorien_uebersicht.png" alt="Kategorien Übersicht">
+        <figcaption class="lerncaption">Kategorien A1, A2, A3</figcaption>
+    </figure>
+
+    <h4>Subkategorie A1 (C0 / C1)</h4>
+    <p>Überflug unbeteiligter Personen möglich (aber vermeiden). Keine Menschenansammlungen.</p>
+
+    <h4>Subkategorie A2 (C2)</h4>
+    <p>Abstand zu Personen: <strong>30m</strong> (oder 5m im Langsamflug). 1:1 Regel beachten. Benötigt Zertifikat A2.</p>
+
+    <h4>Subkategorie A3 (C3 / C4)</h4>
+    <p>Weit weg von Menschen (mind. 150m zu Wohngebieten). Wenn Menschen auftauchen: 1:1 Regel, mind. 30m Abstand.</p>
+
+    <h3>6.4 Datenschutz</h3>
+    <p>Recht auf Privatsphäre und Schutz personenbezogener Daten (DSG). Keine Aufnahmen von Personen ohne Einwilligung.</p>
+</section>

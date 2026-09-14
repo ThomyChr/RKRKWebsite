@@ -1,0 +1,15 @@
+# Local / OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
+debug-*.log
+
+# Secrets (if you add them later)
+.env
+.env.*
+
+# Editor
+.idea/
+.vscode/
+*.swp

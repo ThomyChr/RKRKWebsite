@@ -1,0 +1,190 @@
+/* RKRK UI shell (M3) — overlays legacy template CSS. Color + MenuOn stay query-driven. */
+
+:root {
+  --rkrk-brand: #6F8B5E;
+  --rkrk-brand-mid: #98B489;
+  --rkrk-bg: #f6f7f6;
+  --rkrk-card: #ffffff;
+  --rkrk-text: #1f2a1f;
+  --rkrk-muted: #5a675a;
+  --rkrk-border: #e4e7e4;
+  --rkrk-nav-bg: #243024;
+  --rkrk-nav-text: #f4f7f4;
+  --rkrk-nav-hover: #354535;
+  --rkrk-radius: 10px;
+  --rkrk-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --rkrk-header-h: 52px;
+}
+
+html.rkrk-color-green {
+  --rkrk-bg: #ecf7ec;
+  --rkrk-card: #f4fbf4;
+  --rkrk-text: #1f2a1f;
+  --rkrk-border: #c8ddc8;
+  --rkrk-nav-bg: #2F3E28;
+}
+
+html.rkrk-shell body,
+body.rkrk-shell {
+  margin: 0;
+  background: var(--rkrk-bg);
+  color: var(--rkrk-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+html.rkrk-shell .rkrk-shell-header.top,
+html.rkrk-shell .top {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+html.rkrk-shell .rkrk-shell-header .bar.black,
+html.rkrk-shell .rkrk-shell-header .bar.black.card,
+html.rkrk-shell .top > .bar.black.card {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px 4px;
+  min-height: var(--rkrk-header-h);
+  padding: 0 8px 0 4px;
+  background: var(--rkrk-nav-bg) !important;
+  color: var(--rkrk-nav-text);
+  box-shadow: var(--rkrk-shadow);
+  border: 0;
+  overflow: hidden;
+}
+
+html.rkrk-shell .rkrk-shell-header .bar .button,
+html.rkrk-shell .rkrk-shell-header .bar a.bar-item,
+html.rkrk-shell .rkrk-shell-header .dropdown-hover > button,
+html.rkrk-shell .top > .bar .button,
+html.rkrk-shell .top > .bar a.bar-item {
+  background: transparent !important;
+  color: var(--rkrk-nav-text) !important;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html.rkrk-shell .rkrk-shell-header .bar .button:hover,
+html.rkrk-shell .rkrk-shell-header .bar a.bar-item:hover,
+html.rkrk-shell .rkrk-shell-header .dropdown-hover:hover > button,
+html.rkrk-shell .top > .bar .button:hover,
+html.rkrk-shell .top > .bar a.bar-item:hover {
+  background: var(--rkrk-nav-hover) !important;
+}
+
+html.rkrk-shell .rkrk-shell-nav-label {
+  white-space: nowrap;
+}
+
+html.rkrk-shell .rkrk-shell-header img,
+html.rkrk-shell .top > .bar img {
+  vertical-align: middle;
+}
+
+html.rkrk-shell .rkrk-shell-logo {
+  margin-left: auto;
+  height: 40px;
+  width: auto;
+  padding: 4px 8px 4px 12px;
+  object-fit: contain;
+}
+
+html.rkrk-shell .dropdown-content {
+  background: var(--rkrk-card);
+  color: var(--rkrk-text);
+  border: 1px solid var(--rkrk-border);
+  border-radius: var(--rkrk-radius);
+  min-width: 220px;
+  box-shadow: var(--rkrk-shadow);
+}
+
+html.rkrk-shell .dropdown-content a.bar-item,
+html.rkrk-shell .dropdown-content a.button {
+  color: var(--rkrk-text) !important;
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+html.rkrk-shell .dropdown-content a.bar-item:hover {
+  background: var(--rkrk-bg) !important;
+}
+
+html.rkrk-shell #navDemo {
+  background: var(--rkrk-nav-bg) !important;
+}
+
+html.rkrk-shell #navDemo a {
+  color: var(--rkrk-nav-text) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+html.rkrk-shell .rkrk-shell-page-title,
+html.rkrk-shell h1.rkrk-shell-page-title,
+html.rkrk-shell #Titel {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 12px 16px 8px;
+  color: var(--rkrk-text);
+}
+
+html.rkrk-shell .rkrk-shell-user {
+  margin: 0 16px 12px;
+  font-size: 13px;
+  color: var(--rkrk-muted);
+}
+
+html.rkrk-shell .rkrk-shell-main {
+  padding: 0 16px 24px;
+  max-width: 1400px;
+}
+
+html.rkrk-shell .rkrk-shell-footer {
+  margin-top: 32px;
+  padding: 14px 16px;
+  text-align: center;
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+html.rkrk-embed .rkrk-shell-header,
+html.rkrk-embed .rkrk-shell-footer,
+html.rkrk-embed .top,
+html.rkrk-embed #navDemo {
+  display: none !important;
+}
+
+html.rkrk-embed body {
+  background: var(--rkrk-bg);
+}
+
+html.rkrk-nav-compact .bar-item > .rkrk-shell-nav-label {
+  display: none;
+}
+html.rkrk-nav-mobile .rkrk-nav-desktop {
+  display: none !important;
+}
+html.rkrk-nav-mobile .rkrk-nav-toggle {
+  display: inline-flex !important;
+}
+
+@media (max-width: 900px) {
+  html.rkrk-shell .rkrk-shell-header .bar.black.card,
+  html.rkrk-shell .top > .bar.black.card {
+    min-height: 48px;
+  }
+}

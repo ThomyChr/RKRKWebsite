@@ -1,0 +1,114 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>Allgemeine Drohnenkunde</h1>-->
+<p><strong>Zielgruppe:</strong> Einsteiger und fortgeschrittene Drohnenpiloten</p>
+<p><strong>Grundlage:</strong> Technische, rechtliche und praktische Aspekte des Drohnenbetriebs</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir ein umfassendes Verständnis über Aufbau, Funktion, Einsatzbereiche und rechtliche Rahmenbedingungen von zivilen Drohnen. Du lernst, wie Drohnen technisch funktionieren, welche Vorschriften gelten und wie du sie sicher und verantwortungsvoll betreibst.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Technische Grundlagen von Multikoptern verstehen</li>
+  <li>Sensorik und Navigation sicher anwenden</li>
+  <li>Einsatzbereiche und Drohnentypen unterscheiden</li>
+  <li>Rechtliche Vorgaben und Sicherheitsregeln kennen</li>
+  <li>Verantwortung und Risikobewusstsein als Pilot stärken</li>
+</ul>
+
+<h2>Kapitel 1: Aufbau und Funktionsweise von Drohnen</h2>
+<p><strong>Stichworte:</strong> Multikopter · Brushless-Motoren · ESC · Fluglageregler · Propeller · Achsen</p>
+<p>Drohnen bestehen aus mehreren Rotoren, die durch Brushless-Motoren angetrieben werden. ESCs steuern die Drehzahl, der Fluglageregler verarbeitet Sensordaten zur Stabilisierung. Bewegungen erfolgen entlang Roll-, Nick- und Gierachse. Akkus beeinflussen Flugzeit und müssen gepflegt werden. Der RTH-Modus schützt bei Signalverlust.</p>
+<div class="highlight">
+✅ ESCs regeln die Motorenleistung<br>
+✅ Fluglageregler verarbeitet Sensordaten zur Stabilisierung<br>
+✅ Bewegungen erfolgen entlang Roll-, Nick- und Gierachse<br>
+✅ Akkus beeinflussen Flugzeit und müssen gepflegt werden<br>
+✅ RTH-Modus schützt bei Signalverlust
+</div>
+
+<h2>Kapitel 2: Sensorik und Navigation</h2>
+<p><strong>Stichworte:</strong> GNSS · Kompass · Barometer · VPS · IMU · ADS-B</p>
+<p>GNSS liefert Positionsdaten für Navigation und RTH. Der Kompass muss bei Standortwechsel kalibriert werden. VPS über Wasser deaktivieren. ADS-B warnt vor bemannten Luftfahrzeugen. Sensorfusion erhöht Flugsicherheit bei Teilausfall.</p>
+<div class="highlight">
+✅ GNSS liefert Positionsdaten für Navigation und RTH<br>
+✅ Kompass muss bei Standortwechsel kalibriert werden<br>
+✅ VPS über Wasser deaktivieren<br>
+✅ ADS-B warnt vor bemannten Luftfahrzeugen<br>
+✅ Sensorfusion erhöht Flugsicherheit bei Teilausfall
+</div>
+
+<h2>Kapitel 3: Drohnentypen und Einsatzbereiche</h2>
+<p><strong>Stichworte:</strong> Multikopter · Fixed-Wing · VTOL · Indoor · Outdoor · Gewerblich · Freizeit</p>
+<p>Multikopter sind stabil und präzise. Fixed-Wing-Drohnen sind effizient für große Flächen. VTOL-Drohnen sind flexibel, aber komplex. Indoor/Outdoor unterscheiden sich technisch und rechtlich. Die Wahl hängt vom Einsatzzweck und den Vorschriften ab.</p>
+<div class="highlight">
+✅ Multikopter = stabil und präzise<br>
+✅ Fixed-Wing = effizient für große Flächen<br>
+✅ VTOL = flexibel, aber komplex<br>
+✅ Indoor/Outdoor unterscheiden sich technisch und rechtlich
+</div>
+
+<h2>Kapitel 4: Wetter und Umwelteinflüsse</h2>
+<p><strong>Stichworte:</strong> Wind · Regen · Nebel · Temperatur · KP-Index · Luftdichte</p>
+<p>Wind über 10 m/s ist kritisch. Nebel verhindert Sichtflug (VLOS). KP-Index über 5 kann GPS stören. Temperatur beeinflusst Akkuleistung. Luftdichte beeinflusst Auftrieb – besonders bei Hitze oder großer Höhe.</p>
+<div class="highlight">
+✅ Wind >10 m/s = hohes Risiko<br>
+✅ Nebel = VLOS nicht möglich<br>
+✅ KP-Index >5 = GPS-Störung<br>
+✅ Temperatur beeinflusst Akkuleistung<br>
+✅ Luftdichte beeinflusst Auftrieb
+</div>
+
+<h2>Kapitel 5: Recht und Sicherheit im Betrieb</h2>
+<p><strong>Stichworte:</strong> EU-Verordnung · Kategorien · Registrierung · Versicherung · Flugverbotszonen · VLOS</p>
+
+<p>Die EU-Drohnenverordnung unterscheidet drei Betriebskategorien:</p>
+<ul>
+  <li><strong>Offen:</strong> für Freizeit und einfache gewerbliche Flüge</li>
+  <li><strong>Speziell:</strong> für komplexe Einsätze mit erhöhtem Risiko</li>
+  <li><strong>Zertifiziert:</strong> für große, bemannte oder autonome Systeme</li>
+</ul>
+
+<p>Die <strong>offene Kategorie</strong> ist unterteilt in:</p>
+<ul>
+  <li><strong>A1:</strong> Flüge über Personen, aber nicht über Menschenansammlungen</li>
+  <li><strong>A2:</strong> Flüge nahe an Personen, mit zusätzlichem Zertifikat</li>
+  <li><strong>A3:</strong> Flüge fern von Personen und Gebäuden</li>
+</ul>
+
+<p>Für Drohnen ab <strong>250 g</strong> gilt eine <strong>Registrierungspflicht</strong>. Der Betreiber erhält eine <strong>UAS-ID</strong>, die sichtbar an der Drohne angebracht werden muss. Zusätzlich ist eine <strong>Haftpflichtversicherung</strong> mit ausreichender Deckung gesetzlich vorgeschrieben – meist mit einer Mindestdeckungssumme von 1 Mio. EUR.</p>
+
+<p>Drohnen müssen eine <strong>CE-Kennzeichnung</strong> tragen, die ihre technische Klasse angibt:</p>
+<ul>
+  <li><strong>C0–C4:</strong> je nach Gewicht, Sensorik und Sicherheitsfunktionen</li>
+  <li><strong>C2-Drohnen:</strong> dürfen in A2 betrieben werden, wenn der Pilot zertifiziert ist</li>
+</ul>
+
+<p><strong>Flugverbotszonen</strong> sind strikt zu beachten. Dazu gehören:</p>
+<ul>
+  <li>Flughäfen</li>
+  <li>Militärische Einrichtungen</li>
+  <li>Menschenansammlungen</li>
+  <li>Naturschutzgebiete</li>
+  <li>Industrieanlagen</li>
+</ul>
+
+<p>Die <strong>RPAS-Karte</strong> zeigt aktuelle Einschränkungen. Zusätzlich informieren <strong>DABS</strong> (Daily Airspace Bulletin Switzerland) und <strong>NOTAMs</strong> (Notice to Airmen) über temporäre Sperrungen. Verstöße können zu Bußgeldern oder strafrechtlichen Konsequenzen führen.</p>
+
+<p><strong>VLOS</strong> (Visual Line of Sight) ist Pflicht: Die Drohne muss jederzeit visuell beobachtet werden. <strong>FPV-Flüge</strong> (First Person View) sind nur mit einem Flughelfer erlaubt, der die Drohne visuell überwacht. <strong>Nachtflüge</strong> sind erlaubt, wenn ein <strong>grünes Blinklicht</strong> vorhanden ist, das die Drohne sichtbar macht.</p>
+
+<div class="highlight">
+✅ Registrierungspflicht ab 250 g<br>
+✅ CE-Kennzeichnung ist vorgeschrieben<br>
+✅ VLOS ist gesetzlich vorgeschrieben<br>
+✅ Flugverbotszonen unbedingt beachten<br>
+✅ Versicherung ist Pflicht
+</div>

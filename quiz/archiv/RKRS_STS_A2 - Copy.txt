@@ -1,0 +1,469 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>STS & A2 Drohnenprüfungsvorbereitung</h1>-->
+<p><strong>Zielgruppe:</strong> Freizeitpiloten, gewerbliche Betreiber, Behörden, Technikinteressierte</p>
+<p><strong>Ziel:</strong> Vorbereitung auf die Prüfungen für die Unterkategorie A2 der offenen Betriebskategorie sowie die STS-Szenarien der speziellen Kategorie gemäß EU-Drohnenverordnung</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs bereitet dich gezielt auf die Prüfungen für die Unterkategorie A2 und die standardisierten Szenarien (STS-01 und STS-02) der speziellen Kategorie vor. Du lernst die rechtlichen, technischen und praktischen Anforderungen kennen, die du für einen sicheren und regelkonformen Drohnenbetrieb erfüllen musst.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Unterschiede zwischen A2 und STS verstehen</li>
+  <li>Anforderungen an Schulung, Technik und Flugplanung kennen</li>
+  <li>Sicherheitsmaßnahmen und Risikobewertung anwenden</li>
+  <li>Flugverbotszonen und Geo-Awareness interpretieren</li>
+  <li>Datenschutz, Haftung und Versicherungspflichten einordnen</li>
+  <li>Prüfungsthemen gezielt vorbereiten und verstehen</li>
+</ul>
+
+<h2>Kapitel 1: Grundlagen der Betriebskategorien und Prüfstruktur</h2>
+<p><strong>Stichworte:</strong> Offene Kategorie · Spezielle Kategorie · A2 · STS-01 · STS-02 · Prüfungspflicht</p>
+<p>Die EU-Drohnenverordnung unterscheidet drei Betriebskategorien:</p>
+<ul>
+  <li><strong>Offen:</strong> risikoarme Flüge ohne Genehmigung</li>
+  <li><strong>Spezielle:</strong> Flüge mit erhöhtem Risiko, genehmigungspflichtig</li>
+  <li><strong>Zulassungspflichtig:</strong> komplexe Einsätze mit Personen oder Gefahrgut</li>
+</ul>
+<p>A2 erlaubt Flüge nahe an Personen mit Zusatzprüfung. STS-01 und STS-02 sind standardisierte Szenarien der speziellen Kategorie. STS erfordert Betriebshandbuch und Schulung. Prüfungen bestehen aus Theorie, Praxis und Dokumentation. Das BAZL ist zuständig in der Schweiz.</p>
+<div class="highlight">
+✅ A2 erlaubt Flüge nahe an Personen mit Zusatzprüfung<br>
+✅ STS-01 und STS-02 sind standardisierte Szenarien der speziellen Kategorie<br>
+✅ STS erfordert Betriebshandbuch und Schulung<br>
+✅ Prüfungen bestehen aus Theorie, Praxis und Dokumentation<br>
+✅ BAZL ist zuständig in der Schweiz
+</div>
+
+<h2>1.1 Betriebskategorien nach EU-Drohnenverordnung</h2>
+<p><strong>Stichworte:</strong> Offene Kategorie · Spezielle Kategorie · Zulassungspflichtig · Risikoeinstufung · EASA</p>
+<p>Drei Betriebskategorien:</p>
+<ul>
+  <li><strong>Offen:</strong> genehmigungsfrei bei Einhaltung der Regeln</li>
+  <li><strong>Spezielle:</strong> genehmigungspflichtig oder STS-basiert</li>
+  <li><strong>Zulassungspflichtig:</strong> hochreguliert, ähnlich bemannter Luftfahrt</li>
+</ul>
+<p>Die EASA koordiniert europaweit, das BAZL setzt in der Schweiz um.</p>
+<div class="highlight">
+✅ Drei Betriebskategorien: Offen, Speziell, Zulassungspflichtig<br>
+✅ Offene Kategorie ist genehmigungsfrei bei Einhaltung der Regeln<br>
+✅ Spezielle Kategorie erfordert Genehmigung oder STS<br>
+✅ Zulassungspflichtige Kategorie ist hochreguliert<br>
+✅ EASA koordiniert europaweit, BAZL setzt in der Schweiz um
+</div>
+
+<h2>1.2 Die Unterkategorie A2 im Detail</h2>
+<p><strong>Stichworte:</strong> A2-Flüge · C2-Drohne · Schulungspflicht · Sichtflug · Sicherheitsabstand</p>
+<p>A2 erlaubt Flüge nahe an Personen mit C2-Drohne. Voraussetzungen:</p>
+<ul>
+  <li>CE-Kennzeichnung, Gewicht <4 kg</li>
+  <li>Geo-Awareness und Fernidentifikation</li>
+  <li>Mindestabstand: 30 m (5 m im Langsamflug)</li>
+  <li>VLOS ist Pflicht</li>
+</ul>
+<p>Schulungspflicht:</p>
+<ul>
+  <li>A1/A3-Online-Schulung</li>
+  <li>A2-Theorieprüfung</li>
+  <li>Selbstdeklaration praktischer Flugerfahrung</li>
+</ul>
+<p>Dokumentation:</p>
+<ul>
+  <li>A2-Zertifikat</li>
+  <li>UAS-Betreiber-ID</li>
+  <li>Versicherungsnachweis</li>
+  <li>Flugprotokolle bei gewerblichem Einsatz</li>
+</ul>
+<div class="highlight">
+✅ A2 erlaubt Flüge nahe an Personen mit C2-Drohne<br>
+✅ Schulungspflicht: A2-Theorieprüfung + praktische Erfahrung<br>
+✅ Mindestabstand: 30 m (5 m im Langsamflug)<br>
+✅ Sichtflug ist Pflicht<br>
+✅ Dokumentation muss jederzeit vorgelegt werden können
+</div>
+
+<h2>1.3 STS-Szenarien in der speziellen Kategorie</h2>
+<p><strong>Stichworte:</strong> STS-01 · STS-02 · BVLOS · Betriebshandbuch · Genehmigungsfreiheit</p>
+<p><strong>STS-01:</strong> Sichtflug in urbanem Gebiet mit Drohne <2 kg, CE-Klasse C5/C6, Schulung und Betriebshandbuch erforderlich.</p>
+<p><strong>STS-02:</strong> BVLOS-Flug in kontrollierter Umgebung mit Drohne <3 kg, CE-Klasse C6, technische Voraussetzungen und Infrastruktur erforderlich.</p>
+<p>Kontrollierte Umgebung = abgesperrter Bereich ohne unbeteiligte Personen, aktiv überwacht.</p>
+<p>STS-Flüge sind genehmigungsfrei bei vollständiger Einhaltung. Bei Abweichungen ist eine individuelle Genehmigung erforderlich.</p>
+<p>Erforderlich für STS-Flüge:</p>
+<ul>
+  <li>STS-Schulung</li>
+  <li>Betriebshandbuch mit Rollen, Sicherheit, Kommunikation, Notfallmanagement</li>
+  <li>UAS-Betreiberregistrierung</li>
+  <li>Versicherung mit Mindestdeckung</li>
+  <li>Technische Anforderungen: Geo-Awareness, Fernidentifikation</li>
+</ul>
+<div class="highlight">
+✅ STS-01: Sichtflug in urbanem Gebiet mit <2 kg<br>
+✅ STS-02: BVLOS-Flug in kontrollierter Umgebung mit <3 kg<br>
+✅ Betriebshandbuch und Schulung sind Pflicht<br>
+✅ CE-Klassen C5/C6 erforderlich<br>
+✅ STS-Flüge sind genehmigungsfrei bei vollständiger Einhaltung
+</div>
+
+<h2>Kapitel 2: Technische Anforderungen und CE-Klassifizierung</h2>
+<p><strong>Stichworte:</strong> CE-Kennzeichnung · Drohnenklassen · Geo-Awareness · Fernidentifikation · Sicherheitsfunktionen</p>
+<p>Seit 2023 müssen alle neu in Verkehr gebrachten Drohnen in der EU und der Schweiz eine CE-Kennzeichnung mit spezifischer Klassifizierung tragen. Diese Kennzeichnung definiert den zulässigen Einsatzbereich und die technischen Sicherheitsfunktionen.</p>
+
+<h3>CE-Klassen im Überblick</h3>
+<ul>
+  <li><strong>C0:</strong> <250 g, keine Registrierungspflicht, keine besonderen Anforderungen</li>
+  <li><strong>C1:</strong> <900 g, geeignet für A1-Flüge, Geo-Awareness und Fernidentifikation erforderlich</li>
+  <li><strong>C2:</strong> <4 kg, geeignet für A2-Flüge, Schulungszertifikat, Geo-Awareness und Fernidentifikation</li>
+  <li><strong>C3/C4:</strong> <25 kg, geeignet für A3-Flüge, keine Nähe zu Personen erlaubt</li>
+</ul>
+
+<p>Die CE-Kennzeichnung muss dauerhaft und gut sichtbar angebracht sein und enthält Angaben zu:</p>
+<ul>
+  <li>Gewicht, Abmessungen, Geschwindigkeit, Lärmpegel</li>
+  <li>Hersteller, Seriennummer</li>
+  <li>Unterstützte Sicherheitsfunktionen</li>
+</ul>
+
+<p><strong>Geo-Awareness:</strong> erkennt Flugverbotszonen und warnt den Piloten oder verhindert den Start.</p>
+<p><strong>Fernidentifikation:</strong> sendet während des Fluges eine digitale Kennung mit Positionsdaten, Seriennummer und Betreiber-ID – abrufbar durch Behörden.</p>
+
+<p>Diese Funktionen sind für C1- und C2-Drohnen verpflichtend und erhöhen die Sicherheit und Transparenz im Luftraum.</p>
+
+<p>Für ältere Drohnen ohne CE-Kennzeichnung gelten Übergangsregelungen bis Ende 2024. Danach ist ihr Betrieb nur noch eingeschränkt möglich – z. B. in A3 mit großem Abstand zu Personen und Gebäuden.</p>
+
+<div class="highlight">
+✅ CE-Kennzeichnung ist seit 2023 Pflicht für neue Drohnen<br>
+✅ Drohnenklassen C0–C4 definieren Einsatzbereiche<br>
+✅ Geo-Awareness und Fernidentifikation erhöhen Sicherheit<br>
+✅ CE-Klasse bestimmt, in welcher Kategorie die Drohne betrieben werden darf<br>
+✅ Übergangsregelungen für Altgeräte gelten bis Ende 2024
+</div>
+
+<h3>2.1 CE-Klassen und ihre Bedeutung für den Drohnenbetrieb</h3>
+<p><strong>Stichworte:</strong> CE-Kennzeichnung · C0–C4 · Gewicht · Einsatzbereich · EU-Konformität</p>
+<p>Die CE-Klasse entscheidet über den zulässigen Einsatzbereich:</p>
+<ul>
+  <li><strong>C2-Drohnen:</strong> Voraussetzung für A2-Flüge</li>
+  <li><strong>C3/C4-Drohnen:</strong> nur für A3 mit großem Abstand zu Personen</li>
+</ul>
+<p>Die CE-Kennzeichnung bestätigt die EU-Konformität hinsichtlich Sicherheit, Umwelt und Gesundheit.</p>
+<div class="highlight">
+✅ CE-Kennzeichnung ist Pflicht für neue Drohnen<br>
+✅ CE-Klasse bestimmt den zulässigen Einsatzbereich<br>
+✅ C2-Drohnen sind Voraussetzung für A2-Flüge<br>
+✅ C3/C4-Drohnen nur für A3 mit großem Abstand<br>
+✅ Übergangsregelungen gelten für Altgeräte bis Ende 2024
+</div>
+
+<h3>2.2 Sicherheitsfunktionen: Geo-Awareness und Fernidentifikation</h3>
+<p><strong>Stichworte:</strong> Geo-Awareness · Fernidentifikation · Flugverbotszonen · digitale Kennung · Behördenzugriff</p>
+<p><strong>Geo-Awareness:</strong> erkennt geografische Einschränkungen und verhindert Starts in gesperrten Zonen.</p>
+<p><strong>Fernidentifikation:</strong> sendet digitale Kennung mit Flugstatus, Position und Betreiber-ID – abrufbar durch Behörden.</p>
+<p>Beide Funktionen sind Pflicht für C1- und C2-Drohnen und erhöhen die Sicherheit im urbanen und gewerblichen Einsatz.</p>
+<div class="highlight">
+✅ Geo-Awareness erkennt Flugverbotszonen und warnt den Piloten<br>
+✅ Fernidentifikation sendet digitale Kennung während des Fluges<br>
+✅ Beide Funktionen sind Pflicht für C1- und C2-Drohnen<br>
+✅ Erhöhte Sicherheit und Transparenz im Luftraum<br>
+✅ Behörden können Drohnen in Echtzeit identifizieren
+</div>
+
+<h3>2.3 Technische Voraussetzungen für STS-Szenarien</h3>
+<p><strong>Stichworte:</strong> STS-01 · STS-02 · CE-Klasse C5/C6 · redundante Systeme · Funkverbindung</p>
+<p><strong>STS-01:</strong> Sichtflug mit Drohne <2 kg, CE-Klasse C5, Geo-Awareness und Fernidentifikation aktiviert, Betriebshandbuch und Schulung erforderlich.</p>
+<p><strong>STS-02:</strong> BVLOS-Flug mit Drohne <3 kg, CE-Klasse C6, redundante Systeme, stabile Funkverbindung, Infrastruktur-Nachweis, Betriebshandbuch und Schulung erforderlich.</p>
+<p>Technische Checks, Firmware-Updates und Wartung sind dokumentationspflichtig.</p>
+<div class="highlight">
+✅ STS-01: Sichtflug mit Drohne <2 kg, CE-Klasse C5<br>
+✅ STS-02: BVLOS-Flug mit Drohne <3 kg, CE-Klasse C6<br>
+✅ Redundante Systeme und stabile Funkverbindung sind Pflicht<br>
+✅ Geo-Awareness und Fernidentifikation müssen aktiviert sein<br>
+✅ Technische Checks und Wartung sind dokumentationspflichtig
+</div>
+<h2>Kapitel 2: Technische Anforderungen und CE-Klassifizierung</h2>
+<p><strong>Stichworte:</strong> CE-Kennzeichnung · Drohnenklassen · Geo-Awareness · Fernidentifikation · Sicherheitsfunktionen</p>
+<p>Seit 2023 müssen alle neu in Verkehr gebrachten Drohnen in der EU und der Schweiz eine CE-Kennzeichnung mit spezifischer Klassifizierung tragen. Diese Kennzeichnung definiert den zulässigen Einsatzbereich und die technischen Sicherheitsfunktionen.</p>
+
+<h3>CE-Klassen im Überblick</h3>
+<ul>
+  <li><strong>C0:</strong> <250 g, keine Registrierungspflicht, keine besonderen Anforderungen</li>
+  <li><strong>C1:</strong> <900 g, geeignet für A1-Flüge, Geo-Awareness und Fernidentifikation erforderlich</li>
+  <li><strong>C2:</strong> <4 kg, geeignet für A2-Flüge, Schulungszertifikat, Geo-Awareness und Fernidentifikation</li>
+  <li><strong>C3/C4:</strong> <25 kg, geeignet für A3-Flüge, keine Nähe zu Personen erlaubt</li>
+</ul>
+
+<p>Die CE-Kennzeichnung muss dauerhaft und gut sichtbar angebracht sein und enthält Angaben zu:</p>
+<ul>
+  <li>Gewicht, Abmessungen, Geschwindigkeit, Lärmpegel</li>
+  <li>Hersteller, Seriennummer</li>
+  <li>Unterstützte Sicherheitsfunktionen</li>
+</ul>
+
+<p><strong>Geo-Awareness:</strong> erkennt Flugverbotszonen und warnt den Piloten oder verhindert den Start.</p>
+<p><strong>Fernidentifikation:</strong> sendet während des Fluges eine digitale Kennung mit Positionsdaten, Seriennummer und Betreiber-ID – abrufbar durch Behörden.</p>
+
+<p>Diese Funktionen sind für C1- und C2-Drohnen verpflichtend und erhöhen die Sicherheit und Transparenz im Luftraum.</p>
+
+<p>Für ältere Drohnen ohne CE-Kennzeichnung gelten Übergangsregelungen bis Ende 2024. Danach ist ihr Betrieb nur noch eingeschränkt möglich – z. B. in A3 mit großem Abstand zu Personen und Gebäuden.</p>
+
+<div class="highlight">
+✅ CE-Kennzeichnung ist seit 2023 Pflicht für neue Drohnen<br>
+✅ Drohnenklassen C0–C4 definieren Einsatzbereiche<br>
+✅ Geo-Awareness und Fernidentifikation erhöhen Sicherheit<br>
+✅ CE-Klasse bestimmt, in welcher Kategorie die Drohne betrieben werden darf<br>
+✅ Übergangsregelungen für Altgeräte gelten bis Ende 2024
+</div>
+
+<h3>2.1 CE-Klassen und ihre Bedeutung für den Drohnenbetrieb</h3>
+<p><strong>Stichworte:</strong> CE-Kennzeichnung · C0–C4 · Gewicht · Einsatzbereich · EU-Konformität</p>
+<p>Die CE-Klasse entscheidet über den zulässigen Einsatzbereich:</p>
+<ul>
+  <li><strong>C2-Drohnen:</strong> Voraussetzung für A2-Flüge</li>
+  <li><strong>C3/C4-Drohnen:</strong> nur für A3 mit großem Abstand zu Personen</li>
+</ul>
+<p>Die CE-Kennzeichnung bestätigt die EU-Konformität hinsichtlich Sicherheit, Umwelt und Gesundheit.</p>
+<div class="highlight">
+✅ CE-Kennzeichnung ist Pflicht für neue Drohnen<br>
+✅ CE-Klasse bestimmt den zulässigen Einsatzbereich<br>
+✅ C2-Drohnen sind Voraussetzung für A2-Flüge<br>
+✅ C3/C4-Drohnen nur für A3 mit großem Abstand<br>
+✅ Übergangsregelungen gelten für Altgeräte bis Ende 2024
+</div>
+
+<h3>2.2 Sicherheitsfunktionen: Geo-Awareness und Fernidentifikation</h3>
+<p><strong>Stichworte:</strong> Geo-Awareness · Fernidentifikation · Flugverbotszonen · digitale Kennung · Behördenzugriff</p>
+<p><strong>Geo-Awareness:</strong> erkennt geografische Einschränkungen und verhindert Starts in gesperrten Zonen.</p>
+<p><strong>Fernidentifikation:</strong> sendet digitale Kennung mit Flugstatus, Position und Betreiber-ID – abrufbar durch Behörden.</p>
+<p>Beide Funktionen sind Pflicht für C1- und C2-Drohnen und erhöhen die Sicherheit im urbanen und gewerblichen Einsatz.</p>
+<div class="highlight">
+✅ Geo-Awareness erkennt Flugverbotszonen und warnt den Piloten<br>
+✅ Fernidentifikation sendet digitale Kennung während des Fluges<br>
+✅ Beide Funktionen sind Pflicht für C1- und C2-Drohnen<br>
+✅ Erhöhte Sicherheit und Transparenz im Luftraum<br>
+✅ Behörden können Drohnen in Echtzeit identifizieren
+</div>
+
+<h3>2.3 Technische Voraussetzungen für STS-Szenarien</h3>
+<p><strong>Stichworte:</strong> STS-01 · STS-02 · CE-Klasse C5/C6 · redundante Systeme · Funkverbindung</p>
+<p><strong>STS-01:</strong> Sichtflug mit Drohne <2 kg, CE-Klasse C5, Geo-Awareness und Fernidentifikation aktiviert, Betriebshandbuch und Schulung erforderlich.</p>
+<p><strong>STS-02:</strong> BVLOS-Flug mit Drohne <3 kg, CE-Klasse C6, redundante Systeme, stabile Funkverbindung, Infrastruktur-Nachweis, Betriebshandbuch und Schulung erforderlich.</p>
+<p>Technische Checks, Firmware-Updates und Wartung sind dokumentationspflichtig.</p>
+<div class="highlight">
+✅ STS-01: Sichtflug mit Drohne <2 kg, CE-Klasse C5<br>
+✅ STS-02: BVLOS-Flug mit Drohne <3 kg, CE-Klasse C6<br>
+✅ Redundante Systeme und stabile Funkverbindung sind Pflicht<br>
+✅ Geo-Awareness und Fernidentifikation müssen aktiviert sein<br>
+✅ Technische Checks und Wartung sind dokumentationspflichtig
+</div>
+
+<h2>Kapitel 4: Kommunikation, Teamstruktur und Dokumentation</h2>
+<p><strong>Stichworte:</strong> Rollenverteilung · Funkkommunikation · Einsatzkoordination · Flugprotokoll · Betriebshandbuch</p>
+<p>Ein sicherer Drohnenbetrieb – insbesondere in der A2-Unterkategorie und bei STS-Szenarien – erfordert klare Kommunikation, eine definierte Teamstruktur und eine lückenlose Dokumentation. Diese Elemente sind nicht nur für die Praxis entscheidend, sondern auch prüfungsrelevant.</p>
+<div class="highlight">
+✅ Klare Rollenverteilung im Einsatzteam<br>
+✅ Funkkommunikation muss zuverlässig und standardisiert sein<br>
+✅ Flugprotokoll und Checklisten sind Pflicht<br>
+✅ Betriebshandbuch ist Voraussetzung für STS-Flüge<br>
+✅ Dokumentation dient der Nachweis- und Qualitätssicherung
+</div>
+
+<h3>4.1 Kommunikation im Drohnenbetrieb</h3>
+<p><strong>Stichworte:</strong> Funkverbindung · Standardprotokolle · Notfallkommunikation · BVLOS · Einsatzkoordination</p>
+<ul>
+  <li><strong>Kommunikationsmittel:</strong> Funkgeräte, Mobilfunk, Fernsteuerungssysteme, Audio-Headsets</li>
+  <li><strong>Protokolle:</strong> Rufzeichen, Meldepflichten, Freigaben, Notfallcodes</li>
+  <li><strong>Beispiel:</strong> „Pilot an Beobachter: Sichtkontakt bestätigt, Startfreigabe?“</li>
+  <li><strong>Notfallkommunikation:</strong> Meldung, Aktivierung von Protokollen, Dokumentation, Behördenkontakt</li>
+</ul>
+<p>Besonders bei BVLOS-Flügen ist eine stabile und standardisierte Kommunikation unerlässlich.</p>
+<div class="highlight">
+✅ Kommunikation ist essenziell für Sicherheit und Koordination<br>
+✅ Funkverbindung muss stabil und störungsfrei sein<br>
+✅ Standardprotokolle helfen bei klarer Verständigung<br>
+✅ Notfallkommunikation muss vorbereitet und geübt sein<br>
+✅ BVLOS-Flüge erfordern besondere Kommunikationsmaßnahmen
+</div>
+
+<h3>4.2 Teamstruktur und Rollenverteilung</h3>
+<p><strong>Stichworte:</strong> Fernpilot · Beobachter · Einsatzleiter · Techniker · Verantwortlichkeiten</p>
+<ul>
+  <li><strong>Fernpilot:</strong> Steuerung, Sichtkontakt, Sicherheitsfunktionen, rechtliche Verantwortung</li>
+  <li><strong>Beobachter:</strong> visuelle Überwachung, Hindernismeldung, Kommunikation, Zwischenfalldokumentation</li>
+  <li><strong>Einsatzleiter:</strong> Koordination, Behördenkontakt, Vorschriftenüberwachung, Protokollführung</li>
+  <li><strong>Techniker:</strong> Preflight-Checks, Wartung, Fehlerdiagnose, technische Dokumentation</li>
+</ul>
+<p>In kleineren Teams können Rollen kombiniert werden – Verantwortlichkeiten müssen dennoch klar geregelt sein.</p>
+<div class="highlight">
+✅ Klare Rollenverteilung erhöht Sicherheit und Effizienz<br>
+✅ Fernpilot trägt rechtliche Verantwortung<br>
+✅ Beobachter unterstützt bei visueller Kontrolle<br>
+✅ Einsatzleiter koordiniert und dokumentiert<br>
+✅ Techniker sorgt für technische Einsatzbereitschaft
+</div>
+
+<h3>4.3 Dokumentation und Betriebshandbuch</h3>
+<p><strong>Stichworte:</strong> Flugprotokoll · Checklisten · Nachweispflichten · STS-Dokumentation · Qualitätssicherung</p>
+<ul>
+  <li><strong>Flugprotokoll:</strong> Datum, Ort, Wetter, Drohne, Team, Verlauf, Zwischenfälle</li>
+  <li><strong>Checklisten:</strong> Preflight, Sicherheitsfunktionen, Notfallmaßnahmen – schriftlich und archiviert</li>
+  <li><strong>Betriebshandbuch:</strong> Drohnenbeschreibung, Rollen, Sicherheitsmaßnahmen, Kommunikation, Wartung</li>
+  <li><strong>Nachweise:</strong> A2/STS-Zertifikate, Versicherung, Betreiber-ID, Protokolle, Betriebshandbuch</li>
+</ul>
+<p>Das Betriebshandbuch ist Grundlage für STS-Genehmigungen und muss regelmäßig aktualisiert werden.</p>
+<div class="highlight">
+✅ Flugprotokoll dokumentiert alle relevanten Einsatzdaten<br>
+✅ Checklisten erhöhen Sicherheit und Standardisierung<br>
+✅ Betriebshandbuch ist Pflicht bei STS-Flügen<br>
+✅ Dokumentation muss jederzeit vorzeigbar sein<br>
+✅ Qualitätssicherung durch strukturierte Nachweise
+</div>
+
+<h2>Kapitel 5: Datenschutz, Persönlichkeitsrechte und ethische Grundsätze</h2>
+<p><strong>Stichworte:</strong> DSGVO · Einwilligung · Bildrechte · Wärmebilddaten · ethisches Verhalten</p>
+<p>Der Betrieb von Drohnen berührt nicht nur luftrechtliche und technische Aspekte, sondern auch sensible Fragen des Datenschutzes und der Persönlichkeitsrechte. Besonders bei Drohnen mit Kamera oder Wärmebildsensoren ist ein verantwortungsvoller Umgang mit personenbezogenen Daten unerlässlich – sowohl rechtlich als auch ethisch.</p>
+
+<h3>Rechtlicher Rahmen</h3>
+<ul>
+  <li>Personenaufnahmen nur mit ausdrücklicher Einwilligung</li>
+  <li>Keine Veröffentlichung ohne Zustimmung</li>
+  <li>Zweckgebundene und zeitlich begrenzte Speicherung</li>
+  <li>Rechte auf Auskunft, Berichtigung und Löschung</li>
+  <li>Wärmebilddaten gelten als personenbezogen, wenn Rückschlüsse möglich sind</li>
+</ul>
+
+<h3>Umgang mit Bild- und Videomaterial</h3>
+<ul>
+  <li>Kamera nur auf Einsatzgebiet richten</li>
+  <li>Aufnahmen anonymisieren oder verpixeln</li>
+  <li>Speicherfristen definieren</li>
+  <li>Zugriff auf Daten beschränken</li>
+  <li>Veröffentlichung nur mit schriftlicher Zustimmung</li>
+</ul>
+
+<p>Bei gewerblichen Einsätzen empfiehlt sich eine Datenschutz-Folgenabschätzung (DSFA).</p>
+
+<h3>Ethische Grundsätze im Drohnenbetrieb</h3>
+<ul>
+  <li>Respekt vor Privatsphäre</li>
+  <li>Vermeidung von Stresssituationen für Mensch und Tier</li>
+  <li>Transparente Kommunikation mit Anwohnern und Behörden</li>
+  <li>Nachvollziehbare Dokumentation</li>
+  <li>Verzicht auf provokative Flugmanöver</li>
+</ul>
+
+<div class="highlight">
+✅ DSGVO und DSG regeln Drohnendatenschutz<br>
+✅ Personenaufnahmen nur mit Einwilligung<br>
+✅ Wärmebilddaten können personenbezogen sein<br>
+✅ Ethik: Privatsphäre, Transparenz, Rücksichtnahme<br>
+✅ Datenschutz-Folgenabschätzung bei gewerblichem Einsatz empfohlen
+</div>
+
+<h2>Kapitel 6: Prüfungsvorbereitung, Lernstrategien und typische Fragen</h2>
+<p><strong>Stichworte:</strong> Prüfungsformate · Lernmethoden · Fragentypen · Selbsttest · Prüfungsstellen</p>
+
+<h3>Prüfungsformate im Überblick</h3>
+<ul>
+  <li><strong>A2:</strong> Online-Theorieprüfung mit ca. 30 Multiple-Choice-Fragen</li>
+  <li><strong>STS:</strong> Theorieprüfung + praktische Nachweise + Betriebshandbuch</li>
+  <li><strong>Inhalte:</strong> Luftrecht, Meteorologie, Technik, Datenschutz, Risikomanagement, Notfallverhalten</li>
+</ul>
+
+<h3>Lernstrategien für die Prüfung</h3>
+<ul>
+  <li>Karteikarten: Begriffe, CE-Klassen, Flugregeln</li>
+  <li>Quizformate: Multiple-Choice mit Erklärung</li>
+  <li>Mindmaps: Zusammenhänge zwischen Kategorien, Technik und Recht</li>
+  <li>Selbsttests: Prüfungssimulation mit Zeitlimit</li>
+  <li>Lernpläne: z. B. 2 Wochen à 30 Minuten täglich</li>
+</ul>
+
+<p>Digitale Plattformen wie <em>dronepilot.ch</em> oder <em>easa.europa.eu</em> bieten kostenlose Materialien.</p>
+
+<h3>Typische Fragentypen</h3>
+<ul>
+  <li>„Welche Drohnenklasse ist für A2-Flüge geeignet?“</li>
+  <li>„Was ist Geo-Awareness?“</li>
+  <li>„Welche Maßnahmen sind bei starkem Wind zu treffen?“</li>
+  <li>„Was ist bei Aufnahmen von Personen zu beachten?“</li>
+  <li>„Welche Rolle übernimmt der Beobachter im STS-Team?“</li>
+</ul>
+
+<h3>Selbsttest und Prüfungssimulation</h3>
+<ul>
+  <li>Quiz mit 40 Fragen aus allen Kapiteln</li>
+  <li>45 Minuten Zeitlimit</li>
+  <li>Keine Hilfsmittel</li>
+  <li>Antworten auswerten und Schwächen nacharbeiten</li>
+</ul>
+
+<p>Auch das Schreiben eines eigenen Betriebshandbuchs oder das Durchspielen eines STS-Einsatzes hilft beim Lernen.</p>
+
+<h3>Prüfungstag: Tipps & Ablauf</h3>
+<ul>
+  <li>Ausgeruht und vorbereitet erscheinen</li>
+  <li>Ausweis und Schulungsnachweise mitbringen</li>
+  <li>Fragen konzentriert lesen</li>
+  <li>Bei Unsicherheit: Ausschlussverfahren nutzen</li>
+  <li>Nach der Prüfung: Feedback einholen</li>
+</ul>
+
+<div class="highlight">
+✅ A2: Online-Theorieprüfung mit ca. 30 Fragen<br>
+✅ STS: Theorie + Praxis + Dokumentation<br>
+✅ Lernmethoden: Karteikarten, Quiz, Selbsttest<br>
+✅ Fragentypen sind praxisnah und anwendungsorientiert<br>
+✅ Prüfungssimulation hilft zur gezielten Vorbereitung
+</div>
+
+<h2>Glossar: STS & A2 Drohnenprüfung</h2>
+<table style="width:100%; border-collapse:collapse;">
+  <thead>
+    <tr style="background-color:#f0f8ff;">
+      <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Begriff</th>
+      <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Erklärung</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>A1 / A2 / A3</td><td>Unterkategorien der offenen Betriebskategorie. A1: über Einzelpersonen, A2: nahe an Personen, A3: fern von Personen und Gebäuden.</td></tr>
+    <tr><td>Akkulaufzeit</td><td>Technische Eigenschaft der Drohne, wichtig für Flugplanung und Sicherheit.</td></tr>
+    <tr><td>Autopilot</td><td>Automatisierte Steuerung der Drohne – nicht zulässig für alle Einsätze.</td></tr>
+    <tr><td>BAZL</td><td>Bundesamt für Zivilluftfahrt – zuständig für Drohnenregulierung in der Schweiz.</td></tr>
+    <tr><td>Beobachter</td><td>Unterstützt den Fernpiloten durch visuelle Überwachung der Drohne und Umgebung.</td></tr>
+    <tr><td>BVLOS</td><td>„Beyond Visual Line of Sight“ – Flüge außerhalb der Sichtweite des Piloten.</td></tr>
+    <tr><td>CE-Kennzeichnung</td><td>Europäische Konformitätskennzeichnung für Drohnenklassen (z. B. C1–C6).</td></tr>
+    <tr><td>C1 / C2 / C5 / C6</td><td>CE-Drohnenklassen mit spezifischen Anforderungen für A1, A2 und STS-Szenarien.</td></tr>
+    <tr><td>Datenschutz (DSGVO)</td><td>Regelt die Speicherung und Verarbeitung personenbezogener Daten, z. B. Bildmaterial.</td></tr>
+    <tr><td>EASA</td><td>Europäische Agentur für Flugsicherheit – entwickelt EU-Drohnenverordnung und SORA-Modell.</td></tr>
+    <tr><td>Fernidentifikation</td><td>Digitale Kennung der Drohne, die Behörden während des Fluges auslesen können.</td></tr>
+    <tr><td>Fernpilot</td><td>Verantwortliche Person für Steuerung und Sicherheit der Drohne.</td></tr>
+    <tr><td>Firmware-Update</td><td>Teil der Pre-Flight-Checkliste – stellt sicher, dass die Drohne auf dem neuesten Stand ist.</td></tr>
+    <tr><td>Flugbuchung</td><td>Nicht relevant für Drohnenbetrieb – eher bei bemannter Luftfahrt.</td></tr>
+    <tr><td>Flugprotokoll</td><td>Dokumentation des Fluges – optional, aber hilfreich für Nachweise.</td></tr>
+    <tr><td>Geo-Awareness</td><td>Funktion zur Erkennung von Flugverbotszonen – verhindert Start oder warnt den Piloten.</td></tr>
+    <tr><td>Haftpflichtversicherung</td><td>Gesetzlich vorgeschrieben – in der Schweiz mit Mindestdeckung von CHF 1 Mio.</td></tr>
+    <tr><td>ICAO / FAA</td><td>Internationale Organisationen für Luftfahrt – nicht direkt zuständig für EU-Drohnenregulierung.</td></tr>
+    <tr><td>Langsamflugmodus</td><td>Reduziert Mindestabstand zu Personen bei A2-Flügen auf 5 m.</td></tr>
+    <tr><td>LED-Beleuchtung</td><td>Sichtbarkeit der Drohne – keine Pflichtfunktion für STS oder A2.</td></tr>
+    <tr><td>Offene Kategorie</td><td>Betriebskategorie für risikoarme Drohnenflüge ohne Genehmigung.</td></tr>
+    <tr><td>Pre-Flight-Checkliste</td><td>Technische und organisatorische Vorbereitung vor jedem Flug.</td></tr>
+    <tr><td>Privatsphäre</td><td>Muss beim Drohnenflug respektiert werden – keine Aufnahmen ohne Zustimmung.</td></tr>
+    <tr><td>Return-to-Home (RTH)</td><td>Sicherheitsfunktion – Drohne kehrt bei Signalverlust automatisch zum Startpunkt zurück.</td></tr>
+    <tr><td>Risikomanagement</td><td>Bestandteil der A2-Prüfung – bewertet potenzielle Gefahren beim Flug.</td></tr>
+    <tr><td>SORA</td><td>„Specific Operations Risk Assessment“ – Risikoanalyse für spezielle Drohneneinsätze.</td></tr>
+    <tr><td>Spezielle Kategorie</td><td>Für komplexere Einsätze mit erhöhtem Risiko – z. B. BVLOS oder urbaner Raum.</td></tr>
+    <tr><td>STS-01 / STS-02</td><td>Standardisierte Szenarien für genehmigungsfreien Betrieb in der speziellen Kategorie.</td></tr>
+    <tr><td>Techniker</td><td>Verantwortlich für Wartung, Systemchecks und technische Einsatzbereitschaft der Drohne.</td></tr>
+    <tr><td>Theorieprüfung A2</td><td>Online-Test zu Luftrecht, Technik, Verhalten in Notfällen, Meteorologie etc.</td></tr>
+    <tr><td>UAS</td><td>Unmanned Aircraft System – technischer Begriff für Drohne inkl. Steuerungseinheit.</td></tr>
+    <tr><td>VLOS</td><td>„Visual Line of Sight“ – Sichtflug, bei dem der Pilot die Drohne direkt sehen kann.</td></tr>
+    <tr><td>Wärmebildkamera</td><td>Optionales Sensor-Tool – nicht verpflichtend für A2 oder STS-Flüge.</td></tr>
+    <tr><td>Zweckbindung</td><td>Daten dürfen nur für den vorgesehenen Zweck gespeichert und verwendet werden.</td></tr>
+  </tbody>
+</table>

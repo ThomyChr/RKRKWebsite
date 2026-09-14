@@ -1,0 +1,140 @@
+﻿  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 4px 8px;
+      display: inline-block;
+      margin: 10px 0;
+    }
+  </style>
+
+
+<!--<H1>Batterien</H1>-->
+<p><strong>Zielgruppe:</strong> Technikinteressierte, Drohnenpiloten, Outdoor-Nutzer, Sicherheitskräfte</p>
+<p><strong>Ziel:</strong> Verständnis der wichtigsten Batterietypen, ihrer Funktionsweise, Risiken und Anwendungsmöglichkeiten</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir die Grundlagen der Batterietechnologie – von chemischen Prinzipien über Bauformen bis hin zu Sicherheitsaspekten. Du lernst, wie Batterien funktionieren, welche Typen es gibt, wie sie sicher verwendet und gelagert werden und worauf du bei Auswahl und Entsorgung achten solltest.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Aufbau und Funktionsweise von Batterien verstehen</li>
+  <li>Unterschiede zwischen Primär- und Sekundärbatterien kennen</li>
+  <li>Risiken wie Tiefentladung, Überladung und Brandgefahr einschätzen</li>
+  <li>Sicherheitsregeln für Lagerung, Transport und Nutzung anwenden</li>
+  <li>Umweltaspekte und Recyclingmöglichkeiten beurteilen</li>
+</ul>
+
+<h2>Kapitel 1: Grundlagen der Batterietechnologie</h2>
+<p><strong>Stichworte:</strong> Elektrochemie · Spannung · Kapazität · Innenwiderstand · Ladezyklen</p>
+<p>Batterien sind elektrochemische Energiespeicher, die durch eine chemische Reaktion elektrische Energie bereitstellen. Sie bestehen aus zwei Elektroden – Anode und Kathode – sowie einem Elektrolyten, der den Ionenaustausch ermöglicht.</p>
+<p>Typische Spannungen:</p>
+<ul>
+  <li>Alkaline-Zelle: 1,5 V</li>
+  <li>Lithium-Ionen-Zelle: 3,6–3,7 V</li>
+  <li>Bleiakku: 2,0 V pro Zelle</li>
+</ul>
+<p>Die Kapazität (mAh/Ah) beschreibt die gespeicherte Ladung. Der Innenwiderstand beeinflusst die Leistungsfähigkeit. Ladezyklen geben an, wie oft eine Batterie geladen und entladen werden kann.</p>
+<div class="highlight">
+✅ Batterien wandeln chemische Energie in elektrische um<br>
+✅ Spannung hängt vom Zelltyp ab<br>
+✅ Kapazität = gespeicherte Ladung<br>
+✅ Innenwiderstand beeinflusst Leistung<br>
+✅ Ladezyklen bestimmen Lebensdauer
+</div>
+
+<h2>Kapitel 2: Batterietypen und ihre Eigenschaften</h2>
+<p><strong>Stichworte:</strong> Primärzellen · Sekundärzellen · Lithium-Ionen · NiMH · Bleiakku · Festkörperbatterie</p>
+<p>Hauptgruppen:</p>
+<ul>
+  <li><strong>Primärzellen:</strong> nicht wiederaufladbar (z. B. Alkaline)</li>
+  <li><strong>Sekundärzellen:</strong> wiederaufladbar (z. B. Lithium-Ionen, NiMH, Blei)</li>
+</ul>
+<p>Die Wahl des Batterietyps hängt vom Einsatzzweck ab:</p>
+<ul>
+  <li>Mobilität → Lithium-Ionen</li>
+  <li>Stationär → Bleiakku</li>
+  <li>Haushalt → NiMH oder Alkaline</li>
+  <li>Forschung → Festkörper</li>
+</ul>
+<div class="highlight">
+✅ Primärzellen = nicht wiederaufladbar<br>
+✅ Sekundärzellen = wiederaufladbar<br>
+✅ Lithium-Ionen = hohe Energiedichte, aber empfindlich<br>
+✅ NiMH = robust, aber höhere Selbstentladung<br>
+✅ Festkörperbatterien = Zukunftstechnologie
+</div>
+
+<h2>Kapitel 3: Risiken und Sicherheitsaspekte</h2>
+<p><strong>Stichworte:</strong> Tiefentladung · Überladung · Kurzschluss · Brandgefahr · Temperaturgrenzen</p>
+<p>Wichtige Risiken:</p>
+<ul>
+  <li>Tiefentladung: < 2,5 V → dauerhafte Schädigung</li>
+  <li>Überladung: > 4,2 V → Gasbildung, Explosion</li>
+  <li>Kurzschluss: Hitze, Brandgefahr</li>
+  <li>Mechanische Beschädigung: chemische Reaktionen</li>
+  <li>Temperaturgrenzen: z. B. 0–45 °C bei Li-Ion</li>
+</ul>
+<p>Das Battery Management System (BMS) schützt vor Fehlfunktionen.</p>
+<p><strong>Für Drohnenpiloten:</strong></p>
+<ul>
+  <li>Akkus vor dem Flug prüfen</li>
+  <li>Nur Original-Ladegeräte verwenden</li>
+  <li>Keine beschädigten Akkus nutzen</li>
+  <li>Nie unbeaufsichtigt laden</li>
+  <li>Lagerung bei 15–20 °C und 50 % Ladung</li>
+</ul>
+<div class="highlight">
+✅ Tiefentladung und Überladung vermeiden<br>
+✅ Kurzschluss = Brandgefahr<br>
+✅ Temperaturbereich beachten<br>
+✅ BMS schützt vor Fehlfunktionen<br>
+✅ Akkus regelmäßig prüfen und sicher lagern
+</div>
+
+<h2>Kapitel 4: Lagerung, Transport und Entsorgung</h2>
+<p><strong>Stichworte:</strong> Lagerbedingungen · Ladezustand · Gefahrgut · Recycling · Umweltaspekte</p>
+<ul>
+  <li>Lagerung: 15–20 °C, 50 % Ladung, trocken, schattig</li>
+  <li>Transport: Lithium-Akkus = Gefahrgut, spezielle Verpackung, Flugzeug nur im Handgepäck bis 100 Wh</li>
+  <li>Entsorgung: über Sammelstellen, niemals im Hausmüll</li>
+  <li>Recycling: Rückgewinnung von Rohstoffen, Umweltentlastung</li>
+</ul>
+<div class="highlight">
+✅ Lagerung bei 15–20 °C und 50 % Ladung<br>
+✅ Lithium-Akkus = Gefahrgut beim Transport<br>
+✅ Entsorgung über Sammelstellen<br>
+✅ Recycling schützt Umwelt und gewinnt Rohstoffe<br>
+✅ Hausmüllentsorgung verboten
+</div>
+
+<h2>Kapitel 5: Anwendungen und Zukunftstechnologien</h2>
+<p><strong>Stichworte:</strong> Mobilität · Energiespeicher · Festkörperbatterie · Natrium-Ionen · Schnellladung</p>
+<p>Typische Anwendungen:</p>
+<ul>
+  <li>Mobilität: Lithium-Ionen</li>
+  <li>Haushalt: NiMH, Alkaline</li>
+  <li>Industrie: Bleiakku</li>
+  <li>Forschung: Festkörperbatterien</li>
+</ul>
+<p>Neue Technologien:</p>
+<ul>
+  <li>Festkörperbatterien: sicherer, höhere Energiedichte</li>
+  <li>Natrium-Ionen: kostengünstig, für stationäre Speicher</li>
+  <li>Schnellladung: erfordert gutes Thermomanagement und BMS</li>
+</ul>
+<p>Zukunftstrends:</p>
+<ul>
+  <li>Höhere Energiedichte</li>
+  <li>Schnellladung</li>
+  <li>Nachhaltigkeit</li>
+  <li>Sicherheit</li>
+  <li>Recyclingfähigkeit</li>
+</ul>
+<div class="highlight">
+✅ Lithium-Ionen = Mobilität<br>
+✅ Festkörperbatterien = sicherer, leistungsfähiger<br>
+✅ Natrium-Ionen = kostengünstige Alternative<br>
+✅ Schnellladung erfordert gutes BMS<br>
+✅ Zukunft: Nachhaltigkeit und Sicherheit
+</div>

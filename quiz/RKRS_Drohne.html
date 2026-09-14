@@ -1,0 +1,260 @@
+<section id="Kursbeschrieb">
+<!--<h1>Allgemeine Drohnenkunde</h1>-->
+<p><strong>Zielgruppe:</strong> Einsteiger und fortgeschrittene Drohnenpiloten</p>
+<p><strong>Grundlage:</strong> Technische, rechtliche und praktische Aspekte des Drohnenbetriebs</p>
+
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir ein umfassendes Verständnis über Aufbau, Funktion, Einsatzbereiche und rechtliche Rahmenbedingungen von zivilen Drohnen. Du lernst, wie Drohnen technisch funktionieren, welche Vorschriften gelten und wie du sie sicher und verantwortungsvoll
+    betreibst.</p>
+
+<h3>Lernziele</h3>
+<ul>
+    <li>Technische Grundlagen von Multikoptern verstehen</li>
+    <li>Sensorik und Navigation sicher anwenden</li>
+    <li>Einsatzbereiche und Drohnentypen unterscheiden</li>
+    <li>Rechtliche Vorgaben und Sicherheitsregeln kennen</li>
+    <li>Verantwortung und Risikobewusstsein als Pilot stärken</li>
+</ul>
+</section>
+
+<section id="kapitel1">
+    <h2>Kapitel 1: Aufbau und Funktionsweise von Drohnen</h2>
+    <p class="keywords">Stichworte: Multikopter · Brushless-Motoren · ESC · Fluglageregler · Propeller · Achsen</p>
+
+    <p>Drohnen, insbesondere Multikopter, bestehen aus mehreren Rotoren, die durch bürstenlose Elektromotoren (Brushless-Motoren) angetrieben werden. Diese Motoren sind besonders effizient, langlebig und wartungsarm. Die Steuerung der Drehzahl erfolgt über
+        sogenannte ESCs (Electronic Speed Controllers), die die Motoren präzise ansteuern und so die Fluglage beeinflussen.</p>
+
+    <p>Das Herzstück der Steuerung ist der <strong>Fluglageregler</strong>. Er verarbeitet kontinuierlich Sensordaten – darunter Gyroskop, Beschleunigungssensor und Magnetometer – und sorgt dafür, dass die Drohne stabil bleibt.</p>
+
+	<figure>
+		<img class="lernimage" src="quiz/images/drohne-allgemein/achsen.png" alt="Flugachsen">
+		<figcaption class="lerncaption">Flugachsen</figcaption>
+	</figure>
+    <div class="highlight">
+        <strong>Bewegungen entlang der drei Achsen:</strong>
+        <ul>
+            <li><strong>Roll (Längsachse):</strong> Drehen um die Achse von Nase zu Heck</li>
+            <li><strong>Nick (Querachse):</strong> Neigung nach vorne oder hinten</li>
+            <li><strong>Gier (Hochachse):</strong> Drehung um die vertikale Achse</li>
+        </ul>
+    </div>
+
+    <p>Durch gezielte Drehzahlanpassung einzelner Motoren entstehen Flugmanöver wie Schweben, Drehen oder Richtungswechsel. Beim Schweben drehen alle Motoren gleich schnell. Beim Steigen wird die Drehzahl aller Motoren erhöht, beim Sinken reduziert. Für
+        Richtungsänderungen werden die Motoren asymmetrisch angesteuert.</p>
+
+    <p>Die <strong>Propeller</strong> erzeugen Auftrieb durch Luftverdrängung. Gegenläufige Propellerpaare gleichen Drehmomente aus und sorgen für Stabilität.</p>
+
+    <p>Die Stromversorgung erfolgt über <strong>Lithium-Polymer-Akkus</strong>. Ihre Kapazität bestimmt die Flugzeit, ihre Spannung die Leistung. Akkus müssen regelmässig geprüft und korrekt geladen werden.</p>
+
+    <p>Moderne Drohnen verfügen über <strong>LED-Statusanzeigen</strong>, <strong>Gimbal-Systeme</strong> zur Kamerastabilisierung und <strong>Telemetrieübertragung</strong> zur Anzeige von Echtzeitdaten.</p>
+
+
+	<figure>
+		<img  class="lernimage" src="quiz/images/drohne-allgemein/modus2-fernsteuerung.png" alt="Modus 2">
+		<figcaption  class="lerncaption">Modus 2 der FernsteuerungFlugachsen</figcaption>
+	</figure>
+    <div class="highlight">
+        <strong>Fernsteuerung (im Modus 2):</strong>
+        <ul>
+            <li><strong>Linker Stick:</strong> Höhe und Gier</li>
+            <li><strong>Rechter Stick:</strong> Nick und Roll</li>
+        </ul>
+    </div>
+
+    <p>Die Steuerbefehle werden über Funk übertragen. Bei Signalverlust greift der <strong>RTH-Modus</strong> (Return to Home), sofern GPS verfügbar ist.</p>
+
+    <p>Die Flugleistung wird durch Gewicht, Aerodynamik und Wetterbedingungen beeinflusst. Die <strong>MTOM</strong> (maximale Startmasse) darf bei C2-Drohnen 4 kg nicht überschreiten.</p>
+
+    <ul class="checklist">
+        <li>ESCs regeln die Motorenleistung</li>
+        <li>Fluglageregler verarbeitet Sensordaten zur Stabilisierung</li>
+        <li>Bewegungen erfolgen entlang Roll-, Nick- und Gierachse</li>
+        <li>Akkus beeinflussen Flugzeit und müssen gepflegt werden</li>
+        <li>RTH-Modus schützt bei Signalverlust</li>
+    </ul>
+</section>
+
+<section id="kapitel2">
+    <h2>Kapitel 2: Sensorik und Navigation</h2>
+    <p class="keywords">Stichworte: GNSS · Kompass · Barometer · VPS · IMU · ADS-B</p>
+
+    <p>Die Navigation moderner Drohnen basiert auf einer Kombination aus <strong>Satellitensystemen</strong>, internen Sensoren und visuellen Hilfsmitteln. Das wichtigste System ist <strong>GNSS(Global Navigation Satellite System)</strong> , das <strong>GPS</strong>        (USA), <strong>Galileo</strong> (EU), <strong>GLONASS</strong> (Russland) und <strong>BeiDou</strong> (China) umfasst. Diese Satelliten senden Signale, die von der Drohne empfangen und zur Positionsbestimmung genutzt werden.</p>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/drohne-allgemein/GNSS-Systeme.png" alt="GNSS Satellitensysteme">
+		<figcaption  class="lerncaption">GNSS Satellitensysteme</figcaption>
+	</figure>
+
+
+    <p>Die Positionsbestimmung erfolgt durch <strong>Triangulation</strong>: Die Drohne misst die Entfernung zu mindestens vier Satelliten und berechnet daraus ihre genaue Position. Je mehr Satelliten empfangen werden, desto höher ist die Genauigkeit. GNSS
+        ist essenziell für Funktionen wie <strong>RTH</strong>, <strong>Wegpunktflug</strong> und <strong>Geofencing</strong>.</p>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/drohne-allgemein/GNSS-Triangulation.png" alt="GNSS Triangulation">
+		<figcaption  class="lerncaption">Berechnung der Position durch Triangulation</figcaption>
+	</figure>
+
+    <p>Der <strong>Kompass</strong> (Magnetometer) misst das Erdmagnetfeld und zeigt die Ausrichtung der Drohne relativ zum magnetischen Norden. Da der magnetische Nordpol nicht mit dem geografischen Nordpol übereinstimmt und sich jährlich verschiebt, muss
+        der Kompass bei Standortwechsel über 100 km neu kalibriert werden. Eine fehlerhafte Kalibrierung kann zu unkontrollierbarem Flugverhalten führen.</p>
+
+    <p>Das <strong>Barometer</strong> misst den Luftdruck und berechnet daraus die Höhe über dem Boden. Es ist besonders wichtig für die Einhaltung der maximalen Flughöhe (120 m) und für automatische Flugmodi. In Kombination mit GNSS ergibt sich eine präzise
+        Höhenführung.</p>
+
+    <p>Das <strong>VPS</strong> (Vision Positioning System) nutzt optische Sensoren und Infrarotkameras zur Stabilisierung bei niedriger Flughöhe. Es ist besonders hilfreich beim Starten und Landen, kann aber über Wasser oder bei reflektierenden Oberflächen
+        gestört werden. Daher sollte VPS bei Gewässerüberflug deaktiviert werden.</p>
+
+    <p><strong>ADS-B</strong> (Automatic Dependent Surveillance – Broadcast) ist ein System zur Kollisionsvermeidung. Es empfängt Signale von bemannten Luftfahrzeugen und zeigt deren Position auf der App an. <strong>FLARM</strong> ist ein aktives Kollisionswarnsystem,
+        das Positionsdaten sendet und empfängt – besonders relevant in Segelfluggebieten.</p>
+
+    <p><strong>Sensorfusion</strong> bezeichnet die Kombination aller verfügbaren Datenquellen (IMU, GNSS, Barometer, VPS), um eine stabile Fluglage zu gewährleisten. Bei Ausfall einzelner Sensoren greift das System auf alternative Quellen zurück. Dies erhöht
+        die Ausfallsicherheit und ermöglicht präzises Fliegen auch unter schwierigen Bedingungen.</p>
+
+	<figure>
+		<img  class="lernimagesmall"  src="quiz/images/drohne-allgemein/imu.png" alt="IMU, Intertial Measurement Unit">
+		<figcaption  class="lerncaption">IMU, Intertial Measurement Unit</figcaption>
+	</figure>
+
+    <p>Zusätzlich verfügen viele Drohnen über ein <strong>Gimbal-System</strong> zur Kamerastabilisierung, ein <strong>IMU</strong> (Inertial Measurement Unit) zur Lageerkennung und eine <strong>Telemetrieübertragung</strong> zur Anzeige von Echtzeitdaten
+        wie Höhe, Geschwindigkeit und Akkustand.</p>
+
+    <ul class="checklist">
+        <li>GNSS liefert Positionsdaten für Navigation und RTH</li>
+        <li>Kompass muss bei Standortwechsel kalibriert werden</li>
+        <li>VPS über Wasser deaktivieren</li>
+        <li>ADS-B warnt vor bemannten Luftfahrzeugen</li>
+        <li>Sensorfusion erhöht Flugsicherheit bei Teilausfall</li>
+    </ul>
+</section>
+
+
+<section id="kapitel3">
+    <h2>Kapitel 3: Drohnentypen und Einsatzbereiche</h2>
+    <p class="keywords">Stichworte: Multikopter · Fixed-Wing · VTOL · Indoor · Outdoor · Gewerblich · Freizeit</p>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/drohne-allgemein/Drohnentypen.png" alt="Verschiedene Drohnentypen">
+		<figcaption  class="lerncaption">Verschiedene Drohnentypen</figcaption>
+	</figure>
+
+
+    <p>Drohnen lassen sich in verschiedene Typen unterteilen, je nach Bauweise und Einsatzzweck. Die häufigste Form ist der <strong>Multikopter</strong> (a), z. B. Quad-, Hexa- oder Octocopter. Sie zeichnen sich durch hohe Stabilität, präzise Steuerbarkeit und die Fähigkeit zum Schweben aus. Multikopter sind ideal für Luftbildaufnahmen, Inspektionen und Einsätze auf engem Raum.</p>
+
+    <p><strong>Fixed-Wing-Drohnen</strong> (b) ähneln kleinen Flugzeugen. Sie benötigen eine Start- und Landebahn oder ein Katapult, können aber deutlich länger und effizienter fliegen. Sie eignen sich besonders für grossflächige Vermessungen, landwirtschaftliche Anwendungen oder Umweltmonitoring.</p>
+
+    <p><strong>Single-Rotor-Drohnen</strong> (c) ähneln kleinen Helikoptern. Sie sind vorallem aus dem Freizeitbereich bekannt.</p>
+
+    <p><strong>VTOL-Drohnen</strong> (d, Vertical Take-Off and Landing) kombinieren die Vorteile beider Systeme: Sie starten und landen senkrecht wie ein Multikopter, fliegen aber im Horizontalflug wie ein Fixed-Wing. Sie sind besonders vielseitig, aber technisch komplexer und teurer.</p>
+
+    <div class="highlight">
+        <p>Je nach Einsatzbereich unterscheidet man:</p>
+        <ul>
+            <li><strong>Freizeitdrohnen:</strong> meist leicht, einfach zu bedienen, für Foto/Video</li>
+            <li><strong>Gewerbliche Drohnen:</strong> mit erweiterten Sensoren, für Inspektion, Bau, Landwirtschaft</li>
+            <li><strong>Behördliche Drohnen:</strong> Polizei, Feuerwehr, Rettung – oft mit Wärmebild, GPS-Tracking</li>
+            <li><strong>Forschungsdrohnen:</strong> für Kartierung, Tierbeobachtung, Umweltanalysen</li>
+        </ul>
+    </div>
+
+    <p><strong>Indoor-Drohnen</strong> sind kompakt, leicht und oft ohne GNSS. Sie nutzen VPS und optische Sensoren zur Stabilisierung. <strong>Outdoor-Drohnen</strong> benötigen GPS, leistungsfähige Motoren und wetterfeste Komponenten.</p>
+
+    <p>Die Wahl des Drohnentyps hängt vom Einsatzzweck, der Umgebung und den rechtlichen Vorgaben ab. Für den Betrieb in der offenen Kategorie ist die maximale Startmasse und die CE-Klassifizierung entscheidend.</p>
+
+    <ul class="checklist">
+        <li>Fixed-Wing = effizient für grosse Flächen</li>
+        <li>Multikopter = stabil und präzise</li>
+        <li>VTOL = flexibel, aber komplex</li>
+        <li>Indoor/Outdoor unterscheiden sich technisch und rechtlich</li>
+    </ul>
+</section>
+
+
+<section id="kapitel4">
+    <h2>Kapitel 4: Wetter und Umwelteinflüsse</h2>
+    <p class="keywords">Stichworte: Wind · Regen · Nebel · Temperatur · KP-Index · Luftdichte</p>
+
+    <p><strong>Wetterbedingungen</strong> haben direkten Einfluss auf die Flugsicherheit. Besonders kritisch ist <strong>Wind über 10 m/s</strong>, da er die Steuerbarkeit stark beeinträchtigen kann. Seitenwind, Böen und thermische Aufwinde sind gefährlich
+        – vor allem in bergigem Gelände oder über offenen Flächen.</p>
+
+    <p><strong>Regen</strong> und hohe Luftfeuchtigkeit können zu Kurzschlüssen oder Sensorstörungen führen. <strong>VPS-Systeme</strong> reagieren empfindlich auf Wasserreflexionen. <strong>Nebel</strong> reduziert die Sichtweite und macht <strong>VLOS-Flüge</strong>        unmöglich. Da Sichtflug gesetzlich vorgeschrieben ist, darf bei Nebel nicht gestartet werden.</p>
+
+    <div class="highlight">
+        <p><strong>Temperatur</strong> beeinflusst die Akkuleistung:</p>
+        <ul>
+            <li>Bei Kälte sinkt die Kapazität</li>
+            <li>Bei Hitze droht Überhitzung</li>
+        </ul>
+    </div>
+    <p>Akkus sollten vor dem Flug auf Betriebstemperatur gebracht und während des Flugs überwacht werden.</p>
+
+	<figure>
+		<img  class="lernimagesmall"  src="quiz/images/drohne-allgemein/KPIndex.png" alt="KP Index">
+		<figcaption  class="lerncaption">KP Index</figcaption>
+	</figure>
+
+    <p>Der <strong>KP-Index</strong> zeigt geomagnetische Aktivität. Ab einem Wert von 5 drohen <strong>GPS-Störungen</strong> – Flüge sollten dann unterbleiben. Besonders betroffen sind Höhenflüge und automatisierte Flugmodi wie <strong>RTH</strong> oder
+        <strong>Wegpunktnavigation</strong>.</p>
+
+    <p>Auch die <strong>Luftdichte</strong> spielt eine Rolle: Bei grosser Höhe oder Hitze sinkt die Dichte, was den Auftrieb reduziert und die Motoren stärker belastet. Dies kann zu kürzerer Flugzeit und instabiler Fluglage führen.</p>
+
+    <ul class="checklist">
+        <li>Wind &gt;10 m/s = hohes Risiko</li>
+        <li>Nebel = VLOS nicht möglich</li>
+        <li>KP-Index &gt;5 = GPS-Störung</li>
+        <li>Temperatur beeinflusst Akkuleistung</li>
+        <li>Luftdichte beeinflusst Auftrieb</li>
+    </ul>
+</section>
+
+
+<section id="kapitel5">
+    <h2>Kapitel 5: Recht und Sicherheit im Betrieb</h2>
+    <p class="keywords">Stichworte: EU-Verordnung · Kategorien · Registrierung · Versicherung · Flugverbotszonen · VLOS</p>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/drohne-allgemein/Betriebskategorien.png" alt="Kategorien">
+		<figcaption  class="lerncaption">Kategorien</figcaption>
+	</figure>
+
+    <p>Die <strong>EU-Drohnenverordnung</strong> unterscheidet drei Betriebskategorien <a class="Referenz" href="https://www.bazl.admin.ch/de/flugregeln-drohnen">BAZL<a>:</p>
+    <ul>
+        <li><strong>Offen:</strong> für Freizeit und einfache gewerbliche Flüge</li>
+        <li><strong>Speziell:</strong> für komplexe Einsätze mit erhöhtem Risiko</li>
+        <li><strong>Zertifiziert:</strong> für grosse, bemannte oder autonome Systeme</li>
+    </ul>
+
+	<figure>
+		<img  class="lernimage"  src="quiz/images/drohne-allgemein/drohenführerschein-detailiert.png" alt="Drohnen Zertifikate">
+		<figcaption  class="lerncaption">Drohnen Zertifikate</figcaption>
+	</figure>
+
+
+    <p>Die <strong>offene Kategorie</strong> ist unterteilt in <strong>A1, A2 und A3</strong> <a class="Referenz" href="https://www.bazl.admin.ch/de/flugregeln-drohnen">BAZL<a>. Die Einordnung hängt von Gewicht, Flugort und Abstand zu Personen ab. Für Drohnen ab <strong>250 g</strong> gilt <strong>Registrierungspflicht</strong>. Der Betreiber
+        erhält eine <strong>UAS-ID</strong>, die sichtbar an der Drohne angebracht werden muss. Eine <strong>Haftpflichtversicherung</strong> mit ausreichender Deckung ist gesetzlich vorgeschrieben.</p>
+
+    <p>Drohnen müssen eine <strong>CE-Kennzeichnung</strong> tragen, die ihre Klassifizierung (<strong>C0–C4</strong>) angibt. Diese Kennzeichnung ist Voraussetzung für den Betrieb in bestimmten Subkategorien. <strong>C2-Drohnen</strong> dürfen z. B. in
+        <strong>A2</strong> betrieben werden, wenn der Pilot über das entsprechende Zertifikat verfügt.</p>
+
+    <div class="highlight">
+        <p><strong>Flugverbotszonen</strong> sind unbedingt zu beachten. Dazu gehören:</p>
+        <ul>
+            <li>Flughäfen</li>
+            <li>Militärische Einrichtungen</li>
+            <li>Menschenansammlungen</li>
+            <li>Naturschutzgebiete</li>
+            <li>Industrieanlagen</li>
+        </ul>
+    </div>
+	
+	<embed src="https://map.geo.admin.ch/#/map?lang=de&center=2660000,1190000&z=1&topic=ech&layers=ch.bazl.einschraenkungen-drohnen&bgLayer=ch.swisstopo.pixelkarte-farbe" style="width:500px; height: 300px;">
+    <p>Die <strong>RPAS-Karte</strong> zeigt aktuelle Einschränkungen. Zusätzlich informieren <strong>DABS</strong> und <strong>NOTAMs</strong> über temporäre Sperrungen. Verstösse gegen Flugverbote können zu Bussgeldern oder strafrechtlichen Konsequenzen führen <a class="Referenz" href="https://www.bazl.admin.ch/de/flugregeln-drohnen">BAZL<a>.</p>
+
+    <p><strong>VLOS</strong> ist Pflicht – <strong>FPV-Flüge</strong> sind nur mit einem Flughelfer erlaubt, der die Drohne visuell überwacht. <strong>Nachtflüge</strong> sind erlaubt, wenn ein grünes Blinklicht vorhanden ist, das die Drohne sichtbar macht.</p>
+
+    <ul class="checklist">
+        <li>Registrierungspflicht ab 250 g</li>
+        <li>CE-Kennzeichnung ist vorgeschrieben</li>
+        <li>VLOS ist gesetzlich vorgeschrieben</li>
+        <li>Flugverbotszonen unbedingt beachten</li>
+        <li>Versicherung ist Pflicht</li>
+    </ul>
+</section>

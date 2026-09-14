@@ -1,0 +1,83 @@
+  <style>
+    .highlight {
+      background-color: #f0f8ff;
+      padding: 6px 10px;
+      margin: 10px 0;
+      display: inline-block;
+    }
+  </style>
+
+<!--<h1>Selbstlernkurs: Meteorologie</h1>-->
+<p><strong>Zielgruppe:</strong> Drohnenpiloten, Outdoor-Aktive, Sicherheitskräfte, Wetterinteressierte</p>
+<p><strong>Ziel:</strong> Verständnis der wichtigsten meteorologischen Grundlagen für praktische Anwendungen</p>
+
+<h2>Einführung & Lernziele</h2>
+<h3>Kursziel</h3>
+<p>Dieser Kurs vermittelt dir die zentralen Grundlagen der Meteorologie – von Wetterelementen über Luftdrucksysteme bis hin zu Wetterkarten und Prognosemethoden. Du lernst, Wetterlagen zu interpretieren, Risiken einzuschätzen und meteorologische Daten sinnvoll zu nutzen.</p>
+
+<h3>Lernziele</h3>
+<ul>
+  <li>Aufbau und Dynamik der Atmosphäre verstehen</li>
+  <li>Wetterelemente wie Temperatur, Wind und Niederschlag analysieren</li>
+  <li>Wolkenarten und Wetterphänomene erkennen</li>
+  <li>Wetterkarten und Prognosen interpretieren</li>
+  <li>Wetterrelevante Risiken für Flugbetrieb und Outdoor-Aktivitäten einschätzen</li>
+</ul>
+
+<h2>Kapitel 1: Aufbau der Atmosphäre und Wetterelemente</h2>
+<p><strong>Stichworte:</strong> Troposphäre · Temperatur · Luftdruck · Wind · Feuchtigkeit · Strahlung</p>
+<p>Die Troposphäre ist die Wetterschicht der Atmosphäre und reicht bis etwa 15 km Höhe. Temperatur sinkt mit der Höhe, Luftdruck entsteht durch das Gewicht der Luftsäule. Wind entsteht durch Druckunterschiede, beeinflusst durch die Corioliskraft. Relative Luftfeuchte über 100 % führt zu Kondensation und Wolkenbildung.</p>
+<div class="highlight">
+✅ Troposphäre = Wetterschicht bis ca. 15 km<br>
+✅ Temperatur sinkt mit Höhe (0,65 °C/100 m)<br>
+✅ Luftdruck: Hoch = stabil, Tief = wechselhaft<br>
+✅ Wind entsteht durch Druckunterschiede<br>
+✅ Relative Feuchte >100 % = Kondensation
+</div>
+
+<h2>Kapitel 2: Wolken, Niederschlag und Wetterphänomene</h2>
+<p><strong>Stichworte:</strong> Wolkenarten · Kondensation · Niederschlagsformen · Sichtweite · Gewitter · Nebel</p>
+<p>Wolken entstehen durch Kondensation und werden nach Form und Höhe klassifiziert. Niederschlag tritt in verschiedenen Formen auf. Nebel reduziert die Sichtweite stark. Gewitter entstehen durch thermische Aufwinde und sind lokal gefährlich. Thermik beschreibt bodeninduzierte Aufwinde.</p>
+<div class="highlight">
+✅ Cumulonimbus = Gewitterwolke<br>
+✅ Niederschlagsformen: Regen, Schnee, Hagel, Graupel<br>
+✅ Nebel reduziert Sichtweite stark<br>
+✅ Gewitter = lokale Gefahr durch Blitz und Starkregen<br>
+✅ Thermik = Aufwind durch Bodenerwärmung
+</div>
+
+<h2>Kapitel 3: Luftdrucksysteme und Wetterdynamik</h2>
+<p><strong>Stichworte:</strong> Hochdruck · Tiefdruck · Fronten · Zyklone · Antizyklone · Wetterwechsel</p>
+<p>Hochdruckgebiete bringen stabiles Wetter, Tiefdruckgebiete führen zu Wolken und Regen. Fronten trennen Luftmassen und verursachen Wetterwechsel. Die Corioliskraft beeinflusst die Drehrichtung von Zyklonen. Jetstreams steuern großräumige Wetterlagen.</p>
+<div class="highlight">
+✅ Hochdruck = absinkende Luft, stabiles Wetter<br>
+✅ Tiefdruck = aufsteigende Luft, Wolken und Regen<br>
+✅ Fronten trennen Luftmassen und bringen Wetterwechsel<br>
+✅ Corioliskraft beeinflusst Drehrichtung von Zyklonen<br>
+✅ Jetstreams steuern großräumige Wetterlagen
+</div>
+
+<h2>Kapitel 4: Wetterkarten und Prognosemethoden</h2>
+<p><strong>Stichworte:</strong> Isobaren · Wetterkarten · METAR · TAF · Satellitenbilder · Wettermodelle</p>
+<p>Wetterkarten zeigen Isobaren, Fronten und Druckgebiete. METAR und TAF liefern Flugwetterdaten. Satellitenbilder zeigen Wolken und Niederschlag. Wettermodelle berechnen zukünftige Wetterlagen. Für Drohnenflüge sind Wind, Sichtweite, Wolkenuntergrenze und Niederschlag entscheidend.</p>
+<div class="highlight">
+✅ Isobaren zeigen Luftdruckverteilung<br>
+✅ METAR = aktueller Flugplatzbericht<br>
+✅ TAF = Flugwetterprognose<br>
+✅ Satellitenbilder zeigen Wolken und Niederschlag<br>
+✅ Wettermodelle berechnen zukünftige Wetterlagen
+</div>
+
+<h2>Kapitel 5: Wetterrisiken und Sicherheitsaspekte</h2>
+<p><strong>Stichworte:</strong> Sichtflug · Windrisiken · Thermik · Vereisung · Wetterbedingte Flugverbote · Sicherheitsabstand</p>
+<p>Drohnenflüge sind nur bei Sichtflugbedingungen erlaubt. Wind über 10 m/s ist kritisch. Thermik beeinflusst die Fluglage. Vereisung gefährdet Rotoren und Sensorik. Wetterlage muss vor jedem Flug geprüft werden. Sicherheitsabstand und manuelle Kontrolle sind bei unsicherer Wetterlage essenziell.</p>
+<div class="highlight">
+✅ VLOS ist Pflicht – keine Flüge bei Nebel oder Dunkelheit<br>
+✅ Wind >10 m/s = hohes Risiko<br>
+✅ Thermik beeinflusst Fluglage<br>
+✅ Vereisung gefährdet Rotoren und Sensorik<br>
+✅ Wetterlage vor jedem Flug prüfen
+</div>
+
+</body>
+</html>

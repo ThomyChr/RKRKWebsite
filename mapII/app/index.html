@@ -1,0 +1,4081 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RKRK Karteneditor</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@7.5.2/ol.css" />
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+      color-scheme: light;
+    }
+    body {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .panel {
+      padding: 16px;
+      border-right: 1px solid #d7d7d7;
+      background: #fafafa;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 10px;
+    }
+    p {
+      margin: 8px 0;
+      color: #444;
+      line-height: 1.4;
+    }
+    .group {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #e4e4e4;
+    }
+    .panel-details {
+      margin-top: 12px;
+      border: 1px solid #e2e6eb;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .panel-details > summary {
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 10px;
+      user-select: none;
+    }
+    .panel-details-content {
+      padding: 0 10px 10px;
+    }
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      font-size: 13px;
+      color: #333;
+    }
+    input, select, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #c8c8c8;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    input[type="checkbox"] {
+      width: auto;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      margin-right: 6px;
+    }
+    button {
+      background: #005fa8;
+      color: #fff;
+      border-color: #005fa8;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    button:hover {
+      background: #004f8b;
+    }
+    #calcFlightPathBtn.flight-ready {
+      background: #005fa8;
+      border-color: #005fa8;
+      color: #ffffff;
+    }
+    #calcFlightPathBtn.flight-ready:hover {
+      background: #004f8b;
+    }
+    #calcFlightPathBtn.flight-not-ready,
+    #calcFlightPathBtn:disabled {
+      background: #9aa3ad;
+      border-color: #9aa3ad;
+      color: #f4f6f8;
+      cursor: not-allowed;
+      opacity: 1;
+    }
+    #calcFlightPathBtn.flight-not-ready:hover,
+    #calcFlightPathBtn:disabled:hover {
+      background: #9aa3ad;
+    }
+    #selectStartForFlightBtn.selected-flight-reference,
+    #selectPolygonForFlightBtn.selected-flight-reference {
+      background: #1f9d55;
+      border-color: #1f9d55;
+      color: #ffffff;
+    }
+    #selectStartForFlightBtn.selected-flight-reference:hover,
+    #selectPolygonForFlightBtn.selected-flight-reference:hover {
+      background: #198a4a;
+    }
+    .flight-path-length-display {
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1.4;
+      margin: 8px 0 4px;
+      color: #1a3d55;
+      letter-spacing: 0.01em;
+    }
+    .flight-path-length-display .flight-path-length-value {
+      font-size: 1.02rem;
+      font-weight: 700;
+    }
+    .flight-path-length-display .flight-path-length-km {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #4a5f70;
+    }
+    .flight-path-length-display .flight-path-terrain-delta {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #3d5266;
+      margin-top: 3px;
+    }
+    .flight-path-length-display .flight-path-terrain-num {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #142a3a;
+    }
+    .flight-path-length-display .flight-path-terrain-muted {
+      color: #7a8794;
+    }
+    .fp-calc-variant-doc {
+      margin-top: 6px;
+      line-height: 1.38;
+      color: #444;
+    }
+    .small {
+      font-size: 12px;
+      color: #666;
+    }
+    .mono {
+      font-family: Consolas, Menlo, Monaco, monospace;
+      font-size: 12px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px;
+      word-break: break-all;
+      min-height: 20px;
+    }
+    .style-box {
+      position: fixed;
+      left: 374px;
+      bottom: 10px;
+      width: 320px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid #cfd4da;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      z-index: 1000;
+      font-size: 13px;
+    }
+    .style-box summary {
+      cursor: pointer;
+      font-weight: 600;
+      padding: 8px 10px;
+      user-select: none;
+    }
+    .style-box-content {
+      padding: 0 10px 10px;
+      max-height: 65vh;
+      overflow: auto;
+    }
+    .style-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 16px;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+    }
+    .style-row input[type="color"] {
+      width: 100%;
+      height: 28px;
+      padding: 2px;
+      border-radius: 4px;
+    }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border: 1px solid #8d8d8d;
+      border-radius: 2px;
+    }
+    .style-section-title {
+      margin: 10px 0 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #39424e;
+      border-top: 1px solid #e4e8ed;
+      padding-top: 8px;
+    }
+    .style-row-compact {
+      display: grid;
+      grid-template-columns: 1fr 90px;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+    }
+    .overlay-box {
+      bottom: 230px;
+      width: 320px;
+    }
+    .overlay-box-content {
+      padding: 0 10px 10px;
+      max-height: 30vh;
+      overflow: auto;
+    }
+    .overlay-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 6px 0;
+      font-size: 13px;
+      color: #333;
+    }
+    .overlay-option input[type="checkbox"] {
+      margin: 0;
+    }
+    @media (max-width: 920px) {
+      .style-box {
+        left: 12px;
+      }
+      .overlay-box {
+        left: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <aside class="panel">
+    <h1>RKRK Karteneditor</h1>
+    <p>Klicke auf die Karte, um einen Basispunkt zu setzen, und exportiere dann KML mit 3 farbigen Kreisen oder einem beschrifteten N/E-Raster.</p>
+
+    <details class="panel-details" open>
+      <summary>Koordinate</summary>
+      <div class="panel-details-content">
+        <label>Gewählter Basispunkt (WGS84)</label>
+        <div class="mono" id="coordDisplay">Kein Punkt ausgewählt.</div>
+      </div>
+    </details>
+
+    <details class="panel-details">
+      <summary>Objekt</summary>
+      <div class="panel-details-content">
+        <label for="exportType">Objekttyp</label>
+        <select id="exportType">
+          <option value="circles">3 farbige Kreise</option>
+          <option value="grid">Beschriftetes Raster (N/E)</option>
+          <option value="polygon">Benutzerdefiniertes Polygon</option>
+        </select>
+        <button id="drawBtn" type="button">Auf Karte zeichnen</button>
+        <button id="clearBtn" type="button">Vorschau löschen</button>
+        <button id="exportBtn" type="button">KML exportieren</button>
+      </div>
+    </details>
+
+    <details class="panel-details">
+      <summary>Flugfeld zeichnen</summary>
+      <div class="panel-details-content">
+        <div id="circlesSettings">
+          <label for="radius1">Kreisradius 1 (m)</label>
+          <input id="radius1" type="number" min="1" value="100" />
+          <label for="radius2">Kreisradius 2 (m)</label>
+          <input id="radius2" type="number" min="1" value="200" />
+          <label for="radius3">Kreisradius 3 (m)</label>
+          <input id="radius3" type="number" min="1" value="300" />
+          <p class="small">Farben: rot, grün, blau.</p>
+        </div>
+
+        <div id="gridSettings" style="display: none;">
+          <label for="spacing">Rasterabstand (m)</label>
+          <input id="spacing" type="number" min="1" value="300" />
+          <label for="northCount">Felder Nord (1...n)</label>
+          <input id="northCount" type="number" min="1" max="200" value="8" />
+          <label for="eastCount">Felder Ost (A...X)</label>
+          <input id="eastCount" type="number" min="1" max="26" value="8" />
+          <p class="small">Der geklickte Punkt ist die Südwest-Ecke des Rasters.</p>
+        </div>
+
+        <div id="polygonSettings" style="display: none;">
+          <button id="startPolyBtn" type="button">Polygonzeichnen starten</button>
+          <button id="finishPolyBtn" type="button">Polygon abschließen</button>
+          <button id="clearPolyBtn" type="button">Polygon löschen</button>
+          <p class="small">Klicke beim Zeichnen auf die Karte, um Punkte hinzuzufügen. Doppelklicke einen Punkt und ziehe ihn zum Verschieben. Klicke auf `+` an einer Kante, um einen neuen Punkt einzufügen.</p>
+          <p class="small" id="polygonStatus">Polygon hat 0 Punkte.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel-details">
+      <summary>Beschriftete Punkte</summary>
+      <div class="panel-details-content">
+        <label for="labelPointType">Typ des beschrifteten Punkts</label>
+        <select id="labelPointType">
+          <option value="start">Startpunkt (grün)</option>
+          <option value="parking">Parkplatz (blau)</option>
+          <option value="other">Andere (orange)</option>
+        </select>
+        <label for="labelPointText">Beschriftungstext</label>
+        <input id="labelPointText" type="text" value="Startpunkt" />
+        <button id="addLabelPointBtn" type="button">Beschrifteten Punkt hinzufügen (nächster Klick)</button>
+        <button id="clearLabelPointsBtn" type="button">Beschriftete Punkte löschen</button>
+        <p class="small" id="labelPointStatus"></p>
+        <p class="small">Hinweis: Doppelklick zum Bearbeiten des Texts.</p>
+      </div>
+    </details>
+
+    <details class="panel-details">
+      <summary>Zeichnungen speichern</summary>
+      <div class="panel-details-content">
+        <label for="drawingName">Zeichnungsname</label>
+        <input id="drawingName" type="text" placeholder="z. B. mission-gebiet-1" />
+        <button id="saveDrawingBtn" type="button">Zeichnung speichern</button>
+        <button id="refreshDrawingListBtn" type="button">Gespeicherte Zeichnungen aktualisieren</button>
+        <label for="drawingList">Gespeicherte Zeichnungen</label>
+        <select id="drawingList"></select>
+        <button id="loadDrawingBtn" type="button">Ausgewählte Zeichnung laden</button>
+        <p class="small" id="drawingStatus"></p>
+        <p class="small" id="storagePathInfo" style="display:none;"></p>
+      </div>
+    </details>
+
+    <details class="panel-details" open>
+      <summary>Flugpfad</summary>
+      <div class="panel-details-content">
+        <label for="fpCalcVariant">Berechnung (Variante)</label>
+        <select id="fpCalcVariant">
+          <option value="standard" selected>Standard · Parallelstreifen</option>
+          <option value="rectangleDirection">A · Höhenliniengeführt (Startnah)</option>
+          <option value="rectangleHeightDirection2">B · Sektor-Bahnen, volle Abdeckung</option>
+          <option value="rectangleHeightDirection3">C · Kontinuierliche Parallelbahnen</option>
+          <option value="rectangleHeightDirection4">D · Unterpolygone (Feldaufteilung)</option>
+          <option value="rectangleHeightDirection5">F · Unterpolygone (erweiterte Sehnen)</option>
+          <option value="rectangleHeightDirectionAdaptive">E · Adaptiv (Polygonanalyse)</option>
+        </select>
+        <p class="small fp-calc-variant-doc" id="fpCalcVariantDoc"></p>
+        <label for="fpHeight">Flughöhe (m)</label>
+        <input id="fpHeight" type="number" min="10" step="5" value="60" />
+        <label for="fpTrackDistance">Spurabstand (m)</label>
+        <input id="fpTrackDistance" type="number" min="5" step="1" value="30" />
+        <label for="fpParallelTolerance">Parallelitäts-Abweichung Bahnbreite (%)</label>
+        <input id="fpParallelTolerance" type="range" min="0" max="50" step="1" value="20" />
+        <p class="small" id="fpParallelToleranceValue">20%</p>
+        <label for="fpBorderFactor">Randfaktor</label>
+        <input id="fpBorderFactor" type="number" min="0" max="1" step="0.05" value="0.4" />
+        <label for="fpLineExtension">Linienverlängerung (B–E)</label>
+        <input id="fpLineExtension" type="range" min="0" max="100" step="1" value="35" />
+        <p class="small" id="fpLineExtensionValue">35%</p>
+        <label for="fpSectorDirectionMaxDiff">Sektor-Höhenrichtung max. Abweichung (°, D / E)</label>
+        <input id="fpSectorDirectionMaxDiff" type="range" min="5" max="60" step="1" value="20" />
+        <p class="small" id="fpSectorDirectionMaxDiffValue">20°</p>
+        <label for="fpDirectionMode">Flugrichtungsmodus (manuell nur bei Variante A)</label>
+        <select id="fpDirectionMode">
+          <option value="autoLongest" selected>Auto (längste Linien im Polygon)</option>
+          <option value="manual">Manueller Winkel</option>
+        </select>
+        <label for="fpDirectionWheel">Flugrichtungsrad (Grad)</label>
+        <input id="fpDirectionWheel" type="range" min="0" max="179" step="1" value="0" />
+        <input id="fpDirectionAngle" type="number" min="0" max="179" step="1" value="0" />
+        <button id="selectStartForFlightBtn" type="button">Aktuellen Startpunkt auswählen</button>
+        <button id="selectPolygonForFlightBtn" type="button">Aktuelles Polygon auswählen</button>
+        <p class="small" id="flightSelectionStatus">Noch kein Startpunkt/Polygon für den Flugpfad ausgewählt.</p>
+        <button id="calcFlightPathBtn" type="button" disabled>Flugpfad berechnen</button>
+        <label class="overlay-option"><input id="fpReverseFlightPath" type="checkbox" /> Vom letzten Punkt rückwärts: Start zuerst mit Pfadende verbinden, dann Streifen rückwärts</label>
+        <label class="overlay-option"><input id="fpShowCoverage" type="checkbox" /> Bodenabdeckung anzeigen</label>
+        <label class="overlay-option"><input id="fpShowCoverageContinuous" type="checkbox" /> Kontinuierliche Bodenabdeckung anzeigen</label>
+        <label for="fpOpticAngle">Öffnungswinkel Optik (°)</label>
+        <input id="fpOpticAngle" type="number" min="1" max="179" step="1" value="36" />
+        <button id="clearFlightPathBtn" type="button">Flugpfad löschen</button>
+        <button id="toggleFlightPointCompactLabelsBtn" type="button">Flugpunkte: nur Nr. + HAS</button>
+        <button id="deleteFlightSelectedBtn" type="button" disabled>Ausgewähltes Flugobjekt löschen</button>
+        <p class="small" id="flightPathStatus">Wähle Startpunkt und Polygon, um die Berechnung zu aktivieren.</p>
+        <p class="flight-path-length-display" id="flightPathLength">Flugpfad-Länge: —</p>
+        <p class="small" id="flightMissingInfo"></p>
+      </div>
+    </details>
+
+    <details class="panel-details" open>
+      <summary>Standort</summary>
+      <div class="panel-details-content">
+        <button id="locateBtn" type="button">Zum aktuellen Standort (5x5 km)</button>
+        <p class="small" id="locateStatus"></p>
+      </div>
+    </details>
+  </aside>
+
+  <main id="map"></main>
+  <details class="style-box overlay-box" id="overlayBox">
+    <summary>SwissTopo-Overlays</summary>
+    <div class="overlay-box-content">
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="electrical" /> Elektrische Anlagen</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="boundaries" /> Kantons, Gemeindegrenzen</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="hunting" /> Jagdbanngebiete</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="rpas" /> RPAS karte</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="obstacles" /> Luftfahrhindernisse</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="landregister" /> Grundbuchinformationen</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="cadastralwebmap" /> CadastralWebMap</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="nature" /> Naturschutzgebiete</label>
+      <p class="small" id="overlayStatus"></p>
+    </div>
+  </details>
+  <details class="style-box" id="styleBox">
+    <summary>Stileinstellungen</summary>
+    <div class="style-box-content">
+      <div class="style-section-title">Startpunkt</div>
+      <div class="style-row">
+        <label for="startPointColor" style="margin:0;">Punktfarbe</label>
+        <input id="startPointColor" class="style-color-input" type="color" value="#00aa00" />
+        <span class="swatch"></span>
+      </div>
+
+      <div id="styleCirclesSection">
+      <div class="style-section-title">Kreis klein</div>
+      <div class="style-row">
+        <label for="c1LineColor" style="margin:0;">Linienfarbe</label>
+        <input id="c1LineColor" class="style-color-input" type="color" value="#00aa00" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row">
+        <label for="c1FillColor" style="margin:0;">Füllfarbe</label>
+        <input id="c1FillColor" class="style-color-input" type="color" value="#00aa00" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="c1FillOpacity" style="margin:0;">Fülltransparenz</label>
+        <input id="c1FillOpacity" type="number" min="0" max="1" step="0.05" value="0" />
+      </div>
+      <div class="style-row">
+        <label for="c1LabelColor" style="margin:0;">Beschriftungsfarbe</label>
+        <input id="c1LabelColor" class="style-color-input" type="color" value="#0000ff" />
+        <span class="swatch"></span>
+      </div>
+
+      <div class="style-section-title">Kreis mittel</div>
+      <div class="style-row">
+        <label for="c2LineColor" style="margin:0;">Linienfarbe</label>
+        <input id="c2LineColor" class="style-color-input" type="color" value="#ffd400" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row">
+        <label for="c2FillColor" style="margin:0;">Füllfarbe</label>
+        <input id="c2FillColor" class="style-color-input" type="color" value="#ffd400" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="c2FillOpacity" style="margin:0;">Fülltransparenz</label>
+        <input id="c2FillOpacity" type="number" min="0" max="1" step="0.05" value="0" />
+      </div>
+      <div class="style-row">
+        <label for="c2LabelColor" style="margin:0;">Beschriftungsfarbe</label>
+        <input id="c2LabelColor" class="style-color-input" type="color" value="#0000ff" />
+        <span class="swatch"></span>
+      </div>
+
+      <div class="style-section-title">Kreis außen</div>
+      <div class="style-row">
+        <label for="c3LineColor" style="margin:0;">Linienfarbe</label>
+        <input id="c3LineColor" class="style-color-input" type="color" value="#ff0000" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row">
+        <label for="c3FillColor" style="margin:0;">Füllfarbe</label>
+        <input id="c3FillColor" class="style-color-input" type="color" value="#ff0000" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="c3FillOpacity" style="margin:0;">Fülltransparenz</label>
+        <input id="c3FillOpacity" type="number" min="0" max="1" step="0.05" value="0" />
+      </div>
+      <div class="style-row">
+        <label for="c3LabelColor" style="margin:0;">Beschriftungsfarbe</label>
+        <input id="c3LabelColor" class="style-color-input" type="color" value="#0000ff" />
+        <span class="swatch"></span>
+      </div>
+      </div>
+
+      <div id="styleGridSection">
+      <div class="style-section-title">Raster</div>
+      <div class="style-row">
+        <label for="gridLineColor" style="margin:0;">Linienfarbe</label>
+        <input id="gridLineColor" class="style-color-input" type="color" value="#ffd400" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="gridLineWidth" style="margin:0;">Linienbreite (px)</label>
+        <input id="gridLineWidth" type="number" min="1" max="10" step="0.2" value="2" />
+      </div>
+      <div class="style-row">
+        <label for="gridFillColor" style="margin:0;">Füllfarbe</label>
+        <input id="gridFillColor" class="style-color-input" type="color" value="#ffd400" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="gridFillOpacity" style="margin:0;">Fülltransparenz</label>
+        <input id="gridFillOpacity" type="number" min="0" max="1" step="0.05" value="0" />
+      </div>
+      <div class="style-row">
+        <label for="gridLabelColor" style="margin:0;">Beschriftungsfarbe</label>
+        <input id="gridLabelColor" class="style-color-input" type="color" value="#0000ff" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="gridFontSize" style="margin:0;">Schriftgröße (px)</label>
+        <input id="gridFontSize" type="number" min="8" max="40" value="11" />
+      </div>
+      </div>
+
+      <div id="stylePolygonSection">
+      <div class="style-section-title">Polygon</div>
+      <div class="style-row">
+        <label for="polyLineColor" style="margin:0;">Linienfarbe</label>
+        <input id="polyLineColor" class="style-color-input" type="color" value="#ff0000" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="polyLineWidth" style="margin:0;">Linienbreite (px)</label>
+        <input id="polyLineWidth" type="number" min="1" max="10" step="0.2" value="2" />
+      </div>
+      <div class="style-row">
+        <label for="polyFillColor" style="margin:0;">Füllfarbe</label>
+        <input id="polyFillColor" class="style-color-input" type="color" value="#ff0000" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="polyFillOpacity" style="margin:0;">Fülltransparenz</label>
+        <input id="polyFillOpacity" type="number" min="0" max="1" step="0.05" value="0.5" />
+      </div>
+      <div class="style-row">
+        <label for="polyLabelColor" style="margin:0;">Beschriftungsfarbe</label>
+        <input id="polyLabelColor" class="style-color-input" type="color" value="#0000ff" />
+        <span class="swatch"></span>
+      </div>
+      <div class="style-row-compact">
+        <label for="polyFontSize" style="margin:0;">Schriftgröße (px)</label>
+        <input id="polyFontSize" type="number" min="8" max="40" value="11" />
+      </div>
+      </div>
+      <p class="small" style="margin: 8px 0 0;">Klappe diese Box ein, wenn du sie nicht brauchst.</p>
+    </div>
+  </details>
+
+  <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
+  <script>
+    const exportTypeEl = document.getElementById("exportType");
+    const circlesSettingsEl = document.getElementById("circlesSettings");
+    const gridSettingsEl = document.getElementById("gridSettings");
+    const polygonSettingsEl = document.getElementById("polygonSettings");
+    const startPolyBtnEl = document.getElementById("startPolyBtn");
+    const finishPolyBtnEl = document.getElementById("finishPolyBtn");
+    const clearPolyBtnEl = document.getElementById("clearPolyBtn");
+    const polygonStatusEl = document.getElementById("polygonStatus");
+    const labelPointTypeEl = document.getElementById("labelPointType");
+    const labelPointTextEl = document.getElementById("labelPointText");
+    const addLabelPointBtnEl = document.getElementById("addLabelPointBtn");
+    const clearLabelPointsBtnEl = document.getElementById("clearLabelPointsBtn");
+    const labelPointStatusEl = document.getElementById("labelPointStatus");
+    const drawBtnEl = document.getElementById("drawBtn");
+    const clearBtnEl = document.getElementById("clearBtn");
+    const locateBtnEl = document.getElementById("locateBtn");
+    const exportBtnEl = document.getElementById("exportBtn");
+    const locateStatusEl = document.getElementById("locateStatus");
+    const overlayStatusEl = document.getElementById("overlayStatus");
+    const overlayToggleEls = Array.from(document.querySelectorAll(".overlay-toggle"));
+    const coordDisplayEl = document.getElementById("coordDisplay");
+    const drawingNameEl = document.getElementById("drawingName");
+    const saveDrawingBtnEl = document.getElementById("saveDrawingBtn");
+    const refreshDrawingListBtnEl = document.getElementById("refreshDrawingListBtn");
+    const drawingListEl = document.getElementById("drawingList");
+    const loadDrawingBtnEl = document.getElementById("loadDrawingBtn");
+    const drawingStatusEl = document.getElementById("drawingStatus");
+    const storagePathInfoEl = document.getElementById("storagePathInfo");
+    const fpHeightEl = document.getElementById("fpHeight");
+    const fpTrackDistanceEl = document.getElementById("fpTrackDistance");
+    const fpParallelToleranceEl = document.getElementById("fpParallelTolerance");
+    const fpParallelToleranceValueEl = document.getElementById("fpParallelToleranceValue");
+    const fpParallelToleranceLabelEl = document.querySelector("label[for='fpParallelTolerance']");
+    const fpBorderFactorEl = document.getElementById("fpBorderFactor");
+    const fpLineExtensionEl = document.getElementById("fpLineExtension");
+    const fpLineExtensionValueEl = document.getElementById("fpLineExtensionValue");
+    const fpLineExtensionLabelEl = document.querySelector("label[for='fpLineExtension']");
+    const fpSectorDirectionMaxDiffEl = document.getElementById("fpSectorDirectionMaxDiff");
+    const fpSectorDirectionMaxDiffValueEl = document.getElementById("fpSectorDirectionMaxDiffValue");
+    const fpSectorDirectionMaxDiffLabelEl = document.querySelector("label[for='fpSectorDirectionMaxDiff']");
+    const fpCalcVariantEl = document.getElementById("fpCalcVariant");
+    const fpDirectionModeEl = document.getElementById("fpDirectionMode");
+    const fpDirectionWheelEl = document.getElementById("fpDirectionWheel");
+    const fpDirectionAngleEl = document.getElementById("fpDirectionAngle");
+    const selectStartForFlightBtnEl = document.getElementById("selectStartForFlightBtn");
+    const selectPolygonForFlightBtnEl = document.getElementById("selectPolygonForFlightBtn");
+    const flightSelectionStatusEl = document.getElementById("flightSelectionStatus");
+    const calcFlightPathBtnEl = document.getElementById("calcFlightPathBtn");
+    const fpReverseFlightPathEl = document.getElementById("fpReverseFlightPath");
+    const fpShowCoverageEl = document.getElementById("fpShowCoverage");
+    const fpShowCoverageContinuousEl = document.getElementById("fpShowCoverageContinuous");
+    const fpOpticAngleEl = document.getElementById("fpOpticAngle");
+    const clearFlightPathBtnEl = document.getElementById("clearFlightPathBtn");
+    const toggleFlightPointCompactLabelsBtnEl = document.getElementById("toggleFlightPointCompactLabelsBtn");
+    const deleteFlightSelectedBtnEl = document.getElementById("deleteFlightSelectedBtn");
+    const flightPathStatusEl = document.getElementById("flightPathStatus");
+    const flightPathLengthEl = document.getElementById("flightPathLength");
+    const flightMissingInfoEl = document.getElementById("flightMissingInfo");
+    const fpCalcVariantDocEl = document.getElementById("fpCalcVariantDoc");
+    const styleCirclesSectionEl = document.getElementById("styleCirclesSection");
+    const styleGridSectionEl = document.getElementById("styleGridSection");
+    const stylePolygonSectionEl = document.getElementById("stylePolygonSection");
+    const styleInputs = Array.from(document.querySelectorAll(".style-box input"));
+    const styleColorInputs = Array.from(document.querySelectorAll(".style-color-input"));
+    const leftPanelEl = document.querySelector("aside.panel");
+
+    if (leftPanelEl) {
+      // Keep wheel/touch scroll inside the left control bar and prevent map zoom/pan from those gestures.
+      ["wheel", "mousewheel", "DOMMouseScroll", "touchmove"].forEach((eventName) => {
+        leftPanelEl.addEventListener(eventName, (evt) => {
+          evt.stopPropagation();
+        }, { passive: true });
+      });
+    }
+
+    let selectedLonLat = null;
+    let markerSource = null;
+    let previewSource = null;
+    let polygonSource = null;
+    let labelPointsSource = null;
+    let flightCoverageSource = null;
+    let markerFeature = null;
+    let map = null;
+    let previewActive = false;
+    let polygonVertices = [];
+    let labeledPoints = [];
+    let isAddLabelPointMode = false;
+    let isPolygonDrawing = false;
+    let selectedVertexIndex = -1;
+    let isDraggingVertex = false;
+    let selectedLabelPointIndex = -1;
+    let isDraggingLabeledPoint = false;
+    let isDraggingMarker = false;
+    let selectedFlightPointIndex = -1;
+    let isDraggingFlightPoint = false;
+    let selectedFlightFeature = null;
+    let flightStartLonLat = null;
+    let flightPolygonVertices = [];
+    let highlightStartForFlight = false;
+    let highlightPolygonForFlight = false;
+    let isDraggingGrid = false;
+    let gridDragStartCoordinate = null;
+    let gridDragStartLonLat = null;
+    let lastLabelPointDefaultText = "Startpunkt";
+    let suppressNextSingleClick = false;
+    const FEATURE_HIT_TOLERANCE_PX = 10;
+    const overlayLayersByKey = {};
+    const overlayResolvedLayerIds = {};
+    const overlayDefinitions = {
+      electrical: {
+        label: "Elektrische Anlagen",
+        searches: [{ text: "Elektrische Anlagen", tokens: ["elektr"] }]
+      },
+      boundaries: {
+        label: "Kantons, Gemeindegrenzen",
+        searches: [
+          { text: "Kantonsgrenzen", tokens: ["kanton"] },
+          { text: "Gemeindegrenzen", tokens: ["gemeinde"] }
+        ]
+      },
+      hunting: {
+        label: "Jagdbanngebiete",
+        searches: [{ text: "Jagdbanngebiete", tokens: ["jagdbann"] }]
+      },
+      rpas: {
+        label: "RPAS karte",
+        opacity: 0.4,
+        searches: [
+          { text: "RPAS", tokens: ["rpas"] },
+          { text: "Drohnen", tokens: ["drohnen"] }
+        ]
+      },
+      obstacles: {
+        label: "Luftfahrhindernisse",
+        searches: [{ text: "Luftfahrhindernisse", tokens: ["luftfahrhindernis"] }]
+      },
+      landregister: {
+        label: "Grundbuchinformationen",
+        searches: [
+          { text: "Grundbuchinformationen", tokens: ["grundbuch"] },
+          { text: "geometa grundbuch", tokens: ["geometa", "grundbuch"] }
+        ]
+      },
+      cadastralwebmap: {
+        label: "CadastralWebMap",
+        searches: [
+          { text: "CadastralWebMap", tokens: ["cadastralwebmap"] },
+          { text: "cadastralwebmap farbe", tokens: ["cadastral", "farbe"] }
+        ]
+      },
+      nature: {
+        label: "Naturschutzgebiete",
+        searches: [{ text: "Naturschutzgebiete", tokens: ["naturschutz"] }]
+      }
+    };
+
+    const R_EARTH_M = 6378137;
+    const AUTO_LOCATION_ZOOM = 16;
+    const DRAWING_API = {
+      save: "save_drawing.php",
+      list: "list_drawings.php",
+      load: "load_drawing.php",
+      storageInfo: "storage_info.php"
+    };
+    let flightPathPoints = [];
+    let flightPointLabelsCompact = false;
+    window.__rkrkFlightPathPointCount = function () {
+      return Array.isArray(flightPathPoints) ? flightPathPoints.length : 0;
+    };
+    let flightPathSource = null;
+    let flightPointTerrainMap = new Map();
+    let flightTerrainRequestId = 0;
+
+    exportTypeEl.addEventListener("change", () => {
+      const isCircles = exportTypeEl.value === "circles";
+      const isGrid = exportTypeEl.value === "grid";
+      const isPolygon = exportTypeEl.value === "polygon";
+      circlesSettingsEl.style.display = isCircles ? "block" : "none";
+      gridSettingsEl.style.display = isGrid ? "block" : "none";
+      polygonSettingsEl.style.display = isPolygon ? "block" : "none";
+      drawBtnEl.style.display = isPolygon ? "none" : "block";
+      clearBtnEl.style.display = isPolygon ? "none" : "block";
+      isDraggingGrid = false;
+      gridDragStartCoordinate = null;
+      gridDragStartLonLat = null;
+      if (map) {
+        setDragPanEnabled(true);
+        map.getTargetElement().style.cursor = "";
+      }
+
+      if (!isPolygon && previewActive && selectedLonLat) {
+        drawPreview();
+      }
+      updateStyleSectionVisibility();
+      renderPolygonEditor();
+    });
+
+    labelPointTypeEl.addEventListener("change", () => {
+      const previousDefault = lastLabelPointDefaultText;
+      const nextDefaults = labelPointDefaultsByType(labelPointTypeEl.value);
+      const currentText = labelPointTextEl.value.trim();
+      if (!currentText || currentText === previousDefault) {
+        labelPointTextEl.value = nextDefaults.defaultText;
+      }
+      lastLabelPointDefaultText = nextDefaults.defaultText;
+      updateLabeledPointStatus();
+    });
+
+    styleInputs.forEach((el) => {
+      el.addEventListener("input", () => {
+        updateSwatches();
+        refreshMapStyles();
+      });
+    });
+
+    overlayToggleEls.forEach((el) => {
+      el.addEventListener("change", async () => {
+        const key = el.getAttribute("data-overlay-key");
+        if (!key) {
+          return;
+        }
+        await setOverlayEnabled(key, el.checked);
+      });
+    });
+
+    function selectCurrentLabeledStartPointForFlight() {
+      const definedStartPoint = labeledPoints.find((point) => point && point.type === "start" && Number.isFinite(point.lon) && Number.isFinite(point.lat));
+      if (!definedStartPoint) {
+        flightPathStatusEl.textContent = "Bitte zuerst einen beschrifteten Startpunkt hinzufügen (Typ: Startpunkt).";
+        return false;
+      }
+      flightStartLonLat = [definedStartPoint.lon, definedStartPoint.lat];
+      // Keep marker/coord in sync with the chosen defined Startpunkt.
+      selectedLonLat = [definedStartPoint.lon, definedStartPoint.lat];
+      setMarker(lonLatToMapCoord(definedStartPoint.lon, definedStartPoint.lat));
+      renderCoord();
+      highlightStartForFlight = true;
+      if (markerSource) {
+        markerSource.changed();
+      }
+      updateFlightPathUiState();
+      return true;
+    }
+
+    function selectCurrentPolygonForFlight() {
+      if (polygonVertices.length < 3) {
+        flightPathStatusEl.textContent = "Bitte zuerst ein Polygon mit mindestens 3 Punkten erstellen.";
+        return false;
+      }
+      flightPolygonVertices = polygonVertices.map((point) => [point[0], point[1]]);
+      highlightPolygonForFlight = true;
+      renderPolygonEditor();
+      updateFlightPathUiState();
+      return true;
+    }
+
+    async function autoPrepareAndCalculateFlightPath() {
+      flightPathStatusEl.textContent = "Automatische Vorbereitung läuft...";
+      if (!selectCurrentLabeledStartPointForFlight()) {
+        return;
+      }
+      if (!selectCurrentPolygonForFlight()) {
+        return;
+      }
+      if (typeof window.__rkrkPrepareFieldAnalysisForFlight === "function") {
+        try {
+          const activeVariant = (fpCalcVariantEl && (
+            fpCalcVariantEl.value === "rectangleDirection"
+            || fpCalcVariantEl.value === "rectangleHeightDirection2"
+            || fpCalcVariantEl.value === "rectangleHeightDirection3"
+            || fpCalcVariantEl.value === "rectangleHeightDirection4"
+            || fpCalcVariantEl.value === "rectangleHeightDirection5"
+            || fpCalcVariantEl.value === "rectangleHeightDirectionAdaptive"
+          ))
+            ? fpCalcVariantEl.value
+            : "standard";
+          const needsRectangleAnalysis = (
+            activeVariant === "rectangleHeightDirection2"
+            || activeVariant === "rectangleHeightDirection3"
+            || activeVariant === "rectangleHeightDirection4"
+            || activeVariant === "rectangleHeightDirection5"
+            || activeVariant === "rectangleHeightDirectionAdaptive"
+          );
+          const needsSectorDirections = (
+            activeVariant === "rectangleHeightDirection2"
+            || activeVariant === "rectangleHeightDirection3"
+          );
+          const needsHeightDirectionLines = (
+            activeVariant === "rectangleHeightDirection2"
+            || activeVariant === "rectangleHeightDirection3"
+          );
+          const prepFlightOpts = {
+            ensureControlPoints: true,
+            ensureRectangleAnalysis: true,
+            requireRectangleAnalysis: needsRectangleAnalysis,
+            ensureSectorDirections: true,
+            requireSectorsForPrep: needsSectorDirections,
+            ensureDirectionLines: true,
+            requireHeightDirectionLines: needsHeightDirectionLines
+          };
+          const result = await window.__rkrkPrepareFieldAnalysisForFlight(prepFlightOpts);
+          if (result && result.ok === false) {
+            flightPathStatusEl.textContent = result.message || "Automatische Vorbereitung fehlgeschlagen.";
+            return;
+          }
+        } catch (error) {
+          flightPathStatusEl.textContent = `Automatische Vorbereitung fehlgeschlagen: ${error && error.message ? error.message : "Unbekannter Fehler"}`;
+          return;
+        }
+      }
+      updateFlightPathUiState();
+      calculateFlightPath();
+    }
+
+    selectStartForFlightBtnEl.addEventListener("click", () => {
+      selectCurrentLabeledStartPointForFlight();
+    });
+
+    selectPolygonForFlightBtnEl.addEventListener("click", () => {
+      selectCurrentPolygonForFlight();
+    });
+
+    fpDirectionWheelEl.addEventListener("input", () => {
+      const angle = normalizeFlightAngle(fpDirectionWheelEl.value);
+      fpDirectionWheelEl.value = String(Math.round(angle));
+      fpDirectionAngleEl.value = String(Math.round(angle));
+      updateFlightPathUiState();
+      if (fpDirectionModeEl.value === "manual" && !calcFlightPathBtnEl.disabled) {
+        calculateFlightPath();
+      }
+    });
+
+    fpDirectionAngleEl.addEventListener("input", () => {
+      const angle = normalizeFlightAngle(fpDirectionAngleEl.value);
+      fpDirectionAngleEl.value = String(Math.round(angle));
+      fpDirectionWheelEl.value = String(Math.round(angle));
+      updateFlightPathUiState();
+      if (fpDirectionModeEl.value === "manual" && !calcFlightPathBtnEl.disabled) {
+        calculateFlightPath();
+      }
+    });
+
+    fpDirectionModeEl.addEventListener("change", () => {
+      const manual = fpDirectionModeEl.value === "manual";
+      fpDirectionWheelEl.disabled = !manual;
+      fpDirectionAngleEl.disabled = !manual;
+      updateFlightPathUiState();
+      if (!calcFlightPathBtnEl.disabled) {
+        calculateFlightPath();
+      }
+    });
+
+    fpCalcVariantEl.addEventListener("change", () => {
+      if (fpCalcVariantEl.value === "standard" && fpDirectionModeEl.value === "manual") {
+        fpDirectionModeEl.value = "autoLongest";
+        fpDirectionModeEl.dispatchEvent(new Event("change"));
+        return;
+      }
+      updateFlightPathUiState();
+      if (!calcFlightPathBtnEl.disabled) {
+        calculateFlightPath();
+      }
+    });
+
+    const FIELD_ANALYSIS_SETTINGS_STORAGE_KEY = "rkrk_map_field_analysis_settings_v1";
+
+    function persistFlightTuningToFieldSettingsStorage() {
+      try {
+        let existing = {};
+        try {
+          const raw = localStorage.getItem(FIELD_ANALYSIS_SETTINGS_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object") {
+              existing = parsed;
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
+        if (fpParallelToleranceEl) {
+          existing.parallelTolerancePct = Math.max(
+            0,
+            Math.min(50, Math.round(Number(fpParallelToleranceEl.value) || 20))
+          );
+        }
+        if (fpLineExtensionEl) {
+          existing.lineExtensionPercent = Math.max(
+            0,
+            Math.min(100, Math.round(Number(fpLineExtensionEl.value) || 35))
+          );
+        }
+        if (fpSectorDirectionMaxDiffEl) {
+          existing.sectorDirectionMaxDiffDeg = Math.max(
+            5,
+            Math.min(60, Math.round(Number(fpSectorDirectionMaxDiffEl.value) || 20))
+          );
+        }
+        localStorage.setItem(FIELD_ANALYSIS_SETTINGS_STORAGE_KEY, JSON.stringify(existing));
+      } catch (_) {
+        // ignore
+      }
+    }
+
+    function applyFlightTuningFromFieldSettingsStorage() {
+      try {
+        const raw = localStorage.getItem(FIELD_ANALYSIS_SETTINGS_STORAGE_KEY);
+        if (!raw) {
+          return;
+        }
+        const saved = JSON.parse(raw);
+        if (!saved || typeof saved !== "object") {
+          return;
+        }
+        if (Number.isFinite(Number(saved.parallelTolerancePct)) && fpParallelToleranceEl) {
+          const t = Math.max(0, Math.min(50, Math.round(Number(saved.parallelTolerancePct))));
+          fpParallelToleranceEl.value = String(t);
+          if (fpParallelToleranceValueEl) {
+            fpParallelToleranceValueEl.textContent = `${t}%`;
+          }
+        }
+        if (Number.isFinite(Number(saved.lineExtensionPercent)) && fpLineExtensionEl) {
+          const le = Math.max(0, Math.min(100, Math.round(Number(saved.lineExtensionPercent))));
+          fpLineExtensionEl.value = String(le);
+          if (fpLineExtensionValueEl) {
+            fpLineExtensionValueEl.textContent = `${le}%`;
+          }
+        }
+        if (Number.isFinite(Number(saved.sectorDirectionMaxDiffDeg)) && fpSectorDirectionMaxDiffEl) {
+          const sd = Math.max(5, Math.min(60, Math.round(Number(saved.sectorDirectionMaxDiffDeg))));
+          fpSectorDirectionMaxDiffEl.value = String(sd);
+          if (fpSectorDirectionMaxDiffValueEl) {
+            fpSectorDirectionMaxDiffValueEl.textContent = `${sd}°`;
+          }
+        }
+      } catch (_) {
+        // ignore
+      }
+    }
+
+    function triggerRecalculateIfReady() {
+      if (
+        typeof calculateFlightPath === "function"
+        && (!calcFlightPathBtnEl.disabled || flightPathPoints.length > 1)
+      ) {
+        calculateFlightPath();
+      } else {
+        updateFlightPathUiState();
+      }
+    }
+
+    function updateFlightLineExtensionUi() {
+      if (fpLineExtensionEl) {
+        const value = Math.max(0, Math.min(100, sanitizeNumber(fpLineExtensionEl.value, 35)));
+        fpLineExtensionEl.value = String(Math.round(value));
+        if (fpLineExtensionValueEl) {
+          fpLineExtensionValueEl.textContent = `${Math.round(value)}%`;
+        }
+      } else if (fpLineExtensionValueEl) {
+        fpLineExtensionValueEl.textContent = "--";
+      }
+    }
+
+    function updateFlightParallelToleranceUi() {
+      if (fpParallelToleranceEl) {
+        const value = Math.max(0, Math.min(50, sanitizeNumber(fpParallelToleranceEl.value, 20)));
+        fpParallelToleranceEl.value = String(Math.round(value));
+        if (fpParallelToleranceValueEl) {
+          fpParallelToleranceValueEl.textContent = `${Math.round(value)}%`;
+        }
+      } else if (fpParallelToleranceValueEl) {
+        fpParallelToleranceValueEl.textContent = "--";
+      }
+    }
+
+    function updateFlightSectorDirectionMaxDiffUi() {
+      if (fpSectorDirectionMaxDiffEl) {
+        const value = Math.max(5, Math.min(60, sanitizeNumber(fpSectorDirectionMaxDiffEl.value, 20)));
+        fpSectorDirectionMaxDiffEl.value = String(Math.round(value));
+        if (fpSectorDirectionMaxDiffValueEl) {
+          fpSectorDirectionMaxDiffValueEl.textContent = `${Math.round(value)}°`;
+        }
+      } else if (fpSectorDirectionMaxDiffValueEl) {
+        fpSectorDirectionMaxDiffValueEl.textContent = "--";
+      }
+    }
+
+    applyFlightTuningFromFieldSettingsStorage();
+
+    fpTrackDistanceEl.addEventListener("input", () => {
+      const value = Math.max(5, sanitizeNumber(fpTrackDistanceEl.value, 30));
+      fpTrackDistanceEl.value = String(Math.round(value));
+      triggerRecalculateIfReady();
+    });
+
+    if (fpLineExtensionEl) {
+      const onLineExtensionChanged = () => {
+        updateFlightLineExtensionUi();
+        persistFlightTuningToFieldSettingsStorage();
+        triggerRecalculateIfReady();
+      };
+      fpLineExtensionEl.addEventListener("input", onLineExtensionChanged);
+      fpLineExtensionEl.addEventListener("change", onLineExtensionChanged);
+    }
+
+    if (fpParallelToleranceEl) {
+      const onParallelToleranceChanged = () => {
+        updateFlightParallelToleranceUi();
+        persistFlightTuningToFieldSettingsStorage();
+        triggerRecalculateIfReady();
+      };
+      fpParallelToleranceEl.addEventListener("input", onParallelToleranceChanged);
+      fpParallelToleranceEl.addEventListener("change", onParallelToleranceChanged);
+    }
+
+    if (fpSectorDirectionMaxDiffEl) {
+      const onSectorDirectionMaxDiffChanged = () => {
+        updateFlightSectorDirectionMaxDiffUi();
+        persistFlightTuningToFieldSettingsStorage();
+        if (typeof saveFieldSettings === "function") {
+          try {
+            saveFieldSettings();
+          } catch (_) {
+            // ignore
+          }
+        }
+        triggerRecalculateIfReady();
+      };
+      fpSectorDirectionMaxDiffEl.addEventListener("input", onSectorDirectionMaxDiffChanged);
+      fpSectorDirectionMaxDiffEl.addEventListener("change", onSectorDirectionMaxDiffChanged);
+    }
+
+    [fpHeightEl, fpBorderFactorEl, fpOpticAngleEl].forEach((input) => {
+      input.addEventListener("input", () => {
+        triggerRecalculateIfReady();
+      });
+    });
+
+    fpHeightEl.addEventListener("input", () => {
+      if (flightPathPoints.length) {
+        renderFlightPath();
+      }
+    });
+
+    if (fpShowCoverageEl) {
+      fpShowCoverageEl.addEventListener("change", () => {
+        renderFlightPath();
+      });
+    }
+    if (fpShowCoverageContinuousEl) {
+      fpShowCoverageContinuousEl.addEventListener("change", () => {
+        renderFlightPath();
+      });
+    }
+
+    calcFlightPathBtnEl.addEventListener("click", async () => {
+      await autoPrepareAndCalculateFlightPath();
+    });
+
+    clearFlightPathBtnEl.addEventListener("click", () => {
+      flightPathPoints = [];
+      selectedFlightFeature = null;
+      selectedFlightPointIndex = -1;
+      renderFlightPath();
+      updateFlightPathUiState();
+    });
+
+    if (toggleFlightPointCompactLabelsBtnEl) {
+      toggleFlightPointCompactLabelsBtnEl.addEventListener("click", () => {
+        flightPointLabelsCompact = !flightPointLabelsCompact;
+        refreshFlightPointCompactLabelsButton();
+        if (flightPathPoints.length) {
+          renderFlightPath();
+        }
+      });
+    }
+    refreshFlightPointCompactLabelsButton();
+
+    deleteFlightSelectedBtnEl.addEventListener("click", () => {
+      if (!selectedFlightFeature) {
+        return;
+      }
+      const type = selectedFlightFeature.get("flightType");
+      if (type === "point") {
+        const idx = selectedFlightFeature.get("flightPointIndex");
+        if (Number.isInteger(idx) && idx >= 0 && idx < flightPathPoints.length) {
+          flightPathPoints.splice(idx, 1);
+        }
+      } else if (type === "line") {
+        flightPathPoints = [];
+      }
+      selectedFlightFeature = null;
+      selectedFlightPointIndex = -1;
+      renderFlightPath();
+      updateFlightPathUiState();
+    });
+
+    function initMap() {
+      // Guard against accidental double initialization
+      // (e.g. cached script reloads / duplicate execution).
+      if (map) {
+        return;
+      }
+      const baseLayer = new ol.layer.Tile({
+        source: new ol.source.XYZ({
+          url: "https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg",
+          attributions: 'Map data: <a href="https://www.swisstopo.admin.ch/" target="_blank" rel="noopener">swisstopo</a>',
+          crossOrigin: "anonymous",
+          maxZoom: 19
+        })
+      });
+
+      map = new ol.Map({
+        target: "map",
+        layers: [baseLayer],
+        view: new ol.View({
+          projection: "EPSG:3857",
+          center: ol.proj.fromLonLat([8.2275, 46.8182]),
+          zoom: 8
+        })
+      });
+
+      markerSource = new ol.source.Vector();
+      previewSource = new ol.source.Vector();
+      polygonSource = new ol.source.Vector();
+      flightCoverageSource = new ol.source.Vector();
+      flightPathSource = new ol.source.Vector();
+      labelPointsSource = new ol.source.Vector();
+      const markerLayer = new ol.layer.Vector({
+        source: markerSource,
+        style: () => {
+          const styles = getEditorStyles();
+          const isFlightStartSelected = highlightStartForFlight && Array.isArray(flightStartLonLat) && flightStartLonLat.length === 2;
+          return new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: isFlightStartSelected ? 12 : 9,
+              fill: new ol.style.Fill({ color: styles.startPointColor }),
+              stroke: new ol.style.Stroke({ color: isFlightStartSelected ? "#00e5ff" : "#ffffff", width: isFlightStartSelected ? 3 : 2 })
+            })
+          });
+        }
+      });
+      map.addLayer(markerLayer);
+      map.addLayer(new ol.layer.Vector({ source: previewSource }));
+      map.addLayer(new ol.layer.Vector({ source: polygonSource }));
+      map.addLayer(new ol.layer.Vector({ source: flightCoverageSource, zIndex: 3 }));
+      map.addLayer(new ol.layer.Vector({ source: flightPathSource }));
+      map.addLayer(new ol.layer.Vector({
+        source: labelPointsSource
+      }));
+
+      map.on("singleclick", (evt) => {
+        if (suppressNextSingleClick) {
+          suppressNextSingleClick = false;
+          return;
+        }
+        if (isAddLabelPointMode) {
+          const defaults = labelPointDefaultsByType(labelPointTypeEl.value);
+          const customText = labelPointTextEl.value.trim();
+          const text = customText || defaults.defaultText;
+          const lonLat = ol.proj.transform(
+            evt.coordinate,
+            map.getView().getProjection(),
+            "EPSG:4326"
+          );
+          labeledPoints.push({
+            type: labelPointTypeEl.value,
+            text,
+            lon: lonLat[0],
+            lat: lonLat[1]
+          });
+          renderLabeledPoints();
+          isAddLabelPointMode = false;
+          updateLabeledPointStatus(`Added "${text}".`);
+          return;
+        }
+        const labeledSelectFeature = getLabeledPointFeatureAtPixel(evt.pixel);
+        if (labeledSelectFeature) {
+          const li = Number(labeledSelectFeature.get("labelPointIndex"));
+          if (Number.isInteger(li) && li >= 0 && li < labeledPoints.length) {
+            selectedLabelPointIndex = li;
+            selectedVertexIndex = -1;
+            renderLabeledPoints();
+            updateLabeledPointStatus(`Punkt ${li + 1} ausgewählt: bei gedrückter Maustaste ziehen zum Verschieben.`);
+            return;
+          }
+        }
+        if (exportTypeEl.value === "polygon") {
+          handlePolygonSingleClick(evt);
+          // continue: allow selecting/inserting flight-path points while in polygon mode
+        }
+        const flightMid = getFlightFeatureAtPixel(evt.pixel, "midpoint");
+        if (flightMid) {
+          const idx = flightMid.get("insertIndex");
+          const ins = flightMid.get("insertLonLat");
+          if (Number.isInteger(idx) && Array.isArray(ins) && ins.length === 2) {
+            flightPathPoints.splice(idx, 0, [Number(ins[0]), Number(ins[1])]);
+            selectedFlightFeature = null;
+            selectedFlightPointIndex = -1;
+            renderFlightPath();
+            updateFlightPathUiState();
+          }
+          return;
+        }
+        const flightPoint = getFlightFeatureAtPixel(evt.pixel, "point");
+        const flightLine = getFlightFeatureAtPixel(evt.pixel, "line");
+        selectedFlightFeature = flightPoint || flightLine || null;
+        if (flightPoint) {
+          selectedFlightPointIndex = Number(flightPoint.get("flightPointIndex"));
+        } else {
+          selectedFlightPointIndex = -1;
+        }
+        updateFlightPathUiState();
+        if (selectedFlightFeature) {
+          selectedLabelPointIndex = -1;
+          renderLabeledPoints();
+          return;
+        }
+        selectedLabelPointIndex = -1;
+        renderLabeledPoints();
+        selectedLonLat = ol.proj.transform(
+          evt.coordinate,
+          map.getView().getProjection(),
+          "EPSG:4326"
+        );
+        highlightStartForFlight = false;
+        flightStartLonLat = null;
+        setMarker(evt.coordinate);
+        renderCoord();
+        updateFlightPathUiState();
+        if (previewActive) {
+          drawPreview();
+        }
+      });
+
+      map.on("dblclick", (evt) => {
+        const labeledPointFeature = getLabeledPointFeatureAtPixel(evt.pixel);
+        if (labeledPointFeature) {
+          const index = Number(labeledPointFeature.get("labelPointIndex"));
+          if (Number.isInteger(index) && index >= 0 && index < labeledPoints.length) {
+            const current = labeledPoints[index];
+            const nextTextRaw = window.prompt("Edit label text:", current.text || "");
+            if (nextTextRaw !== null) {
+              const nextText = nextTextRaw.trim();
+              if (nextText) {
+                labeledPoints[index].text = nextText;
+                renderLabeledPoints();
+                updateLabeledPointStatus(`Updated label to "${nextText}".`);
+              }
+            }
+          }
+          return false;
+        }
+        if (exportTypeEl.value !== "polygon") {
+          return true;
+        }
+        const feature = getPolygonFeatureAtPixel(evt.pixel, "vertex");
+        if (!feature) {
+          selectedVertexIndex = -1;
+          selectedLabelPointIndex = -1;
+          polygonStatusEl.textContent = `Polygon has ${polygonVertices.length} points.`;
+          renderPolygonEditor();
+          return false;
+        }
+        selectedVertexIndex = feature.get("vertexIndex");
+        selectedLabelPointIndex = -1;
+        polygonStatusEl.textContent = `Eckpunkt ${selectedVertexIndex + 1} ausgewählt. Zum Verschieben ziehen.`;
+        renderPolygonEditor();
+        return false;
+      });
+
+      map.on("pointerdown", (evt) => {
+        if (exportTypeEl.value === "grid" && previewActive && selectedLonLat) {
+          const feature = getPreviewFeatureAtPixel(evt.pixel, "grid-cell");
+          if (feature) {
+            isDraggingGrid = true;
+            gridDragStartCoordinate = evt.coordinate.slice();
+            gridDragStartLonLat = [selectedLonLat[0], selectedLonLat[1]];
+            suppressNextSingleClick = true;
+            setDragPanEnabled(false);
+            map.getTargetElement().style.cursor = "grabbing";
+            return;
+          }
+        }
+        const fp = getFlightFeatureAtPixel(evt.pixel, "point");
+        if (fp) {
+          const idx = Number(fp.get("flightPointIndex"));
+          if (Number.isInteger(idx) && idx >= 0 && idx < flightPathPoints.length) {
+            selectedFlightFeature = fp;
+            selectedFlightPointIndex = idx;
+            isDraggingFlightPoint = true;
+            selectedLabelPointIndex = -1;
+            renderLabeledPoints();
+            setDragPanEnabled(false);
+            map.getTargetElement().style.cursor = "grabbing";
+            updateFlightPathUiState();
+            return;
+          }
+        }
+        const labeledDown = getLabeledPointFeatureAtPixel(evt.pixel);
+        if (labeledDown) {
+          const li = Number(labeledDown.get("labelPointIndex"));
+          if (Number.isInteger(li) && li >= 0 && li < labeledPoints.length) {
+            selectedLabelPointIndex = li;
+            selectedVertexIndex = -1;
+            isDraggingLabeledPoint = true;
+            setDragPanEnabled(false);
+            map.getTargetElement().style.cursor = "grabbing";
+            renderLabeledPoints();
+            return;
+          }
+        }
+        const markerDown = getMarkerFeatureAtPixel(evt.pixel);
+        if (markerDown && selectedLonLat && Array.isArray(selectedLonLat) && selectedLonLat.length === 2) {
+          isDraggingMarker = true;
+          setDragPanEnabled(false);
+          map.getTargetElement().style.cursor = "grabbing";
+          return;
+        }
+        if (exportTypeEl.value !== "polygon" || selectedVertexIndex < 0) {
+          return;
+        }
+        const feature = getPolygonFeatureAtPixel(evt.pixel, "vertex");
+        if (!feature || feature.get("vertexIndex") !== selectedVertexIndex) {
+          return;
+        }
+        isDraggingVertex = true;
+        selectedLabelPointIndex = -1;
+        renderLabeledPoints();
+        setDragPanEnabled(false);
+        map.getTargetElement().style.cursor = "grabbing";
+      });
+
+      map.on("pointermove", (evt) => {
+        if (isDraggingGrid && gridDragStartCoordinate && gridDragStartLonLat) {
+          const deltaX = evt.coordinate[0] - gridDragStartCoordinate[0];
+          const deltaY = evt.coordinate[1] - gridDragStartCoordinate[1];
+          const startMapCoord = lonLatToMapCoord(gridDragStartLonLat[0], gridDragStartLonLat[1]);
+          const movedMapCoord = [startMapCoord[0] + deltaX, startMapCoord[1] + deltaY];
+          const movedLonLat = ol.proj.transform(movedMapCoord, "EPSG:3857", "EPSG:4326");
+          selectedLonLat = [movedLonLat[0], movedLonLat[1]];
+          setMarker(movedMapCoord);
+          renderCoord();
+          drawPreview();
+          return;
+        }
+        if (isDraggingFlightPoint && selectedFlightPointIndex >= 0) {
+          const lonLat = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
+          flightPathPoints[selectedFlightPointIndex] = [lonLat[0], lonLat[1]];
+          renderFlightPath();
+          return;
+        }
+        if (isDraggingLabeledPoint && selectedLabelPointIndex >= 0 && labeledPoints[selectedLabelPointIndex]) {
+          const lonLat = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
+          const pt = labeledPoints[selectedLabelPointIndex];
+          pt.lon = lonLat[0];
+          pt.lat = lonLat[1];
+          if (pt.type === "start") {
+            selectedLonLat = [lonLat[0], lonLat[1]];
+            setMarker(evt.coordinate);
+            renderCoord();
+            if (highlightStartForFlight) {
+              flightStartLonLat = [lonLat[0], lonLat[1]];
+            }
+          }
+          renderLabeledPoints();
+          if (previewActive) {
+            drawPreview();
+          }
+          return;
+        }
+        if (isDraggingMarker && selectedLonLat) {
+          const lonLat = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
+          selectedLonLat = [lonLat[0], lonLat[1]];
+          setMarker(evt.coordinate);
+          renderCoord();
+          if (previewActive) {
+            drawPreview();
+          }
+          return;
+        }
+        if (exportTypeEl.value !== "polygon") {
+          if (exportTypeEl.value === "grid" && previewActive && selectedLonLat) {
+            const gridFeature = getPreviewFeatureAtPixel(evt.pixel, "grid-cell");
+            map.getTargetElement().style.cursor = gridFeature ? "grab" : "";
+          } else {
+            const lpHover = getLabeledPointFeatureAtPixel(evt.pixel);
+            const mkHover = selectedLonLat && getMarkerFeatureAtPixel(evt.pixel);
+            map.getTargetElement().style.cursor = (lpHover || mkHover) ? "grab" : "";
+          }
+          return;
+        }
+        if (isDraggingVertex && selectedVertexIndex >= 0) {
+          const lonLat = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
+          polygonVertices[selectedVertexIndex] = [lonLat[0], lonLat[1]];
+          highlightPolygonForFlight = false;
+          flightPolygonVertices = [];
+          renderPolygonEditor();
+          updateFlightPathUiState();
+          return;
+        }
+        const vertex = getPolygonFeatureAtPixel(evt.pixel, "vertex");
+        const midpoint = getPolygonFeatureAtPixel(evt.pixel, "midpoint");
+        const lpPolyHover = getLabeledPointFeatureAtPixel(evt.pixel);
+        map.getTargetElement().style.cursor = (vertex || midpoint || lpPolyHover) ? "grab" : "";
+      });
+
+      map.on("pointerup", () => {
+        const hadDragOperation = isDraggingVertex || isDraggingFlightPoint || isDraggingGrid
+          || isDraggingLabeledPoint || isDraggingMarker;
+        isDraggingVertex = false;
+        isDraggingFlightPoint = false;
+        isDraggingLabeledPoint = false;
+        isDraggingMarker = false;
+        if (isDraggingGrid) {
+          isDraggingGrid = false;
+          gridDragStartCoordinate = null;
+          gridDragStartLonLat = null;
+        }
+        if (hadDragOperation) {
+          setDragPanEnabled(true);
+        }
+        if (exportTypeEl.value === "polygon") {
+          map.getTargetElement().style.cursor = "";
+        } else if (exportTypeEl.value === "grid") {
+          map.getTargetElement().style.cursor = "grab";
+        } else {
+          map.getTargetElement().style.cursor = "";
+        }
+      });
+
+      focusToCurrentLocation();
+      renderLabeledPoints();
+      updateLabeledPointStatus();
+      updateFlightPathUiState();
+    }
+
+    function stripHtml(value) {
+      return String(value || "").replace(/<[^>]+>/g, "").trim();
+    }
+
+    function extractLayerCandidates(searchPayload) {
+      const results = Array.isArray(searchPayload?.results) ? searchPayload.results : [];
+      return results.map((row) => {
+        const attrs = row.attrs || row.attributes || {};
+        const layerId = attrs.layerBodId || attrs.layer || attrs.id || row.layerBodId || "";
+        const label = stripHtml(attrs.label || attrs.title || row.label || "");
+        return { layerId: String(layerId), label: String(label) };
+      }).filter((c) => c.layerId);
+    }
+
+    async function searchGeoAdminLayerId(searchText, requiredTokens) {
+      const url = `https://api3.geo.admin.ch/rest/services/api/SearchServer?type=layers&searchText=${encodeURIComponent(searchText)}&limit=25`;
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Search ${response.status}`);
+      }
+      const payload = await response.json();
+      const candidates = extractLayerCandidates(payload);
+      if (candidates.length === 0) {
+        return null;
+      }
+      const tokens = (requiredTokens || []).map((t) => t.toLowerCase());
+      const matched = candidates.find((c) => {
+        const hay = `${c.layerId} ${c.label}`.toLowerCase();
+        return tokens.every((token) => hay.includes(token));
+      });
+      return matched ? matched.layerId : candidates[0].layerId;
+    }
+
+    async function resolveOverlayLayerIds(key) {
+      if (overlayResolvedLayerIds[key]) {
+        return overlayResolvedLayerIds[key];
+      }
+      const definition = overlayDefinitions[key];
+      if (!definition) {
+        return [];
+      }
+      const ids = [];
+      for (const search of definition.searches) {
+        try {
+          const layerId = await searchGeoAdminLayerId(search.text, search.tokens || []);
+          if (layerId && !ids.includes(layerId)) {
+            ids.push(layerId);
+          }
+        } catch (_) {
+          // ignore search errors per query and continue
+        }
+      }
+      overlayResolvedLayerIds[key] = ids;
+      return ids;
+    }
+
+    function createGeoAdminOverlayLayer(layerId, opacity = 1) {
+      return new ol.layer.Tile({
+        source: new ol.source.TileWMS({
+          url: "https://wms.geo.admin.ch/",
+          params: {
+            LAYERS: layerId,
+            FORMAT: "image/png",
+            TRANSPARENT: true
+          },
+          crossOrigin: "anonymous",
+          attributions: 'Map data: <a href="https://www.swisstopo.admin.ch/" target="_blank" rel="noopener">swisstopo</a>'
+        }),
+        opacity,
+        zIndex: 40
+      });
+    }
+
+    async function setOverlayEnabled(key, enabled) {
+      const definition = overlayDefinitions[key];
+      if (!definition || !map) {
+        return;
+      }
+      if (!enabled) {
+        const existing = overlayLayersByKey[key] || [];
+        existing.forEach((layer) => map.removeLayer(layer));
+        overlayLayersByKey[key] = [];
+        overlayStatusEl.textContent = `${definition.label} disabled.`;
+        return;
+      }
+
+      overlayStatusEl.textContent = `Loading ${definition.label}...`;
+      const layerIds = await resolveOverlayLayerIds(key);
+      if (!layerIds.length) {
+        overlayStatusEl.textContent = `Keine Ebene gefunden für ${definition.label}.`;
+        return;
+      }
+      const existing = overlayLayersByKey[key] || [];
+      existing.forEach((layer) => map.removeLayer(layer));
+      const layers = layerIds.map((layerId) => createGeoAdminOverlayLayer(layerId, definition.opacity ?? 1));
+      layers.forEach((layer) => map.addLayer(layer));
+      overlayLayersByKey[key] = layers;
+      overlayStatusEl.textContent = `${definition.label}: ${layerIds.join(", ")}`;
+    }
+
+    function updateStyleSectionVisibility() {
+      const mode = exportTypeEl.value;
+      styleCirclesSectionEl.style.display = mode === "circles" ? "block" : "none";
+      styleGridSectionEl.style.display = mode === "grid" ? "block" : "none";
+      stylePolygonSectionEl.style.display = mode === "polygon" ? "block" : "none";
+    }
+
+    function setMarker(mapCoordinate) {
+      markerSource.clear();
+      markerFeature = new ol.Feature({
+        geometry: new ol.geom.Point(mapCoordinate)
+      });
+      markerSource.addFeature(markerFeature);
+    }
+
+    function getEditorStyles() {
+      const circleFontSize = 11;
+      return {
+        startPointColor: document.getElementById("startPointColor").value || "#00aa00",
+        circles: [
+          {
+            lineColor: document.getElementById("c1LineColor").value || "#00aa00",
+            fillColor: document.getElementById("c1FillColor").value || "#00aa00",
+            fillOpacity: sanitizeOpacity(document.getElementById("c1FillOpacity").value, 0),
+            labelColor: document.getElementById("c1LabelColor").value || "#0000ff",
+            fontSize: circleFontSize
+          },
+          {
+            lineColor: document.getElementById("c2LineColor").value || "#ffd400",
+            fillColor: document.getElementById("c2FillColor").value || "#ffd400",
+            fillOpacity: sanitizeOpacity(document.getElementById("c2FillOpacity").value, 0),
+            labelColor: document.getElementById("c2LabelColor").value || "#0000ff",
+            fontSize: circleFontSize
+          },
+          {
+            lineColor: document.getElementById("c3LineColor").value || "#ff0000",
+            fillColor: document.getElementById("c3FillColor").value || "#ff0000",
+            fillOpacity: sanitizeOpacity(document.getElementById("c3FillOpacity").value, 0),
+            labelColor: document.getElementById("c3LabelColor").value || "#0000ff",
+            fontSize: circleFontSize
+          }
+        ],
+        grid: {
+          lineColor: document.getElementById("gridLineColor").value || "#ffd400",
+          lineWidth: sanitizeNumber(document.getElementById("gridLineWidth").value, 2),
+          fillColor: document.getElementById("gridFillColor").value || "#ffd400",
+          fillOpacity: sanitizeOpacity(document.getElementById("gridFillOpacity").value, 0),
+          labelColor: document.getElementById("gridLabelColor").value || "#0000ff",
+          fontSize: Math.min(40, Math.max(8, Math.round(sanitizeNumber(document.getElementById("gridFontSize").value, 11))))
+        },
+        polygon: {
+          lineColor: document.getElementById("polyLineColor").value || "#ff0000",
+          lineWidth: sanitizeNumber(document.getElementById("polyLineWidth").value, 2),
+          fillColor: document.getElementById("polyFillColor").value || "#ff0000",
+          fillOpacity: sanitizeOpacity(document.getElementById("polyFillOpacity").value, 0.5),
+          labelColor: document.getElementById("polyLabelColor").value || "#0000ff",
+          fontSize: Math.min(40, Math.max(8, Math.round(sanitizeNumber(document.getElementById("polyFontSize").value, 11))))
+        }
+      };
+    }
+
+    function labelPointDefaultsByType(type) {
+      if (type === "parking") {
+        return { defaultText: "Parkplatz", color: "#0066ff" };
+      }
+      if (type === "other") {
+        return { defaultText: "Others", color: "#ff8a00" };
+      }
+      return { defaultText: "Startpunkt", color: "#00aa00" };
+    }
+
+    function getDrawingState() {
+      const styleValues = {};
+      styleInputs.forEach((input) => {
+        if (input.id) {
+          styleValues[input.id] = input.value;
+        }
+      });
+
+      return {
+        version: 1,
+        exportType: exportTypeEl.value,
+        selectedLonLat,
+        previewActive,
+        circles: {
+          radius1: document.getElementById("radius1").value,
+          radius2: document.getElementById("radius2").value,
+          radius3: document.getElementById("radius3").value
+        },
+        grid: {
+          spacing: document.getElementById("spacing").value,
+          northCount: document.getElementById("northCount").value,
+          eastCount: document.getElementById("eastCount").value
+        },
+        polygon: {
+          vertices: polygonVertices
+        },
+        flightPath: {
+          calcVariant: fpCalcVariantEl.value,
+          directionMode: fpDirectionModeEl.value,
+          directionAngle: fpDirectionAngleEl.value,
+          trackDistance: fpTrackDistanceEl.value,
+          parallelTolerance: fpParallelToleranceEl ? fpParallelToleranceEl.value : "20",
+          lineExtension: fpLineExtensionEl ? fpLineExtensionEl.value : "35",
+          sectorDirectionMaxDiff: fpSectorDirectionMaxDiffEl ? fpSectorDirectionMaxDiffEl.value : "20",
+          showCoverage: !!(fpShowCoverageEl && fpShowCoverageEl.checked),
+          showCoverageContinuous: !!(fpShowCoverageContinuousEl && fpShowCoverageContinuousEl.checked),
+          opticAngle: fpOpticAngleEl ? fpOpticAngleEl.value : "36",
+          compactFlightPointLabels: !!flightPointLabelsCompact,
+          reverseFlightPath: !!(fpReverseFlightPathEl && fpReverseFlightPathEl.checked)
+        },
+        labeledPoints: labeledPoints.map((point) => ({
+          type: point.type,
+          text: point.text,
+          lon: point.lon,
+          lat: point.lat
+        })),
+        styles: styleValues
+      };
+    }
+
+    function setInputValueIfExists(id, value) {
+      const el = document.getElementById(id);
+      if (!el || value === undefined || value === null) {
+        return;
+      }
+      el.value = value;
+    }
+
+    function fitViewToCurrentDrawing() {
+      if (!map) {
+        return;
+      }
+      const lonLatPoints = [];
+      if (selectedLonLat && selectedLonLat.length === 2) {
+        lonLatPoints.push([selectedLonLat[0], selectedLonLat[1]]);
+      }
+      polygonVertices.forEach((vertex) => {
+        if (Array.isArray(vertex) && vertex.length === 2 && Number.isFinite(vertex[0]) && Number.isFinite(vertex[1])) {
+          lonLatPoints.push([vertex[0], vertex[1]]);
+        }
+      });
+      labeledPoints.forEach((point) => {
+        if (Number.isFinite(point.lon) && Number.isFinite(point.lat)) {
+          lonLatPoints.push([point.lon, point.lat]);
+        }
+      });
+
+      if (!lonLatPoints.length) {
+        return;
+      }
+
+      const mapCoords = lonLatPoints.map((point) => lonLatToMapCoord(point[0], point[1]));
+      const xs = mapCoords.map((point) => point[0]);
+      const ys = mapCoords.map((point) => point[1]);
+      const extent = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      const view = map.getView();
+      const samePoint = extent[0] === extent[2] && extent[1] === extent[3];
+      if (samePoint) {
+        view.animate({ center: [extent[0], extent[1]], duration: 250 });
+        return;
+      }
+      view.fit(extent, {
+        size: map.getSize(),
+        duration: 300,
+        padding: [48, 48, 48, 48],
+        maxZoom: 18,
+        nearest: true
+      });
+    }
+
+    function applyDrawingState(state) {
+      if (!state || typeof state !== "object") {
+        drawingStatusEl.textContent = "Invalid drawing data.";
+        return;
+      }
+
+      if (state.styles && typeof state.styles === "object") {
+        Object.keys(state.styles).forEach((id) => {
+          setInputValueIfExists(id, state.styles[id]);
+        });
+      }
+
+      if (state.circles) {
+        setInputValueIfExists("radius1", state.circles.radius1);
+        setInputValueIfExists("radius2", state.circles.radius2);
+        setInputValueIfExists("radius3", state.circles.radius3);
+      }
+      if (state.grid) {
+        setInputValueIfExists("spacing", state.grid.spacing);
+        setInputValueIfExists("northCount", state.grid.northCount);
+        setInputValueIfExists("eastCount", state.grid.eastCount);
+      }
+      if (state.flightPath) {
+        let restoredCalcVariant = state.flightPath.calcVariant;
+        if (restoredCalcVariant === "rectangleHeightDirection") {
+          restoredCalcVariant = "rectangleHeightDirection2";
+        }
+        setInputValueIfExists("fpCalcVariant", restoredCalcVariant);
+        let directionModeRestore = state.flightPath.directionMode;
+        if (restoredCalcVariant === "standard" && directionModeRestore === "manual") {
+          directionModeRestore = "autoLongest";
+        }
+        setInputValueIfExists("fpDirectionMode", directionModeRestore);
+        setInputValueIfExists("fpDirectionWheel", state.flightPath.directionAngle);
+        setInputValueIfExists("fpDirectionAngle", state.flightPath.directionAngle);
+        setInputValueIfExists("fpTrackDistance", state.flightPath.trackDistance);
+        setInputValueIfExists("fpParallelTolerance", state.flightPath.parallelTolerance);
+        setInputValueIfExists("fpLineExtension", state.flightPath.lineExtension);
+        setInputValueIfExists("fpSectorDirectionMaxDiff", state.flightPath.sectorDirectionMaxDiff);
+        if (fpShowCoverageEl && typeof state.flightPath.showCoverage === "boolean") {
+          fpShowCoverageEl.checked = state.flightPath.showCoverage;
+        }
+        if (fpShowCoverageContinuousEl && typeof state.flightPath.showCoverageContinuous === "boolean") {
+          fpShowCoverageContinuousEl.checked = state.flightPath.showCoverageContinuous;
+        }
+        setInputValueIfExists("fpOpticAngle", state.flightPath.opticAngle);
+        if (typeof state.flightPath.compactFlightPointLabels === "boolean") {
+          flightPointLabelsCompact = state.flightPath.compactFlightPointLabels;
+        }
+        if (fpReverseFlightPathEl && typeof state.flightPath.reverseFlightPath === "boolean") {
+          fpReverseFlightPathEl.checked = state.flightPath.reverseFlightPath;
+        }
+      }
+
+      polygonVertices = (state.polygon && Array.isArray(state.polygon.vertices))
+        ? state.polygon.vertices.map((p) => [Number(p[0]), Number(p[1])]).filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]))
+        : [];
+      labeledPoints = Array.isArray(state.labeledPoints)
+        ? state.labeledPoints
+          .map((point) => ({
+            type: (point && typeof point.type === "string") ? point.type : "start",
+            text: (point && typeof point.text === "string") ? point.text.trim() : "",
+            lon: Number(point ? point.lon : NaN),
+            lat: Number(point ? point.lat : NaN)
+          }))
+          .filter((point) => {
+            const typeValid = point.type === "start" || point.type === "parking" || point.type === "other";
+            return typeValid && Number.isFinite(point.lon) && Number.isFinite(point.lat);
+          })
+          .map((point) => {
+            const defaults = labelPointDefaultsByType(point.type);
+            return {
+              type: point.type,
+              text: point.text || defaults.defaultText,
+              lon: point.lon,
+              lat: point.lat
+            };
+          })
+        : [];
+      isPolygonDrawing = false;
+      selectedVertexIndex = -1;
+      isDraggingVertex = false;
+      selectedLabelPointIndex = -1;
+      isDraggingLabeledPoint = false;
+      isDraggingMarker = false;
+      isAddLabelPointMode = false;
+      flightPathPoints = [];
+      selectedFlightFeature = null;
+      selectedFlightPointIndex = -1;
+      flightStartLonLat = null;
+      flightPolygonVertices = [];
+      highlightStartForFlight = false;
+      highlightPolygonForFlight = false;
+
+      if (Array.isArray(state.selectedLonLat) && state.selectedLonLat.length === 2) {
+        selectedLonLat = [Number(state.selectedLonLat[0]), Number(state.selectedLonLat[1])];
+      } else {
+        selectedLonLat = null;
+      }
+
+      if (selectedLonLat) {
+        const mapCoord = lonLatToMapCoord(selectedLonLat[0], selectedLonLat[1]);
+        setMarker(mapCoord);
+        renderCoord();
+      } else {
+        markerSource.clear();
+        coordDisplayEl.textContent = "Kein Punkt ausgewählt.";
+      }
+
+      previewActive = !!state.previewActive;
+      exportTypeEl.value = state.exportType || "circles";
+      exportTypeEl.dispatchEvent(new Event("change"));
+      renderPolygonEditor();
+      previewSource.clear();
+      if (previewActive && selectedLonLat && exportTypeEl.value !== "polygon") {
+        drawPreview();
+      }
+      refreshFlightPointCompactLabelsButton();
+      renderFlightPath();
+      renderLabeledPoints();
+      updateLabeledPointStatus();
+      updateSwatches();
+      refreshMapStyles();
+      updateFlightPathUiState();
+      fpDirectionModeEl.dispatchEvent(new Event("change"));
+      fitViewToCurrentDrawing();
+    }
+
+    async function refreshDrawingList() {
+      try {
+        const response = await fetch(DRAWING_API.list, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = await response.json();
+        drawingListEl.innerHTML = "";
+        const drawings = Array.isArray(payload.drawings) ? payload.drawings : [];
+        if (drawings.length === 0) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "(keine gespeicherten Zeichnungen)";
+          drawingListEl.appendChild(option);
+          return;
+        }
+        drawings.forEach((name) => {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          drawingListEl.appendChild(option);
+        });
+      } catch (error) {
+        drawingStatusEl.textContent = `Could not refresh list: ${error.message}`;
+      }
+    }
+
+    async function refreshStorageInfo() {
+      if (window.location.protocol === "file:") {
+        storagePathInfoEl.textContent = "Speicherpfad: im file://-Modus nicht verfügbar. Über Webserver-URL (http/https) öffnen.";
+        return;
+      }
+      try {
+        const response = await fetch(DRAWING_API.storageInfo, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || `HTTP ${response.status}`);
+        }
+        const writableText = payload.writable ? "writable" : "not writable";
+        storagePathInfoEl.textContent = `Speicherpfad: ${payload.storage_path} (${writableText})`;
+      } catch (error) {
+        storagePathInfoEl.textContent = `Speicherpfad: nicht verfügbar (${error.message})`;
+      }
+    }
+
+    function updateSwatches() {
+      styleColorInputs.forEach((input) => {
+        const swatch = input.parentElement ? input.parentElement.querySelector(".swatch") : null;
+        if (swatch) {
+          swatch.style.background = input.value;
+        }
+      });
+    }
+
+    function hexToRgba(hexColor, alpha) {
+      const cleaned = hexColor.replace("#", "");
+      const r = parseInt(cleaned.slice(0, 2), 16);
+      const g = parseInt(cleaned.slice(2, 4), 16);
+      const b = parseInt(cleaned.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function refreshMapStyles() {
+      markerSource.changed();
+      if (labelPointsSource) {
+        labelPointsSource.changed();
+      }
+      if (exportTypeEl.value === "polygon") {
+        renderPolygonEditor();
+        return;
+      }
+      if (previewActive && selectedLonLat) {
+        drawPreview();
+      }
+    }
+
+    function renderCoord() {
+      if (!selectedLonLat) {
+        coordDisplayEl.textContent = "Kein Punkt ausgewählt.";
+        return;
+      }
+      const lon = selectedLonLat[0].toFixed(6);
+      const lat = selectedLonLat[1].toFixed(6);
+      coordDisplayEl.textContent = `${lat}, ${lon}`;
+    }
+
+    function lonLatToMapCoord(lon, lat) {
+      return ol.proj.fromLonLat([lon, lat], "EPSG:3857");
+    }
+
+    function degToRad(deg) {
+      return (deg * Math.PI) / 180;
+    }
+
+    function radToDeg(rad) {
+      return (rad * 180) / Math.PI;
+    }
+
+    function offsetLatLon(latDeg, lonDeg, northMeters, eastMeters) {
+      const dLat = northMeters / R_EARTH_M;
+      const dLon = eastMeters / (R_EARTH_M * Math.cos(degToRad(latDeg)));
+      return [
+        latDeg + radToDeg(dLat),
+        lonDeg + radToDeg(dLon)
+      ];
+    }
+
+    function createCircleCoordinates(lat, lon, radiusMeters, steps = 72) {
+      const coords = [];
+      for (let i = 0; i <= steps; i += 1) {
+        const angle = (i / steps) * 2 * Math.PI;
+        const north = Math.cos(angle) * radiusMeters;
+        const east = Math.sin(angle) * radiusMeters;
+        const point = offsetLatLon(lat, lon, north, east);
+        coords.push([point[1], point[0], 0]);
+      }
+      return coords;
+    }
+
+    function sanitizeNumber(value, fallback) {
+      const num = Number(value);
+      return Number.isFinite(num) && num > 0 ? num : fallback;
+    }
+
+    function normalizeFlightAngle(value) {
+      const raw = Number(value);
+      if (!Number.isFinite(raw)) {
+        return 0;
+      }
+      let angle = raw % 180;
+      if (angle < 0) {
+        angle += 180;
+      }
+      return angle;
+    }
+
+    function lonLatToLocalMeters(lon, lat, originLon, originLat, cosOriginLat) {
+      const x = degToRad(lon - originLon) * R_EARTH_M * cosOriginLat;
+      const y = degToRad(lat - originLat) * R_EARTH_M;
+      return [x, y];
+    }
+
+    function localMetersToLonLat(x, y, originLon, originLat, cosOriginLat) {
+      const lon = originLon + radToDeg(x / (R_EARTH_M * cosOriginLat));
+      const lat = originLat + radToDeg(y / R_EARTH_M);
+      return [lon, lat];
+    }
+
+    function rotateXY(point, angleRad) {
+      const c = Math.cos(angleRad);
+      const s = Math.sin(angleRad);
+      return [
+        point[0] * c - point[1] * s,
+        point[0] * s + point[1] * c
+      ];
+    }
+
+    function horizontalIntersectionsXAtY(vertices, yValue) {
+      const xs = [];
+      for (let i = 0; i < vertices.length; i += 1) {
+        const a = vertices[i];
+        const b = vertices[(i + 1) % vertices.length];
+        const y1 = a[1];
+        const y2 = b[1];
+        const x1 = a[0];
+        const x2 = b[0];
+        if (y1 === y2) continue;
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1, y2);
+        if (!(yValue >= minY && yValue < maxY)) continue;
+        const t = (yValue - y1) / (y2 - y1);
+        xs.push(x1 + t * (x2 - x1));
+      }
+      xs.sort((a, b) => a - b);
+      return xs;
+    }
+
+    function buildSweepPathLocalMeters(localVertices, nominalTrackMeters, borderMeters, angleDeg) {
+      const trackNominal = Math.max(5, Number(nominalTrackMeters) || 30);
+      const borderMaxMeters = Math.max(0, Number(borderMeters) || 0);
+      const parallelTolerancePct = Math.max(0, Math.min(50, Number(fpParallelToleranceEl && fpParallelToleranceEl.value) || 20));
+      const tol = parallelTolerancePct / 100;
+      const spacingMin = trackNominal * (1 - tol);
+      const spacingMax = trackNominal * (1 + tol);
+      const maxTrackByBorder = Math.max(3, borderMaxMeters * 2);
+      const effectiveCenter = Math.max(spacingMin, Math.min(trackNominal, maxTrackByBorder));
+      // Randfaktor*Spur ist eine Obergrenze; für Vollabdeckung darf der Rand kleiner werden.
+      const effectiveBorderMeters = Math.min(borderMaxMeters, Math.max(0, effectiveCenter * 0.5));
+
+      function planRows(minY, maxY, maxBorder) {
+        const minTrack = Math.max(1, spacingMin);
+        const maxTrack = Math.max(minTrack, spacingMax);
+        const lower = minY + maxBorder;
+        const upper = maxY - maxBorder;
+        if (!(upper > lower)) {
+          return {
+            rows: [(minY + maxY) / 2],
+            usedTrackDistance: 0
+          };
+        }
+        const span = upper - lower;
+        const minK = Math.max(1, Math.ceil(span / maxTrack));
+        const maxK = Math.max(minK, Math.floor(span / minTrack));
+        const targetK = Math.max(minK, Math.min(maxK, Math.round(span / Math.max(1, effectiveCenter))));
+        const step = span / targetK;
+        const rows = [];
+        for (let i = 0; i <= targetK; i += 1) {
+          rows.push(lower + (i * step));
+        }
+        return {
+          rows,
+          usedTrackDistance: step
+        };
+      }
+
+      const angleRad = degToRad(angleDeg);
+      const rotated = localVertices.map((point) => rotateXY(point, -angleRad));
+      const ys = rotated.map((point) => point[1]);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const rowPlan = planRows(minY, maxY, effectiveBorderMeters);
+      const pointsRotated = [];
+      let row = 0;
+      let totalLineLength = 0;
+      let segmentCount = 0;
+      let maxSegmentLength = 0;
+
+      for (let r = 0; r < rowPlan.rows.length; r += 1) {
+        const y = rowPlan.rows[r];
+        const xs = horizontalIntersectionsXAtY(rotated, y);
+        if (xs.length < 2) continue;
+        const rowSegs = [];
+        for (let i = 0; i + 1 < xs.length; i += 2) {
+          const xA = xs[i] + effectiveBorderMeters;
+          const xB = xs[i + 1] - effectiveBorderMeters;
+          if (xB <= xA) continue;
+          rowSegs.push([xA, xB]);
+          const segLen = xB - xA;
+          totalLineLength += segLen;
+          if (segLen > maxSegmentLength) {
+            maxSegmentLength = segLen;
+          }
+          segmentCount += 1;
+        }
+        if (!rowSegs.length) continue;
+        if (row % 2 === 0) {
+          rowSegs.forEach((seg) => {
+            pointsRotated.push([seg[0], y]);
+            pointsRotated.push([seg[1], y]);
+          });
+        } else {
+          for (let i = rowSegs.length - 1; i >= 0; i -= 1) {
+            pointsRotated.push([rowSegs[i][1], y]);
+            pointsRotated.push([rowSegs[i][0], y]);
+          }
+        }
+        row += 1;
+      }
+
+      const points = pointsRotated.map((point) => rotateXY(point, angleRad));
+      return {
+        points,
+        totalLineLength,
+        segmentCount,
+        avgSegmentLength: segmentCount > 0 ? totalLineLength / segmentCount : 0,
+        maxSegmentLength,
+        usedTrackDistance: rowPlan.usedTrackDistance,
+        usedBorderDistance: effectiveBorderMeters,
+        maxBorderDistance: borderMaxMeters
+      };
+    }
+
+    function buildRectangleSweepPathLocalMeters(localVertices, nominalTrackMeters, borderMeters, angleDeg) {
+      const trackNominal = Math.max(5, Number(nominalTrackMeters) || 30);
+      const borderMaxMeters = Math.max(0, Number(borderMeters) || 0);
+      const parallelTolerancePct = Math.max(0, Math.min(50, Number(fpParallelToleranceEl && fpParallelToleranceEl.value) || 20));
+      const tol = parallelTolerancePct / 100;
+      const spacingMin = trackNominal * (1 - tol);
+      const spacingMax = trackNominal * (1 + tol);
+      const maxTrackByBorder = Math.max(3, borderMaxMeters * 2);
+      const effectiveCenter = Math.max(spacingMin, Math.min(trackNominal, maxTrackByBorder));
+      const effectiveBorderMeters = Math.min(borderMaxMeters, Math.max(0, effectiveCenter * 0.5));
+
+      function planRows(minY, maxY, maxBorder) {
+        const minTrack = Math.max(1, spacingMin);
+        const maxTrack = Math.max(minTrack, spacingMax);
+        const lower = minY + maxBorder;
+        const upper = maxY - maxBorder;
+        if (!(upper > lower)) {
+          return {
+            rows: [(minY + maxY) / 2],
+            usedTrackDistance: 0
+          };
+        }
+        const span = upper - lower;
+        const minK = Math.max(1, Math.ceil(span / maxTrack));
+        const maxK = Math.max(minK, Math.floor(span / minTrack));
+        const targetK = Math.max(minK, Math.min(maxK, Math.round(span / Math.max(1, effectiveCenter))));
+        const step = span / targetK;
+        const rows = [];
+        for (let i = 0; i <= targetK; i += 1) {
+          rows.push(lower + (i * step));
+        }
+        return {
+          rows,
+          usedTrackDistance: step
+        };
+      }
+
+      const angleRad = degToRad(angleDeg);
+      const rotated = localVertices.map((point) => rotateXY(point, -angleRad));
+      const xs = rotated.map((point) => point[0]);
+      const ys = rotated.map((point) => point[1]);
+      const minX = Math.min(...xs) + effectiveBorderMeters;
+      const maxX = Math.max(...xs) - effectiveBorderMeters;
+      const minY = Math.min(...ys) + effectiveBorderMeters;
+      const maxY = Math.max(...ys) - effectiveBorderMeters;
+      if (!(maxX > minX) || !(maxY >= minY)) {
+        return {
+          points: [],
+          totalLineLength: 0,
+          segmentCount: 0,
+          avgSegmentLength: 0,
+          usedTrackDistance: 0
+        };
+      }
+      const rowPlan = planRows(Math.min(...ys), Math.max(...ys), effectiveBorderMeters);
+
+      const pointsRotated = [];
+      let row = 0;
+      let totalLineLength = 0;
+      let segmentCount = 0;
+      for (let i = 0; i < rowPlan.rows.length; i += 1) {
+        const y = Math.max(minY, Math.min(maxY, rowPlan.rows[i]));
+        if (row % 2 === 0) {
+          pointsRotated.push([minX, y], [maxX, y]);
+        } else {
+          pointsRotated.push([maxX, y], [minX, y]);
+        }
+        totalLineLength += (maxX - minX);
+        segmentCount += 1;
+        row += 1;
+      }
+
+      const points = pointsRotated.map((point) => rotateXY(point, angleRad));
+      return {
+        points,
+        totalLineLength,
+        segmentCount,
+        avgSegmentLength: segmentCount > 0 ? totalLineLength / segmentCount : 0,
+        usedTrackDistance: rowPlan.usedTrackDistance,
+        usedBorderDistance: effectiveBorderMeters,
+        maxBorderDistance: borderMaxMeters
+      };
+    }
+
+    function chooseLongestLineAngle(localVertices, trackDistance, borderMeters) {
+      let bestAngle = 0;
+      let bestScore = -Infinity;
+      for (let angle = 0; angle < 180; angle += 5) {
+        const candidate = buildSweepPathLocalMeters(localVertices, trackDistance, borderMeters, angle);
+        if (!candidate.points.length || candidate.segmentCount <= 0) {
+          continue;
+        }
+        // Standard/Auto: zuerst längste mögliche Einzelbahn im Polygon maximieren,
+        // danach mit Gesamtlänge stabilisieren.
+        const score = (candidate.maxSegmentLength * 1000000) + candidate.totalLineLength;
+        if (score > bestScore) {
+          bestScore = score;
+          bestAngle = angle;
+        }
+      }
+      return bestAngle;
+    }
+
+    function sanitizeOpacity(value, fallback) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return fallback;
+      }
+      return Math.max(0, Math.min(1, num));
+    }
+
+    function hexToKmlColor(hexColor, alpha = "80") {
+      const cleaned = hexColor.replace("#", "");
+      const r = cleaned.slice(0, 2);
+      const g = cleaned.slice(2, 4);
+      const b = cleaned.slice(4, 6);
+      return `${alpha}${b}${g}${r}`.toLowerCase();
+    }
+
+    function opacityToAlphaHex(opacity) {
+      const alpha = Math.round(sanitizeOpacity(opacity, 1) * 255);
+      return alpha.toString(16).padStart(2, "0");
+    }
+
+    function escapeXml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    }
+
+    function kmlPointKey(lon, lat) {
+      return `${Number(lon).toFixed(6)},${Number(lat).toFixed(6)}`;
+    }
+
+    function getElevationAt(elevationMap, lon, lat) {
+      return elevationMap.get(kmlPointKey(lon, lat));
+    }
+
+    async function fetchGeoAdminTerrainHeight(lon, lat) {
+      const reframeUrl = `https://geodesy.geo.admin.ch/reframe/wgs84tolv95?easting=${encodeURIComponent(Number(lon).toFixed(7))}&northing=${encodeURIComponent(Number(lat).toFixed(7))}&format=json`;
+      const reframeResponse = await fetch(reframeUrl, { cache: "no-store" });
+      if (!reframeResponse.ok) {
+        throw new Error(`REFRAME ${reframeResponse.status}`);
+      }
+      const reframePayload = await reframeResponse.json();
+      const easting = Number(reframePayload.easting);
+      const northing = Number(reframePayload.northing);
+      if (!Number.isFinite(easting) || !Number.isFinite(northing)) {
+        throw new Error("Invalid LV95 coordinates from REFRAME");
+      }
+      const heightUrl = `https://api3.geo.admin.ch/rest/services/height?easting=${encodeURIComponent(easting.toFixed(3))}&northing=${encodeURIComponent(northing.toFixed(3))}&sr=2056`;
+      const heightResponse = await fetch(heightUrl, { cache: "no-store" });
+      if (!heightResponse.ok) {
+        throw new Error(`Height ${heightResponse.status}`);
+      }
+      const heightPayload = await heightResponse.json();
+      const terrain = Number(heightPayload.height);
+      return Number.isFinite(terrain) ? terrain : 0;
+    }
+
+    async function fetchTerrainElevations(points) {
+      const unique = [];
+      const seen = new Set();
+      points.forEach((point) => {
+        if (!point || !Number.isFinite(point.lon) || !Number.isFinite(point.lat)) {
+          return;
+        }
+        const key = kmlPointKey(point.lon, point.lat);
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push({ lon: point.lon, lat: point.lat, key });
+        }
+      });
+      const result = new Map();
+      if (!unique.length) {
+        return result;
+      }
+
+      const chunkSize = 20;
+      for (let i = 0; i < unique.length; i += chunkSize) {
+        const chunk = unique.slice(i, i + chunkSize);
+        await Promise.all(chunk.map(async (point) => {
+          try {
+            const terrain = await fetchGeoAdminTerrainHeight(point.lon, point.lat);
+            result.set(point.key, terrain);
+          } catch (_) {
+            result.set(point.key, 0);
+          }
+        }));
+      }
+      return result;
+    }
+
+    async function refreshFlightPathTerrainLabels() {
+      if (!flightPathPoints.length) {
+        flightPointTerrainMap = new Map();
+        return;
+      }
+      const requestId = ++flightTerrainRequestId;
+      const points = flightPathPoints.map((point) => ({ lon: point[0], lat: point[1] }));
+      const terrainMap = await fetchTerrainElevations(points);
+      if (requestId !== flightTerrainRequestId) {
+        return;
+      }
+      flightPointTerrainMap = terrainMap;
+      renderFlightPath();
+    }
+
+    function collectPointsForElevation() {
+      const points = [];
+      labeledPoints.forEach((point) => points.push({ lon: point.lon, lat: point.lat }));
+      polygonVertices.forEach((point) => points.push({ lon: point[0], lat: point[1] }));
+      flightPathPoints.forEach((point) => points.push({ lon: point[0], lat: point[1] }));
+      if (selectedLonLat) {
+        points.push({ lon: selectedLonLat[0], lat: selectedLonLat[1] });
+      }
+      return points;
+    }
+
+    function elevationDataKml(terrainM, aglM) {
+      const terrain = Number.isFinite(terrainM) ? terrainM : 0;
+      const agl = Number.isFinite(aglM) ? aglM : 0;
+      const altitudeMsl = terrain + agl;
+      return `
+      <ExtendedData>
+        <Data name="terrain_m"><value>${terrain.toFixed(2)}</value></Data>
+        <Data name="agl_m"><value>${agl.toFixed(2)}</value></Data>
+        <Data name="height_over_ground_m"><value>${agl.toFixed(2)}</value></Data>
+        <Data name="altitude_msl_m"><value>${altitudeMsl.toFixed(2)}</value></Data>
+      </ExtendedData>`;
+    }
+
+    function kmlHeader(name) {
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${name}</name>`;
+    }
+
+    function kmlFooter() {
+      return `
+  </Document>
+</kml>`;
+    }
+
+    function polygonCoordinatesText(coords) {
+      return coords.map((c) => `${c[0]},${c[1]},${c[2]}`).join(" ");
+    }
+
+    function buildCirclesKml(lat, lon, elevationMap = new Map()) {
+      const r1 = sanitizeNumber(document.getElementById("radius1").value, 100);
+      const r2 = sanitizeNumber(document.getElementById("radius2").value, 200);
+      const r3 = sanitizeNumber(document.getElementById("radius3").value, 300);
+      const radii = [r1, r2, r3];
+      const styles = getEditorStyles();
+
+      let kml = kmlHeader("circles_export");
+
+      styles.circles.forEach((circleStyle, idx) => {
+        kml += `
+    <Style id="circle-style-${idx + 1}">
+      <LineStyle><color>${hexToKmlColor(circleStyle.lineColor, "ff")}</color><width>2</width></LineStyle>
+      <PolyStyle><color>${hexToKmlColor(circleStyle.fillColor, opacityToAlphaHex(circleStyle.fillOpacity))}</color></PolyStyle>
+      <LabelStyle><color>${hexToKmlColor(circleStyle.labelColor, "ff")}</color><scale>${(circleStyle.fontSize / 12).toFixed(2)}</scale></LabelStyle>
+    </Style>`;
+      });
+
+      radii.forEach((radius, idx) => {
+        const coords = createCircleCoordinates(lat, lon, radius, 96);
+        kml += `
+    <Placemark>
+      <name>Circle ${idx + 1} (${Math.round(radius)} m)</name>
+      <styleUrl>#circle-style-${idx + 1}</styleUrl>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${polygonCoordinatesText(coords)}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>`;
+      });
+
+      kml += `
+    <Style id="base-point-style">
+      <IconStyle><color>${hexToKmlColor(styles.startPointColor, "ff")}</color></IconStyle>
+    </Style>
+    <Placemark>
+      <name>Base Point</name>
+      <styleUrl>#base-point-style</styleUrl>
+      ${elevationDataKml(getElevationAt(elevationMap, lon, lat), 0)}
+      <Point><coordinates>${lon},${lat},${(getElevationAt(elevationMap, lon, lat) || 0).toFixed(2)}</coordinates></Point>
+    </Placemark>`;
+
+      kml += appendLabeledPointsKml(elevationMap);
+      kml += appendPolygonVertexPointsKml(elevationMap);
+      kml += appendFlightPathPointsKml(elevationMap);
+
+      return kml + kmlFooter();
+    }
+
+    function eastLabel(index) {
+      return String.fromCharCode(65 + index);
+    }
+
+    function buildGridKml(lat, lon, elevationMap = new Map()) {
+      const spacing = sanitizeNumber(document.getElementById("spacing").value, 300);
+      const northCount = Math.min(200, Math.max(1, Math.round(sanitizeNumber(document.getElementById("northCount").value, 8))));
+      const eastCount = Math.min(26, Math.max(1, Math.round(sanitizeNumber(document.getElementById("eastCount").value, 8))));
+      const styles = getEditorStyles();
+      const grid = styles.grid;
+      const labelScale = (grid.fontSize / 12).toFixed(2);
+
+      let kml = kmlHeader("grid_export");
+      kml += `
+    <Style id="grid-cell">
+      <LineStyle><color>${hexToKmlColor(grid.lineColor, "ff")}</color><width>${grid.lineWidth}</width></LineStyle>
+      <PolyStyle><color>${hexToKmlColor(grid.fillColor, opacityToAlphaHex(grid.fillOpacity))}</color></PolyStyle>
+    </Style>
+    <Style id="grid-label">
+      <LabelStyle><scale>${labelScale}</scale><color>${hexToKmlColor(grid.labelColor, "ff")}</color></LabelStyle>
+      <IconStyle><scale>0</scale></IconStyle>
+    </Style>`;
+
+      for (let n = 0; n < northCount; n += 1) {
+        for (let e = 0; e < eastCount; e += 1) {
+          const sw = offsetLatLon(lat, lon, n * spacing, e * spacing);
+          const se = offsetLatLon(lat, lon, n * spacing, (e + 1) * spacing);
+          const ne = offsetLatLon(lat, lon, (n + 1) * spacing, (e + 1) * spacing);
+          const nw = offsetLatLon(lat, lon, (n + 1) * spacing, e * spacing);
+          const center = offsetLatLon(lat, lon, (n + 0.5) * spacing, (e + 0.5) * spacing);
+          const cellName = `${eastLabel(e)}${n + 1}`;
+          const polygonCoords = [
+            [sw[1], sw[0], 0],
+            [se[1], se[0], 0],
+            [ne[1], ne[0], 0],
+            [nw[1], nw[0], 0],
+            [sw[1], sw[0], 0]
+          ];
+
+          kml += `
+    <Placemark>
+      <name>${cellName}</name>
+      <styleUrl>#grid-cell</styleUrl>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${polygonCoordinatesText(polygonCoords)}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>${cellName}</name>
+      <styleUrl>#grid-label</styleUrl>
+      <Point><coordinates>${center[1]},${center[0]},0</coordinates></Point>
+    </Placemark>`;
+        }
+      }
+
+      kml += `
+    <Style id="grid-origin-style">
+      <IconStyle><color>${hexToKmlColor(styles.startPointColor, "ff")}</color></IconStyle>
+    </Style>
+    <Placemark>
+      <name>Grid Origin (SW)</name>
+      <styleUrl>#grid-origin-style</styleUrl>
+      ${elevationDataKml(getElevationAt(elevationMap, lon, lat), 0)}
+      <Point><coordinates>${lon},${lat},${(getElevationAt(elevationMap, lon, lat) || 0).toFixed(2)}</coordinates></Point>
+    </Placemark>`;
+
+      kml += appendLabeledPointsKml(elevationMap);
+      kml += appendPolygonVertexPointsKml(elevationMap);
+      kml += appendFlightPathPointsKml(elevationMap);
+
+      return kml + kmlFooter();
+    }
+
+    function appendLabeledPointsKml(elevationMap = new Map()) {
+      const typeStyleMap = {
+        start: "label-point-style-start",
+        parking: "label-point-style-parking",
+        other: "label-point-style-other"
+      };
+      const typeDefs = [
+        ["start", labelPointDefaultsByType("start").color],
+        ["parking", labelPointDefaultsByType("parking").color],
+        ["other", labelPointDefaultsByType("other").color]
+      ];
+      let kml = "";
+      typeDefs.forEach(([type, color]) => {
+        kml += `
+    <Style id="${typeStyleMap[type]}">
+      <IconStyle><color>${hexToKmlColor(color, "ff")}</color></IconStyle>
+      <LabelStyle><color>${hexToKmlColor(color, "ff")}</color><scale>1.0</scale></LabelStyle>
+    </Style>`;
+      });
+      labeledPoints.forEach((point) => {
+        const defaults = labelPointDefaultsByType(point.type);
+        const label = point.text || defaults.defaultText;
+        const terrain = getElevationAt(elevationMap, point.lon, point.lat) || 0;
+        kml += `
+    <Placemark>
+      <name>${escapeXml(label)}</name>
+      <styleUrl>#${typeStyleMap[point.type] || typeStyleMap.start}</styleUrl>
+      ${elevationDataKml(terrain, 0)}
+      <Point><coordinates>${point.lon},${point.lat},${terrain.toFixed(2)}</coordinates></Point>
+    </Placemark>`;
+      });
+      return kml;
+    }
+
+    function appendPolygonVertexPointsKml(elevationMap = new Map()) {
+      if (!polygonVertices.length) {
+        return "";
+      }
+      let kml = `
+    <Style id="polygon-vertex-style">
+      <IconStyle><color>${hexToKmlColor("#ff8c00", "ff")}</color></IconStyle>
+      <LabelStyle><color>${hexToKmlColor("#ff8c00", "ff")}</color><scale>0.9</scale></LabelStyle>
+    </Style>`;
+      polygonVertices.forEach((point, index) => {
+        const lon = Number(point[0]);
+        const lat = Number(point[1]);
+        const terrain = getElevationAt(elevationMap, lon, lat) || 0;
+        kml += `
+    <Placemark>
+      <name>Polygon P${String(index + 1).padStart(2, "0")}</name>
+      <styleUrl>#polygon-vertex-style</styleUrl>
+      ${elevationDataKml(terrain, 0)}
+      <Point><coordinates>${lon},${lat},${terrain.toFixed(2)}</coordinates></Point>
+    </Placemark>`;
+      });
+      return kml;
+    }
+
+    function appendFlightPathPointsKml(elevationMap = new Map()) {
+      if (!flightPathPoints.length) {
+        return "";
+      }
+      const agl = sanitizeNumber(fpHeightEl.value, 60);
+      const baseTerrain = getElevationAt(elevationMap, flightPathPoints[0][0], flightPathPoints[0][1]) || 0;
+      let kml = `
+    <Style id="flight-path-point-style">
+      <IconStyle><color>${hexToKmlColor("#1e90ff", "ff")}</color></IconStyle>
+      <LabelStyle><color>${hexToKmlColor("#000000", "ff")}</color><scale>0.95</scale></LabelStyle>
+    </Style>`;
+      flightPathPoints.forEach((point, index) => {
+        const lon = Number(point[0]);
+        const lat = Number(point[1]);
+        const terrain = getElevationAt(elevationMap, lon, lat) || 0;
+        const altitude = terrain + agl;
+        const relativeToBase = altitude - baseTerrain;
+        const pointName = `${terrain.toFixed(1)}m P${String(index + 1).padStart(2, "0")} (${agl.toFixed(0)}m:${relativeToBase >= 0 ? "+" : ""}${relativeToBase.toFixed(1)}m)`;
+        kml += `
+    <Placemark>
+      <name>${escapeXml(pointName)}</name>
+      <styleUrl>#flight-path-point-style</styleUrl>
+      ${elevationDataKml(terrain, agl)}
+      <Point><coordinates>${lon},${lat},${altitude.toFixed(2)}</coordinates></Point>
+    </Placemark>`;
+      });
+      return kml;
+    }
+
+    function clearPreview() {
+      previewSource.clear();
+      previewActive = false;
+      if (map) {
+        map.getTargetElement().style.cursor = "";
+      }
+    }
+
+    function updatePolygonStatus(customMessage = "") {
+      if (customMessage) {
+        polygonStatusEl.textContent = customMessage;
+        return;
+      }
+      const drawState = isPolygonDrawing ? "drawing" : "idle";
+      polygonStatusEl.textContent = `Polygon has ${polygonVertices.length} points (${drawState}).`;
+    }
+
+    function updateLabeledPointStatus(message = "") {
+      if (message) {
+        labelPointStatusEl.textContent = message;
+        return;
+      }
+      if (isAddLabelPointMode) {
+        labelPointStatusEl.textContent = "Modus für beschriftete Punkte aktiviert: einmal auf die Karte klicken.";
+        return;
+      }
+      labelPointStatusEl.textContent = `${labeledPoints.length} labeled point(s).`;
+    }
+
+    function renderLabeledPoints() {
+      if (!labelPointsSource) {
+        return;
+      }
+      labelPointsSource.clear();
+      labeledPoints.forEach((point, index) => {
+        const feature = new ol.Feature({
+          geometry: new ol.geom.Point(lonLatToMapCoord(point.lon, point.lat))
+        });
+        feature.set("featureType", "labeled-point");
+        feature.set("labelPointType", point.type);
+        feature.set("labelPointText", point.text);
+        feature.set("labelPointIndex", index);
+        const defaults = labelPointDefaultsByType(point.type);
+        const isSel = index === selectedLabelPointIndex;
+        feature.setStyle(new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: isSel ? 12 : 9,
+            fill: new ol.style.Fill({ color: defaults.color }),
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: isSel ? 3 : 2 })
+          }),
+          text: new ol.style.Text({
+            text: point.text || "",
+            offsetX: 14,
+            textAlign: "left",
+            font: "12px Arial",
+            fill: new ol.style.Fill({ color: "#111111" }),
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+          })
+        }));
+        labelPointsSource.addFeature(feature);
+      });
+    }
+
+    function getPolygonFeatureAtPixel(pixel, type) {
+      return map.forEachFeatureAtPixel(pixel, (feature) => {
+        if (feature.get("editorType") === type) {
+          return feature;
+        }
+        return null;
+      }, {
+        hitTolerance: FEATURE_HIT_TOLERANCE_PX,
+        layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === polygonSource
+      });
+    }
+
+    function getLabeledPointFeatureAtPixel(pixel) {
+      return map.forEachFeatureAtPixel(pixel, (feature) => {
+        if (feature.get("featureType") === "labeled-point") {
+          return feature;
+        }
+        return null;
+      }, {
+        hitTolerance: FEATURE_HIT_TOLERANCE_PX,
+        layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === labelPointsSource
+      });
+    }
+
+    function getMarkerFeatureAtPixel(pixel) {
+      if (!markerSource) {
+        return null;
+      }
+      return map.forEachFeatureAtPixel(pixel, (feature) => feature, {
+        hitTolerance: FEATURE_HIT_TOLERANCE_PX,
+        layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === markerSource
+      });
+    }
+
+    function getPreviewFeatureAtPixel(pixel, type) {
+      return map.forEachFeatureAtPixel(pixel, (feature) => {
+        if (feature.get("previewType") === type) {
+          return feature;
+        }
+        return null;
+      }, {
+        hitTolerance: FEATURE_HIT_TOLERANCE_PX,
+        layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === previewSource
+      });
+    }
+
+    function getFlightFeatureAtPixel(pixel, type) {
+      return map.forEachFeatureAtPixel(pixel, (feature) => {
+        if (feature.get("flightType") === type) {
+          return feature;
+        }
+        return null;
+      }, {
+        hitTolerance: FEATURE_HIT_TOLERANCE_PX,
+        layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === flightPathSource
+      });
+    }
+
+    function setDragPanEnabled(enabled) {
+      map.getInteractions().forEach((interaction) => {
+        if (interaction instanceof ol.interaction.DragPan) {
+          interaction.setActive(enabled);
+        }
+      });
+    }
+
+    function horizontalIntersectionsLonAtLat(vertices, lat) {
+      const xs = [];
+      for (let i = 0; i < vertices.length; i += 1) {
+        const a = vertices[i];
+        const b = vertices[(i + 1) % vertices.length];
+        const y1 = a[1];
+        const y2 = b[1];
+        const x1 = a[0];
+        const x2 = b[0];
+        if (y1 === y2) continue;
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1, y2);
+        if (!(lat >= minY && lat < maxY)) continue;
+        const t = (lat - y1) / (y2 - y1);
+        xs.push(x1 + t * (x2 - x1));
+      }
+      xs.sort((a, b) => a - b);
+      return xs;
+    }
+
+    function pointsEqualLonLat(a, b, epsilon = 1e-9) {
+      return Math.abs(a[0] - b[0]) <= epsilon && Math.abs(a[1] - b[1]) <= epsilon;
+    }
+
+    function pointOnSegmentLonLat(point, a, b, epsilon = 1e-9) {
+      const px = point[0];
+      const py = point[1];
+      const ax = a[0];
+      const ay = a[1];
+      const bx = b[0];
+      const by = b[1];
+      const cross = (px - ax) * (by - ay) - (py - ay) * (bx - ax);
+      if (Math.abs(cross) > epsilon) {
+        return false;
+      }
+      const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+      if (dot < -epsilon) {
+        return false;
+      }
+      const lenSq = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+      return dot - lenSq <= epsilon;
+    }
+
+    function pointInPolygonLonLat(point, vertices) {
+      if (!Array.isArray(vertices) || vertices.length < 3) {
+        return false;
+      }
+      for (let i = 0; i < vertices.length; i += 1) {
+        const a = vertices[i];
+        const b = vertices[(i + 1) % vertices.length];
+        if (pointOnSegmentLonLat(point, a, b)) {
+          return true;
+        }
+      }
+      const x = point[0];
+      const y = point[1];
+      let inside = false;
+      for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i, i += 1) {
+        const xi = vertices[i][0];
+        const yi = vertices[i][1];
+        const xj = vertices[j][0];
+        const yj = vertices[j][1];
+        const intersects = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / ((yj - yi) || 1e-12) + xi);
+        if (intersects) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function segmentInsidePolygonLonLat(a, b, vertices) {
+      if (!pointInPolygonLonLat(a, vertices) || !pointInPolygonLonLat(b, vertices)) {
+        return false;
+      }
+      const samples = 24;
+      for (let i = 0; i <= samples; i += 1) {
+        const t = i / samples;
+        const p = [
+          a[0] + (b[0] - a[0]) * t,
+          a[1] + (b[1] - a[1]) * t
+        ];
+        if (!pointInPolygonLonLat(p, vertices)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function lonLatDistanceApproxMeters(a, b) {
+      const avgLat = (a[1] + b[1]) / 2;
+      const dx = degToRad(b[0] - a[0]) * R_EARTH_M * Math.cos(degToRad(avgLat));
+      const dy = degToRad(b[1] - a[1]) * R_EARTH_M;
+      return Math.hypot(dx, dy);
+    }
+
+    /**
+     * Glättet die Flugpolylinie nach der Server-/Feld-Berechnung: entfernt nahezu kollineare
+     * Zwischenpunkte und sehr kurze Ausleger, wenn die Sehne vollständig im Polygon bleibt
+     * (weniger Zick-Zack, kürzerer Pfad; Rand bleibt über segmentInsidePolygonLonLat geschützt).
+     */
+    window.__rkrkOptimizeFlightPathPoints = function (path, polygonVertices, opts) {
+      if (!Array.isArray(path) || path.length < 2) {
+        return Array.isArray(path) ? path.slice() : path;
+      }
+      if (!Array.isArray(polygonVertices) || polygonVertices.length < 3) {
+        return path.slice();
+      }
+      const o = opts && typeof opts === "object" ? opts : {};
+      const minSeg = Number.isFinite(Number(o.minSegmentMeters)) ? Number(o.minSegmentMeters) : 2.8;
+      const colTol = Number.isFinite(Number(o.collinearToleranceMeters)) ? Number(o.collinearToleranceMeters) : 1.8;
+
+      function copyPoint(p) {
+        if (!Array.isArray(p) || p.length < 2) {
+          return p;
+        }
+        const q = [Number(p[0]), Number(p[1])];
+        if (p.length > 2 && p[2] !== undefined && p[2] !== null) {
+          q[2] = p[2];
+        }
+        return q;
+      }
+
+      function dedupeConsecutive(pts) {
+        if (pts.length < 2) {
+          return pts.slice();
+        }
+        const out = [copyPoint(pts[0])];
+        for (let i = 1; i < pts.length; i += 1) {
+          if (!pointsEqualLonLat(pts[i], out[out.length - 1], 1e-8)) {
+            out.push(copyPoint(pts[i]));
+          }
+        }
+        return out;
+      }
+
+      function pointToSegDist3857M(p, a, c) {
+        const P = ol.proj.fromLonLat([p[0], p[1]], "EPSG:3857");
+        const A = ol.proj.fromLonLat([a[0], a[1]], "EPSG:3857");
+        const C = ol.proj.fromLonLat([c[0], c[1]], "EPSG:3857");
+        const vx = C[0] - A[0];
+        const vy = C[1] - A[1];
+        const len2 = vx * vx + vy * vy;
+        if (len2 < 1e-8) {
+          return Math.hypot(P[0] - A[0], P[1] - A[1]);
+        }
+        let t = ((P[0] - A[0]) * vx + (P[1] - A[1]) * vy) / len2;
+        t = Math.max(0, Math.min(1, t));
+        const qx = A[0] + t * vx;
+        const qy = A[1] + t * vy;
+        return Math.hypot(P[0] - qx, P[1] - qy);
+      }
+
+      let pts = dedupeConsecutive(path);
+      if (pts.length < 3) {
+        return pts;
+      }
+
+      let guard = 0;
+      const maxGuard = Math.max(pts.length * pts.length, 8000);
+      let changed = true;
+      while (changed && guard < maxGuard) {
+        guard += 1;
+        changed = false;
+        for (let i = 1; i < pts.length - 1; i += 1) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          const c = pts[i + 1];
+          const dMid = pointToSegDist3857M(b, a, c);
+          const dab = lonLatDistanceApproxMeters(a, b);
+          const dbc = lonLatDistanceApproxMeters(b, c);
+          const collinearEnough = dMid <= colTol;
+          const tinyCluster = dab < minSeg && dbc < minSeg && dMid <= colTol * 2.25;
+          if ((collinearEnough || tinyCluster) && segmentInsidePolygonLonLat(a, c, polygonVertices)) {
+            pts.splice(i, 1);
+            changed = true;
+            break;
+          }
+        }
+      }
+      return pts;
+    };
+
+    function getFlightPathLengthMeters(points) {
+      if (!Array.isArray(points) || points.length < 2) {
+        return 0;
+      }
+      let sum = 0;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        sum += lonLatDistanceApproxMeters(points[i], points[i + 1]);
+      }
+      return sum;
+    }
+
+    /**
+     * Kumulierter Geländeanstieg / -abstieg entlang der Wegpunkte (Terrain-Höhe, m),
+     * analog zu GPS-Aufstieg/Abstieg — nur zwischen gespeicherten Punkten, nicht entlang der Segmentkurve abgetastet.
+     */
+    function getFlightPathTerrainAscentDescentM(points, terrainMap) {
+      if (!Array.isArray(points) || points.length < 2 || !(terrainMap instanceof Map)) {
+        return { ascentM: 0, descentM: 0, complete: false };
+      }
+      const heights = [];
+      for (let i = 0; i < points.length; i += 1) {
+        const h = terrainMap.get(kmlPointKey(points[i][0], points[i][1]));
+        if (!Number.isFinite(h)) {
+          return { ascentM: 0, descentM: 0, complete: false };
+        }
+        heights.push(h);
+      }
+      let ascentM = 0;
+      let descentM = 0;
+      for (let i = 0; i < heights.length - 1; i += 1) {
+        const d = heights[i + 1] - heights[i];
+        if (d > 0) {
+          ascentM += d;
+        } else if (d < 0) {
+          descentM += -d;
+        }
+      }
+      return { ascentM, descentM, complete: true };
+    }
+
+    function updateFlightPathLengthDisplay() {
+      if (!flightPathLengthEl) {
+        return;
+      }
+      if (!Array.isArray(flightPathPoints) || flightPathPoints.length < 2) {
+        flightPathLengthEl.textContent = "Flugpfad-Länge: —";
+        return;
+      }
+      const m = getFlightPathLengthMeters(flightPathPoints);
+      const mStr = m.toFixed(0);
+      const kmStr = (m / 1000).toFixed(2);
+      const { ascentM, descentM, complete } = getFlightPathTerrainAscentDescentM(
+        flightPathPoints,
+        flightPointTerrainMap
+      );
+      let terrainLine = "";
+      if (complete) {
+        const upStr = ascentM.toFixed(0);
+        const downStr = descentM.toFixed(0);
+        terrainLine = `<div class="flight-path-terrain-delta">Höhendifferenz: <span title="Summe positiver Höhenunterschiede zwischen benachbarten Wegpunkten (Gelände)">Δ hoch <span class="flight-path-terrain-num">${upStr} m</span></span> · <span title="Summe negativer Höhenunterschiede (absolut) zwischen Wegpunkten">Δ runter <span class="flight-path-terrain-num">${downStr} m</span></span></div>`;
+      } else {
+        terrainLine = "<div class=\"flight-path-terrain-delta flight-path-terrain-muted\">Höhendifferenz: — <span class=\"flight-path-terrain-muted\">(Höhendaten fehlen oder werden geladen)</span></div>";
+      }
+      flightPathLengthEl.innerHTML = ""
+        + `<div>Flugpfad-Länge: <span class="flight-path-length-value">${mStr} m</span> <span class="flight-path-length-km">(${kmStr} km)</span></div>`
+        + terrainLine;
+    }
+
+    function buildInPolygonRoute(start, end, vertices) {
+      if (segmentInsidePolygonLonLat(start, end, vertices)) {
+        return [end];
+      }
+      const nodes = [start, end, ...vertices];
+      const n = nodes.length;
+      const edges = Array.from({ length: n }, () => []);
+      for (let i = 0; i < n; i += 1) {
+        for (let j = i + 1; j < n; j += 1) {
+          if (!segmentInsidePolygonLonLat(nodes[i], nodes[j], vertices)) {
+            continue;
+          }
+          const w = lonLatDistanceApproxMeters(nodes[i], nodes[j]);
+          edges[i].push([j, w]);
+          edges[j].push([i, w]);
+        }
+      }
+
+      const dist = Array(n).fill(Number.POSITIVE_INFINITY);
+      const prev = Array(n).fill(-1);
+      const used = Array(n).fill(false);
+      dist[0] = 0;
+      for (let step = 0; step < n; step += 1) {
+        let v = -1;
+        let best = Number.POSITIVE_INFINITY;
+        for (let i = 0; i < n; i += 1) {
+          if (!used[i] && dist[i] < best) {
+            best = dist[i];
+            v = i;
+          }
+        }
+        if (v < 0 || v === 1) {
+          break;
+        }
+        used[v] = true;
+        edges[v].forEach(([to, weight]) => {
+          const nd = dist[v] + weight;
+          if (nd < dist[to]) {
+            dist[to] = nd;
+            prev[to] = v;
+          }
+        });
+      }
+
+      if (!Number.isFinite(dist[1])) {
+        return null;
+      }
+      const path = [];
+      let cur = 1;
+      while (cur !== -1) {
+        path.push(nodes[cur]);
+        cur = prev[cur];
+      }
+      path.reverse();
+      return path.slice(1);
+    }
+
+    window.__rkrkApplyReverseFlightPathOptionIfChecked = function () {
+      if (!fpReverseFlightPathEl || !fpReverseFlightPathEl.checked) {
+        return;
+      }
+      if (!Array.isArray(flightPathPoints) || flightPathPoints.length < 2) {
+        return;
+      }
+      if (!Array.isArray(flightPolygonVertices) || flightPolygonVertices.length < 3) {
+        flightPathPoints = flightPathPoints.map((p) => [Number(p[0]), Number(p[1])]).reverse();
+        return;
+      }
+      if (!Array.isArray(flightStartLonLat) || flightStartLonLat.length !== 2
+        || !Number.isFinite(Number(flightStartLonLat[0])) || !Number.isFinite(Number(flightStartLonLat[1]))) {
+        flightPathPoints = flightPathPoints.map((p) => [Number(p[0]), Number(p[1])]).reverse();
+        return;
+      }
+      const start = [Number(flightStartLonLat[0]), Number(flightStartLonLat[1])];
+      const rev = flightPathPoints.map((p) => [Number(p[0]), Number(p[1])]).reverse();
+      const pathEnd = rev[0];
+      const merged = [[start[0], start[1]]];
+      const connector = buildInPolygonRoute(start, pathEnd, flightPolygonVertices);
+      if (connector && connector.length) {
+        connector.forEach((p) => {
+          if (!pointsEqualLonLat(merged[merged.length - 1], p)) {
+            merged.push([Number(p[0]), Number(p[1])]);
+          }
+        });
+      } else if (!pointsEqualLonLat(merged[merged.length - 1], pathEnd)) {
+        merged.push([Number(pathEnd[0]), Number(pathEnd[1])]);
+      }
+      rev.forEach((p) => {
+        if (!pointsEqualLonLat(merged[merged.length - 1], p)) {
+          merged.push([Number(p[0]), Number(p[1])]);
+        }
+      });
+      flightPathPoints = merged;
+    };
+
+    function getFlightPathMissingRequirements(calcVariant) {
+      const missing = [];
+      const hasStart = Array.isArray(flightStartLonLat) && flightStartLonLat.length === 2
+        && Number.isFinite(flightStartLonLat[0]) && Number.isFinite(flightStartLonLat[1]);
+      const hasPolygon = Array.isArray(flightPolygonVertices) && flightPolygonVertices.length >= 3;
+      const height = sanitizeNumber(fpHeightEl.value, NaN);
+      const trackDistance = sanitizeNumber(fpTrackDistanceEl.value, NaN);
+      const borderFactor = Number(fpBorderFactorEl.value);
+      const directionMode = fpDirectionModeEl.value === "manual" ? "manual" : "autoLongest";
+      const manualAngle = normalizeFlightAngle(fpDirectionAngleEl.value);
+
+      if (!hasStart) {
+        missing.push("Startpunkt auswaehlen");
+      }
+      if (!hasPolygon) {
+        missing.push("Polygon auswaehlen (mind. 3 Punkte)");
+      }
+      if (!Number.isFinite(height) || height <= 0) {
+        missing.push("Gueltige Flughoehe > 0");
+      }
+      if (!Number.isFinite(trackDistance) || trackDistance < 5) {
+        missing.push("Gueltiger Track-Abstand (>= 5m)");
+      }
+      if (!Number.isFinite(borderFactor) || borderFactor < 0 || borderFactor > 1) {
+        missing.push("Gueltiger Border-Factor (0..1)");
+      }
+      if (
+        calcVariant === "rectangleDirection"
+        && directionMode === "manual"
+        && (!Number.isFinite(manualAngle) || manualAngle < 0 || manualAngle > 179)
+      ) {
+        missing.push("Gueltiger manueller Winkel (0..179)");
+      }
+      if (calcVariant === "rectangleDirection" && directionMode !== "manual" && directionMode !== "autoLongest") {
+        missing.push("Gültiger Richtungsmodus (Auto/Manuell)");
+      }
+
+      return missing;
+    }
+
+    function getFlightVariantSummary(calcVariant) {
+      switch (calcVariant) {
+        case "standard":
+          return "Parallelstreifen im Polygon; Spurabstand, Parallelitätstoleranz (±%) und Randfaktor steuern den Zeilenabstand; Winkel immer so, dass die längstmöglichen Bahnen im Polygon entstehen; Kantenrouting zwischen Streifen.";
+        case "rectangleDirection":
+          return "A — Höhenliniengeführt: Parallelstreifen im Polygon wie Standard; im Auto-Modus wird der Winkel nach den längsten Bahnen gewählt; Startnah- und Rand-/Spurregeln wie Standard.";
+        case "rectangleHeightDirection2":
+          return "B — Sektor-Bahnen: Schwerpunkte aus Sektor-Höhenrichtungen (>20 % Fläche); volle Abdeckung; Rechtecke nur als Struktur.";
+        case "rectangleHeightDirection3":
+          return "C — Kontinuierlich: eine durchgehende Parallelbahnfolge mit Spurtoleranz und Randregel (Randfaktor).";
+        case "rectangleHeightDirection4":
+          return "D — Unterpolygone: Sektoren nach Höhenrichtung (max. Winkelabweichung ° einstellbar), Feld in gelbe Teilpolygone (Voronoi); parallele Rand-zu-Rand-Spuren je Teil.";
+        case "rectangleHeightDirection5":
+          return "F — Unterpolygone (erweiterte Sehnen): wie D; Bahnpolylinien werden bei der Erzeugung entlang der Sehne gegenüber dem Feinraster stärker in End-Lücken gestreckt (ohne neue Auffüll-Pfade).";
+        case "rectangleHeightDirectionAdaptive":
+          return "E — Adaptiv: Polygon wird klassifiziert — schmal (≤2× Spur): Streifen längs Längsachse; homogen: Standard-Sweep entlang Höhenrichtungslinien; mehrere Höhenrichtungen: wie Variante D (Unterpolygone).";
+        default:
+          return getFlightVariantSummary("standard");
+      }
+    }
+
+    function getFlightRequirementsDocumentation(calcVariant) {
+      const common = "Gemeinsam: Start + Polygon, Flughöhe > 0, Spurabstand ≥ 5 m; bei B–F zusätzlich ±20 % Spurtoleranz und Rand aus Randfaktor; Startpunkt darf ausnahmsweise ausserhalb liegen.";
+      return `${getFlightVariantSummary(calcVariant)} ${common}`;
+    }
+
+    function calculateFlightPath() {
+      // Flightpath strategy:
+      // - standard: sweep clipped by polygon shape
+      // - rectangleDirection: sweep based on bounding rectangle and selected direction input
+      const selectedCalcVariant = (
+        fpCalcVariantEl.value === "rectangleDirection"
+        || fpCalcVariantEl.value === "rectangleHeightDirection2"
+        || fpCalcVariantEl.value === "rectangleHeightDirection3"
+        || fpCalcVariantEl.value === "rectangleHeightDirection4"
+        || fpCalcVariantEl.value === "rectangleHeightDirection5"
+        || fpCalcVariantEl.value === "rectangleHeightDirectionAdaptive"
+      )
+        ? fpCalcVariantEl.value
+        : "standard";
+      const missing = getFlightPathMissingRequirements(selectedCalcVariant);
+      if (missing.length) {
+        flightPathStatusEl.textContent = `Berechnung nicht startbar: ${missing.join(", ")}`;
+        if (flightMissingInfoEl) {
+          flightMissingInfoEl.textContent = `${getFlightRequirementsDocumentation(selectedCalcVariant)} Fehlend: ${missing.join(", ")}`;
+        }
+        return;
+      }
+      const trackNominal = Math.max(5, sanitizeNumber(fpTrackDistanceEl.value, 30));
+      const borderFactor = Math.max(0, Math.min(1, Number(fpBorderFactorEl.value || 0.4)));
+      const borderMeters = trackNominal * borderFactor;
+      const mode = fpDirectionModeEl.value === "manual" ? "manual" : "autoLongest";
+      const useManualFlightAngle = mode === "manual" && selectedCalcVariant === "rectangleDirection";
+      const avgLon = flightPolygonVertices.reduce((sum, point) => sum + point[0], 0) / flightPolygonVertices.length;
+      const avgLat = flightPolygonVertices.reduce((sum, point) => sum + point[1], 0) / flightPolygonVertices.length;
+      const cosOriginLat = Math.max(0.1, Math.cos(degToRad(avgLat)));
+      const localVertices = flightPolygonVertices.map((point) => lonLatToLocalMeters(point[0], point[1], avgLon, avgLat, cosOriginLat));
+      const forcedDegRaw = typeof window.__rkrkForcedFlightDirectionDeg === "number" ? window.__rkrkForcedFlightDirectionDeg : null;
+      if (forcedDegRaw !== null) {
+        delete window.__rkrkForcedFlightDirectionDeg;
+      }
+      const directionAngle = forcedDegRaw !== null
+        ? normalizeFlightAngle(forcedDegRaw)
+        : (useManualFlightAngle
+          ? normalizeFlightAngle(fpDirectionAngleEl.value)
+          : chooseLongestLineAngle(localVertices, trackNominal, borderMeters));
+      fpDirectionWheelEl.value = String(Math.round(directionAngle));
+      fpDirectionAngleEl.value = String(Math.round(directionAngle));
+
+      const sweep = buildSweepPathLocalMeters(localVertices, trackNominal, borderMeters, directionAngle);
+      if (!sweep.points.length) {
+        flightPathStatusEl.textContent = "Es konnte kein gültiger Pfad innerhalb des Polygons erzeugt werden.";
+        return;
+      }
+
+      const points = sweep.points
+        .map((point) => localMetersToLonLat(point[0], point[1], avgLon, avgLat, cosOriginLat))
+        .filter((point) => pointInPolygonLonLat(point, flightPolygonVertices));
+      const start = [flightStartLonLat[0], flightStartLonLat[1]];
+      if (!points.length) {
+        flightPathStatusEl.textContent = "Für diese Einstellungen sind keine Flugpunkte innerhalb des Polygons verfügbar.";
+        return;
+      }
+      // Enforce in-polygon routing for every segment.
+      // Exception rule: if the Startpunkt is outside, only the first connector to
+      // the first in-polygon point may be outside.
+      const directPath = [start];
+      let routedSegments = 0;
+      points.forEach((point, index) => {
+        const last = directPath[directPath.length - 1];
+        if (pointsEqualLonLat(last, point)) {
+          return;
+        }
+        if (index === 0 && !pointInPolygonLonLat(start, flightPolygonVertices)) {
+          directPath.push(point);
+          return;
+        }
+        const route = buildInPolygonRoute(last, point, flightPolygonVertices);
+        if (!route || !route.length) {
+          return;
+        }
+        route.forEach((rPoint) => {
+          const currentLast = directPath[directPath.length - 1];
+          if (!pointsEqualLonLat(currentLast, rPoint)) {
+            directPath.push(rPoint);
+          }
+        });
+        routedSegments += 1;
+      });
+      if (directPath.length < 2) {
+        flightPathStatusEl.textContent = "Es konnte kein gültiger direkter Flugpfad erzeugt werden.";
+        return;
+      }
+      flightPathPoints = directPath;
+      window.__rkrkApplyReverseFlightPathOptionIfChecked();
+      selectedFlightFeature = null;
+      selectedFlightPointIndex = -1;
+      renderFlightPath();
+      updateFlightPathUiState();
+      const angleLabel = `${Math.round(directionAngle)}°`;
+      const modeLabel = forcedDegRaw !== null ? "adaptiv" : (useManualFlightAngle ? "manual" : "auto-longest");
+      const variantLabel = selectedCalcVariant === "rectangleHeightDirectionAdaptive"
+        ? "adaptiv"
+        : (selectedCalcVariant === "rectangleDirection" ? "option1=standard" : "standard");
+      const maxTrackByBorder = Math.max(3, borderMeters * 2);
+      const parallelTolerancePct = Math.max(0, Math.min(50, Number(fpParallelToleranceEl && fpParallelToleranceEl.value) || 20));
+      const tol = parallelTolerancePct / 100;
+      const spacingMin = trackNominal * (1 - tol);
+      const nominalCapped = Math.min(trackNominal, maxTrackByBorder);
+      const effectiveTrackUsed = Math.max(spacingMin, nominalCapped);
+      const usedTrack = Number.isFinite(sweep.usedTrackDistance) && sweep.usedTrackDistance > 0
+        ? sweep.usedTrackDistance
+        : effectiveTrackUsed;
+      const adjustedTrackLabel = effectiveTrackUsed < trackNominal
+        ? `, effektive Spur=${effectiveTrackUsed.toFixed(1)}m (Rand/Toleranz)`
+        : "";
+      const usedTrackLabel = `, Spur=${usedTrack.toFixed(1)}m (±${parallelTolerancePct.toFixed(0)}% Parallelität)`;
+      const pathModeLabel = ", sweep=polygon";
+      const outsideStartLabel = pointInPolygonLonLat(start, flightPolygonVertices)
+        ? ""
+        : ", start-outside=allowed-first-connector";
+      const routeLabel = `, routed-segments=${routedSegments}`;
+      const pathLenM = getFlightPathLengthMeters(flightPathPoints);
+      flightPathStatusEl.textContent = `Flugpfad berechnet: ${flightPathPoints.length} Punkte, Länge=${pathLenM.toFixed(0)} m (${(pathLenM / 1000).toFixed(2)} km), H=${sanitizeNumber(fpHeightEl.value, 60)}m, Winkel=${angleLabel} (${modeLabel}, ${variantLabel})${pathModeLabel}${routeLabel}${adjustedTrackLabel}${usedTrackLabel}${outsideStartLabel}.`;
+      if (typeof window.__rkrkAdaptiveFlightStatusPrefix === "string" && window.__rkrkAdaptiveFlightStatusPrefix) {
+        flightPathStatusEl.textContent = window.__rkrkAdaptiveFlightStatusPrefix + " " + flightPathStatusEl.textContent;
+        window.__rkrkAdaptiveFlightStatusPrefix = "";
+      }
+      if (flightMissingInfoEl) {
+        flightMissingInfoEl.textContent = `${getFlightRequirementsDocumentation(selectedCalcVariant)} Startbar: ja.`;
+      }
+    }
+
+    function renderFlightCoverage(lineCoords) {
+      if (!flightCoverageSource) {
+        return;
+      }
+      flightCoverageSource.clear();
+      if (!fpShowCoverageEl || !fpShowCoverageEl.checked) {
+        return;
+      }
+      if (!Array.isArray(lineCoords) || lineCoords.length < 2) {
+        return;
+      }
+      const fh = Math.max(1, sanitizeNumber(fpHeightEl.value, 60));
+      const opticAngle = Math.max(1, Math.min(179, sanitizeNumber(fpOpticAngleEl ? fpOpticAngleEl.value : 36, 36)));
+      const halfWidthMeters = fh * Math.tan(degToRad(opticAngle / 2));
+      if (!Number.isFinite(halfWidthMeters) || halfWidthMeters <= 0) {
+        return;
+      }
+      for (let i = 0; i < lineCoords.length - 1; i += 1) {
+        const a = lineCoords[i];
+        const b = lineCoords[i + 1];
+        const dx = Number(b[0]) - Number(a[0]);
+        const dy = Number(b[1]) - Number(a[1]);
+        const len = Math.hypot(dx, dy);
+        if (!Number.isFinite(len) || len < 1e-6) {
+          continue;
+        }
+        const nx = -dy / len;
+        const ny = dx / len;
+        const p1 = [Number(a[0]) + (nx * halfWidthMeters), Number(a[1]) + (ny * halfWidthMeters)];
+        const p2 = [Number(b[0]) + (nx * halfWidthMeters), Number(b[1]) + (ny * halfWidthMeters)];
+        const p3 = [Number(b[0]) - (nx * halfWidthMeters), Number(b[1]) - (ny * halfWidthMeters)];
+        const p4 = [Number(a[0]) - (nx * halfWidthMeters), Number(a[1]) - (ny * halfWidthMeters)];
+        const coverageFeature = new ol.Feature({
+          geometry: new ol.geom.Polygon([[p1, p2, p3, p4, p1]])
+        });
+        coverageFeature.setStyle(new ol.style.Style({
+          fill: new ol.style.Fill({ color: "rgba(139,0,0,0.28)" }),
+          stroke: new ol.style.Stroke({ color: "rgba(139,0,0,0.8)", width: 1.2 })
+        }));
+        flightCoverageSource.addFeature(coverageFeature);
+      }
+    }
+
+    function renderFlightCoverageContinuous(lineCoords) {
+      if (!flightCoverageSource || !fpShowCoverageContinuousEl || !fpShowCoverageContinuousEl.checked) {
+        return;
+      }
+      if (!Array.isArray(lineCoords) || lineCoords.length < 2) {
+        return;
+      }
+      const fh = Math.max(1, sanitizeNumber(fpHeightEl.value, 60));
+      const opticAngle = Math.max(1, Math.min(179, sanitizeNumber(fpOpticAngleEl ? fpOpticAngleEl.value : 36, 36)));
+      const halfWidthMeters = fh * Math.tan(degToRad(opticAngle / 2));
+      if (!Number.isFinite(halfWidthMeters) || halfWidthMeters <= 0) {
+        return;
+      }
+
+      const coverageStyle = new ol.style.Style({
+        fill: new ol.style.Fill({ color: "rgba(90,0,0,0.22)" }),
+        stroke: new ol.style.Stroke({ color: "rgba(90,0,0,0.75)", width: 1.6 })
+      });
+
+      // Runde kontinuierliche Abdeckung:
+      // Segmentband mit konstanter Breite + Kreis an jedem Eckpunkt.
+      for (let i = 0; i < lineCoords.length - 1; i += 1) {
+        const a = lineCoords[i];
+        const b = lineCoords[i + 1];
+        const dx = Number(b[0]) - Number(a[0]);
+        const dy = Number(b[1]) - Number(a[1]);
+        const len = Math.hypot(dx, dy);
+        if (!Number.isFinite(len) || len < 1e-6) {
+          continue;
+        }
+        const nx = -dy / len;
+        const ny = dx / len;
+        const p1 = [Number(a[0]) + (nx * halfWidthMeters), Number(a[1]) + (ny * halfWidthMeters)];
+        const p2 = [Number(b[0]) + (nx * halfWidthMeters), Number(b[1]) + (ny * halfWidthMeters)];
+        const p3 = [Number(b[0]) - (nx * halfWidthMeters), Number(b[1]) - (ny * halfWidthMeters)];
+        const p4 = [Number(a[0]) - (nx * halfWidthMeters), Number(a[1]) - (ny * halfWidthMeters)];
+        const segFeature = new ol.Feature({
+          geometry: new ol.geom.Polygon([[p1, p2, p3, p4, p1]])
+        });
+        segFeature.setStyle(coverageStyle);
+        flightCoverageSource.addFeature(segFeature);
+      }
+
+      for (let i = 0; i < lineCoords.length; i += 1) {
+        const center = [Number(lineCoords[i][0]), Number(lineCoords[i][1])];
+        const circleGeom = new ol.geom.Circle(center, halfWidthMeters);
+        const circlePoly = ol.geom.Polygon.fromCircle(circleGeom, 48);
+        const turnFeature = new ol.Feature({ geometry: circlePoly });
+        turnFeature.setStyle(coverageStyle);
+        flightCoverageSource.addFeature(turnFeature);
+      }
+    }
+
+    function refreshFlightPointCompactLabelsButton() {
+      if (!toggleFlightPointCompactLabelsBtnEl) {
+        return;
+      }
+      toggleFlightPointCompactLabelsBtnEl.textContent = flightPointLabelsCompact
+        ? "Flugpunkte: volle Beschriftung"
+        : "Flugpunkte: nur Nr. + HAS";
+    }
+
+    function renderFlightPath() {
+      if (!flightPathSource || !flightCoverageSource) {
+        return;
+      }
+      flightPathSource.clear();
+      flightCoverageSource.clear();
+      if (flightPathPoints.length < 2) {
+        flightTerrainRequestId += 1;
+        flightPointTerrainMap = new Map();
+        updateFlightPathLengthDisplay();
+        return;
+      }
+
+      const lineCoords = flightPathPoints.map((point) => lonLatToMapCoord(point[0], point[1]));
+      renderFlightCoverage(lineCoords);
+      renderFlightCoverageContinuous(lineCoords);
+      const lineFeature = new ol.Feature({ geometry: new ol.geom.LineString(lineCoords) });
+      lineFeature.set("flightType", "line");
+      lineFeature.setStyle(new ol.style.Style({
+        stroke: new ol.style.Stroke({ color: selectedFlightFeature === lineFeature ? "#4aa3ff" : "#1e90ff", width: 2.4 })
+      }));
+      flightPathSource.addFeature(lineFeature);
+
+      // Draw direction arrows segment-wise so direction is visible at a glance.
+      for (let i = 0; i < lineCoords.length - 1; i += 1) {
+        const a = lineCoords[i];
+        const b = lineCoords[i + 1];
+        const arrowCoord = [
+          a[0] + (b[0] - a[0]) * 0.66,
+          a[1] + (b[1] - a[1]) * 0.66
+        ];
+        const angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
+        const arrowFeature = new ol.Feature({ geometry: new ol.geom.Point(arrowCoord) });
+        arrowFeature.set("flightType", "arrow");
+        arrowFeature.setStyle(new ol.style.Style({
+          image: new ol.style.RegularShape({
+            points: 3,
+            radius: 7,
+            fill: new ol.style.Fill({ color: "#1e90ff" }),
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: 1 }),
+            rotation: angle + Math.PI / 2
+          })
+        }));
+        flightPathSource.addFeature(arrowFeature);
+      }
+
+      for (let i = 0; i < flightPathPoints.length; i += 1) {
+        const pointFeature = new ol.Feature({ geometry: new ol.geom.Point(lineCoords[i]) });
+        pointFeature.set("flightType", "point");
+        pointFeature.set("flightPointIndex", i);
+        const isSelected = i === selectedFlightPointIndex;
+        const fh = sanitizeNumber(fpHeightEl.value, 60);
+        const startTerrain = flightPointTerrainMap.get(kmlPointKey(flightPathPoints[0][0], flightPathPoints[0][1]));
+        const terrain = flightPointTerrainMap.get(kmlPointKey(flightPathPoints[i][0], flightPathPoints[i][1]));
+        const terrainLabel = Number.isFinite(terrain) ? `${terrain.toFixed(0)}m` : "--m";
+        const fhLabel = `${fh.toFixed(0)}m`;
+        const has = (Number.isFinite(terrain) && Number.isFinite(startTerrain))
+          ? ((terrain + fh) - (startTerrain + fh))
+          : null;
+        const hasLabel = Number.isFinite(has) ? `${has >= 0 ? "+" : ""}${has.toFixed(1)}m` : "--m";
+        const numStr = `P${String(i + 1).padStart(2, "0")}`;
+        const hasCompact = Number.isFinite(has) ? `${has >= 0 ? "+" : ""}${has.toFixed(1)} m` : "—";
+        const label = flightPointLabelsCompact
+          ? `${numStr}  HAS ${hasCompact}`
+          : `${numStr} (AGL:${terrainLabel} FH:${fhLabel} HAS:${hasLabel})`;
+        pointFeature.setStyle(new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: isSelected ? 11 : 8,
+            fill: new ol.style.Fill({ color: "#1e90ff" }),
+            stroke: new ol.style.Stroke({ color: isSelected ? "#00e5ff" : "#ffffff", width: isSelected ? 3 : 2 })
+          }),
+          text: new ol.style.Text({
+            text: label,
+            offsetY: -13,
+            font: flightPointLabelsCompact ? "13px Arial" : "14px Arial",
+            fill: new ol.style.Fill({ color: "#000000" }),
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+          })
+        }));
+        flightPathSource.addFeature(pointFeature);
+      }
+
+      const allTerrainsLoaded = flightPathPoints.every((point) => flightPointTerrainMap.has(kmlPointKey(point[0], point[1])));
+      if (!allTerrainsLoaded) {
+        void refreshFlightPathTerrainLabels();
+      }
+
+      for (let i = 0; i < flightPathPoints.length - 1; i += 1) {
+        const a = flightPathPoints[i];
+        const b = flightPathPoints[i + 1];
+        const midpointLonLat = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        const midpointFeature = new ol.Feature({ geometry: new ol.geom.Point(lonLatToMapCoord(midpointLonLat[0], midpointLonLat[1])) });
+        midpointFeature.set("flightType", "midpoint");
+        midpointFeature.set("insertIndex", i + 1);
+        midpointFeature.set("insertLonLat", midpointLonLat);
+        midpointFeature.setStyle(new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: 7,
+            fill: new ol.style.Fill({ color: "#ffffff" }),
+            stroke: new ol.style.Stroke({ color: "#1e90ff", width: 1.5 })
+          }),
+          text: new ol.style.Text({
+            text: "+",
+            font: "bold 12px Arial",
+            fill: new ol.style.Fill({ color: "#1e90ff" })
+          })
+        }));
+        flightPathSource.addFeature(midpointFeature);
+      }
+
+      updateFlightPathLengthDisplay();
+    }
+
+    function updateFlightPathUiState() {
+      const hasStart = Array.isArray(flightStartLonLat) && flightStartLonLat.length === 2;
+      const hasPolygon = Array.isArray(flightPolygonVertices) && flightPolygonVertices.length >= 3;
+      const calcVariant = (
+        fpCalcVariantEl.value === "rectangleDirection"
+        || fpCalcVariantEl.value === "rectangleHeightDirection2"
+        || fpCalcVariantEl.value === "rectangleHeightDirection3"
+        || fpCalcVariantEl.value === "rectangleHeightDirection4"
+        || fpCalcVariantEl.value === "rectangleHeightDirection5"
+        || fpCalcVariantEl.value === "rectangleHeightDirectionAdaptive"
+      )
+        ? fpCalcVariantEl.value
+        : "standard";
+      const missing = getFlightPathMissingRequirements(calcVariant);
+      const hasAutoStartCandidate = labeledPoints.some((point) =>
+        point && point.type === "start" && Number.isFinite(point.lon) && Number.isFinite(point.lat)
+      );
+      const hasAutoPolygonCandidate = Array.isArray(polygonVertices) && polygonVertices.length >= 3;
+      const effectiveMissing = missing.filter((item) => {
+        if (hasAutoStartCandidate && String(item).toLowerCase().includes("startpunkt")) {
+          return false;
+        }
+        if (hasAutoPolygonCandidate && String(item).toLowerCase().includes("polygon")) {
+          return false;
+        }
+        return true;
+      });
+      const canCalculate = effectiveMissing.length === 0;
+      const showLineExtension = calcVariant === "rectangleHeightDirection2" || calcVariant === "rectangleHeightDirection3" || calcVariant === "rectangleHeightDirection4" || calcVariant === "rectangleHeightDirection5" || calcVariant === "rectangleHeightDirectionAdaptive";
+      const showSectorDirectionMaxDiff = calcVariant === "rectangleHeightDirection4" || calcVariant === "rectangleHeightDirection5" || calcVariant === "rectangleHeightDirectionAdaptive";
+      if (fpParallelToleranceLabelEl) {
+        fpParallelToleranceLabelEl.style.display = "";
+      }
+      if (fpParallelToleranceEl) {
+        fpParallelToleranceEl.style.display = "";
+      }
+      if (fpParallelToleranceValueEl) {
+        fpParallelToleranceValueEl.style.display = "";
+      }
+      if (fpLineExtensionLabelEl) {
+        fpLineExtensionLabelEl.style.display = showLineExtension ? "" : "none";
+      }
+      if (fpLineExtensionEl) {
+        fpLineExtensionEl.style.display = showLineExtension ? "" : "none";
+      }
+      if (fpLineExtensionValueEl) {
+        fpLineExtensionValueEl.style.display = showLineExtension ? "" : "none";
+      }
+      if (fpSectorDirectionMaxDiffLabelEl) {
+        fpSectorDirectionMaxDiffLabelEl.style.display = showSectorDirectionMaxDiff ? "" : "none";
+      }
+      if (fpSectorDirectionMaxDiffEl) {
+        fpSectorDirectionMaxDiffEl.style.display = showSectorDirectionMaxDiff ? "" : "none";
+      }
+      if (fpSectorDirectionMaxDiffValueEl) {
+        fpSectorDirectionMaxDiffValueEl.style.display = showSectorDirectionMaxDiff ? "" : "none";
+      }
+      updateFlightLineExtensionUi();
+      updateFlightParallelToleranceUi();
+      updateFlightSectorDirectionMaxDiffUi();
+      calcFlightPathBtnEl.disabled = !canCalculate;
+      calcFlightPathBtnEl.classList.toggle("flight-ready", canCalculate);
+      calcFlightPathBtnEl.classList.toggle("flight-not-ready", !canCalculate);
+      selectStartForFlightBtnEl.classList.toggle("selected-flight-reference", hasStart);
+      selectPolygonForFlightBtnEl.classList.toggle("selected-flight-reference", hasPolygon);
+      deleteFlightSelectedBtnEl.disabled = !selectedFlightFeature;
+      if (flightSelectionStatusEl) {
+        const startText = hasStart ? "Start: ausgewählt" : "Start: nicht ausgewählt";
+        const polygonText = hasPolygon ? `Polygon: ausgewählt (${flightPolygonVertices.length} Punkte)` : "Polygon: nicht ausgewählt";
+        flightSelectionStatusEl.textContent = `${startText} | ${polygonText}`;
+      }
+      if (fpCalcVariantDocEl) {
+        fpCalcVariantDocEl.textContent = getFlightVariantSummary(calcVariant);
+      }
+      if (flightMissingInfoEl) {
+        const commonBar = "Gemeinsam: Start + Polygon, Flughöhe > 0, Spur ≥ 5 m, Randfaktor, Parallelitätstoleranz (alle Varianten). B–F: Kontrollpunkte; D/F/E: Sektoren/Unterpolygone bzw. Adaptiv; E: Polygonanalyse + Adaptiv.";
+        if (effectiveMissing.length) {
+          flightMissingInfoEl.textContent = `${commonBar} — Fehlend: ${effectiveMissing.join(", ")}`;
+        } else {
+          flightMissingInfoEl.textContent = `${commonBar} — Startbar.`;
+        }
+      }
+      if (markerSource) {
+        markerSource.changed();
+      }
+      updateFlightPathLengthDisplay();
+    }
+
+    function renderPolygonEditor() {
+      if (!polygonSource) {
+        return;
+      }
+      polygonSource.clear();
+      if (polygonVertices.length === 0) {
+        updatePolygonStatus();
+        return;
+      }
+
+      const mapCoords = polygonVertices.map((v) => lonLatToMapCoord(v[0], v[1]));
+      const style = getEditorStyles().polygon;
+      if (polygonVertices.length >= 3) {
+        const ring = [...mapCoords, mapCoords[0]];
+        const polygonFeature = new ol.Feature({ geometry: new ol.geom.Polygon([ring]) });
+        const glowActive = highlightPolygonForFlight && flightPolygonVertices.length >= 3;
+        polygonFeature.setStyle(new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: glowActive ? "#00e5ff" : style.lineColor,
+            width: glowActive ? Math.max(style.lineWidth + 1, 3) : style.lineWidth
+          }),
+          fill: new ol.style.Fill({ color: hexToRgba(style.fillColor, glowActive ? Math.max(style.fillOpacity, 0.3) : style.fillOpacity) })
+        }));
+        polygonSource.addFeature(polygonFeature);
+      } else if (polygonVertices.length >= 2) {
+        const lineFeature = new ol.Feature({ geometry: new ol.geom.LineString(mapCoords) });
+        lineFeature.setStyle(new ol.style.Style({
+          stroke: new ol.style.Stroke({ color: style.lineColor, width: style.lineWidth, lineDash: [5, 5] })
+        }));
+        polygonSource.addFeature(lineFeature);
+      }
+
+      for (let i = 0; i < mapCoords.length; i += 1) {
+        const vFeature = new ol.Feature({ geometry: new ol.geom.Point(mapCoords[i]) });
+        vFeature.set("editorType", "vertex");
+        vFeature.set("vertexIndex", i);
+        const isSelected = i === selectedVertexIndex;
+        vFeature.setStyle(new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: isSelected ? 11 : 8,
+            fill: new ol.style.Fill({ color: isSelected ? "#ff8c00" : "#ffffff" }),
+            stroke: new ol.style.Stroke({ color: style.lineColor, width: 2 })
+          }),
+          text: new ol.style.Text({
+            text: String(i + 1),
+            offsetY: -14,
+            font: `${style.fontSize}px Arial`,
+            fill: new ol.style.Fill({ color: style.labelColor }),
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+          })
+        }));
+        polygonSource.addFeature(vFeature);
+      }
+
+      if (polygonVertices.length >= 2) {
+        const lastSegmentCount = (!isPolygonDrawing && polygonVertices.length >= 3) ? polygonVertices.length : polygonVertices.length - 1;
+        for (let i = 0; i < lastSegmentCount; i += 1) {
+          const nextIndex = (i + 1) % polygonVertices.length;
+          if (nextIndex === 0 && isPolygonDrawing) {
+            continue;
+          }
+          const a = polygonVertices[i];
+          const b = polygonVertices[nextIndex];
+          const midpointLonLat = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+          const mFeature = new ol.Feature({ geometry: new ol.geom.Point(lonLatToMapCoord(midpointLonLat[0], midpointLonLat[1])) });
+          mFeature.set("editorType", "midpoint");
+          mFeature.set("insertIndex", i + 1);
+          mFeature.set("insertLonLat", midpointLonLat);
+          mFeature.setStyle(new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 8,
+              fill: new ol.style.Fill({ color: "#ffffff" }),
+              stroke: new ol.style.Stroke({ color: style.lineColor, width: 1.5 })
+            }),
+            text: new ol.style.Text({
+              text: "+",
+              font: `bold ${Math.max(12, style.fontSize)}px Arial`,
+              fill: new ol.style.Fill({ color: style.lineColor })
+            })
+          }));
+          polygonSource.addFeature(mFeature);
+        }
+      }
+
+      updatePolygonStatus();
+    }
+
+    function handlePolygonSingleClick(evt) {
+      const midpointFeature = getPolygonFeatureAtPixel(evt.pixel, "midpoint");
+      if (midpointFeature) {
+        const insertIndex = midpointFeature.get("insertIndex");
+        const insertLonLat = midpointFeature.get("insertLonLat");
+        polygonVertices.splice(insertIndex, 0, [insertLonLat[0], insertLonLat[1]]);
+        selectedVertexIndex = insertIndex;
+        selectedLabelPointIndex = -1;
+        renderPolygonEditor();
+        updatePolygonStatus(`Point added on edge at position ${insertIndex + 1}.`);
+        return;
+      }
+
+      const vertexPick = getPolygonFeatureAtPixel(evt.pixel, "vertex");
+      if (vertexPick) {
+        selectedVertexIndex = vertexPick.get("vertexIndex");
+        selectedLabelPointIndex = -1;
+        renderPolygonEditor();
+        updatePolygonStatus(`Eckpunkt ${selectedVertexIndex + 1} ausgewählt: bei gedrückter Maustaste ziehen zum Verschieben.`);
+        return;
+      }
+
+      if (!isPolygonDrawing) {
+        return;
+      }
+
+      const lonLat = ol.proj.transform(evt.coordinate, "EPSG:3857", "EPSG:4326");
+      polygonVertices.push([lonLat[0], lonLat[1]]);
+      highlightPolygonForFlight = false;
+      flightPolygonVertices = [];
+      selectedVertexIndex = polygonVertices.length - 1;
+      selectedLabelPointIndex = -1;
+      renderPolygonEditor();
+      updateFlightPathUiState();
+      updatePolygonStatus(`Point ${polygonVertices.length} added.`);
+    }
+
+    function drawCirclesPreview(lat, lon) {
+      const styles = getEditorStyles();
+      const radii = [
+        sanitizeNumber(document.getElementById("radius1").value, 100),
+        sanitizeNumber(document.getElementById("radius2").value, 200),
+        sanitizeNumber(document.getElementById("radius3").value, 300)
+      ];
+
+      radii.forEach((radius, idx) => {
+        const style = styles.circles[idx];
+        const ringLonLat = createCircleCoordinates(lat, lon, radius, 96).map((c) => lonLatToMapCoord(c[0], c[1]));
+        const polygon = new ol.geom.Polygon([ringLonLat]);
+        const feature = new ol.Feature({ geometry: polygon });
+        feature.setStyle(new ol.style.Style({
+          stroke: new ol.style.Stroke({ color: style.lineColor, width: 2 }),
+          fill: new ol.style.Fill({ color: hexToRgba(style.fillColor, style.fillOpacity) })
+        }));
+        previewSource.addFeature(feature);
+
+        const labelPoint = offsetLatLon(lat, lon, radius, 0);
+        const labelFeature = new ol.Feature({
+          geometry: new ol.geom.Point(lonLatToMapCoord(labelPoint[1], labelPoint[0]))
+        });
+        labelFeature.setStyle(new ol.style.Style({
+          text: new ol.style.Text({
+            text: `C${idx + 1}`,
+            font: `${style.fontSize}px Arial`,
+            fill: new ol.style.Fill({ color: style.labelColor }),
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+          })
+        }));
+        previewSource.addFeature(labelFeature);
+      });
+    }
+
+    function drawGridPreview(lat, lon) {
+      const style = getEditorStyles().grid;
+      const spacing = sanitizeNumber(document.getElementById("spacing").value, 300);
+      const northCount = Math.min(200, Math.max(1, Math.round(sanitizeNumber(document.getElementById("northCount").value, 8))));
+      const eastCount = Math.min(26, Math.max(1, Math.round(sanitizeNumber(document.getElementById("eastCount").value, 8))));
+
+      for (let n = 0; n < northCount; n += 1) {
+        for (let e = 0; e < eastCount; e += 1) {
+          const sw = offsetLatLon(lat, lon, n * spacing, e * spacing);
+          const se = offsetLatLon(lat, lon, n * spacing, (e + 1) * spacing);
+          const ne = offsetLatLon(lat, lon, (n + 1) * spacing, (e + 1) * spacing);
+          const nw = offsetLatLon(lat, lon, (n + 1) * spacing, e * spacing);
+          const center = offsetLatLon(lat, lon, (n + 0.5) * spacing, (e + 0.5) * spacing);
+          const cellName = `${eastLabel(e)}${n + 1}`;
+
+          const ring = [sw, se, ne, nw, sw].map((p) => lonLatToMapCoord(p[1], p[0]));
+          const polygonFeature = new ol.Feature({ geometry: new ol.geom.Polygon([ring]) });
+          polygonFeature.set("previewType", "grid-cell");
+          polygonFeature.setStyle(new ol.style.Style({
+            stroke: new ol.style.Stroke({ color: style.lineColor, width: style.lineWidth }),
+            fill: new ol.style.Fill({ color: hexToRgba(style.fillColor, style.fillOpacity) })
+          }));
+          previewSource.addFeature(polygonFeature);
+
+          const textFeature = new ol.Feature({
+            geometry: new ol.geom.Point(lonLatToMapCoord(center[1], center[0]))
+          });
+          textFeature.setStyle(new ol.style.Style({
+            text: new ol.style.Text({
+              text: cellName,
+              font: `${style.fontSize}px Arial`,
+              fill: new ol.style.Fill({ color: style.labelColor }),
+              stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+            })
+          }));
+          previewSource.addFeature(textFeature);
+        }
+      }
+    }
+
+    function drawPreview() {
+      if (!selectedLonLat) {
+        alert("Bitte zuerst auf die Karte klicken, um einen Basispunkt zu setzen.");
+        return;
+      }
+      previewSource.clear();
+      const lon = selectedLonLat[0];
+      const lat = selectedLonLat[1];
+      if (exportTypeEl.value === "circles") {
+        drawCirclesPreview(lat, lon);
+        map.getTargetElement().style.cursor = "";
+      } else {
+        drawGridPreview(lat, lon);
+        map.getTargetElement().style.cursor = "grab";
+      }
+      previewActive = true;
+    }
+
+    function focusToCurrentLocation() {
+      if (!navigator.geolocation) {
+        locateStatusEl.textContent = "Geolocation is not supported by this browser.";
+        return;
+      }
+
+      locateStatusEl.textContent = "Detecting current location...";
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lon = position.coords.longitude;
+          const lat = position.coords.latitude;
+          const center = lonLatToMapCoord(lon, lat);
+          const halfSize = 2500; // 5 km x 5 km window
+          const extent = [
+            center[0] - halfSize,
+            center[1] - halfSize,
+            center[0] + halfSize,
+            center[1] + halfSize
+          ];
+
+          const view = map.getView();
+          view.fit(extent, { size: map.getSize(), duration: 250, nearest: true });
+          setTimeout(() => {
+            view.animate(
+              { center, duration: 250 },
+              { zoom: Math.max(view.getZoom() || 0, AUTO_LOCATION_ZOOM), duration: 300 }
+            );
+          }, 280);
+
+          selectedLonLat = [lon, lat];
+          highlightStartForFlight = false;
+          flightStartLonLat = null;
+          setMarker(center);
+          renderCoord();
+          updateFlightPathUiState();
+          if (previewActive) {
+            drawPreview();
+          }
+          locateStatusEl.textContent = "Centered on your current location (5 km x 5 km).";
+        },
+        () => {
+          locateStatusEl.textContent = "Standort konnte nicht ermittelt werden. Bitte Standortzugriff im Browser erlauben.";
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000
+        }
+      );
+    }
+
+    function downloadKml(filename, kml) {
+      const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function saveDrawing() {
+      const rawName = drawingNameEl.value.trim();
+      if (!rawName) {
+        drawingStatusEl.textContent = "Bitte einen Zeichnungsnamen angeben.";
+        return;
+      }
+      drawingStatusEl.textContent = "Saving drawing...";
+      try {
+        const response = await fetch(DRAWING_API.save, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: rawName,
+            drawing: getDrawingState()
+          })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || `HTTP ${response.status}`);
+        }
+        drawingNameEl.value = payload.name || rawName;
+        const savedPathText = payload.storage_path ? ` Path: ${payload.storage_path}` : "";
+        drawingStatusEl.textContent = `Saved drawing "${drawingNameEl.value}".${savedPathText}`;
+        await refreshDrawingList();
+        await refreshStorageInfo();
+      } catch (error) {
+        drawingStatusEl.textContent = `Save failed: ${error.message}`;
+      }
+    }
+
+    async function loadSelectedDrawing() {
+      const name = drawingListEl.value;
+      if (!name) {
+        drawingStatusEl.textContent = "Bitte eine Zeichnung auswählen.";
+        return;
+      }
+      drawingStatusEl.textContent = `Loading "${name}"...`;
+      try {
+        const response = await fetch(`${DRAWING_API.load}?name=${encodeURIComponent(name)}`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || `HTTP ${response.status}`);
+        }
+        drawingNameEl.value = name;
+        applyDrawingState(payload.drawing);
+        drawingStatusEl.textContent = `Loaded drawing "${name}".`;
+      } catch (error) {
+        drawingStatusEl.textContent = `Load failed: ${error.message}`;
+      }
+    }
+
+    exportBtnEl.addEventListener("click", async () => {
+      const elevationMap = await fetchTerrainElevations(collectPointsForElevation());
+      if (exportTypeEl.value === "polygon") {
+        if (polygonVertices.length < 3) {
+          alert("Das Polygon benötigt mindestens 3 Punkte.");
+          return;
+        }
+        const style = getEditorStyles().polygon;
+        const ring = [...polygonVertices, polygonVertices[0]].map((p) => {
+          const terrain = getElevationAt(elevationMap, p[0], p[1]) || 0;
+          return [p[0], p[1], terrain];
+        });
+        const kml = `${kmlHeader("polygon_export")}
+    <Style id="poly-custom">
+      <LineStyle><color>${hexToKmlColor(style.lineColor, "ff")}</color><width>${style.lineWidth}</width></LineStyle>
+      <PolyStyle><color>${hexToKmlColor(style.fillColor, opacityToAlphaHex(style.fillOpacity))}</color></PolyStyle>
+      <LabelStyle><color>${hexToKmlColor(style.labelColor, "ff")}</color><scale>${(style.fontSize / 12).toFixed(2)}</scale></LabelStyle>
+    </Style>
+    <Placemark>
+      <name>Custom Polygon</name>
+      <styleUrl>#poly-custom</styleUrl>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${polygonCoordinatesText(ring)}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>${appendLabeledPointsKml(elevationMap)}${appendPolygonVertexPointsKml(elevationMap)}${appendFlightPathPointsKml(elevationMap)}${kmlFooter()}`;
+        downloadKml("polygon_export.kml", kml);
+        return;
+      }
+      if (!selectedLonLat) {
+        alert("Bitte zuerst auf die Karte klicken, um einen Basispunkt zu setzen.");
+        return;
+      }
+
+      const lon = selectedLonLat[0];
+      const lat = selectedLonLat[1];
+      if (exportTypeEl.value === "circles") {
+        const kml = buildCirclesKml(lat, lon, elevationMap);
+        downloadKml("circles_export.kml", kml);
+      } else {
+        const kml = buildGridKml(lat, lon, elevationMap);
+        downloadKml("grid_export.kml", kml);
+      }
+    });
+
+    drawBtnEl.addEventListener("click", () => {
+      drawPreview();
+    });
+
+    clearBtnEl.addEventListener("click", () => {
+      clearPreview();
+    });
+
+    locateBtnEl.addEventListener("click", () => {
+      focusToCurrentLocation();
+    });
+
+    startPolyBtnEl.addEventListener("click", () => {
+      isPolygonDrawing = true;
+      selectedVertexIndex = -1;
+      updatePolygonStatus("Polygonzeichnen gestartet. Klicke auf die Karte, um Punkte hinzuzufügen.");
+      renderPolygonEditor();
+    });
+
+    finishPolyBtnEl.addEventListener("click", () => {
+      isPolygonDrawing = false;
+      selectedVertexIndex = -1;
+      renderPolygonEditor();
+      if (polygonVertices.length < 3) {
+        updatePolygonStatus("Es werden mindestens 3 Punkte benötigt, um ein Polygon zu bilden.");
+      } else {
+        updatePolygonStatus(`Polygon finished with ${polygonVertices.length} points.`);
+      }
+    });
+
+    clearPolyBtnEl.addEventListener("click", () => {
+      polygonVertices = [];
+      isPolygonDrawing = false;
+      selectedVertexIndex = -1;
+      isDraggingVertex = false;
+      highlightPolygonForFlight = false;
+      flightPolygonVertices = [];
+      renderPolygonEditor();
+      updateFlightPathUiState();
+      updatePolygonStatus("Polygon gelöscht.");
+    });
+
+    addLabelPointBtnEl.addEventListener("click", () => {
+      isAddLabelPointMode = true;
+      updateLabeledPointStatus("Modus für beschriftete Punkte aktiviert: einmal auf die Karte klicken.");
+    });
+
+    clearLabelPointsBtnEl.addEventListener("click", () => {
+      labeledPoints = [];
+      isAddLabelPointMode = false;
+      renderLabeledPoints();
+      updateLabeledPointStatus("All labeled points cleared.");
+    });
+
+    saveDrawingBtnEl.addEventListener("click", async () => {
+      await saveDrawing();
+    });
+
+    refreshDrawingListBtnEl.addEventListener("click", async () => {
+      await refreshDrawingList();
+      drawingStatusEl.textContent = "Liste der gespeicherten Zeichnungen aktualisiert.";
+    });
+
+    loadDrawingBtnEl.addEventListener("click", async () => {
+      await loadSelectedDrawing();
+    });
+
+    updateSwatches();
+    updateStyleSectionVisibility();
+    updateFlightLineExtensionUi();
+    updateFlightParallelToleranceUi();
+    fpDirectionModeEl.dispatchEvent(new Event("change"));
+    initMap();
+    refreshDrawingList();
+    refreshStorageInfo();
+  </script>
+</body>
+</html>
