@@ -3416,6 +3416,55 @@ Function GetMeaningFilename($Filename) {
 
 }
 
+if (!function_exists('rkrk_parse_access_csv')) {
+	function rkrk_parse_access_csv($csv, $lower = true) {
+		$out = array();
+		foreach (explode(',', strval($csv)) as $p) {
+			$p = trim($p);
+			if ($lower) {
+				$p = strtolower($p);
+			}
+			if ($p !== '') {
+				$out[] = $p;
+			}
+		}
+		return $out;
+	}
+}
+
+if (!function_exists('rkrk_check_release_or_user_access')) {
+	function rkrk_check_release_or_user_access($releaseList, $webFreigabe, $allowedUsersCsv = "", $currentUser = "") {
+		global $SessNme_AccessLevel, $SessNme_RegisteredUser, $InputUserInfo;
+		$releaseItems = rkrk_parse_access_csv($releaseList, true);
+		$currentRelease = trim(strval($webFreigabe));
+		if ($currentRelease === '') {
+			$lvlKey = isset($SessNme_AccessLevel) ? $SessNme_AccessLevel : 'UserLevel';
+			$currentRelease = trim(strval($_SESSION[$lvlKey] ?? ''));
+		}
+		if ($currentRelease === '') {
+			$currentRelease = trim(strval($InputUserInfo['Login']['Level'] ?? ''));
+		}
+		foreach (rkrk_parse_access_csv($currentRelease, true) as $lv) {
+			if (in_array($lv, $releaseItems, true)) {
+				return true;
+			}
+		}
+		$userItems = rkrk_parse_access_csv($allowedUsersCsv, false);
+		if ($userItems === array()) {
+			return false;
+		}
+		$userToCheck = trim(strval($currentUser));
+		if ($userToCheck === '') {
+			$userKey = isset($SessNme_RegisteredUser) ? $SessNme_RegisteredUser : 'Benutzername';
+			$userToCheck = trim(strval($_SESSION[$userKey] ?? $_SESSION['Benutzername'] ?? ''));
+		}
+		if ($userToCheck === '') {
+			return false;
+		}
+		return in_array($userToCheck, $userItems, true);
+	}
+}
+
 Function CheckAccess ($AccessList) {
 	global $WebFreigabe;
 	if (function_exists("rkrk_check_release_or_user_access")) {

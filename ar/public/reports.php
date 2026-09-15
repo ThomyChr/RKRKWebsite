@@ -48,7 +48,6 @@ $formatCurrency = static fn(float $amount): string => 'CHF ' . number_format($am
         <a class="active" href="reports.php">Reports</a>
         <a href="jahresabschluss.php">Jahresabschluss</a>
         <a href="cashflow.php">Cashflow</a>
-        <a href="manage.php">Legacy Eingaben</a>
     </nav>
 
     <header class="header">

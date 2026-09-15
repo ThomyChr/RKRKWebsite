@@ -1238,34 +1238,16 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 Function CreateMenuTree ($OwnSite) {
 	global $MainMenu, $WebFreigabe;
 	$MenuTree = Array();
-	$CurrentWebsite = basename($_SERVER['REQUEST_URI']);;
-	//$CurrentURL = $_SERVER['REDIRECT_URL'];
-	//$CurrentLink = $_SERVER['PHP_SELF'];
-	//echo "<br><br>CL: " . $CurrentLink  . "UR: " . $CurrentURL . "CW: ". $CurrentWebsite . "<br>";
-	//echo "<br><br>" . "CW: ". $CurrentWebsite . "<br>";
 	foreach ($MainMenu as $key => $MenuEntry) {
-		if (MenuEntryAccessGranted($key)) {
-			if (
-					($MainMenu[$key]["main_menu"]!="") and
-					($MainMenu[$key]["site"]!=$CurrentWebsite)
-					
-				)
-				{
-				$MenuTree[$MainMenu[$key]["main_menu"]][] = $key;
-			}	
+		if (!MenuEntryAccessGranted($key)) {
+			continue;
 		}
+		$group = trim(strval($MainMenu[$key]["main_menu"] ?? ""));
+		if ($group === "") {
+			continue;
+		}
+		$MenuTree[$group][] = $key;
 	}
-	//$MenuTree = Array( 	"Home",
-	//					"NeuesFeld" => Array("NeuesFeld"),
-	//					"Feldlisten" => Array("FeldListeIntern", "FeldListeExtern", "FeldListe"),
-	//					"Karten" => Array("FeldKarteIntern", "FeldKarteExtern", "FeldKarte"),
-	//					"Edit" => Array("EditFeld", "EditFeldliste", "Planning", "Fluege","Adressen", "AdresseBauern"),
-	//					"Mehr" => Array("Changes", "GeoDataHealth"),
-	//					"Info"  => Array("Info"),
-	//				);	
-
-	//pre_r($MenuTree);
-	//echo "OwnSite: " . $_SERVER["PHP_SELF"] . "<br>";
 	return $MenuTree;
 }	
 
@@ -1366,7 +1348,7 @@ function MenuEntryAllowedUsersCsv($SiteKey) {
 }
 
 function MenuEntryAccessGranted($SiteKey) {
-	global $MainMenu, $WebFreigabe;
+	global $MainMenu, $WebFreigabe, $SessNme_AccessLevel, $InputUserInfo;
 	if (!isset($MainMenu[$SiteKey])) {
 		return false;
 	}
@@ -1375,11 +1357,28 @@ function MenuEntryAccessGranted($SiteKey) {
 	}
 	$releaseList = strval($MainMenu[$SiteKey]["release"] ?? "");
 	$allowedUsers = MenuEntryAllowedUsersCsv($SiteKey);
-	if (function_exists("rkrk_check_release_or_user_access")) {
-		return rkrk_check_release_or_user_access($releaseList, $WebFreigabe, $allowedUsers);
+	$level = trim(strval($WebFreigabe ?? ''));
+	if ($level === '') {
+		$level = trim(strval($_SESSION[$SessNme_AccessLevel ?? 'UserLevel'] ?? ''));
 	}
-	if ((strpos(" " . $releaseList, $WebFreigabe) != false)) {
-		return true;
+	if ($level === '') {
+		$level = trim(strval($InputUserInfo['Login']['Level'] ?? ''));
+	}
+	if (function_exists("rkrk_check_release_or_user_access")) {
+		return rkrk_check_release_or_user_access($releaseList, $level, $allowedUsers);
+	}
+	$releaseItems = array();
+	foreach (explode(',', $releaseList) as $item) {
+		$item = strtolower(trim($item));
+		if ($item !== '') {
+			$releaseItems[] = $item;
+		}
+	}
+	foreach (explode(',', $level) as $lv) {
+		$lv = strtolower(trim($lv));
+		if ($lv !== '' && in_array($lv, $releaseItems, true)) {
+			return true;
+		}
 	}
 	if ($allowedUsers === "") {
 		return false;

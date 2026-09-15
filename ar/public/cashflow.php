@@ -107,7 +107,6 @@ $expenseGrandTotal = array_sum($expenseTotalByMonth);
         <a href="reports.php">Reports</a>
         <a href="jahresabschluss.php">Jahresabschluss</a>
         <a class="active" href="cashflow.php">Cashflow</a>
-        <a href="manage.php">Legacy Eingaben</a>
     </nav>
 
     <header class="header">

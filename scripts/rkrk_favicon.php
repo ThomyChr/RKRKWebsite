@@ -308,9 +308,43 @@ if (!function_exists('rkrk_favicon_assets')) {
 			'ico' => rkrk_favicon_join($dir, 'rkrk.ico'),
 			'png' => rkrk_favicon_join($dir, 'favicon-32x32.png'),
 			'png16' => rkrk_favicon_join($dir, 'favicon-16x16.png'),
+			'png48' => rkrk_favicon_join($dir, 'android-icon-48x48.png'),
+			'png96' => rkrk_favicon_join($dir, 'android-icon-96x96.png'),
+			'png192' => rkrk_favicon_join($dir, 'android-icon-192x192.png'),
 			'apple' => rkrk_favicon_join($dir, 'apple-icon-180x180.png'),
 			'tile' => rkrk_favicon_join($dir, 'ms-icon-144x144.png'),
 		);
+	}
+}
+
+if (!function_exists('rkrk_favicon_site_web_prefix')) {
+	function rkrk_favicon_site_web_prefix(): string {
+		$slot = rkrk_favicon_current_slot();
+		$map = array(
+			'test27' => 'test27',
+			'test' => 'test',
+			'v2' => 'v2',
+			'pub' => 'pub',
+			'extern' => 'ex',
+			'partner' => 'v5',
+		);
+		$site = $map[$slot] ?? '';
+		if ($site === '') {
+			return '';
+		}
+		$base = rkrk_favicon_rkropen_web_base();
+		$root = preg_replace('#favicon/$#', '', $base);
+		return $root . $site . '/';
+	}
+}
+
+if (!function_exists('rkrk_favicon_manifest_href')) {
+	function rkrk_favicon_manifest_href(): string {
+		$prefix = rkrk_favicon_site_web_prefix();
+		if ($prefix === '') {
+			return '';
+		}
+		return $prefix . 'scripts/rkrk_favicon_manifest.php';
 	}
 }
 
@@ -321,28 +355,45 @@ if (!function_exists('rkrk_favicon_link_tags_html')) {
 			return htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
 		};
 		$out = '';
+		$v = '?v=20260915a';
 		if ($a['kind'] === 'rkrs') {
 			$out .= "  <link rel='icon' type='image/x-icon' href='" . $h($a['ico']) . "'>\n";
 			$out .= "  <link rel='shortcut icon' type='image/x-icon' href='" . $h($a['ico']) . "'>\n";
 			if (!empty($a['png'])) {
+				$out .= "  <link rel='icon' type='image/png' sizes='192x192' href='" . $h($a['png']) . "'>\n";
 				$out .= "  <link rel='icon' type='image/png' sizes='32x32' href='" . $h($a['png']) . "'>\n";
 			}
 			if (!empty($a['apple'])) {
 				$out .= "  <link rel='apple-touch-icon' href='" . $h($a['apple']) . "'>\n";
 			}
 		} else {
-			$out .= "  <link rel='icon' type='image/png' sizes='32x32' href='" . $h($a['png']) . "?v=2'>\n";
-			if (!empty($a['png16'])) {
-				$out .= "  <link rel='icon' type='image/png' sizes='16x16' href='" . $h((string)$a['png16']) . "?v=2'>\n";
+			if (!empty($a['png192'])) {
+				$out .= "  <link rel='icon' type='image/png' sizes='192x192' href='" . $h((string)$a['png192']) . $v . "'>\n";
+				$out .= "  <link rel='apple-touch-icon' sizes='192x192' href='" . $h((string)$a['png192']) . $v . "'>\n";
 			}
-			$out .= "  <link rel='icon' type='image/x-icon' href='" . $h($a['ico']) . "?v=2'>\n";
-			$out .= "  <link rel='shortcut icon' href='" . $h($a['ico']) . "?v=2'>\n";
-			$out .= "  <link rel='apple-touch-icon' sizes='180x180' href='" . $h($a['apple']) . "?v=2'>\n";
+			if (!empty($a['png96'])) {
+				$out .= "  <link rel='icon' type='image/png' sizes='96x96' href='" . $h((string)$a['png96']) . $v . "'>\n";
+			}
+			if (!empty($a['png48'])) {
+				$out .= "  <link rel='icon' type='image/png' sizes='48x48' href='" . $h((string)$a['png48']) . $v . "'>\n";
+			}
+			$out .= "  <link rel='icon' type='image/png' sizes='32x32' href='" . $h($a['png']) . $v . "'>\n";
+			if (!empty($a['png16'])) {
+				$out .= "  <link rel='icon' type='image/png' sizes='16x16' href='" . $h((string)$a['png16']) . $v . "'>\n";
+			}
+			$out .= "  <link rel='icon' type='image/x-icon' href='" . $h($a['ico']) . $v . "'>\n";
+			$out .= "  <link rel='shortcut icon' href='" . $h($a['ico']) . $v . "'>\n";
+			$out .= "  <link rel='apple-touch-icon' sizes='180x180' href='" . $h($a['apple']) . $v . "'>\n";
+			$man = rkrk_favicon_manifest_href();
+			if ($man !== '') {
+				$out .= "  <link rel='manifest' href='" . $h($man) . "'>\n";
+			}
 			if (!empty($a['tile'])) {
-				$out .= "  <meta name='msapplication-TileImage' content='" . $h((string)$a['tile']) . "?v=2'>\n";
+				$out .= "  <meta name='msapplication-TileImage' content='" . $h((string)$a['tile']) . $v . "'>\n";
 			}
 		}
 		$out .= "  <meta name='theme-color' content='#ffffff'>\n";
+		$out .= "  <meta name='mobile-web-app-capable' content='yes'>\n";
 		return $out;
 	}
 }
@@ -381,6 +432,9 @@ if (!function_exists('rkrk_favicon_js_bootstrap')) {
 if (!function_exists('rkrk_favicon_primary_href')) {
 	function rkrk_favicon_primary_href(): string {
 		$a = rkrk_favicon_assets();
+		if (!empty($a['png192'])) {
+			return (string)$a['png192'];
+		}
 		return ($a['kind'] === 'rkrs') ? $a['ico'] : $a['png'];
 	}
 }

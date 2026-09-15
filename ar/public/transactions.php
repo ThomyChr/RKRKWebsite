@@ -239,7 +239,6 @@ $sumOut = array_reduce($filtered, static fn(float $c, array $r): float => $c + (
         <a href="reports.php">Reports</a>
         <a href="jahresabschluss.php">Jahresabschluss</a>
         <a href="cashflow.php">Cashflow</a>
-        <a href="manage.php">Legacy Eingaben</a>
     </nav>
 
     <header class="header">

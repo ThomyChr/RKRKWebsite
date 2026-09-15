@@ -25,7 +25,7 @@ function account_normalize_for_match(string $account): string
         return '-';
     }
 
-    return strtoupper(preg_replace('/\s+/u', '', $t));
+    return strtoupper((string)preg_replace('/\s+/u', '', $t));
 }
 
 /**

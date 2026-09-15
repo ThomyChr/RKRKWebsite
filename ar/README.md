@@ -38,7 +38,7 @@ python excel_importer.py \
 - Import-Läufe landen in `data/import_runs.json`.
 - Erzeugte Dateien:
   - `data/cost_categories.json`
-  - `data/transactions.json`
+  - `data/transactions/YYYY.json` (plus `_index.json`, `_totals.json`, `_idmap.json`)
   - `data/budget_plan_lines.json`
   - `data/inventory_items.json`
   - `data/import_runs.json`

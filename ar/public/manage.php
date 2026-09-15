@@ -104,48 +104,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect_with(['ok' => $updated ? 'Budgetzeile aktualisiert.' : 'Budgetzeile hinzugefügt.']);
         }
 
-        if ($action === 'add_transaction') {
-            $date = trim((string)($_POST['booking_date'] ?? ''));
-            $counterparty = trim((string)($_POST['counterparty'] ?? ''));
-            $categoryCode = trim((string)($_POST['category_code'] ?? ''));
-            $type = trim((string)($_POST['type'] ?? 'in'));
-            $amount = (float)($_POST['amount'] ?? 0);
-            $account = trim((string)($_POST['account'] ?? ''));
-            $note = trim((string)($_POST['note'] ?? ''));
-            $statusRaw = trim((string)($_POST['booking_status'] ?? 'x'));
-            $bookingStatus = in_array($statusRaw, ['n', 'v', 'x'], true) ? $statusRaw : 'x';
-
-            if ($date === '' || $counterparty === '' || $categoryCode === '' || $amount <= 0) {
-                redirect_with(['error' => 'Datum, Empfänger, Kostenart und Betrag > 0 sind Pflichtfelder.']);
-            }
-
-            $amountIn = $type === 'out' ? 0.0 : $amount;
-            $amountOut = $type === 'out' ? $amount : 0.0;
-
-            $rows = $store->readList('transactions.json');
-            $rows[] = [
-                'id' => bin2hex(random_bytes(16)),
-                'external_id' => 'WEB' . date('YmdHis') . random_int(100, 999),
-                'booking_date' => $date,
-                'counterparty' => $counterparty,
-                'cost_category_code' => $categoryCode,
-                'cost_category_name_raw' => null,
-                'account' => $account === '' ? null : $account,
-                'amount_in' => $amountIn,
-                'amount_out' => $amountOut,
-                'currency' => 'CHF',
-                'note' => $note === '' ? null : $note,
-                'running_balance_imported' => null,
-                'source_sheet' => 'Web',
-                'source_row_no' => null,
-                'booking_status' => $bookingStatus,
-                'created_at' => now_iso(),
-                'updated_at' => now_iso(),
-            ];
-            $store->writeList('transactions.json', $rows);
-            redirect_with(['ok' => 'Buchung hinzugefügt.']);
-        }
-
         if ($action === 'add_inventory') {
             $inventoryNo = trim((string)($_POST['inventory_no'] ?? ''));
             $itemName = trim((string)($_POST['item_name'] ?? ''));
@@ -348,48 +306,8 @@ rkrk_ar_emit_chrome('styles.css');
         <div class="manage-content">
     <section class="card manage-section" id="sec-transaction">
         <h2>Neue Buchung erfassen</h2>
-        <form method="post" class="form-grid">
-            <input type="hidden" name="action" value="add_transaction">
-            <label>Datum
-                <input type="date" name="booking_date" required>
-            </label>
-            <label>Empfänger
-                <input type="text" name="counterparty" required>
-            </label>
-            <label>Kostenart
-                <select name="category_code" required>
-                    <option value="">Bitte wählen</option>
-                    <?php foreach ($categoryRows as $cat): ?>
-                        <option value="<?= h($cat['code']) ?>"><?= h($cat['code'] . ' - ' . $cat['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </label>
-            <label>Typ
-                <select name="type">
-                    <option value="in">Einnahme</option>
-                    <option value="out">Ausgabe</option>
-                </select>
-            </label>
-            <label>Betrag (CHF)
-                <input type="number" name="amount" step="0.01" min="0.01" required>
-            </label>
-            <label>Konto
-                <input type="text" name="account">
-            </label>
-            <label class="full-width">Notiz
-                <input type="text" name="note">
-            </label>
-            <label>Status
-                <select name="booking_status">
-                    <option value="n">n — offen</option>
-                    <option value="v">v — verarbeitet</option>
-                    <option value="x" selected>x — gesperrt</option>
-                </select>
-            </label>
-            <div class="full-width">
-                <button type="submit">Buchung speichern</button>
-            </div>
-        </form>
+        <p>Buchungen, Transfers, Status und Belege laufen im Kontobuch.</p>
+        <p><a class="button-link" href="kontobuch.php">Zum Kontobuch</a></p>
     </section>
 
     <section class="card manage-section" id="sec-budget">

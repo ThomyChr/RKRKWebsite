@@ -3,19 +3,27 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/DataRepository.php';
-require_once __DIR__ . '/../src/JsonStore.php';
+require_once __DIR__ . '/../src/YearlyStore.php';
 require_once __DIR__ . '/../src/AccountHelpers.php';
 require_once __DIR__ . '/rkrk_ar_shell.php';
 rkrk_ar_boot();
-rkrk_ar_emit_chrome('styles.css');
 
 $dataDir = realpath(__DIR__ . '/../../../rkrk/data/ar') ?: (__DIR__ . '/../../../rkrk/data/ar');
 $repo = new DataRepository($dataDir);
-$store = new JsonStore($dataDir);
+$yearly = $repo->yearly();
 
 function h_book(string $value): string
 {
-    return htmlspecialchars($value, ENT_QUOTES);
+    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function kb_ico(string $name): string
+{
+    if ($name === 'edit') {
+        return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+    }
+
+    return '';
 }
 
 function now_iso_book(): string
@@ -23,7 +31,6 @@ function now_iso_book(): string
     return date('Y-m-d\TH:i:s');
 }
 
-/** Letzte 6 Zeichen ohne Leerzeichen (für Tabellenanzeige). */
 function account_table_display(string $account): string
 {
     $account = trim($account);
@@ -37,42 +44,8 @@ function account_table_display(string $account): string
     if (strlen($compact) <= 6) {
         return $compact;
     }
+
     return substr($compact, -6);
-}
-
-function redirect_book(array $params = []): never
-{
-    $query = http_build_query($params);
-    header('Location: kontobuch.php' . ($query !== '' ? ('?' . $query) : ''));
-    exit;
-}
-
-/** @param array<string, scalar|null> $params */
-function redirect_kontobuch(array $params): never
-{
-    $base = [
-        'booking_top_account' => (string)(
-            $_POST['redirect_booking_top_account']
-            ?? $_POST['redirect_account']
-            ?? $_GET['booking_top_account']
-            ?? $_GET['account']
-            ?? ''
-        ),
-        'filter_year' => (string)($_POST['redirect_filter_year'] ?? $_GET['filter_year'] ?? ''),
-        'filter_period' => (string)($_POST['redirect_filter_period'] ?? $_GET['filter_period'] ?? ''),
-        'filter_counterparty' => (string)($_POST['redirect_filter_counterparty'] ?? $_GET['filter_counterparty'] ?? ''),
-        'filter_note' => (string)($_POST['redirect_filter_note'] ?? $_GET['filter_note'] ?? ''),
-        'filter_status' => (string)($_POST['redirect_filter_status'] ?? $_GET['filter_status'] ?? ''),
-    ];
-    $merged = array_merge($base, $params);
-    $clean = [];
-    foreach ($merged as $k => $v) {
-        if ($v === null || $v === '') {
-            continue;
-        }
-        $clean[$k] = $v;
-    }
-    redirect_book($clean);
 }
 
 function parse_booking_date_input(string $raw): ?string
@@ -88,12 +61,14 @@ function parse_booking_date_input(string $raw): ?string
         if (!checkdate($mo, $d, $y)) {
             return null;
         }
+
         return sprintf('%04d-%02d-%02d', $y, $mo, $d);
     }
     $ts = strtotime($raw);
     if ($ts === false) {
         return null;
     }
+
     return date('Y-m-d', $ts);
 }
 
@@ -104,6 +79,7 @@ function parse_ch_amount_input(string $raw): float
     if ($raw === '' || $raw === '-') {
         return 0.0;
     }
+
     return (float)$raw;
 }
 
@@ -149,138 +125,296 @@ function store_receipt(array $file, string $dataDir): ?string
 /** @return array<int, string> */
 function extract_note_receipt_candidates(string $note): array
 {
-    $candidates = [];
-
+    $out = [];
     if (preg_match_all('/https?:\/\/[^\s\)\]]+/iu', $note, $m)) {
-        foreach ($m[0] as $raw) {
-            $v = trim((string)$raw);
-            if ($v !== '') {
-                $candidates[] = $v;
-            }
+        foreach ($m[0] as $u) {
+            $out[] = rtrim((string)$u, '.,;');
         }
     }
-
     if (preg_match_all('/Belege[\\\\\/][^|]+?\.(?:pdf|png|jpe?g|webp)/iu', $note, $m2)) {
-        foreach ($m2[0] as $raw) {
-            $v = trim((string)$raw);
-            if ($v !== '') {
-                $candidates[] = $v;
-            }
+        foreach ($m2[0] as $p) {
+            $out[] = (string)$p;
         }
     }
-
     $trimmed = trim($note);
-    if (preg_match('/\.(pdf|png|jpe?g|webp)$/iu', $trimmed)) {
-        $candidates[] = $trimmed;
+    if ($trimmed !== '' && preg_match('/\.(?:pdf|png|jpe?g|webp)$/iu', $trimmed) && !in_array($trimmed, $out, true)) {
+        $out[] = $trimmed;
     }
 
-    $uniq = [];
-    foreach ($candidates as $c) {
-        if (!in_array($c, $uniq, true)) {
-            $uniq[] = $c;
-        }
-    }
-    return $uniq;
+    return array_values(array_unique($out));
 }
 
 function sanitize_receipt_name(string $rawName): string
 {
-    $name = trim(str_replace('\\', '/', $rawName));
-    $name = basename($name);
-    $name = preg_replace('/[^\w\.\-\s]+/u', '_', $name) ?? 'beleg';
-    $name = trim($name, " \t\n\r\0\x0B.");
-    return $name !== '' ? $name : 'beleg';
+    $base = basename(str_replace('\\', '/', $rawName));
+    $base = preg_replace('/[^A-Za-z0-9._-]+/', '_', $base) ?? 'beleg';
+
+    return $base !== '' ? $base : 'beleg';
 }
 
-/** @param string $targetDir absolute path */
 function unique_receipt_path(string $targetDir, string $baseName): string
 {
-    $ext = strtolower(pathinfo($baseName, PATHINFO_EXTENSION));
-    $nameNoExt = $ext !== '' ? substr($baseName, 0, -(strlen($ext) + 1)) : $baseName;
-    $nameNoExt = $nameNoExt !== '' ? $nameNoExt : 'beleg';
-    $candidate = $targetDir . '/' . $nameNoExt . ($ext !== '' ? ('.' . $ext) : '');
-    $i = 1;
-    while (file_exists($candidate)) {
-        $candidate = $targetDir . '/' . $nameNoExt . '_' . $i . ($ext !== '' ? ('.' . $ext) : '');
-        $i++;
+    $targetAbs = rtrim($targetDir, '/\\') . '/' . $baseName;
+    if (!is_file($targetAbs)) {
+        return $targetAbs;
     }
-    return $candidate;
+    $pi = pathinfo($baseName);
+    $stem = (string)($pi['filename'] ?? 'beleg');
+    $ext = isset($pi['extension']) ? '.' . $pi['extension'] : '';
+    $n = 2;
+    do {
+        $targetAbs = rtrim($targetDir, '/\\') . '/' . $stem . '_' . $n . $ext;
+        $n++;
+    } while (is_file($targetAbs));
+
+    return $targetAbs;
 }
 
-/**
- * @return array{copied: bool, target_rel: string|null}
- */
+/** @return array{copied: bool, target_rel: ?string} */
 function copy_receipt_candidate_to_data(string $candidate, string $projectRoot, string $dataDir): array
 {
     $targetDir = rtrim($dataDir, '/\\') . '/belege';
     if (!is_dir($targetDir) && !mkdir($concurrentDirectory = $targetDir, 0777, true) && !is_dir($concurrentDirectory)) {
         return ['copied' => false, 'target_rel' => null];
     }
-
-    $candidate = trim($candidate, " \t\n\r\0\x0B\"'");
-    if ($candidate === '') {
-        return ['copied' => false, 'target_rel' => null];
-    }
-
-    $isUrl = (bool)preg_match('/^https?:\/\//i', $candidate);
-    if ($isUrl) {
-        $urlPath = (string)parse_url($candidate, PHP_URL_PATH);
+    $normalized = str_replace('\\', '/', trim($candidate));
+    if (preg_match('#^https?://#iu', $normalized)) {
+        $urlPath = (string)(parse_url($normalized, PHP_URL_PATH) ?? '');
         $base = sanitize_receipt_name($urlPath !== '' ? $urlPath : 'beleg_from_url');
-        if (!preg_match('/\.(pdf|png|jpe?g|webp)$/i', $base)) {
-            $base .= '.pdf';
+        $ctx = stream_context_create(['http' => ['timeout' => 12], 'https' => ['timeout' => 12]]);
+        $bin = @file_get_contents($normalized, false, $ctx);
+        if ($bin === false || $bin === '') {
+        return ['copied' => false, 'target_rel' => null];
         }
         $targetAbs = unique_receipt_path($targetDir, $base);
-        $ctx = stream_context_create([
-            'http' => ['timeout' => 12],
-            'https' => ['timeout' => 12],
-        ]);
-        $content = @file_get_contents($candidate, false, $ctx);
-        if ($content === false || $content === '') {
+        if (@file_put_contents($targetAbs, $bin) === false) {
             return ['copied' => false, 'target_rel' => null];
         }
-        if (@file_put_contents($targetAbs, $content) === false) {
-            return ['copied' => false, 'target_rel' => null];
-        }
+
         return ['copied' => true, 'target_rel' => receipt_public_base_path() . basename($targetAbs)];
     }
 
-    $normalized = str_replace('\\', '/', $candidate);
-    $normalized = ltrim($normalized, '/');
     $base = sanitize_receipt_name($normalized);
     $targetAbs = unique_receipt_path($targetDir, $base);
-
-    $sourceCandidates = [
-        $projectRoot . '/' . $normalized,
-        $projectRoot . '/public/' . $normalized,
-        $projectRoot . '/public/uploads/belege/' . basename($normalized),
-        $projectRoot . '/../../../rkrk/data/ar/' . $normalized,
-        $projectRoot . '/../../../rkrk/data/ar/belege/' . basename($normalized),
-    ];
+    $sourceCandidates = [];
     if (stripos($normalized, 'Belege/') === 0) {
         $rest = substr($normalized, strlen('Belege/'));
         $sourceCandidates[] = $projectRoot . '/Belege/' . $rest;
-        $sourceCandidates[] = $projectRoot . '/../../../rkrk/data/ar/belege/' . $rest;
     }
-    if (stripos($normalized, 'belege/') === 0) {
-        $rest = substr($normalized, strlen('belege/'));
-        $sourceCandidates[] = $projectRoot . '/../../../rkrk/data/ar/belege/' . $rest;
-    }
-
+    $sourceCandidates[] = $normalized;
+    $sourceCandidates[] = $projectRoot . '/' . ltrim($normalized, '/');
     $sourceAbs = null;
-    foreach ($sourceCandidates as $candAbs) {
-        if (is_file($candAbs)) {
-            $sourceAbs = $candAbs;
+    foreach ($sourceCandidates as $cand) {
+        if (is_file($cand)) {
+            $sourceAbs = $cand;
             break;
         }
     }
-    if ($sourceAbs === null) {
+    if ($sourceAbs === null || !@copy($sourceAbs, $targetAbs)) {
         return ['copied' => false, 'target_rel' => null];
     }
 
-    if (!@copy($sourceAbs, $targetAbs)) {
-        return ['copied' => false, 'target_rel' => null];
-    }
     return ['copied' => true, 'target_rel' => receipt_public_base_path() . basename($targetAbs)];
+}
+
+function kb_status(string $raw): string
+{
+    $s = strtolower(trim($raw));
+
+    return in_array($s, ['n', 'v', 'x'], true) ? $s : 'x';
+}
+
+function kb_row_stamp(array $row): string
+{
+    return (string)($row['updated_at'] ?? $row['created_at'] ?? '');
+}
+
+function kb_post_confirmed(string $flag): bool
+{
+    return trim((string)($_POST[$flag] ?? '')) === '1';
+}
+
+function kb_sticky_cookie_name(): string
+{
+    return 'ar_kb_datum';
+}
+
+function kb_sticky_datum(): string
+{
+    $today = date('Y-m-d');
+    $raw = (string)($_COOKIE[kb_sticky_cookie_name()] ?? '');
+    if (preg_match('/^(\d{4}-\d{2}-\d{2})\|(\d{4}-\d{2}-\d{2})$/', $raw, $m) && $m[2] === $today) {
+        return $m[1];
+    }
+
+    return $today;
+}
+
+function kb_set_sticky_datum(string $date): void
+{
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        return;
+    }
+    setcookie(kb_sticky_cookie_name(), $date . '|' . date('Y-m-d'), [
+        'expires' => time() + 86400 * 14,
+        'path' => '/',
+        'samesite' => 'Lax',
+    ]);
+}
+
+/** @return array<string, string> */
+function kb_filters(): array
+{
+    $isPost = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+    $g = static function (string $key, string $alt = ''): string {
+        $v = $_GET[$key] ?? ($alt !== '' ? ($_GET[$alt] ?? '') : '');
+        if (is_array($v)) {
+            $v = end($v);
+        }
+
+        return trim((string)$v);
+    };
+    $p = static function (string $key): string {
+        $v = $_POST[$key] ?? '';
+        if (is_array($v)) {
+            $v = end($v);
+        }
+
+        return trim((string)$v);
+    };
+
+    $konto = $isPost ? $p('filter_konto') : $g('konto', 'booking_top_account');
+    if ($konto === '') {
+        $konto = $g('konto', 'booking_top_account');
+    }
+    $zeitraum = strtolower($isPost ? ($p('zeitraum') !== '' ? $p('zeitraum') : $g('zeitraum', 'filter_period')) : $g('zeitraum', 'filter_period'));
+    if ($zeitraum === '') {
+        $zeitraum = '3m';
+    }
+    if (!in_array($zeitraum, ['3m', '6m', '1y', 'all'], true)) {
+        $zeitraum = '3m';
+    }
+    $status = strtolower($isPost ? ($p('filter_status') !== '' ? $p('filter_status') : $g('status', 'filter_status')) : $g('status', 'filter_status'));
+    if (in_array($status, ['alle', 'all', '0'], true)) {
+        $status = '';
+    }
+    if ($status === 'offen' || $status === 'n') {
+        $status = 'offen';
+    }
+
+    return [
+        'konto' => $konto,
+        'zeitraum' => $zeitraum,
+        'jahr' => $isPost ? ($p('jahr') !== '' ? $p('jahr') : $g('jahr', 'filter_year')) : $g('jahr', 'filter_year'),
+        'empfaenger' => $isPost ? $p('filter_empfaenger') : $g('empfaenger', 'filter_counterparty'),
+        'memo' => $isPost ? $p('filter_memo') : $g('memo', 'filter_note'),
+        'status' => $status,
+        'edit' => $g('edit'),
+        'abstimmen' => ($isPost ? $p('abstimmen') : $g('abstimmen')) === '1' ? '1' : '',
+    ];
+}
+
+/** @param array<string, scalar|null> $override */
+function kb_qs(array $override = []): array
+{
+    $base = kb_filters();
+    $merged = array_merge($base, $override);
+    $clean = [];
+    foreach ($merged as $k => $v) {
+        if ($v === null || $v === '') {
+            continue;
+        }
+        $clean[$k] = (string)$v;
+    }
+
+    return $clean;
+}
+
+/** @param array<string, scalar|null> $params */
+function kb_go(array $params = []): void
+{
+    $clean = kb_qs($params);
+    $hash = '';
+    if (isset($clean['_hash'])) {
+        $hash = '#' . $clean['_hash'];
+        unset($clean['_hash']);
+    }
+    $query = http_build_query($clean);
+    header('Location: kontobuch.php' . ($query !== '' ? ('?' . $query) : '') . $hash);
+    exit;
+}
+
+function kb_can_write(): bool
+{
+    global $LoggedOn, $SessNme_RegisteredUser;
+    if (!empty($LoggedOn)) {
+        return true;
+    }
+    if (isset($SessNme_RegisteredUser) && trim((string)($_SESSION[$SessNme_RegisteredUser] ?? '')) !== '') {
+        return true;
+    }
+
+    return trim((string)($_SESSION['Benutzername'] ?? '')) !== '';
+}
+
+/**
+ * @param array<int, array<string, mixed>> $rows
+ */
+function kb_find_index(array $rows, string $id): ?int
+{
+    if ($id === '') {
+        return null;
+    }
+    foreach ($rows as $i => $row) {
+        if (trim((string)($row['id'] ?? '')) === $id) {
+            return $i;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $rows
+ */
+function kb_pair_index(array $rows, array $row, int $selfIdx): ?int
+{
+    $tid = trim((string)($row['transfer_id'] ?? ''));
+    if ($tid === '') {
+        return null;
+    }
+    foreach ($rows as $i => $r) {
+        if ($i === $selfIdx) {
+            continue;
+        }
+        if (trim((string)($r['transfer_id'] ?? '')) === $tid) {
+            return $i;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @param array<string, string> $categories
+ * @return array<string, mixed>
+ */
+function kb_apply_category(array $row, string $categoryCode, array $categories): array
+{
+    $catName = $categories[$categoryCode] ?? null;
+    if ($catName !== null) {
+        $row['cost_category_code'] = $categoryCode;
+        $row['cost_category_name_raw'] = null;
+    } elseif ($categoryCode !== '') {
+        $row['cost_category_code'] = null;
+        $row['cost_category_name_raw'] = $categoryCode;
+    } else {
+        $row['cost_category_code'] = null;
+        $row['cost_category_name_raw'] = null;
+    }
+
+    return $row;
 }
 
 $accounts = $repo->getAccounts();
@@ -289,28 +423,26 @@ $accountMapActive = account_map($accounts, true);
 $categories = $repo->getCategoryMapByCode();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!kb_can_write()) {
+        kb_go(['error' => 'Bitte einloggen, um Buchungen zu speichern.']);
+    }
     $action = trim((string)($_POST['action'] ?? ''));
-    if ($action === 'extract_note_links') {
         try {
-            $rows = $store->readList('transactions.json');
+        if ($action === 'extract_note_links') {
             $projectRoot = dirname(__DIR__);
-            $updated = 0;
             $copied = 0;
-            foreach ($rows as &$row) {
-                if (!is_array($row)) {
-                    continue;
-                }
+            $updated = $yearly->mapAll(static function (array $row) use ($projectRoot, $dataDir, &$copied): ?array {
                 $note = trim((string)($row['note'] ?? ''));
                 if ($note === '') {
-                    continue;
+                    return null;
                 }
                 $existingReceipt = trim((string)($row['receipt_path'] ?? ''));
                 if ($existingReceipt !== '') {
-                    continue;
+                    return null;
                 }
                 $candidates = extract_note_receipt_candidates($note);
-                if (empty($candidates)) {
-                    continue;
+                if ($candidates === []) {
+                    return null;
                 }
                 foreach ($candidates as $cand) {
                     $result = copy_receipt_candidate_to_data($cand, $projectRoot, $dataDir);
@@ -319,319 +451,401 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $row['receipt_path'] = $result['target_rel'];
                     $copied++;
-                    $updated++;
                     $cleaned = trim(str_replace($cand, '', $note));
                     $cleaned = preg_replace('/\s{2,}/u', ' ', (string)$cleaned) ?? $cleaned;
                     $cleaned = trim($cleaned, " \t\n\r\0\x0B|,;");
                     $row['note'] = $cleaned === '' ? null : $cleaned;
                     $row['updated_at'] = now_iso_book();
-                    break;
+
+                    return $row;
                 }
-            }
-            unset($row);
+
+                return null;
+            });
             if ($updated > 0) {
-                $store->writeList('transactions.json', $rows);
-                redirect_kontobuch(['ok' => "Beleg-Links extrahiert: {$copied} Datei(en) nach data/ar/belege übernommen."]);
+                kb_go(['ok' => "Beleg-Links extrahiert: {$copied} Datei(en) nach data/ar/belege übernommen.", 'edit' => '']);
             }
-            redirect_kontobuch(['ok' => 'Keine extrahierbaren Beleg-Links gefunden.']);
-        } catch (Throwable $e) {
-            redirect_kontobuch(['error' => 'Fehler bei Beleg-Link-Extraktion: ' . $e->getMessage()]);
+            kb_go(['ok' => 'Keine extrahierbaren Beleg-Links gefunden.', 'edit' => '']);
         }
-    }
-    if ($action === 'add_booking') {
-        try {
-            if (empty($accountMapActive)) {
-                redirect_kontobuch(['error' => 'Bitte zuerst ein aktives Konto unter "Konti" anlegen.']);
-            }
 
-            $rows = $store->readList('transactions.json');
-            $date = trim((string)($_POST['booking_date'] ?? ''));
-            $counterparty = trim((string)($_POST['counterparty'] ?? ''));
+        if ($action === 'toggle_status') {
+            $id = trim((string)($_POST['id'] ?? ''));
+            $row = $yearly->findById($id);
+            if ($row === null) {
+                kb_go(['error' => 'Buchung nicht gefunden.', 'edit' => '']);
+            }
+            $current = kb_status((string)($row['booking_status'] ?? 'x'));
+            $cycle = ['n' => 'v', 'v' => 'x', 'x' => 'n'];
+            $forced = strtolower(trim((string)($_POST['set_status'] ?? '')));
+            $inAbst = trim((string)($_POST['abstimmen'] ?? '')) === '1';
+            if (in_array($forced, ['n', 'v', 'x'], true)) {
+                $next = $forced;
+            } elseif ($inAbst && $current === 'n') {
+                $next = 'v';
+            } elseif ($inAbst && $current === 'v') {
+                $next = 'n';
+            } else {
+                $next = $cycle[$current] ?? 'n';
+            }
+            if ($current === 'x' && !kb_post_confirmed('confirm_x')) {
+                kb_go(['error' => 'Gesperrte Buchung (x) nicht ohne Bestätigung geändert.', 'edit' => '']);
+            }
+            $expect = (string)($_POST['expect_modified'] ?? '');
+            if ($expect !== '' && kb_row_stamp($row) !== $expect) {
+                kb_go(['error' => 'Buchung wurde zwischenzeitlich geändert. Bitte neu laden.', 'edit' => '']);
+            }
+            $now = now_iso_book();
+            $row['booking_status'] = $next;
+            $row['updated_at'] = $now;
+            $yearly->upsert($row);
+            $pair = $yearly->findPair($row);
+            if ($pair !== null) {
+                $pair['booking_status'] = $next;
+                $pair['updated_at'] = $now;
+                $yearly->upsert($pair);
+            }
+            kb_go(['ok' => 'Status ' . $next . '.', 'edit' => '', '_hash' => 'r' . $id]);
+        }
+
+        if ($action === 'abschliessen') {
+            $ids = $_POST['ids'] ?? [];
+            if (!is_array($ids)) {
+                $ids = [];
+            }
+            $now = now_iso_book();
+            $n = 0;
+            $seen = [];
+            foreach ($ids as $rawId) {
+                $id = trim((string)$rawId);
+                if ($id === '' || isset($seen[$id])) {
+                    continue;
+                }
+                $row = $yearly->findById($id);
+                if ($row === null || kb_status((string)($row['booking_status'] ?? '')) !== 'v') {
+                    continue;
+                }
+                $row['booking_status'] = 'x';
+                $row['updated_at'] = $now;
+                $yearly->upsert($row);
+                $seen[$id] = true;
+                $n++;
+                $pair = $yearly->findPair($row);
+                if ($pair !== null) {
+                    $pid = trim((string)($pair['id'] ?? ''));
+                    $pair['booking_status'] = 'x';
+                    $pair['updated_at'] = $now;
+                    $yearly->upsert($pair);
+                    if ($pid !== '') {
+                        $seen[$pid] = true;
+                    }
+                }
+            }
+            kb_go(['ok' => $n . ' gemerkte Buchungen (v) auf x gesetzt.', 'abstimmen' => '1', 'edit' => '']);
+        }
+
+        if ($action === 'abstimmen_all') {
+            $kontoAll = trim((string)($_POST['filter_konto'] ?? $_POST['konto'] ?? ''));
+            if ($kontoAll === '' || !isset($accountMapActive[$kontoAll])) {
+                kb_go(['error' => 'Bitte zuerst ein Konto wählen.']);
+            }
+            $needleAll = account_normalize_for_match($kontoAll);
+            $now = now_iso_book();
+            $n = $yearly->mapAll(static function (array $row) use ($needleAll, $now): ?array {
+                $acc = trim((string)($row['account'] ?? ''));
+                if ($acc === '') {
+                    $acc = '-';
+                }
+                if (account_normalize_for_match($acc) !== $needleAll) {
+                    return null;
+                }
+                if (kb_status((string)($row['booking_status'] ?? 'x')) === 'x') {
+                    return null;
+                }
+                $row['booking_status'] = 'x';
+                $row['updated_at'] = $now;
+
+                return $row;
+            });
+            kb_go(['ok' => $n . ' Buchungen auf x (abgestimmt) gesetzt.', 'konto' => $kontoAll, 'edit' => '']);
+        }
+
+        if ($action === 'delete') {
+            $id = trim((string)($_POST['id'] ?? ''));
+            $row = $yearly->findById($id);
+            if ($row === null) {
+                kb_go(['error' => 'Buchung nicht gefunden.', 'edit' => '']);
+            }
+            $st = kb_status((string)($row['booking_status'] ?? 'x'));
+            $tid = trim((string)($row['transfer_id'] ?? ''));
+            if ($st === 'x' && !kb_post_confirmed('confirm_x')) {
+                kb_go(['error' => 'Gesperrte Buchung (x) nicht ohne Bestätigung gelöscht.', 'edit' => $id]);
+            }
+            if ($tid !== '' && !kb_post_confirmed('confirm_transfer')) {
+                kb_go(['error' => 'Transfer nicht ohne Bestätigung gelöscht — Gegenkonto würde mitlaufen.', 'edit' => $id]);
+            }
+            $expect = (string)($_POST['expect_modified'] ?? '');
+            if ($expect !== '' && kb_row_stamp($row) !== $expect) {
+                kb_go(['error' => 'Buchung wurde zwischenzeitlich geändert. Bitte neu laden.', 'edit' => '']);
+            }
+            $deleteIds = [$id];
+            if ($tid !== '') {
+                $pair = $yearly->findPair($row);
+                if ($pair !== null) {
+                    $pid = trim((string)($pair['id'] ?? ''));
+                    if ($pid !== '') {
+                        $deleteIds[] = $pid;
+                    }
+                }
+            }
+            $yearly->deleteByIds($deleteIds);
+            kb_go(['ok' => $tid !== '' ? 'Transfer gelöscht.' : 'Buchung gelöscht.', 'edit' => '']);
+        }
+
+        if ($action === 'add_booking' || $action === 'save_booking') {
+            $date = parse_booking_date_input((string)($_POST['datum'] ?? $_POST['booking_date'] ?? ''));
+            $konto = trim((string)($_POST['konto'] ?? ''));
+            $type = trim((string)($_POST['booking_type'] ?? 'standard'));
+            $betrag = parse_ch_amount_input((string)($_POST['betrag'] ?? $_POST['amount'] ?? '0'));
+            $emp = trim((string)($_POST['empfaenger'] ?? $_POST['counterparty'] ?? ''));
+            $memo = trim((string)($_POST['memo'] ?? $_POST['note'] ?? ''));
             $categoryCode = trim((string)($_POST['category_code'] ?? ''));
-            $note = trim((string)($_POST['note'] ?? ''));
-            $statusRaw = trim((string)($_POST['booking_status'] ?? 'x'));
-            $status = in_array($statusRaw, ['n', 'v', 'x'], true) ? $statusRaw : 'x';
-            $bookingType = trim((string)($_POST['booking_type'] ?? 'standard'));
-            $topAccount = trim((string)($_POST['booking_top_account'] ?? ''));
-            $sourceAccount = $topAccount !== '' ? $topAccount : trim((string)($_POST['source_account'] ?? ''));
-            $targetAccount = $bookingType === 'transfer'
-                ? trim((string)($_POST['target_account'] ?? ''))
-                : '';
-            $amountSigned = parse_ch_amount_input((string)($_POST['amount'] ?? '0'));
-            $targetAmount = (float)($_POST['target_amount'] ?? 0);
-
-            if ($date === '' || $counterparty === '' || $sourceAccount === '') {
-                redirect_kontobuch(['error' => 'Datum, Empfänger und Konto (oben oder Quellkonto) sind Pflichtfelder.']);
-            }
-            if (!isset($accountMapActive[$sourceAccount])) {
-                redirect_kontobuch(['error' => 'Quellkonto nicht gefunden oder inaktiv.']);
+            $ziel = trim((string)($_POST['ziel_konto'] ?? $_POST['target_account'] ?? ''));
+            $targetAmount = parse_ch_amount_input((string)($_POST['target_amount'] ?? '0'));
+            $postedId = trim((string)($_POST['id'] ?? ''));
+            $existing = $action === 'save_booking' ? $yearly->findById($postedId) : null;
+            $status = $existing !== null
+                ? kb_status((string)($existing['booking_status'] ?? 'n'))
+                : 'n';
+            $postedStatus = strtolower(trim((string)($_POST['booking_status'] ?? '')));
+            if (in_array($postedStatus, ['n', 'v', 'x'], true)) {
+                $status = $postedStatus;
             }
 
-            $receiptPath = null;
-            if (isset($_FILES['receipt'])) {
-                $receiptPath = store_receipt($_FILES['receipt'], $dataDir);
+            if ($action === 'save_booking' && $existing === null) {
+                kb_go(['error' => 'Buchung nicht gefunden — nichts geändert.', 'edit' => '']);
             }
-
-            $categoryName = $categories[$categoryCode] ?? null;
-            $categoryRaw = $categoryName === null ? ($categoryCode !== '' ? $categoryCode : null) : null;
-
-            if ($bookingType === 'transfer') {
-                if ($targetAccount === '' || !isset($accountMapActive[$targetAccount])) {
-                    redirect_kontobuch(['error' => 'Bitte ein gültiges aktives Zielkonto für Transfer wählen.']);
+            if ($date === null || $konto === '' || ($existing === null && abs($betrag) < 0.00001)) {
+                kb_go(['error' => 'Datum, Konto und Betrag sind Pflicht.', 'konto' => $konto, 'edit' => $postedId]);
+            }
+            if (!isset($accountMapActive[$konto])) {
+                kb_go(['error' => 'Konto nicht gefunden oder inaktiv.', 'konto' => $konto, 'edit' => $postedId]);
+            }
+            if ($existing !== null && abs($betrag) < 0.00001) {
+                kb_go(['error' => 'Betrag darf nicht 0 sein.', 'konto' => $konto, 'edit' => $postedId]);
+            }
+            if ($existing !== null && kb_status((string)($existing['booking_status'] ?? 'x')) === 'x' && !kb_post_confirmed('confirm_x')) {
+                kb_go(['error' => 'Gesperrte Buchung (x) nicht ohne Bestätigung geändert.', 'konto' => $konto, 'edit' => $postedId]);
+            }
+            $isExistingTransfer = $existing !== null && trim((string)($existing['transfer_id'] ?? '')) !== '';
+            $willTransfer = $type === 'transfer' || $isExistingTransfer;
+            if ($willTransfer && !kb_post_confirmed('confirm_transfer')) {
+                kb_go(['error' => 'Transfer nicht ohne Bestätigung gespeichert — Gegenkonto-Saldo würde mitlaufen.', 'konto' => $konto, 'edit' => $postedId]);
+            }
+            if ($existing !== null) {
+                $expect = (string)($_POST['expect_modified'] ?? '');
+                if ($expect !== '' && kb_row_stamp($existing) !== $expect) {
+                    kb_go(['error' => 'Buchung wurde zwischenzeitlich geändert. Bitte neu laden.', 'konto' => $konto, 'edit' => $postedId]);
                 }
-                if ($targetAccount === $sourceAccount) {
-                    redirect_kontobuch(['error' => 'Quell- und Zielkonto dürfen nicht identisch sein.']);
+            }
+
+            $receiptPath = isset($_FILES['beleg']) ? store_receipt($_FILES['beleg'], $dataDir) : null;
+            $now = now_iso_book();
+            $sourceCurrency = strtoupper((string)($accountMapActive[$konto]['currency'] ?? 'CHF'));
+
+            if ($existing !== null) {
+                if ($isExistingTransfer) {
+                    $pair = $yearly->findPair($existing);
+                    if ($ziel === '' && $pair !== null) {
+                        $ziel = trim((string)($pair['account'] ?? ''));
+                    }
+                    if ($ziel === '' || $ziel === $konto || !isset($accountMapActive[$ziel])) {
+                        kb_go(['error' => 'Bitte ein anderes gültiges Zielkonto wählen.', 'konto' => $konto, 'edit' => $postedId]);
+                    }
+                    $destCurrency = strtoupper((string)($accountMapActive[$ziel]['currency'] ?? 'CHF'));
+                    $sourceAmount = abs($betrag);
+                    $effectiveTarget = $targetAmount;
+                    if ($sourceCurrency === $destCurrency) {
+                        if ($effectiveTarget <= 0) {
+                            $effectiveTarget = $sourceAmount;
+                        }
+                    } elseif ($effectiveTarget <= 0) {
+                        kb_go(['error' => 'Bei unterschiedlichen Währungen muss der Zielbetrag angegeben werden.', 'konto' => $konto, 'edit' => $postedId]);
+                    }
+                    $tid = trim((string)($existing['transfer_id'] ?? ''));
+                    $srcRow = $existing;
+                    $dstRow = $pair;
+                    $srcIsOut = (float)($existing['amount_out'] ?? 0) > 0 || (float)($existing['amount_in'] ?? 0) <= 0;
+                    if (!$srcIsOut && $pair !== null) {
+                        $srcRow = $pair;
+                        $dstRow = $existing;
+                    }
+                    $apply = static function (array $row) use ($date, $emp, $memo, $status, $categoryCode, $categories, $receiptPath, $now, $tid): array {
+                        $row['booking_date'] = $date;
+                        $row['counterparty'] = $emp !== '' ? $emp : 'Umbuchung';
+                        $row['note'] = $memo === '' ? null : $memo;
+                        $row['booking_status'] = $status;
+                        $row['transfer_id'] = $tid;
+                        $row['updated_at'] = $now;
+                        if ($receiptPath !== null) {
+                            $row['receipt_path'] = $receiptPath;
+                        }
+                        $row = kb_apply_category($row, $categoryCode, $categories);
+
+                        return $row;
+                    };
+                    $srcRow = $apply($srcRow);
+                    $srcRow['account'] = $konto;
+                    $srcRow['target_account'] = $ziel;
+                    $srcRow['amount_out'] = $sourceAmount;
+                    $srcRow['amount_in'] = 0.0;
+                    $srcRow['currency'] = $sourceCurrency;
+                    $srcRow['note'] = trim(($memo !== '' ? $memo . ' | ' : '') . 'Transfer zu ' . $ziel);
+                    if ($dstRow === null) {
+                        $dstRow = [
+                            'id' => bin2hex(random_bytes(16)),
+                            'external_id' => $tid . '_IN',
+                            'created_at' => $now,
+                            'source_sheet' => 'Web',
+                            'source_row_no' => null,
+                            'running_balance_imported' => null,
+                        ];
+                    }
+                    $dstRow = $apply($dstRow);
+                    $dstRow['account'] = $ziel;
+                    $dstRow['target_account'] = $konto;
+                    $dstRow['amount_in'] = $effectiveTarget;
+                    $dstRow['amount_out'] = 0.0;
+                    $dstRow['currency'] = $destCurrency;
+                    $dstRow['note'] = trim(($memo !== '' ? $memo . ' | ' : '') . 'Transfer von ' . $konto);
+                    $yearly->upsert($srcRow);
+                    $yearly->upsert($dstRow);
+                    kb_set_sticky_datum($date);
+                    kb_go(['ok' => 'Transfer geändert.', 'konto' => $konto, 'edit' => '', '_hash' => 'r' . $postedId]);
                 }
-                $sourceAmount = abs($amountSigned);
+
+                $abs = abs($betrag);
+                $row = $existing;
+                $row['booking_date'] = $date;
+                $row['account'] = $konto;
+                $row['counterparty'] = $emp;
+                $row['note'] = $memo === '' ? null : $memo;
+                $row['booking_status'] = $status;
+                $row['amount_in'] = $betrag > 0 ? $abs : 0.0;
+                $row['amount_out'] = $betrag < 0 ? $abs : 0.0;
+                $row['currency'] = $sourceCurrency;
+                $row['updated_at'] = $now;
+                if ($receiptPath !== null) {
+                    $row['receipt_path'] = $receiptPath;
+                }
+                $row = kb_apply_category($row, $categoryCode, $categories);
+                if ($emp === '') {
+                    kb_go(['error' => 'Empfänger ist Pflicht.', 'konto' => $konto, 'edit' => $postedId]);
+                }
+                $yearly->upsert($row);
+                kb_set_sticky_datum($date);
+                kb_go(['ok' => 'Buchung geändert.', 'konto' => $konto, 'edit' => '', '_hash' => 'r' . $postedId]);
+            }
+
+            if ($type === 'transfer') {
+                if ($ziel === '' || $ziel === $konto || !isset($accountMapActive[$ziel])) {
+                    kb_go(['error' => 'Bitte ein gültiges aktives Zielkonto wählen.', 'konto' => $konto]);
+                }
+                $sourceAmount = abs($betrag);
                 if ($sourceAmount <= 0) {
-                    redirect_kontobuch(['error' => 'Betrag (Quelle) muss > 0 sein.']);
+                    kb_go(['error' => 'Betrag muss ungleich 0 sein.', 'konto' => $konto]);
                 }
-
-                $sourceCurrency = strtoupper((string)($accountMapActive[$sourceAccount]['currency'] ?? 'CHF'));
-                $destCurrency = strtoupper((string)($accountMapActive[$targetAccount]['currency'] ?? 'CHF'));
-                $effectiveTargetAmount = $targetAmount;
+                $destCurrency = strtoupper((string)($accountMapActive[$ziel]['currency'] ?? 'CHF'));
+                $effectiveTarget = $targetAmount;
                 if ($sourceCurrency === $destCurrency) {
-                    if ($effectiveTargetAmount <= 0) {
-                        $effectiveTargetAmount = $sourceAmount;
+                    if ($effectiveTarget <= 0) {
+                        $effectiveTarget = $sourceAmount;
                     }
-                } else {
-                    if ($effectiveTargetAmount <= 0) {
-                        redirect_kontobuch(['error' => 'Bei unterschiedlichen Währungen muss der Zielbetrag angegeben werden.']);
-                    }
+                } elseif ($effectiveTarget <= 0) {
+                    kb_go(['error' => 'Bei unterschiedlichen Währungen muss der Zielbetrag angegeben werden.', 'konto' => $konto]);
                 }
-
                 $transferId = 'TRF' . date('YmdHis') . random_int(100, 999);
                 $base = [
-                    'cost_category_code' => $categoryName === null ? null : $categoryCode,
-                    'cost_category_name_raw' => $categoryRaw ?? 'Transfer',
+                    'cost_category_code' => ($categories[$categoryCode] ?? null) !== null ? $categoryCode : null,
+                    'cost_category_name_raw' => ($categories[$categoryCode] ?? null) !== null ? null : ($categoryCode !== '' ? $categoryCode : 'Transfer'),
                     'source_sheet' => 'Web',
                     'source_row_no' => null,
                     'booking_status' => $status,
                     'receipt_path' => $receiptPath,
                     'transfer_id' => $transferId,
-                    'updated_at' => now_iso_book(),
-                    'created_at' => now_iso_book(),
+                    'updated_at' => $now,
+                    'created_at' => $now,
+                    'running_balance_imported' => null,
                 ];
-
-                $rows[] = array_merge($base, [
+                $yearly->upsert(array_merge($base, [
                     'id' => bin2hex(random_bytes(16)),
                     'external_id' => $transferId . '_OUT',
                     'booking_date' => $date,
-                    'counterparty' => $counterparty,
-                    'account' => $sourceAccount,
-                    'target_account' => $targetAccount,
+                    'counterparty' => $emp !== '' ? $emp : 'Umbuchung',
+                    'account' => $konto,
+                    'target_account' => $ziel,
                     'amount_in' => 0.0,
                     'amount_out' => $sourceAmount,
                     'currency' => $sourceCurrency,
-                    'note' => trim(($note !== '' ? $note . ' | ' : '') . 'Transfer zu ' . $targetAccount),
-                    'running_balance_imported' => null,
-                ]);
-
-                $rows[] = array_merge($base, [
+                    'note' => trim(($memo !== '' ? $memo . ' | ' : '') . 'Transfer zu ' . $ziel),
+                ]));
+                $yearly->upsert(array_merge($base, [
                     'id' => bin2hex(random_bytes(16)),
                     'external_id' => $transferId . '_IN',
                     'booking_date' => $date,
-                    'counterparty' => $counterparty,
-                    'account' => $targetAccount,
-                    'target_account' => $sourceAccount,
-                    'amount_in' => $effectiveTargetAmount,
+                    'counterparty' => $emp !== '' ? $emp : 'Umbuchung',
+                    'account' => $ziel,
+                    'target_account' => $konto,
+                    'amount_in' => $effectiveTarget,
                     'amount_out' => 0.0,
                     'currency' => $destCurrency,
-                    'note' => trim(($note !== '' ? $note . ' | ' : '') . 'Transfer von ' . $sourceAccount),
-                    'running_balance_imported' => null,
-                ]);
-            } else {
-                $absAmount = abs($amountSigned);
-                if ($absAmount <= 0) {
-                    redirect_kontobuch(['error' => 'Betrag darf nicht 0 sein (positiv = Ein, negativ = Aus).']);
-                }
-                $in = $amountSigned > 0 ? $absAmount : 0.0;
-                $out = $amountSigned < 0 ? $absAmount : 0.0;
-                $rows[] = [
-                    'id' => bin2hex(random_bytes(16)),
-                    'external_id' => 'WEB' . date('YmdHis') . random_int(100, 999),
-                    'booking_date' => $date,
-                    'counterparty' => $counterparty,
-                    'cost_category_code' => $categoryName === null ? null : $categoryCode,
-                    'cost_category_name_raw' => $categoryRaw,
-                    'account' => $sourceAccount,
-                    'target_account' => $targetAccount === '' ? null : $targetAccount,
-                    'amount_in' => $in,
-                    'amount_out' => $out,
-                    'currency' => strtoupper((string)($accountMapActive[$sourceAccount]['currency'] ?? 'CHF')),
-                    'note' => $note === '' ? null : $note,
-                    'running_balance_imported' => null,
-                    'source_sheet' => 'Web',
-                    'source_row_no' => null,
-                    'booking_status' => $status,
-                    'receipt_path' => $receiptPath,
-                    'transfer_id' => null,
-                    'updated_at' => now_iso_book(),
-                    'created_at' => now_iso_book(),
-                ];
+                    'note' => trim(($memo !== '' ? $memo . ' | ' : '') . 'Transfer von ' . $konto),
+                ]));
+                kb_set_sticky_datum($date);
+                kb_go(['ok' => 'Transfer gespeichert.', 'konto' => $konto, 'edit' => '']);
             }
 
-            $store->writeList('transactions.json', $rows);
-            redirect_kontobuch(['ok' => 'Buchung gespeichert.']);
-        } catch (Throwable $e) {
-            redirect_kontobuch(['error' => 'Fehler beim Speichern: ' . $e->getMessage()]);
+            $abs = abs($betrag);
+            if ($abs <= 0) {
+                kb_go(['error' => 'Betrag darf nicht 0 sein (positiv = Ein, negativ = Aus).', 'konto' => $konto]);
+            }
+            if ($emp === '') {
+                kb_go(['error' => 'Empfänger ist Pflicht.', 'konto' => $konto]);
+            }
+            $newId = bin2hex(random_bytes(16));
+            $row = [
+                'id' => $newId,
+                'external_id' => 'WEB' . date('YmdHis') . random_int(100, 999),
+                'booking_date' => $date,
+                'counterparty' => $emp,
+                'account' => $konto,
+                'target_account' => null,
+                'amount_in' => $betrag > 0 ? $abs : 0.0,
+                'amount_out' => $betrag < 0 ? $abs : 0.0,
+                'currency' => $sourceCurrency,
+                'note' => $memo === '' ? null : $memo,
+                'running_balance_imported' => null,
+                'source_sheet' => 'Web',
+                'source_row_no' => null,
+                'booking_status' => $status,
+                'receipt_path' => $receiptPath,
+                'transfer_id' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+            $row = kb_apply_category($row, $categoryCode, $categories);
+            $yearly->upsert($row);
+            kb_set_sticky_datum($date);
+            kb_go(['ok' => 'Buchung gespeichert.', 'konto' => $konto, 'edit' => '', '_hash' => 'r' . $newId]);
         }
-    }
-    if ($action === 'save_lines') {
-        try {
-            $lines = $_POST['lines'] ?? null;
-            if (!is_array($lines)) {
-                redirect_kontobuch(['error' => 'Keine Zeilen übermittelt.']);
-            }
 
-            $rows = $store->readList('transactions.json');
-            $deleteSet = [];
-            $deleteIdsRaw = $_POST['delete_ids'] ?? [];
-            if (is_array($deleteIdsRaw)) {
-                foreach ($deleteIdsRaw as $rawId) {
-                    $rid = trim((string)$rawId);
-                    if ($rid !== '') {
-                        $deleteSet[$rid] = true;
-                    }
-                }
-            }
-            if (!empty($deleteSet)) {
-                $deleteTransferSet = [];
-                foreach ($rows as $r) {
-                    $rid = trim((string)($r['id'] ?? ''));
-                    if ($rid === '' || !isset($deleteSet[$rid])) {
-                        continue;
-                    }
-                    $tid = trim((string)($r['transfer_id'] ?? ''));
-                    if ($tid !== '') {
-                        $deleteTransferSet[$tid] = true;
-                    }
-                }
-                $rows = array_values(array_filter(
-                    $rows,
-                    static function (array $r) use ($deleteSet, $deleteTransferSet): bool {
-                        $rid = trim((string)($r['id'] ?? ''));
-                        if ($rid !== '' && isset($deleteSet[$rid])) {
-                            return false;
-                        }
-                        $tid = trim((string)($r['transfer_id'] ?? ''));
-                        if ($tid !== '' && isset($deleteTransferSet[$tid])) {
-                            return false;
-                        }
-                        return true;
-                    }
-                ));
-            }
-
-            $byId = [];
-            foreach ($rows as $i => $r) {
-                $rid = trim((string)($r['id'] ?? ''));
-                if ($rid !== '') {
-                    $byId[$rid] = $i;
-                }
-            }
-
-            foreach ($lines as $lineId => $line) {
-                if (!is_array($line)) {
-                    continue;
-                }
-                $id = trim((string)($line['id'] ?? ''));
-                if ($id === '' || $id !== (string)$lineId || !isset($byId[$id])) {
-                    continue;
-                }
-                $idx = $byId[$id];
-                $orig = $rows[$idx];
-                $transferId = trim((string)($orig['transfer_id'] ?? ''));
-                $isTransfer = $transferId !== '';
-
-                $status = trim((string)($line['booking_status'] ?? ''));
-                if (!in_array($status, ['n', 'v', 'x'], true)) {
-                    $status = trim((string)($orig['booking_status'] ?? 'x'));
-                    if (!in_array($status, ['n', 'v', 'x'], true)) {
-                        $status = 'x';
-                    }
-                }
-
-                if ($isTransfer) {
-                    $rows[$idx]['counterparty'] = trim((string)($line['counterparty'] ?? ''));
-                    $rows[$idx]['note'] = ($t = trim((string)($line['note'] ?? ''))) === '' ? null : $t;
-                    $rows[$idx]['booking_status'] = $status;
-                    unset($rows[$idx]['scope_code']);
-                    $catCode = trim((string)($line['cost_category_code'] ?? ''));
-                    $catName = $categories[$catCode] ?? null;
-                    if ($catName !== null) {
-                        $rows[$idx]['cost_category_code'] = $catCode;
-                        $rows[$idx]['cost_category_name_raw'] = null;
-                    } elseif ($catCode !== '') {
-                        $rows[$idx]['cost_category_code'] = null;
-                        $rows[$idx]['cost_category_name_raw'] = $catCode;
-                    }
-                    $rows[$idx]['updated_at'] = now_iso_book();
-                    continue;
-                }
-
-                $dateIso = parse_booking_date_input((string)($line['booking_date'] ?? ''));
-                if ($dateIso === null) {
-                    redirect_kontobuch(['error' => 'Ungültiges Datum bei Zeile ' . $id . '.']);
-                }
-
-                $accountCode = trim((string)($line['account'] ?? ''));
-                if ($accountCode === '' || (!isset($accountMapAll[$accountCode]) && $accountCode !== '-')) {
-                    redirect_kontobuch(['error' => 'Ungültiges Konto bei Zeile ' . $id . '.']);
-                }
-                if ($accountCode !== '-' && !isset($accountMapActive[$accountCode])) {
-                    redirect_kontobuch(['error' => 'Konto ist inaktiv: ' . $accountCode]);
-                }
-
-                $amountIn = round(parse_ch_amount_input((string)($line['amount_in'] ?? '0')), 2);
-                $amountOut = round(parse_ch_amount_input((string)($line['amount_out'] ?? '0')), 2);
-                if ($amountIn > 0.0 && $amountOut > 0.0) {
-                    redirect_kontobuch(['error' => 'Nur Haben oder Soll, nicht beides: Zeile ' . $id . '.']);
-                }
-                if ($amountIn <= 0.0 && $amountOut <= 0.0) {
-                    redirect_kontobuch(['error' => 'Betrag fehlt bei Zeile ' . $id . '.']);
-                }
-
-                $catCode = trim((string)($line['cost_category_code'] ?? ''));
-                $catName = $categories[$catCode] ?? null;
-                if ($catName !== null) {
-                    $rows[$idx]['cost_category_code'] = $catCode;
-                    $rows[$idx]['cost_category_name_raw'] = null;
-                } elseif ($catCode !== '') {
-                    $rows[$idx]['cost_category_code'] = null;
-                    $rows[$idx]['cost_category_name_raw'] = $catCode;
-                } else {
-                    $rows[$idx]['cost_category_code'] = null;
-                    $rows[$idx]['cost_category_name_raw'] = null;
-                }
-
-                $rows[$idx]['booking_date'] = $dateIso;
-                $rows[$idx]['counterparty'] = trim((string)($line['counterparty'] ?? ''));
-                if ($rows[$idx]['counterparty'] === '') {
-                    redirect_kontobuch(['error' => 'Empfänger fehlt bei Zeile ' . $id . '.']);
-                }
-
-                $rows[$idx]['account'] = $accountCode;
-                $rows[$idx]['amount_in'] = $amountIn;
-                $rows[$idx]['amount_out'] = $amountOut;
-                if ($accountCode !== '-') {
-                    $rows[$idx]['currency'] = strtoupper((string)($accountMapActive[$accountCode]['currency'] ?? 'CHF'));
-                }
-                $rows[$idx]['note'] = ($t = trim((string)($line['note'] ?? ''))) === '' ? null : $t;
-                $rows[$idx]['booking_status'] = $status;
-                unset($rows[$idx]['scope_code']);
-                $rows[$idx]['updated_at'] = now_iso_book();
-            }
-
-            $store->writeList('transactions.json', $rows);
-            redirect_kontobuch(['ok' => 'Kontobuch-Zeilen gespeichert.']);
+        kb_go(['error' => 'Unbekannte Aktion.']);
         } catch (Throwable $e) {
-            redirect_kontobuch(['error' => 'Fehler beim Speichern: ' . $e->getMessage()]);
-        }
+        kb_go(['error' => 'Fehler: ' . $e->getMessage()]);
     }
 }
 
-$accountFilter = trim((string)($_GET['booking_top_account'] ?? $_GET['account'] ?? ''));
+$filters = kb_filters();
+$accountFilter = $filters['konto'];
 $accountFilterResolved = $accountFilter;
 if ($accountFilter !== '' && $accountFilter !== '-') {
     $needle = account_normalize_for_match($accountFilter);
@@ -655,8 +869,34 @@ if ($accountFilter !== '' && $accountFilter !== '-') {
     }
 }
 
-$transactions = $repo->getTransactions();
+$periodFilter = $filters['zeitraum'];
+$jahrFilter = (int)$filters['jahr'];
+if ($jahrFilter < 1990 || $jahrFilter > 2100) {
+    $jahrFilter = 0;
+}
+$from = null;
+$to = null;
+if ($periodFilter === '3m') {
+    $from = date('Y-m-d', strtotime('-3 months'));
+} elseif ($periodFilter === '6m') {
+    $from = date('Y-m-d', strtotime('-6 months'));
+} elseif ($periodFilter === '1y') {
+    $from = date('Y-m-d', strtotime('-1 year'));
+}
 
+$loadFrom = $from;
+$loadTo = $to;
+if ($jahrFilter > 0) {
+    $yearStart = sprintf('%04d-01-01', $jahrFilter);
+    $yearEnd = sprintf('%04d-12-31', $jahrFilter);
+    $loadFrom = ($loadFrom === null || $loadFrom < $yearStart) ? $yearStart : $loadFrom;
+    $loadTo = ($loadTo === null || $loadTo > $yearEnd) ? $yearEnd : $loadTo;
+}
+
+$balances = ($loadFrom !== null) ? $yearly->accountDeltasBefore($loadFrom) : [];
+$transactions = ($loadFrom !== null && $loadTo !== null && $loadFrom > $loadTo)
+    ? []
+    : $yearly->readRange($loadFrom, $loadTo);
 usort(
     $transactions,
     static function (array $a, array $b): int {
@@ -668,12 +908,12 @@ usort(
         if ($cmp2 !== 0) {
             return $cmp2;
         }
+
         return strcmp((string)($a['external_id'] ?? ''), (string)($b['external_id'] ?? ''));
     }
 );
 
-$balances = [];
-$prepared = [];
+$allPrepared = [];
 foreach ($transactions as $row) {
     $account = trim((string)($row['account'] ?? ''));
     if ($account === '') {
@@ -687,13 +927,52 @@ foreach ($transactions as $row) {
     $balances[$balanceKey] += $delta;
     $row['_konto'] = $account;
     $row['_saldo'] = $balances[$balanceKey];
+    $row['_delta'] = $delta;
+    $allPrepared[] = $row;
+}
 
-    if ($accountFilter !== '' && $accountFilter !== '-') {
-        if (account_normalize_for_match($account) !== account_normalize_for_match($accountFilterResolved)) {
+$accountNeedle = ($accountFilter !== '' && $accountFilter !== '-')
+    ? account_normalize_for_match($accountFilterResolved)
+    : '';
+
+$prepared = [];
+$nOffen = 0;
+$sumOffen = 0.0;
+$nV = 0;
+foreach ($allPrepared as $row) {
+    $account = (string)($row['_konto'] ?? '');
+    if ($accountNeedle !== '' && account_normalize_for_match($account) !== $accountNeedle) {
             continue;
         }
+    $d = (string)($row['booking_date'] ?? '');
+    if ($jahrFilter > 0 && substr($d, 0, 4) !== (string)$jahrFilter) {
+        continue;
     }
-
+    if ($from !== null && $d < $from) {
+        continue;
+    }
+    if ($to !== null && $periodFilter !== 'all' && $d > $to) {
+        continue;
+    }
+    $emp = (string)($row['counterparty'] ?? '');
+    if ($filters['empfaenger'] !== '' && stripos($emp, $filters['empfaenger']) === false) {
+        continue;
+    }
+    $note = (string)($row['note'] ?? '');
+    if ($filters['memo'] !== '' && stripos($note, $filters['memo']) === false) {
+        continue;
+    }
+    $st = kb_status((string)($row['booking_status'] ?? 'x'));
+    if ($filters['status'] === 'offen' && $st === 'x') {
+        continue;
+    }
+    if ($st !== 'x') {
+        $nOffen++;
+        $sumOffen += (float)($row['_delta'] ?? 0);
+        if ($st === 'v') {
+            $nV++;
+        }
+    }
     $prepared[] = $row;
 }
 
@@ -708,9 +987,55 @@ usort(
         if ($cmp2 !== 0) {
             return $cmp2;
         }
+
         return strcmp((string)($b['external_id'] ?? ''), (string)($a['external_id'] ?? ''));
     }
 );
+
+$openingSaldo = null;
+$closingSaldo = null;
+$lifeSums = ($accountNeedle !== '') ? ($yearly->accountStatusSums()[$accountNeedle] ?? null) : null;
+if ($accountNeedle !== '') {
+    $closingSaldo = $lifeSums !== null
+        ? (float)($lifeSums['all'] ?? 0)
+        : (float)($balances[$accountNeedle] ?? 0.0);
+    if ($prepared !== []) {
+        $oldest = $prepared[count($prepared) - 1];
+        $openingSaldo = (float)($oldest['_saldo'] ?? 0) - (float)($oldest['_delta'] ?? 0);
+    } else {
+        $openingSaldo = $closingSaldo;
+    }
+}
+
+$abstMode = $filters['abstimmen'] === '1';
+$ausgangSaldo = null;
+$progressSaldo = null;
+$endSaldo = null;
+$vIds = [];
+if ($accountNeedle !== '') {
+    if ($lifeSums !== null) {
+        $ausgangSaldo = (float)($lifeSums['x'] ?? 0);
+        $progressSaldo = $ausgangSaldo + (float)($lifeSums['v'] ?? 0);
+        $endSaldo = (float)($lifeSums['all'] ?? 0);
+    } else {
+        $ausgangSaldo = 0.0;
+        $progressSaldo = 0.0;
+        $endSaldo = $closingSaldo;
+    }
+    if ($abstMode) {
+        $vIds = $yearly->vIdsForAccount($accountNeedle);
+    }
+} else {
+    foreach ($prepared as $row) {
+        if (kb_status((string)($row['booking_status'] ?? '')) !== 'v') {
+            continue;
+        }
+        $vid = trim((string)($row['id'] ?? ''));
+        if ($vid !== '') {
+            $vIds[] = $vid;
+        }
+    }
+}
 
 $formatCurrency = static fn(float $amount): string => number_format($amount, 2, '.', "'");
 $formatAmountCell = static function (float $amount) use ($formatCurrency): string {
@@ -720,128 +1045,304 @@ $formatDateDe = static function (string $iso): string {
     if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $iso, $m)) {
         return $m[3] . '.' . $m[2] . '.' . $m[1];
     }
+
     return $iso;
 };
 
 $bookingTopDefault = ($accountFilterResolved !== '' && $accountFilterResolved !== '-' && isset($accountMapActive[$accountFilterResolved]))
     ? $accountFilterResolved
     : '';
+$showKontoCol = ($bookingTopDefault === '');
+
+$editId = $filters['edit'];
+$editRow = null;
+$editIdx = null;
+if ($editId !== '') {
+    foreach ($allPrepared as $i => $r) {
+        if (trim((string)($r['id'] ?? '')) === $editId) {
+            $editRow = $r;
+            $editIdx = $i;
+            break;
+        }
+    }
+    if ($editRow === null) {
+        $found = $yearly->findById($editId);
+        if ($found !== null) {
+            $acc = trim((string)($found['account'] ?? ''));
+            $found['_konto'] = $acc === '' ? '-' : $acc;
+            $found['_delta'] = (float)($found['amount_in'] ?? 0) - (float)($found['amount_out'] ?? 0);
+            $editRow = $found;
+        } else {
+            $editId = '';
+        }
+    }
+}
+
+$editType = 'standard';
+$editZiel = '';
+$fDatum = kb_sticky_datum();
+$fKonto = $bookingTopDefault;
+$fEmp = '';
+$fMemo = '';
+$fBetrag = '';
+$fPlan = '';
+$fTargetAmt = '';
+$fStatus = 'n';
+if ($editRow !== null) {
+    $editType = trim((string)($editRow['transfer_id'] ?? '')) !== '' ? 'transfer' : 'standard';
+    $fDatum = (string)($editRow['booking_date'] ?? $fDatum);
+    $fKonto = (string)($editRow['_konto'] ?? $editRow['account'] ?? $fKonto);
+    $fEmp = (string)($editRow['counterparty'] ?? '');
+    $fMemo = (string)($editRow['note'] ?? '');
+    if ($editType === 'transfer') {
+        $fMemo = trim((string)preg_replace('/\s*\|\s*Transfer (zu|von) .+$/u', '', $fMemo));
+    }
+    $signed = (float)($editRow['amount_in'] ?? 0) - (float)($editRow['amount_out'] ?? 0);
+    $fBetrag = abs($signed) < 0.00001 ? '' : (string)$signed;
+    $fPlan = trim((string)($editRow['cost_category_code'] ?? ''));
+    $fStatus = kb_status((string)($editRow['booking_status'] ?? 'n'));
+    $editZiel = trim((string)($editRow['target_account'] ?? ''));
+    if ($editZiel === '') {
+        $pair = $yearly->findPair($editRow);
+        if ($pair !== null) {
+            $editZiel = trim((string)($pair['account'] ?? ''));
+            $fTargetAmt = (string)((float)($pair['amount_in'] ?? 0) + (float)($pair['amount_out'] ?? 0));
+        } elseif ($editIdx !== null) {
+            $pidx = kb_pair_index($allPrepared, $editRow, $editIdx);
+            if ($pidx !== null) {
+                $editZiel = trim((string)($allPrepared[$pidx]['account'] ?? ''));
+                $fTargetAmt = (string)((float)($allPrepared[$pidx]['amount_in'] ?? 0) + (float)($allPrepared[$pidx]['amount_out'] ?? 0));
+            }
+        }
+    }
+}
+
 $counterpartyHints = [];
-foreach ($prepared as $row) {
+$empNames = [];
+foreach ($allPrepared as $row) {
     $cp = trim((string)($row['counterparty'] ?? ''));
     if ($cp === '') {
         continue;
     }
-    $key = function_exists('mb_strtolower') ? mb_strtolower($cp) : strtolower($cp);
-    if (isset($counterpartyHints[$key])) {
-        continue;
+    if (!in_array($cp, $empNames, true)) {
+        $empNames[] = $cp;
     }
+    $key = function_exists('mb_strtolower') ? mb_strtolower($cp) : strtolower($cp);
     $catCode = trim((string)($row['cost_category_code'] ?? ''));
-    $isTransfer = trim((string)($row['transfer_id'] ?? '')) !== '' || trim((string)($row['target_account'] ?? '')) !== '';
+    $isTransfer = trim((string)($row['transfer_id'] ?? '')) !== '';
     $counterpartyHints[$key] = [
         'booking_type' => $isTransfer ? 'transfer' : 'standard',
         'category_code' => $catCode,
     ];
 }
+
+$availableYears = $yearly->availableYears();
+
+$kbForce = [];
+if ($filters['empfaenger'] !== '') {
+    $kbForce[] = 'f-emp';
+}
+if ($filters['memo'] !== '') {
+    $kbForce[] = 'f-memo';
+}
+if ($editRow !== null) {
+    if (trim((string)($editRow['cost_category_code'] ?? '')) !== ''
+        || trim((string)($editRow['cost_category_name_raw'] ?? '')) !== '') {
+        $kbForce[] = 'n-kat';
+    }
+    if (trim((string)($editRow['note'] ?? '')) !== '') {
+        $kbForce[] = 'n-memo';
+    }
+    if (trim((string)($editRow['receipt_path'] ?? '')) !== '') {
+        $kbForce[] = 'n-beleg';
+    }
+    if ($editType === 'transfer') {
+        $kbForce[] = 'n-typ';
+    }
+}
+$kbAnzeigeUser = trim((string)($_SESSION['Benutzername'] ?? 'anon'));
+if ($kbAnzeigeUser === '') {
+    $kbAnzeigeUser = 'anon';
+}
+
+rkrk_ar_emit_chrome('styles.css');
 ?>
-<!doctype html>
-<html lang="de">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Klassisches Kontobuch</title>
-    <link rel="stylesheet" href="styles.css">
     <style>
-        .kontobuch-grid table td,
-        .kontobuch-grid table th {
-            padding: 0.3rem 0.4rem;
-            line-height: 1.15;
-        }
-        .kontobuch-grid tbody tr:nth-child(even) {
-            background: #fafafa;
-        }
-        .kontobuch-grid td.amount-out { background: #fdeaea; }
-        .kontobuch-grid td.amount-in { background: #ebf9e8; }
-        .kontobuch-grid td.saldo { background: #e9f2ff; }
-        .kontobuch-grid td.status-cell {
-            text-align: center;
+    .kb-hidden { display: none !important; }
+    .kb-filter, .kb-filter-main {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem 0.8rem;
+        align-items: end;
+        margin-bottom: 1rem;
+    }
+    .kb-book {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+        gap: 0.65rem 0.8rem;
+        align-items: end;
+    }
+    .kb-filter label, .kb-book label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        min-width: 8.5rem;
+        font-size: 0.9rem;
+    }
+    .kb-filter input, .kb-filter select, .kb-book input, .kb-book select {
+        width: 100%;
+        min-width: 0;
+        border: 1px solid #d1d5db;
+        border-radius: 0.4rem;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.9rem;
+    }
+    .icon-link .ico, .icon-btn .ico { width: 0.95rem; height: 0.95rem; display: block; }
+    .filter-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; align-self: end; }
+    .filter-pill {
+        display: inline-flex;
+        align-items: center;
+        background: #fff;
+        color: #475569;
+        border: 1px solid #d1d5db;
+        border-radius: 999px;
+        padding: 0.28rem 0.78rem;
+        font-size: 0.82rem;
             font-weight: 700;
+        text-decoration: none;
             cursor: pointer;
-            user-select: none;
-            overflow: visible;
-        }
-        .status-badge {
-            display: inline-block;
-            min-width: 1.7rem;
-            padding: 0.1rem 0.3rem;
+    }
+    .filter-pill.is-active { background: #e8f0e4; border-color: #4d6b3e; color: #3f5a32; }
+    .kb-list-head { display: flex; justify-content: space-between; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .kb-editing { outline: 2px solid #c7d2fe; }
+    .ka-row-open { font-weight: 600; }
+    .receipt-cell { max-width: 22rem; }
+    .receipt-cell a { margin-left: 0.25rem; }
+    button.kb-abst {
+        min-width: 1.8rem;
+        font-weight: 700;
             border-radius: 0.28rem;
             border: 1px solid #d1d5db;
-        }
-        .status-n { background: #f3f4f6; }
-        .status-v { background: #fff7d6; }
-        .status-x { background: #ffe3e3; }
-        .row-locked { opacity: 0.7; }
-        .row-editing td { outline: 1px solid #c7d2fe; outline-offset: -1px; }
-        .row-selected td {
-            background: #e8f1ff !important;
-            box-shadow: inset 0 0 0 1px #7aa2ff;
-        }
-        .editable-cell { cursor: text; }
-        .cell-display.empty-amount { color: transparent; }
-        .edit-actions { display: flex; justify-content: flex-end; margin-top: 0.5rem; }
-        .booking-conditional-hidden { display: none !important; }
-        .kontobuch-grid #kontobuch-table {
-            table-layout: fixed;
-            width: 100%;
-        }
-        .kontobuch-grid #kontobuch-table col {
-            min-width: 42px;
-        }
-        .kontobuch-grid .kb-th {
-            position: relative;
-            vertical-align: bottom;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .kontobuch-grid .kb-th-inner {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            min-width: 0;
-        }
-        .kontobuch-grid .kb-th-label {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        cursor: pointer;
+        padding: 0.1rem 0.35rem;
+    }
+    button.kb-abst.is-n { background: #f3f4f6; }
+    button.kb-abst.is-v { background: #fff7d6; }
+    button.kb-abst.is-x { background: #ffe3e3; }
+    .muted { color: #6b7280; }
+    .nowrap { white-space: nowrap; }
+    #kontobuch-table th.num,
+    #kontobuch-table td.amount-out,
+    #kontobuch-table td.amount-in,
+    #kontobuch-table td.saldo {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+    .kb-abstimmen { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .kb-abstimmen form { display: inline; margin: 0; }
+    .kb-abstimmen-link,
+    .kb-abstimmen button {
+        background: #d97706;
+        color: #fff;
+        border: 0;
+        border-radius: 0.4rem;
+        padding: 0.4rem 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.88rem;
+    }
+    .kb-abstimmen button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    .kb-abstimmen-all { background: #b45309; }
+    .ka-abst-hint { margin: 0.35rem 0 1rem; }
+    .kb-abst-kpis .card:nth-child(1) {
+        background: #dbeafe;
+        box-shadow: inset 4px 0 0 #3b82f6;
+    }
+    .kb-abst-kpis .card:nth-child(2) {
+        background: #ffedd5;
+        box-shadow: inset 4px 0 0 #f97316;
+    }
+    .kb-abst-kpis .card:nth-child(3) {
+        background: #d1fae5;
+        box-shadow: inset 4px 0 0 #10b981;
+    }
+    .kb-anzeige-off { display: none !important; }
+    .kb-anzeige { position: relative; min-width: auto; align-self: end; }
+    .kb-anzeige > summary {
+        list-style: none;
             cursor: pointer;
-        }
-        .kontobuch-grid .kb-th-label:hover {
-            text-decoration: underline;
-        }
-        .kontobuch-grid .kb-th-sort {
-            flex: 0 0 auto;
-            font-size: 0.65rem;
-            opacity: 0.55;
-            width: 0.75rem;
-        }
-        .kontobuch-grid .kb-th.sort-asc .kb-th-sort::after { content: '▲'; }
-        .kontobuch-grid .kb-th.sort-desc .kb-th-sort::after { content: '▼'; }
-        .kontobuch-grid .kb-resize-handle {
+        background: #fff;
+        border: 1px solid #d1d5db;
+        color: #475569;
+        border-radius: 999px;
+        padding: 0.28rem 0.85rem;
+        font-weight: 700;
+        font-size: 0.82rem;
+    }
+    .kb-anzeige > summary::-webkit-details-marker { display: none; }
+    .kb-anzeige-list {
             position: absolute;
             right: 0;
-            top: 0;
-            bottom: 0;
-            width: 8px;
-            cursor: col-resize;
+        z-index: 30;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.75rem 0.85rem 0.9rem;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+        min-width: 18rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-top: 0.35rem;
+    }
+    .kb-anzeige-list p {
+        margin: 0.45rem 0 0.1rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        font-weight: 700;
+    }
+    .kb-anzeige-list p:first-child { margin-top: 0; }
+    .kb-anzeige-list .filter-pills { align-self: stretch; padding-bottom: 0; }
+    .kb-anzeige-list label.filter-pill {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        min-width: 0;
+        margin: 0;
+        background: #fff;
+        color: #475569;
+        border: 1px solid #d1d5db;
+        border-radius: 999px;
+        padding: 0.28rem 0.78rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+        line-height: 1.2;
+        cursor: pointer;
             user-select: none;
-            z-index: 2;
-        }
-        .kontobuch-grid .kb-resize-handle:hover { background: rgba(59, 130, 246, 0.12); }
+    }
+    .kb-anzeige-list label.filter-pill input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+    .kb-anzeige-list label.filter-pill.is-on {
+        background: #e8f0e4;
+        border-color: #4d6b3e;
+        color: #3f5a32;
+    }
     </style>
-</head>
-<body>
 <div class="container">
     <nav class="top-nav">
         <a href="index.php">Dashboard</a>
@@ -857,8 +1358,23 @@ foreach ($prepared as $row) {
 
     <header class="header">
         <div>
-            <h1>Klassisches Kontobuch</h1>
-            <p>Buchungen, Transfers zwischen Konti, Status n/v/x (ohne Status in den Daten = x, gesperrt/nicht editierbar) und Beleg-Upload.</p>
+            <h1>Kontobuch</h1>
+            <p>
+                Buchungen und Transfers.
+                <?php if ($bookingTopDefault !== '' && isset($accountMapActive[$bookingTopDefault])): ?>
+                    <?= h_book((string)$bookingTopDefault . ' — ' . (string)($accountMapActive[$bookingTopDefault]['name'] ?? '')) ?>
+                    <?php if ($closingSaldo !== null): ?>
+                        · Saldo <?= h_book($formatCurrency($closingSaldo)) ?>
+                    <?php endif; ?>
+                <?php endif; ?>
+                <?php if ($periodFilter === 'all'): ?>
+                    · alle Buchungen
+                <?php elseif ($from !== null && $to !== null): ?>
+                    · <?= h_book($formatDateDe($from)) ?>–<?= h_book($formatDateDe($to)) ?>
+                <?php elseif ($from !== null): ?>
+                    · ab <?= h_book($formatDateDe($from)) ?> (inkl. zukünftig)
+                <?php endif; ?>
+            </p>
         </div>
         <img class="header-logo" src="<?= htmlspecialchars(rtrim((string)($RkrkLocation ?? ''), "/\\") . '/data/rt/images/logo.png', ENT_QUOTES) ?>" alt="Logo" onerror="this.style.display='none';">
     </header>
@@ -870,167 +1386,273 @@ foreach ($prepared as $row) {
         <div class="notice error"><?= h_book((string)$_GET['error']) ?></div>
     <?php endif; ?>
 
-    <section class="card">
-        <h2>Neue Buchung</h2>
-        <form method="post" enctype="multipart/form-data" class="form-grid" id="new_booking_form">
-            <input type="hidden" name="action" value="add_booking">
-            <input type="hidden" name="redirect_booking_top_account" id="redirect_account_new" value="<?= h_book($accountFilterResolved) ?>">
-            <label class="full-width">Konto
-                <select name="booking_top_account" id="booking_top_account" aria-describedby="booking_top_account_hint">
-                    <option value="">Alle Konten in der Liste</option>
+    <form method="get" class="kb-filter" id="kb_filter">
+        <div class="kb-filter-main">
+            <label>Konto
+                <select name="konto" id="kb_konto" onchange="this.form.submit()">
+                    <option value="">— alle —</option>
                     <?php foreach ($accountMapActive as $code => $acc): ?>
                         <?php $cur = strtoupper((string)($acc['currency'] ?? 'CHF')); ?>
-                        <option value="<?= h_book((string)$code) ?>" data-currency="<?= h_book($cur) ?>" <?= $bookingTopDefault === $code ? 'selected' : '' ?>>
+                        <option value="<?= h_book((string)$code) ?>" <?= $bookingTopDefault === (string)$code ? 'selected' : '' ?>>
                             <?= h_book((string)$code . ' — ' . (string)($acc['name'] ?? '') . ' (' . $cur . ')') ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <small id="booking_top_account_hint" class="muted" style="display:block;margin-top:0.35rem;">
-                    Mit gewähltem Konto: nur Buchungen dieses Kontos in der Tabelle unten. Ohne Auswahl: alle Konten. Seite lädt bei Konto-Wechsel neu.
-                </small>
             </label>
-            <label>Datum
-                <input type="date" name="booking_date" id="booking_date_new" required value="<?= h_book(date('Y-m-d')) ?>">
+            <input type="hidden" name="zeitraum" value="<?= h_book($periodFilter) ?>">
+            <div class="filter-pills" role="group" aria-label="Zeitraum">
+                <?php foreach (['3m' => '3 Monate', '6m' => '6 Monate', '1y' => '1 Jahr', 'all' => 'Alle'] as $pk => $plab): ?>
+                    <button type="submit" name="zeitraum" value="<?= h_book($pk) ?>" class="filter-pill<?= $periodFilter === $pk ? ' is-active' : '' ?>"><?= h_book($plab) ?></button>
+                <?php endforeach; ?>
+            </div>
+            <?php if ($availableYears !== []): ?>
+                <label>Jahr
+                    <select name="jahr" onchange="this.form.submit()">
+                        <option value="">alle Jahre</option>
+                        <?php foreach ($availableYears as $y): ?>
+                            <option value="<?= (int)$y ?>" <?= $jahrFilter === (int)$y ? 'selected' : '' ?>><?= (int)$y ?></option>
+                        <?php endforeach; ?>
+                    </select>
             </label>
-            <label>Empfänger
-                <input type="text" name="counterparty" id="counterparty_new" required autocomplete="off">
+            <?php endif; ?>
+            <div class="filter-pills">
+                <button type="submit" name="status" value="<?= $filters['status'] === 'offen' ? 'alle' : 'offen' ?>" class="filter-pill<?= $filters['status'] === 'offen' ? ' is-active' : '' ?>">
+                    <?= $abstMode ? 'Nur nicht abgestimmte' : 'Nur offen' ?><?= $nOffen > 0 ? ' ' . (int)$nOffen : '' ?>
+                </button>
+            </div>
+            <label data-kb-show="f-emp">Empfänger
+                <input type="text" name="empfaenger" list="emp_list" value="<?= h_book($filters['empfaenger']) ?>" placeholder="enthält…">
             </label>
-            <label>Kostenart
-                <select name="category_code" id="category_code_new">
-                    <option value="">(frei / keine)</option>
-                    <?php foreach ($categories as $code => $name): ?>
-                        <option value="<?= h_book((string)$code) ?>"><?= h_book((string)$code . ' - ' . (string)$name) ?></option>
+            <label data-kb-show="f-memo">Bemerkung
+                <input type="text" name="memo" value="<?= h_book($filters['memo']) ?>" placeholder="enthält…">
+            </label>
+            <button type="submit" class="filter-pill">Filtern</button>
+            <?php if ($abstMode): ?>
+                <input type="hidden" name="abstimmen" value="1">
+            <?php endif; ?>
+            <details class="kb-anzeige" id="kb_anzeige">
+                <summary>Anzeige</summary>
+                <div class="kb-anzeige-list">
+                    <p>Filter</p>
+                    <div class="filter-pills">
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="f-emp"> Empfänger</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="f-memo"> Bemerkung</label>
+                    </div>
+                    <p>Neue Buchung</p>
+                    <div class="filter-pills">
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="n-kat"> Kostenart</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="n-typ"> Typ</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="n-memo"> Bemerkung</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="n-status"> Status</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="n-beleg"> Beleg</label>
+                    </div>
+                    <p>Liste</p>
+                    <div class="filter-pills">
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="t-emp" checked> Empfänger</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="t-kat" checked> Kostenart</label>
+                        <label class="filter-pill"><input type="checkbox" data-kb-toggle="t-memo" checked> Bemerkung</label>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </form>
+    <datalist id="emp_list">
+        <?php foreach ($empNames as $name): ?>
+            <option value="<?= h_book($name) ?>">
                     <?php endforeach; ?>
-                </select>
+    </datalist>
+
+    <section class="card<?= $editRow !== null ? ' kb-editing' : '' ?>" id="kb_new">
+        <h2><?= $editRow !== null ? 'Buchung bearbeiten' : 'Neue Buchung' ?></h2>
+        <form method="post" enctype="multipart/form-data" class="kb-book" id="kb_new_form" autocomplete="off"
+              data-status-x="<?= $editRow !== null && kb_status((string)($editRow['booking_status'] ?? '')) === 'x' ? '1' : '0' ?>"
+              data-transfer="<?= $editType === 'transfer' ? '1' : '0' ?>">
+            <input type="hidden" name="action" value="<?= $editRow !== null ? 'save_booking' : 'add_booking' ?>">
+            <input type="hidden" name="confirm_x" id="kb_confirm_x" value="0">
+            <input type="hidden" name="confirm_transfer" id="kb_confirm_transfer" value="0">
+            <input type="hidden" name="filter_konto" value="<?= h_book($filters['konto']) ?>">
+            <input type="hidden" name="zeitraum" value="<?= h_book($filters['zeitraum']) ?>">
+            <input type="hidden" name="jahr" value="<?= h_book($filters['jahr']) ?>">
+            <input type="hidden" name="filter_empfaenger" value="<?= h_book($filters['empfaenger']) ?>">
+            <input type="hidden" name="filter_memo" value="<?= h_book($filters['memo']) ?>">
+            <input type="hidden" name="filter_status" value="<?= h_book($filters['status']) ?>">
+            <input type="hidden" name="abstimmen" value="<?= h_book($filters['abstimmen']) ?>">
+            <?php if ($editRow !== null): ?>
+                <input type="hidden" name="id" value="<?= h_book((string)($editRow['id'] ?? '')) ?>">
+                <input type="hidden" name="expect_modified" value="<?= h_book(kb_row_stamp($editRow)) ?>">
+            <?php endif; ?>
+            <label>Datum
+                <input type="date" name="datum" id="kb_datum" required value="<?= h_book($fDatum) ?>">
             </label>
-            <div id="source_account_wrap" class="<?= $bookingTopDefault !== '' ? 'booking-conditional-hidden' : '' ?>">
-                <label>Quellkonto
-                    <select name="source_account" id="source_account_new" <?= $bookingTopDefault === '' ? 'required' : '' ?>>
+            <?php if ($bookingTopDefault === ''): ?>
+                <label>Konto
+                    <select name="konto" id="kb_konto_new" required>
                         <option value="">Bitte wählen</option>
                         <?php foreach ($accountMapActive as $code => $acc): ?>
                             <?php $cur = strtoupper((string)($acc['currency'] ?? 'CHF')); ?>
-                            <option value="<?= h_book((string)$code) ?>" data-currency="<?= h_book($cur) ?>" <?= $bookingTopDefault === $code ? 'selected' : '' ?>>
-                                <?= h_book((string)$code . ' - ' . (string)($acc['name'] ?? '') . ' (' . $cur . ')') ?>
+                            <option value="<?= h_book((string)$code) ?>" data-currency="<?= h_book($cur) ?>" <?= $fKonto === (string)$code ? 'selected' : '' ?>>
+                                <?= h_book((string)$code . ' — ' . (string)($acc['name'] ?? '') . ' (' . $cur . ')') ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </label>
-            </div>
-            <label>Buchungstyp
-                <select name="booking_type" id="booking_type">
-                    <option value="standard">–</option>
-                    <option value="transfer">Kontotransfer</option>
+            <?php else: ?>
+                <?php $curDef = strtoupper((string)($accountMapActive[$bookingTopDefault]['currency'] ?? 'CHF')); ?>
+                <input type="hidden" name="konto" id="kb_konto_new" value="<?= h_book($bookingTopDefault) ?>" data-currency="<?= h_book($curDef) ?>">
+            <?php endif; ?>
+            <label>Empfänger
+                <input type="text" name="empfaenger" id="kb_emp" list="emp_list" maxlength="80" autocomplete="off" value="<?= h_book($fEmp) ?>" <?= $editType === 'transfer' ? '' : 'required' ?>>
+            </label>
+            <label data-kb-show="n-kat">Kostenart
+                <select name="category_code" id="kb_category">
+                    <option value="">(frei / keine)</option>
+                    <?php foreach ($categories as $code => $name): ?>
+                        <option value="<?= h_book((string)$code) ?>" <?= $fPlan === (string)$code ? 'selected' : '' ?>><?= h_book((string)$code . ' - ' . (string)$name) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </label>
-            <label id="target_account_wrap" class="booking-conditional-hidden">Zielkonto
-                <select name="target_account" id="target_account_new">
+            <label>Betrag
+                <input type="text" name="betrag" id="kb_betrag" inputmode="decimal" placeholder="100 (Ein) oder -49.5 (Aus)" value="<?= h_book($fBetrag) ?>">
+            </label>
+            <label data-kb-show="n-typ">Typ
+                <?php if ($editRow !== null): ?>
+                    <input type="hidden" name="booking_type" id="booking_type" value="<?= h_book($editType) ?>">
+                    <select disabled>
+                        <option value="standard" <?= $editType === 'standard' ? 'selected' : '' ?>>Buchung</option>
+                        <option value="transfer" <?= $editType === 'transfer' ? 'selected' : '' ?>>Kontotransfer</option>
+                    </select>
+                <?php else: ?>
+                <select name="booking_type" id="booking_type">
+                        <option value="standard">Buchung</option>
+                    <option value="transfer">Kontotransfer</option>
+                </select>
+                <?php endif; ?>
+            </label>
+            <label id="kb_ziel_wrap" class="<?= $editType === 'transfer' ? '' : 'kb-hidden' ?>">Zielkonto
+                <select name="ziel_konto" id="kb_ziel">
                     <option value="">Bitte wählen</option>
                     <?php foreach ($accountMapActive as $code => $acc): ?>
                         <?php $cur = strtoupper((string)($acc['currency'] ?? 'CHF')); ?>
-                        <option value="<?= h_book((string)$code) ?>" data-currency="<?= h_book($cur) ?>">
-                            <?= h_book((string)$code . ' - ' . (string)($acc['name'] ?? '') . ' (' . $cur . ')') ?>
+                        <option value="<?= h_book((string)$code) ?>" data-currency="<?= h_book($cur) ?>" <?= $editZiel === (string)$code ? 'selected' : '' ?>>
+                            <?= h_book((string)$code . ' — ' . (string)($acc['name'] ?? '') . ' (' . $cur . ')') ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </label>
-            <label id="amount_label_wrap"><span id="amount_label_text">Betrag</span>
-                <input type="number" name="amount" id="booking_amount" step="any" inputmode="decimal" placeholder="z. B. 100 (Ein) oder -49.5 (Aus)">
+            <label id="kb_target_amt_wrap" class="kb-hidden">Zielbetrag (Fremdwährung)
+                <input type="text" name="target_amount" id="kb_target_amt" inputmode="decimal" value="<?= h_book($fTargetAmt) ?>">
             </label>
-            <label id="target_amount_wrap" class="booking-conditional-hidden">Zielbetrag (Fremdwährung)
-                <input type="number" name="target_amount" id="target_amount_input" step="any" min="0" value="">
+            <label class="full-width" data-kb-show="n-memo">Bemerkung
+                <input type="text" name="note" id="kb_memo" maxlength="200" value="<?= h_book($fMemo) ?>">
             </label>
-            <label class="full-width">Bemerkung
-                <input type="text" name="note" id="note_new">
-            </label>
-            <label>Status
-                <select name="booking_status" id="booking_status_new">
-                    <option value="n">n — offen</option>
-                    <option value="v">v — verarbeitet</option>
-                    <option value="x" selected>x — gesperrt</option>
+            <label data-kb-show="n-status">Status
+                <select name="booking_status" id="kb_status">
+                    <option value="n" <?= $fStatus === 'n' ? 'selected' : '' ?>>n — offen</option>
+                    <option value="v" <?= $fStatus === 'v' ? 'selected' : '' ?>>v — gemerkt</option>
+                    <option value="x" <?= $fStatus === 'x' ? 'selected' : '' ?>>x — abgestimmt</option>
                 </select>
             </label>
-            <label class="full-width">Beleg (Datei)
-                <input type="file" name="receipt" accept=".pdf,.png,.jpg,.jpeg,.webp">
+            <label class="full-width" data-kb-show="n-beleg">Beleg (Datei)
+                <input type="file" name="beleg" accept=".pdf,.png,.jpg,.jpeg,.webp">
+                <?php if ($editRow !== null && trim((string)($editRow['receipt_path'] ?? '')) !== ''): ?>
+                    <small><a href="<?= h_book((string)$editRow['receipt_path']) ?>" target="_blank" rel="noopener">aktueller Beleg</a></small>
+                <?php endif; ?>
             </label>
-            <div class="full-width">
-                <button type="submit">💾 Buchung speichern</button>
+            <div class="form-actions full-width">
+                <button type="submit"><?= $editRow !== null ? 'Speichern' : 'Buchen' ?></button>
+                <?php if ($editRow !== null): ?>
+                    <a class="button-link secondary" href="kontobuch.php?<?= h_book(http_build_query(kb_qs(['edit' => '']))) ?>">Abbrechen</a>
+                <?php endif; ?>
             </div>
         </form>
     </section>
 
-    <section class="card">
-        <h2>Kontobuch</h2>
-        <form method="post" id="lines-form">
-            <input type="hidden" name="action" value="save_lines">
-            <input type="hidden" name="redirect_booking_top_account" id="redirect_account_lines" value="<?= h_book($accountFilterResolved) ?>">
-            <div class="edit-actions" style="margin-bottom:0.5rem;">
-                <span class="muted" style="margin-right:auto;">Bearbeitete Zeilen werden beim Sichern auf Status <b>x</b> (gesperrt) gesetzt. Markierte Zeilen werden gelöscht.</span>
-                <button type="submit" title="Sichern (bearbeitete Zeilen → Status x)">💾 Sichern</button>
+    <?php if ($abstMode): ?>
+    <section class="kpi-grid kb-abst-kpis">
+        <article class="card">
+            <h2>Ausgangssaldo</h2>
+            <p class="muted">nur abgestimmte (x)</p>
+            <p class="value"><?= $ausgangSaldo !== null ? h_book($formatCurrency($ausgangSaldo)) : 'Konto wählen' ?></p>
+        </article>
+        <article class="card">
+            <h2>Progresssaldo</h2>
+            <p class="muted">x + gemerkte v<?= $vIds !== [] ? ' (' . count($vIds) . ')' : '' ?></p>
+            <p class="value"><?= $progressSaldo !== null ? h_book($formatCurrency($progressSaldo)) : '—' ?></p>
+        </article>
+        <article class="card">
+            <h2>Endsaldo</h2>
+            <p class="muted">wenn jetzt alles auf x</p>
+            <p class="value"><?= $endSaldo !== null ? h_book($formatCurrency($endSaldo)) : '—' ?></p>
+        </article>
+    </section>
+    <p class="muted ka-abst-hint">Klick auf n setzt v (gemerkt, unabhängig von der Bank-Reihenfolge). Abschliessen setzt alle v auf x.</p>
+    <?php endif; ?>
+
+    <section class="card kontobuch-grid">
+        <h2 class="kb-list-head">
+            <span>
+                <?= count($prepared) ?> Buchungen
+                <?php if ($nOffen > 0): ?>
+                    <span class="muted"> · <?= (int)$nOffen ?> offen <?= h_book($formatCurrency($sumOffen)) ?></span>
+                <?php endif; ?>
+                <?php if ($openingSaldo !== null && $bookingTopDefault !== ''): ?>
+                    <span class="muted"> · Saldovortrag <?= h_book($formatCurrency($openingSaldo)) ?></span>
+                <?php endif; ?>
+            </span>
+            <div class="kb-abstimmen">
+            <?php if ($abstMode): ?>
+                <?php if (kb_can_write()): ?>
+                <form method="post" class="kb-abstimmen">
+                    <input type="hidden" name="action" value="abschliessen">
+                    <input type="hidden" name="filter_konto" value="<?= h_book($filters['konto']) ?>">
+                    <input type="hidden" name="zeitraum" value="<?= h_book($filters['zeitraum']) ?>">
+                    <input type="hidden" name="jahr" value="<?= h_book($filters['jahr']) ?>">
+                    <input type="hidden" name="filter_empfaenger" value="<?= h_book($filters['empfaenger']) ?>">
+                    <input type="hidden" name="filter_memo" value="<?= h_book($filters['memo']) ?>">
+                    <input type="hidden" name="filter_status" value="<?= h_book($filters['status']) ?>">
+                    <input type="hidden" name="abstimmen" value="1">
+                    <?php foreach ($vIds as $vid): ?>
+                        <input type="hidden" name="ids[]" value="<?= h_book($vid) ?>">
+                    <?php endforeach; ?>
+                    <button type="submit"<?= $vIds === [] ? ' disabled' : '' ?>
+                        title="Alle gemerkten v auf x setzen"
+                        <?php if ($vIds !== []): ?>onclick="return confirm('<?= (int)count($vIds) ?> gemerkte Buchungen (v) auf x setzen?');"<?php endif; ?>>
+                        Abschliessen<?= $vIds !== [] ? ' (' . count($vIds) . ')' : '' ?>
+                    </button>
+                </form>
+                <?php endif; ?>
+                <a class="button-link" href="kontobuch.php?<?= h_book(http_build_query(kb_qs(['abstimmen' => '']))) ?>">Beenden</a>
+            <?php else: ?>
+                <a class="kb-abstimmen-link" href="kontobuch.php?<?= h_book(http_build_query(kb_qs(['abstimmen' => '1', 'edit' => '']))) ?>" title="Abstimmen: Filter bleiben, temporäre Saldi">Abstimmen</a>
+                <?php if ($bookingTopDefault !== '' && kb_can_write()): ?>
+                <form method="post" class="kb-abstimmen">
+                    <input type="hidden" name="action" value="abstimmen_all">
+                    <input type="hidden" name="filter_konto" value="<?= h_book($filters['konto']) ?>">
+                    <input type="hidden" name="zeitraum" value="<?= h_book($filters['zeitraum']) ?>">
+                    <input type="hidden" name="jahr" value="<?= h_book($filters['jahr']) ?>">
+                    <input type="hidden" name="filter_empfaenger" value="<?= h_book($filters['empfaenger']) ?>">
+                    <input type="hidden" name="filter_memo" value="<?= h_book($filters['memo']) ?>">
+                    <input type="hidden" name="filter_status" value="<?= h_book($filters['status']) ?>">
+                    <button type="submit" class="kb-abstimmen-all" onclick="return confirm('Alle Buchungen auf diesem Konto auf x (abgestimmt) setzen?');">Alle Abstimmen</button>
+                </form>
+                <?php endif; ?>
+            <?php endif; ?>
             </div>
-            <div class="table-wrapper kontobuch-grid">
+        </h2>
+        <div class="table-wrapper" id="kb_table_wrap">
                 <table id="kontobuch-table">
-                    <colgroup id="kontobuch-colgroup">
-                        <col data-col-idx="0" style="width:9%">
-                        <col data-col-idx="1" style="width:15%">
-                        <col data-col-idx="2" style="width:12%">
-                        <col data-col-idx="3" style="width:8%">
-                        <col data-col-idx="4" style="width:8%">
-                        <col data-col-idx="5" style="width:8%">
-                        <col data-col-idx="6" style="width:10%">
-                        <col data-col-idx="7" style="width:4%">
-                        <col data-col-idx="8" style="width:7%">
-                        <col data-col-idx="9" style="width:20%">
-                        <col data-col-idx="10" style="width:5%">
-                    </colgroup>
                     <thead>
                     <tr>
-                        <th class="kb-th" data-sort-key="date" scope="col">
-                            <div class="kb-th-inner">
-                                <span class="kb-th-label">Datum</span>
-                                <span class="kb-th-sort" aria-hidden="true"></span>
-                            </div>
-                            <span class="kb-resize-handle" data-col-idx="0" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="counterparty" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Empfänger</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="1" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="category" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Kostenart</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="2" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="account" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Konto</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="3" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="out" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Haben/Aus</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="4" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="in" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Soll/Ein</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="5" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="saldo" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Saldo</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="6" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="ccy" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">W</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="7" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="status" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Status</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="8" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" data-sort-key="note" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Bemerkung / Beleg</span><span class="kb-th-sort" aria-hidden="true"></span></div>
-                            <span class="kb-resize-handle" data-col-idx="9" title="Breite ziehen" role="separator"></span>
-                        </th>
-                        <th class="kb-th" scope="col">
-                            <div class="kb-th-inner"><span class="kb-th-label">Löschen</span></div>
-                            <span class="kb-resize-handle" data-col-idx="10" title="Breite ziehen" role="separator"></span>
-                        </th>
+                    <th>Datum</th>
+                    <th data-kb-show="t-emp">Empfänger</th>
+                    <th data-kb-show="t-kat">Kostenart</th>
+                    <?php if ($showKontoCol): ?><th>Konto</th><?php endif; ?>
+                    <th class="num">Haben/Aus</th>
+                    <th class="num">Soll/Ein</th>
+                    <th class="num">Saldo</th>
+                    <th>Status</th>
+                    <th data-kb-show="t-memo">Bemerkung / Beleg</th>
+                    <th></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -1038,670 +1660,262 @@ foreach ($prepared as $row) {
                         <?php
                         $id = (string)($row['id'] ?? '');
                         $bookingDate = (string)($row['booking_date'] ?? '');
-                        $createdAt = (string)($row['created_at'] ?? '');
-                        $externalId = (string)($row['external_id'] ?? '');
                         $counterparty = (string)($row['counterparty'] ?? '');
                         $code = trim((string)($row['cost_category_code'] ?? ''));
                         $catName = $categories[$code] ?? (string)($row['cost_category_name_raw'] ?? '');
-                        $categoryEditable = $code !== '' ? $code : $catName;
                         $account = (string)($row['_konto'] ?? '-');
                         $accountDisplay = account_table_display($account);
+                    $zielAcc = trim((string)($row['target_account'] ?? ''));
                         $amountOut = (float)($row['amount_out'] ?? 0);
                         $amountIn = (float)($row['amount_in'] ?? 0);
                         $balance = (float)($row['_saldo'] ?? 0);
-                        $currency = (string)($row['currency'] ?? 'CHF');
                         $note = (string)($row['note'] ?? '');
                         $receipt = trim((string)($row['receipt_path'] ?? ''));
-                        $status = trim((string)($row['booking_status'] ?? ''));
-                        if (!in_array($status, ['n', 'v', 'x'], true)) {
-                            $status = 'x';
-                        }
-                        ?>
-                        <tr class="<?= $status === 'x' ? 'row-locked' : '' ?>"
-                            data-row-id="<?= h_book($id) ?>"
-                            data-transfer-id="<?= h_book((string)($row['transfer_id'] ?? '')) ?>"
-                            data-target-account="<?= h_book((string)($row['target_account'] ?? '')) ?>"
-                            data-status="<?= h_book($status) ?>"
-                            data-sort-date="<?= h_book($bookingDate) ?>"
-                            data-sort-created="<?= h_book($createdAt) ?>"
-                            data-sort-external="<?= h_book($externalId) ?>"
-                            data-sort-counterparty="<?= h_book($counterparty) ?>"
-                            data-sort-category="<?= h_book($catName) ?>"
-                            data-sort-account="<?= h_book($account) ?>"
-                            data-sort-out="<?= h_book((string)$amountOut) ?>"
-                            data-sort-in="<?= h_book((string)$amountIn) ?>"
-                            data-sort-saldo="<?= h_book((string)$balance) ?>"
-                            data-sort-ccy="<?= h_book($currency) ?>"
-                            data-sort-note="<?= h_book($note) ?>"
-                            data-sort-status="<?= h_book($status) ?>"
-                        >
-                            <td class="editable-cell" data-field="booking_date">
-                                <span class="cell-display"><?= h_book($formatDateDe($bookingDate)) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][id]" value="<?= h_book($id) ?>">
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][booking_date]" value="<?= h_book($bookingDate) ?>">
+                    $status = kb_status((string)($row['booking_status'] ?? 'x'));
+                    $isTransfer = trim((string)($row['transfer_id'] ?? '')) !== '';
+                    $trClass = [];
+                    if ($status === 'x') {
+                        $trClass[] = 'row-locked';
+                    }
+                    if ($status !== 'x') {
+                        $trClass[] = 'ka-row-open';
+                    }
+                    if ($editId !== '' && $id === $editId) {
+                        $trClass[] = 'kb-editing';
+                    }
+                    $kontoCell = $accountDisplay;
+                    if ($zielAcc !== '') {
+                        $kontoCell .= ' → ' . account_table_display($zielAcc);
+                    }
+                    ?>
+                    <tr id="r<?= h_book($id) ?>" class="<?= h_book(implode(' ', $trClass)) ?>">
+                        <td class="nowrap"><?= h_book($formatDateDe($bookingDate)) ?></td>
+                        <td data-kb-show="t-emp"><?= h_book($counterparty) ?></td>
+                        <td data-kb-show="t-kat"><?= h_book($code !== '' ? ($code . ($catName !== '' ? ' - ' . $catName : '')) : $catName) ?></td>
+                        <?php if ($showKontoCol): ?>
+                            <td title="<?= h_book($account) ?>"><?= h_book($kontoCell) ?></td>
+                        <?php endif; ?>
+                        <td class="amount-out"><?= h_book($formatAmountCell($amountOut)) ?></td>
+                        <td class="amount-in"><?= h_book($formatAmountCell($amountIn)) ?></td>
+                        <td class="saldo"><?= h_book($formatCurrency($balance)) ?></td>
+                        <td>
+                            <form method="post" class="inline-form" data-status-x="<?= $status === 'x' ? '1' : '0' ?>" onsubmit="return kbConfirmStatus(this)">
+                                <input type="hidden" name="action" value="toggle_status">
+                                <input type="hidden" name="id" value="<?= h_book($id) ?>">
+                                <input type="hidden" name="confirm_x" value="0">
+                                <input type="hidden" name="expect_modified" value="<?= h_book(kb_row_stamp($row)) ?>">
+                                <input type="hidden" name="filter_konto" value="<?= h_book($filters['konto']) ?>">
+                                <input type="hidden" name="zeitraum" value="<?= h_book($filters['zeitraum']) ?>">
+                                <input type="hidden" name="jahr" value="<?= h_book($filters['jahr']) ?>">
+                                <input type="hidden" name="filter_empfaenger" value="<?= h_book($filters['empfaenger']) ?>">
+                                <input type="hidden" name="filter_memo" value="<?= h_book($filters['memo']) ?>">
+                                <input type="hidden" name="filter_status" value="<?= h_book($filters['status']) ?>">
+                                <input type="hidden" name="abstimmen" value="<?= h_book($filters['abstimmen']) ?>">
+                                <button class="kb-abst is-<?= h_book($status) ?>" type="submit" title="<?= $abstMode ? 'Klick: n → v (gemerkt). Abschliessen setzt v auf x.' : 'Klick: n → v → x → n' ?>"><?= h_book($status) ?></button>
+                            </form>
                             </td>
-                            <td class="editable-cell" data-field="counterparty">
-                                <span class="cell-display"><?= h_book($counterparty) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][counterparty]" value="<?= h_book($counterparty) ?>">
-                            </td>
-                            <td class="editable-cell" data-field="cost_category_code">
-                                <span class="cell-display"><?= h_book($catName) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][cost_category_code]" value="<?= h_book($categoryEditable) ?>">
-                            </td>
-                            <td class="editable-cell" data-field="account">
-                                <span class="cell-display" title="<?= h_book($account) ?>"><?= h_book($accountDisplay) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][account]" value="<?= h_book($account) ?>">
-                            </td>
-                            <td class="editable-cell amount-out" data-field="amount_out">
-                                <?php $outDisplay = $formatAmountCell($amountOut); ?>
-                                <span class="cell-display <?= $outDisplay === '' ? 'empty-amount' : '' ?>"><?= h_book($outDisplay) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][amount_out]" value="<?= h_book((string)$amountOut) ?>">
-                            </td>
-                            <td class="editable-cell amount-in" data-field="amount_in">
-                                <?php $inDisplay = $formatAmountCell($amountIn); ?>
-                                <span class="cell-display <?= $inDisplay === '' ? 'empty-amount' : '' ?>"><?= h_book($inDisplay) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][amount_in]" value="<?= h_book((string)$amountIn) ?>">
-                            </td>
-                            <td class="saldo">
-                                <span class="cell-display"><?= h_book($formatCurrency($balance)) ?></span>
-                            </td>
-                            <td><span class="cell-display"><?= h_book($currency) ?></span></td>
-                            <td class="status-cell" data-field="booking_status">
-                                <span class="status-badge status-<?= h_book($status) ?>"><?= h_book($status) ?></span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][booking_status]" value="<?= h_book($status) ?>">
-                            </td>
-                            <td class="editable-cell" data-field="note">
-                                <span class="cell-display">
+                        <td class="receipt-cell" data-kb-show="t-memo">
                                     <?= h_book($note) ?>
                                     <?php if ($receipt !== ''): ?>
-                                        | <a href="<?= h_book($receipt) ?>" target="_blank" rel="noopener">Beleg</a>
+                                <?= $note !== '' ? ' | ' : '' ?><a href="<?= h_book($receipt) ?>" target="_blank" rel="noopener">Beleg</a>
                                     <?php endif; ?>
-                                </span>
-                                <input type="hidden" name="lines[<?= h_book($id) ?>][note]" value="<?= h_book($note) ?>">
                             </td>
-                            <td style="text-align:center;">
-                                <input type="checkbox" name="delete_ids[]" value="<?= h_book($id) ?>" title="Zeile löschen">
+                        <td class="cell-actions">
+                            <a class="icon-link" href="kontobuch.php?<?= h_book(http_build_query(kb_qs(['edit' => $id]))) ?>#kb_new" title="Bearbeiten" aria-label="Bearbeiten"><?= kb_ico('edit') ?></a>
+                            <form method="post" class="inline-form" data-status-x="<?= $status === 'x' ? '1' : '0' ?>" data-transfer="<?= $isTransfer ? '1' : '0' ?>" onsubmit="return kbConfirmDelete(this)">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<?= h_book($id) ?>">
+                                <input type="hidden" name="confirm_x" value="0">
+                                <input type="hidden" name="confirm_transfer" value="0">
+                                <input type="hidden" name="expect_modified" value="<?= h_book(kb_row_stamp($row)) ?>">
+                                <input type="hidden" name="filter_konto" value="<?= h_book($filters['konto']) ?>">
+                                <input type="hidden" name="zeitraum" value="<?= h_book($filters['zeitraum']) ?>">
+                                <input type="hidden" name="jahr" value="<?= h_book($filters['jahr']) ?>">
+                                <input type="hidden" name="filter_empfaenger" value="<?= h_book($filters['empfaenger']) ?>">
+                                <input type="hidden" name="filter_memo" value="<?= h_book($filters['memo']) ?>">
+                                <input type="hidden" name="filter_status" value="<?= h_book($filters['status']) ?>">
+                                <input type="hidden" name="abstimmen" value="<?= h_book($filters['abstimmen']) ?>">
+                                <button class="icon-btn icon-danger" type="submit" title="Löschen" aria-label="Löschen">&times;</button>
+                            </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
+                <?php if ($bookingTopDefault !== '' && $openingSaldo !== null): ?>
+                    <tr>
+                        <td class="nowrap">—</td>
+                        <td class="muted" data-kb-show="t-emp">Saldovortrag</td>
+                        <td data-kb-show="t-kat"></td>
+                        <?php if ($showKontoCol): ?><td></td><?php endif; ?>
+                        <td></td>
+                        <td></td>
+                        <td class="saldo"><?= h_book($formatCurrency($openingSaldo)) ?></td>
+                        <td></td>
+                        <td data-kb-show="t-memo"></td>
+                        <td></td>
+                    </tr>
+                <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-            <div class="edit-actions">
-                <span class="muted" style="margin-right:auto;">Bearbeitete Zeilen werden beim Sichern auf Status <b>x</b> (gesperrt) gesetzt. Markierte Zeilen werden gelöscht.</span>
-                <button type="submit" title="Sichern (bearbeitete Zeilen → Status x)">💾 Sichern</button>
-            </div>
-        </form>
-        <form method="post" style="margin-top:0.5rem;">
+        <form method="post" style="margin-top:0.75rem;">
+            <input type="hidden" name="filter_konto" value="<?= h_book($filters['konto']) ?>">
+            <input type="hidden" name="zeitraum" value="<?= h_book($filters['zeitraum']) ?>">
+            <input type="hidden" name="jahr" value="<?= h_book($filters['jahr']) ?>">
+            <input type="hidden" name="filter_empfaenger" value="<?= h_book($filters['empfaenger']) ?>">
+            <input type="hidden" name="filter_memo" value="<?= h_book($filters['memo']) ?>">
+            <input type="hidden" name="filter_status" value="<?= h_book($filters['status']) ?>">
+            <input type="hidden" name="abstimmen" value="<?= h_book($filters['abstimmen']) ?>">
             <input type="hidden" name="action" value="extract_note_links">
             <button type="submit" class="btn-secondary">Beleg-Links aus Bemerkungen extrahieren</button>
         </form>
     </section>
 </div>
-<?php
-$categoryOptions = [];
-foreach ($categories as $cCode => $cName) {
-    $categoryOptions[] = [
-        'value' => (string)$cCode,
-        'label' => (string)$cCode . ' - ' . (string)$cName,
-    ];
-}
-$accountOptions = [
-    ['value' => '-', 'label' => '-'],
-];
-foreach ($accountMapActive as $aCode => $aAcc) {
-    $aCur = strtoupper((string)($aAcc['currency'] ?? 'CHF'));
-    $accountOptions[] = [
-        'value' => (string)$aCode,
-        'label' => (string)$aCode . ' - ' . (string)($aAcc['name'] ?? '') . ' (' . $aCur . ')',
-    ];
-}
-$counterpartySuggestions = [];
-$noteSuggestions = [];
-foreach ($prepared as $r) {
-    $cp = trim((string)($r['counterparty'] ?? ''));
-    if ($cp !== '' && !in_array($cp, $counterpartySuggestions, true)) {
-        $counterpartySuggestions[] = $cp;
-    }
-    $nt = trim((string)($r['note'] ?? ''));
-    if ($nt !== '' && !in_array($nt, $noteSuggestions, true)) {
-        $noteSuggestions[] = $nt;
-    }
-}
-?>
 <script>
 (() => {
-    const table = document.getElementById('kontobuch-table');
-    if (!table) return;
+  const type = document.getElementById('booking_type');
+  const zielWrap = document.getElementById('kb_ziel_wrap');
+  const amtWrap = document.getElementById('kb_target_amt_wrap');
+  const konto = document.getElementById('kb_konto_new');
+  const ziel = document.getElementById('kb_ziel');
+  const bookForm = document.getElementById('kb_new_form');
+  const empInput = document.getElementById('kb_emp');
+  const catSel = document.getElementById('kb_category');
+  const hints = <?= json_encode($counterpartyHints, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?> || {};
 
-    const fieldsEditable = ['booking_date', 'counterparty', 'cost_category_code', 'account', 'amount_out', 'amount_in', 'note'];
-    const statusSequence = ['n', 'v', 'x'];
-    const categoryOptions = <?= json_encode($categoryOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    const accountOptions = <?= json_encode($accountOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    const counterpartySuggestions = <?= json_encode($counterpartySuggestions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    const noteSuggestions = <?= json_encode($noteSuggestions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-
-    const toDisplayDate = (iso) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-        return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
-    };
-    const toIsoDate = (value) => {
-        const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(value.trim());
-        if (!m) return value.trim();
-        const d = m[1].padStart(2, '0');
-        const mo = m[2].padStart(2, '0');
-        return `${m[3]}-${mo}-${d}`;
-    };
-    const formatAmount = (value) => {
-        const n = Number(String(value).replace(/'/g, '').replace(',', '.'));
-        if (!Number.isFinite(n) || Math.abs(n) < 0.00001) return '';
-        return n.toLocaleString('de-CH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-    const shortAccountDisplay = (full) => {
-        const s = String(full || '').trim();
-        if (!s || s === '-') return s;
-        const c = s.replace(/\s+/g, '');
-        if (c.length <= 6) return c;
-        return c.slice(-6);
-    };
-    const parseNumeric = (value) => {
-        const n = Number(String(value ?? '').replace(/'/g, '').replace(',', '.'));
-        return Number.isFinite(n) ? n : 0;
-    };
-    const normalizeAccount = (value) => {
-        const s = String(value || '').trim();
-        if (!s || s === '-') return '-';
-        return s.replace(/\s+/g, '').toUpperCase();
-    };
-    const formatSaldo = (value) => Number(value || 0).toLocaleString('de-CH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
-    const recomputeDisplayedBalances = () => {
-        const rows = Array.from(table.querySelectorAll('tr[data-row-id]'));
-        rows.sort((a, b) => {
-            const d = String(a.dataset.sortDate || '').localeCompare(String(b.dataset.sortDate || ''));
-            if (d !== 0) return d;
-            const c = String(a.dataset.sortCreated || '').localeCompare(String(b.dataset.sortCreated || ''));
-            if (c !== 0) return c;
-            return String(a.dataset.sortExternal || '').localeCompare(String(b.dataset.sortExternal || ''));
-        });
-
-        const balances = new Map();
-        rows.forEach((row) => {
-            const accInput = row.querySelector('input[name$="[account]"]');
-            const inInput = row.querySelector('input[name$="[amount_in]"]');
-            const outInput = row.querySelector('input[name$="[amount_out]"]');
-            const key = normalizeAccount(accInput?.value || '-');
-            const delta = parseNumeric(inInput?.value || 0) - parseNumeric(outInput?.value || 0);
-            const next = (balances.get(key) || 0) + delta;
-            balances.set(key, next);
-            row.dataset.sortSaldo = String(next);
-            const saldoDisplay = row.querySelector('td.saldo .cell-display');
-            if (saldoDisplay) {
-                saldoDisplay.textContent = formatSaldo(next);
-            }
-        });
-    };
-    const ensureDatalist = (id, values) => {
-        let list = document.getElementById(id);
-        if (!list) {
-            list = document.createElement('datalist');
-            list.id = id;
-            document.body.appendChild(list);
-        }
-        list.innerHTML = '';
-        values.forEach((v) => {
-            const text = String(v || '').trim();
-            if (!text) return;
-            const opt = document.createElement('option');
-            opt.value = text;
-            list.appendChild(opt);
-        });
-        return list;
-    };
-    ensureDatalist('kb-counterparty-suggestions', counterpartySuggestions);
-    ensureDatalist('kb-note-suggestions', noteSuggestions);
-
-    const getRowStatus = (row) => row.dataset.status || 'x';
-    const setRowStatus = (row, status) => {
-        row.dataset.status = status;
-        row.classList.toggle('row-locked', status === 'x');
-        const badge = row.querySelector('.status-badge');
-        const input = row.querySelector('input[name$="[booking_status]"]');
-        if (badge) {
-            badge.textContent = status;
-            badge.classList.remove('status-n', 'status-v', 'status-x');
-            badge.classList.add(`status-${status}`);
-        }
-        if (input) input.value = status;
-        if (status === 'x') row.classList.remove('row-editing');
-        row.dataset.sortStatus = status;
-    };
-
-    table.querySelectorAll('tr[data-row-id]').forEach((row) => {
-        row.addEventListener('dblclick', (ev) => {
-            const cell = ev.target.closest('td');
-            if (!cell) return;
-
-            if (cell.dataset.field === 'booking_status') {
-                const current = getRowStatus(row);
-                const next = statusSequence[(statusSequence.indexOf(current) + 1) % statusSequence.length];
-                setRowStatus(row, next);
+  function ccyOf(sel) {
+    if (!sel) return 'CHF';
+    if (sel.tagName === 'SELECT') {
+      const opt = sel.options[sel.selectedIndex];
+      return (opt && opt.getAttribute('data-currency')) || 'CHF';
+    }
+    return sel.getAttribute('data-currency') || 'CHF';
+  }
+  function syncType() {
+    const isTransfer = (type ? type.value : (bookForm && bookForm.dataset.transfer === '1' ? 'transfer' : 'standard')) === 'transfer';
+    if (zielWrap) zielWrap.classList.toggle('kb-hidden', !isTransfer);
+    if (empInput) empInput.required = !isTransfer;
+    syncFx();
+  }
+  function syncFx() {
+    const isTransfer = zielWrap && !zielWrap.classList.contains('kb-hidden');
+    if (!isTransfer || !amtWrap) {
+      if (amtWrap) amtWrap.classList.add('kb-hidden');
                 return;
             }
+    amtWrap.classList.toggle('kb-hidden', ccyOf(konto) === ccyOf(ziel));
+  }
+  if (type) type.addEventListener('change', syncType);
+  if (konto) konto.addEventListener('change', syncFx);
+  if (ziel) ziel.addEventListener('change', syncFx);
+  syncType();
 
-            if (getRowStatus(row) === 'x') return;
-            if (!fieldsEditable.includes(cell.dataset.field || '')) return;
+  if (empInput && catSel) {
+    empInput.addEventListener('change', () => {
+      const key = (empInput.value || '').trim().toLowerCase();
+      const hit = hints[key];
+      if (hit && hit.category_code && !catSel.value) catSel.value = hit.category_code;
+    });
+  }
 
-            row.classList.add('row-editing');
-            const display = cell.querySelector('.cell-display');
-            const input = cell.querySelector(`input[name$="[${cell.dataset.field}]"]`);
-            if (!display || !input) return;
+  function confirmFlags(form) {
+    if (form.dataset.statusX === '1') {
+      if (!confirm('Gesperrte Buchung (x) wirklich ändern?')) return false;
+      const cx = form.querySelector('[name="confirm_x"]');
+      if (cx) cx.value = '1';
+    }
+    if (form.dataset.transfer === '1') {
+      if (!confirm('Transfer betrifft das Gegenkonto. Fortfahren?')) return false;
+      const ct = form.querySelector('[name="confirm_transfer"]');
+      if (ct) ct.value = '1';
+    }
+    return true;
+  }
+  window.kbConfirmStatus = (form) => confirmFlags(form);
+  window.kbConfirmDelete = (form) => {
+    if (!confirmFlags(form)) return false;
+    return confirm('Buchung löschen?');
+  };
+  if (bookForm) {
+    bookForm.addEventListener('submit', (ev) => {
+      const t = type ? type.value : bookForm.dataset.transfer;
+      if (t === 'transfer') bookForm.dataset.transfer = '1';
+      const st = bookForm.querySelector('[name="booking_status"]');
+      if (st && !st.disabled && st.value === 'x') bookForm.dataset.statusX = '1';
+      if (!confirmFlags(bookForm)) ev.preventDefault();
+    });
+  }
 
-            const useSelect = cell.dataset.field === 'cost_category_code' || cell.dataset.field === 'account';
-            const editor = document.createElement(useSelect ? 'select' : 'input');
-            if (useSelect) {
-                const baseOptions = cell.dataset.field === 'cost_category_code' ? categoryOptions : accountOptions;
-                const current = String(input.value || '').trim();
-                const opts = [...baseOptions];
-                if (current !== '' && !opts.some((o) => o.value === current)) {
-                    opts.unshift({ value: current, label: current });
-                }
-                opts.forEach((o) => {
-                    const opt = document.createElement('option');
-                    opt.value = String(o.value ?? '');
-                    opt.textContent = String(o.label ?? o.value ?? '');
-                    editor.appendChild(opt);
-                });
-                editor.value = current;
-            } else {
-                editor.type = 'text';
-                editor.value = cell.dataset.field === 'account' ? (input.value || '') : (input.value || display.textContent.trim());
-                if (cell.dataset.field === 'counterparty') {
-                    editor.setAttribute('list', 'kb-counterparty-suggestions');
-                } else if (cell.dataset.field === 'note') {
-                    editor.setAttribute('list', 'kb-note-suggestions');
-                }
-            }
-            editor.style.width = '100%';
-            editor.style.fontSize = '0.88rem';
-            editor.style.padding = '0.1rem 0.2rem';
-            display.style.display = 'none';
-            cell.appendChild(editor);
-            editor.focus();
-            if (!useSelect && typeof editor.select === 'function') {
-                editor.select();
-            }
+  const USER = <?= json_encode($kbAnzeigeUser, JSON_UNESCAPED_UNICODE) ?>;
+  const KEY = 'ar_kb_anzeige.' + USER;
+  const defaults = {
+    'f-emp': true,
+    'f-memo': true,
+    'n-kat': true,
+    'n-typ': true,
+    'n-memo': true,
+    'n-status': false,
+    'n-beleg': true,
+    't-emp': true,
+    't-kat': true,
+    't-memo': true
+  };
+  const force = <?= json_encode($kbForce, JSON_UNESCAPED_UNICODE) ?> || [];
 
-            const saveEditor = () => {
-                let raw = String(editor.value || '').trim();
-                const tr = cell.closest('tr');
-                if (cell.dataset.field === 'booking_date') {
-                    raw = toIsoDate(raw);
-                    display.textContent = toDisplayDate(raw);
-                    if (tr) tr.dataset.sortDate = raw;
-                } else if (cell.dataset.field === 'amount_out' || cell.dataset.field === 'amount_in') {
-                    input.value = raw === '' ? '0' : raw;
-                    const amountText = formatAmount(input.value);
-                    display.textContent = amountText;
-                    display.classList.toggle('empty-amount', amountText === '');
-                    if (tr) {
-                        const n = parseFloat(input.value);
-                        if (cell.dataset.field === 'amount_out') tr.dataset.sortOut = String(Number.isFinite(n) ? n : 0);
-                        if (cell.dataset.field === 'amount_in') tr.dataset.sortIn = String(Number.isFinite(n) ? n : 0);
-                    }
-                    recomputeDisplayedBalances();
-                    editor.remove();
-                    display.style.display = '';
-                    return;
-                } else if (cell.dataset.field === 'cost_category_code') {
-                    const selText = editor.selectedOptions?.[0]?.textContent || raw;
-                    display.textContent = selText;
-                    if (tr) tr.dataset.sortCategory = raw;
-                } else if (cell.dataset.field === 'account') {
-                    display.textContent = shortAccountDisplay(raw);
-                    display.title = raw;
-                    if (tr) tr.dataset.sortAccount = raw;
-                } else {
-                    display.textContent = raw;
-                    if (tr && cell.dataset.field === 'counterparty') tr.dataset.sortCounterparty = raw;
-                    if (tr && cell.dataset.field === 'note') tr.dataset.sortNote = raw;
-                }
-                input.value = raw;
-                if (['booking_date', 'account'].includes(cell.dataset.field || '')) {
-                    recomputeDisplayedBalances();
-                }
-                editor.remove();
-                display.style.display = '';
-            };
+  function loadAnzeige() {
+    const state = {};
+    Object.keys(defaults).forEach((k) => { state[k] = defaults[k]; });
+    try {
+      const raw = localStorage.getItem(KEY) || localStorage.getItem('ar_kb_anzeige');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        Object.keys(defaults).forEach((k) => {
+          if (typeof parsed[k] === 'boolean') state[k] = parsed[k];
+        });
+      }
+    } catch (e) {}
+    force.forEach((k) => { state[k] = true; });
+    return state;
+  }
 
-            editor.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    saveEditor();
-                }
-                if (e.key === 'Escape') {
-                    editor.remove();
-                    display.style.display = '';
-                }
-            });
-            if (useSelect) {
-                editor.addEventListener('change', saveEditor);
-            }
-            editor.addEventListener('blur', saveEditor, { once: true });
+  function applyAnzeige(state) {
+    document.querySelectorAll('[data-kb-show]').forEach((el) => {
+      const key = el.getAttribute('data-kb-show');
+      el.classList.toggle('kb-anzeige-off', !state[key]);
+    });
+    document.querySelectorAll('[data-kb-toggle]').forEach((cb) => {
+      const key = cb.getAttribute('data-kb-toggle');
+      const on = !!state[key];
+      cb.checked = on;
+      const lab = cb.closest('label');
+      if (lab) lab.classList.toggle('is-on', on);
+    });
+    const statusSel = document.getElementById('kb_status');
+    if (statusSel) statusSel.disabled = !state['n-status'];
+  }
+
+  function saveAnzeige(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  let anzeige = loadAnzeige();
+  applyAnzeige(anzeige);
+  syncType();
+  document.querySelectorAll('[data-kb-toggle]').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const key = cb.getAttribute('data-kb-toggle');
+      anzeige[key] = cb.checked;
+      saveAnzeige(anzeige);
+      applyAnzeige(anzeige);
+      syncType();
         });
     });
+
+  const hashId = (location.hash || '').replace(/^#/, '');
+  if (hashId) {
+    const row = document.getElementById(hashId);
+    if (row) {
+      try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
+    }
+  }
 })();
 </script>
-<script>
-(() => {
-    const LS_DATE = 'kontobuch_default_booking_date';
-    const dateInput = document.getElementById('booking_date_new');
-    if (dateInput) {
-        const today = new Date().toISOString().slice(0, 10);
-        const saved = localStorage.getItem(LS_DATE);
-        if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
-            dateInput.value = saved;
-        } else {
-            dateInput.value = today;
-            localStorage.setItem(LS_DATE, today);
-        }
-        dateInput.addEventListener('change', () => {
-            localStorage.setItem(LS_DATE, dateInput.value);
-        });
-    }
-
-    const bookingType = document.getElementById('booking_type');
-    const categorySel = document.getElementById('category_code_new');
-    const topSel = document.getElementById('booking_top_account');
-    const sourceWrap = document.getElementById('source_account_wrap');
-    const sourceSel = document.getElementById('source_account_new');
-    const targetSel = document.getElementById('target_account_new');
-    const noteInput = document.getElementById('note_new');
-    const statusSel = document.getElementById('booking_status_new');
-    const redirectAccountNew = document.getElementById('redirect_account_new');
-    const redirectAccountLines = document.getElementById('redirect_account_lines');
-    const linesForm = document.getElementById('lines-form');
-    const targetAccountWrap = document.getElementById('target_account_wrap');
-    const amountLabel = document.getElementById('amount_label_text');
-    const targetAmountWrap = document.getElementById('target_amount_wrap');
-    const targetAmountInput = document.getElementById('target_amount_input');
-    const amountInput = document.getElementById('booking_amount');
-
-    function getCurrency(sel) {
-        const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
-        if (!opt) {
-            return 'CHF';
-        }
-        const c = (opt.getAttribute('data-currency') || 'CHF').trim();
-        return c.toUpperCase();
-    }
-
-    function getSourceCurrency() {
-        if (topSel && topSel.value) {
-            const opt = topSel.selectedOptions[0];
-            if (opt) {
-                return (opt.getAttribute('data-currency') || 'CHF').trim().toUpperCase();
-            }
-        }
-        return getCurrency(sourceSel);
-    }
-
-    function syncSourceFromTop() {
-        if (!topSel || !sourceSel) {
-            return;
-        }
-        const top = topSel.value;
-        if (!top) {
-            return;
-        }
-        const ok = Array.from(sourceSel.options).some((o) => o.value === top);
-        if (ok) {
-            sourceSel.value = top;
-        }
-    }
-
-    const LS_LAST_BOOKING_TYPE = 'kontobuch_last_booking_type';
-    const LS_LAST_TARGET_ACCOUNT = 'kontobuch_last_target_account';
-    const counterpartyHints = <?= json_encode($counterpartyHints, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-
-    function persistBookingPrefs() {
-        if (bookingType) {
-            localStorage.setItem(LS_LAST_BOOKING_TYPE, bookingType.value);
-        }
-        if (targetSel) {
-            localStorage.setItem(LS_LAST_TARGET_ACCOUNT, targetSel.value || '');
-        }
-    }
-
-    function updateTopSourceUi() {
-        const hasTop = topSel && topSel.value !== '';
-        if (sourceWrap) {
-            sourceWrap.classList.toggle('booking-conditional-hidden', !!hasTop);
-        }
-        if (sourceSel) {
-            sourceSel.required = !hasTop;
-        }
-        if (hasTop) {
-            syncSourceFromTop();
-        }
-        const qs = new URLSearchParams(window.location.search);
-        const urlAcc = qs.get('booking_top_account') || qs.get('account') || '';
-        const acc = (topSel && topSel.value) ? topSel.value : urlAcc;
-        if (redirectAccountNew) {
-            redirectAccountNew.value = acc;
-        }
-        if (redirectAccountLines) {
-            redirectAccountLines.value = acc;
-        }
-    }
-
-    function applyFilterAccountFromTopSelection() {
-        if (!topSel) {
-            return;
-        }
-        const url = new URL(window.location.href);
-        url.searchParams.delete('account');
-        const selected = topSel.value || '';
-        if (selected === '') {
-            url.searchParams.delete('booking_top_account');
-        } else {
-            url.searchParams.set('booking_top_account', selected);
-        }
-        window.location.href = url.toString();
-    }
-
-    function updateNewBookingForm() {
-        updateTopSourceUi();
-        const isTransfer = bookingType && bookingType.value === 'transfer';
-        if (targetAccountWrap) {
-            targetAccountWrap.classList.toggle('booking-conditional-hidden', !isTransfer);
-        }
-        if (targetSel) {
-            targetSel.required = !!isTransfer;
-            if (!isTransfer) {
-                targetSel.value = '';
-            }
-        }
-        if (amountLabel) {
-            amountLabel.textContent = isTransfer ? 'Quellbetrag' : 'Betrag (+ Ein / − Aus)';
-        }
-
-        const srcCur = getSourceCurrency();
-        const tgtCode = targetSel && targetSel.value ? targetSel.value : '';
-        const tgtCur = tgtCode ? getCurrency(targetSel) : srcCur;
-        const showFx = !!isTransfer && tgtCode !== '' && srcCur !== tgtCur;
-        if (targetAmountWrap) {
-            targetAmountWrap.classList.toggle('booking-conditional-hidden', !showFx);
-        }
-        if (targetAmountInput && !showFx) {
-            targetAmountInput.value = '';
-        }
-    }
-
-    if (bookingType) {
-        bookingType.addEventListener('change', persistBookingPrefs);
-    }
-    if (targetSel) {
-        targetSel.addEventListener('change', persistBookingPrefs);
-    }
-    [bookingType, sourceSel, targetSel, topSel].forEach((el) => {
-        if (el) {
-            el.addEventListener('change', updateNewBookingForm);
-        }
-    });
-    topSel?.addEventListener('change', applyFilterAccountFromTopSelection);
-
-    const lockEditedLinesForSave = () => {
-        const kbTable = document.getElementById('kontobuch-table');
-        kbTable?.querySelectorAll('tr.row-editing[data-row-id]').forEach((row) => {
-            row.dataset.status = 'x';
-            row.dataset.sortStatus = 'x';
-            row.classList.add('row-locked');
-            const input = row.querySelector('input[name$="[booking_status]"]');
-            const badge = row.querySelector('.status-badge');
-            if (input) {
-                input.value = 'x';
-            }
-            if (badge) {
-                badge.textContent = 'x';
-                badge.classList.remove('status-n', 'status-v', 'status-x');
-                badge.classList.add('status-x');
-            }
-        });
-    };
-
-    linesForm?.addEventListener('submit', () => {
-        lockEditedLinesForSave();
-        updateTopSourceUi();
-    });
-
-    const counterpartyInput = document.getElementById('counterparty_new');
-    const table = document.getElementById('kontobuch-table');
-    table?.querySelectorAll('tr[data-row-id]').forEach((row) => {
-        row.addEventListener('click', () => {
-            table.querySelectorAll('tr.row-selected').forEach((r) => r.classList.remove('row-selected'));
-            row.classList.add('row-selected');
-
-            const dateVal = row.querySelector('input[name$="[booking_date]"]')?.value || '';
-            const cpVal = row.querySelector('input[name$="[counterparty]"]')?.value || '';
-            const catVal = row.querySelector('input[name$="[cost_category_code]"]')?.value || '';
-            const accVal = row.querySelector('input[name$="[account]"]')?.value || '';
-            const outVal = Number(row.querySelector('input[name$="[amount_out]"]')?.value || '0');
-            const inVal = Number(row.querySelector('input[name$="[amount_in]"]')?.value || '0');
-            const noteVal = row.querySelector('input[name$="[note]"]')?.value || '';
-            const rowStatus = row.querySelector('input[name$="[booking_status]"]')?.value || 'n';
-            const transferId = (row.dataset.transferId || '').trim();
-            const targetAccount = (row.dataset.targetAccount || '').trim();
-
-            if (dateInput && dateVal) dateInput.value = dateVal;
-            if (counterpartyInput) counterpartyInput.value = cpVal;
-            if (categorySel) {
-                if (Array.from(categorySel.options).some((o) => o.value === catVal)) {
-                    categorySel.value = catVal;
-                } else if (catVal === '') {
-                    categorySel.value = '';
-                }
-            }
-            if (noteInput) noteInput.value = noteVal;
-            if (statusSel) statusSel.value = ['n', 'v', 'x'].includes(rowStatus) ? rowStatus : 'x';
-
-            const isTransfer = transferId !== '';
-            if (bookingType) {
-                bookingType.value = isTransfer ? 'transfer' : 'standard';
-            }
-            if (topSel && Array.from(topSel.options).some((o) => o.value === accVal)) {
-                topSel.value = accVal;
-            }
-            if (sourceSel && Array.from(sourceSel.options).some((o) => o.value === accVal)) {
-                sourceSel.value = accVal;
-            }
-            if (targetSel) {
-                if (isTransfer && targetAccount !== '' && Array.from(targetSel.options).some((o) => o.value === targetAccount)) {
-                    targetSel.value = targetAccount;
-                } else if (!isTransfer) {
-                    targetSel.value = '';
-                }
-            }
-            if (amountInput) {
-                const signed = inVal > 0 ? inVal : (outVal > 0 ? -outVal : 0);
-                amountInput.value = signed === 0 ? '' : String(signed);
-            }
-            if (targetAmountInput && !isTransfer) {
-                targetAmountInput.value = '';
-            }
-
-            updateNewBookingForm();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    });
-
-    let appliedLastBookingOnCounterparty = false;
-    let lastAppliedHintKey = '';
-    function applyCounterpartyHint() {
-        if (!counterpartyInput) {
-            return false;
-        }
-        const key = counterpartyInput.value.trim().toLocaleLowerCase('de-CH');
-        if (!key) {
-            lastAppliedHintKey = '';
-            return false;
-        }
-        const hint = counterpartyHints[key];
-        if (!hint || lastAppliedHintKey === key) {
-            return false;
-        }
-        if (hint.booking_type && bookingType && Array.from(bookingType.options).some((o) => o.value === hint.booking_type)) {
-            bookingType.value = hint.booking_type;
-        }
-        if (hint.category_code && categorySel && Array.from(categorySel.options).some((o) => o.value === hint.category_code)) {
-            categorySel.value = hint.category_code;
-        }
-        updateNewBookingForm();
-        lastAppliedHintKey = key;
-        return true;
-    }
-    function applyLastBookingFromStorage() {
-        const last = localStorage.getItem(LS_LAST_BOOKING_TYPE);
-        if (last !== 'transfer' && last !== 'standard') {
-            return;
-        }
-        if (bookingType) {
-            bookingType.value = last;
-        }
-        if (last === 'transfer' && targetSel) {
-            const t = localStorage.getItem(LS_LAST_TARGET_ACCOUNT) || '';
-            if (t && Array.from(targetSel.options).some((o) => o.value === t)) {
-                targetSel.value = t;
-            }
-        }
-        updateNewBookingForm();
-    }
-    counterpartyInput?.addEventListener('input', () => {
-        if (applyCounterpartyHint()) {
-            appliedLastBookingOnCounterparty = true;
-            return;
-        }
-        if (appliedLastBookingOnCounterparty) {
-            return;
-        }
-        if (!counterpartyInput.value.trim()) {
-            return;
-        }
-        appliedLastBookingOnCounterparty = true;
-        applyLastBookingFromStorage();
-    });
-
-    const newBookingForm = document.getElementById('new_booking_form');
-    newBookingForm?.addEventListener('submit', () => {
-        persistBookingPrefs();
-        updateTopSourceUi();
-    });
-
-    updateNewBookingForm();
-})();
-</script>
-</body>
-</html>
-

@@ -5,18 +5,43 @@ declare(strict_types=1);
 final class DataRepository
 {
     private string $dataDir;
+    private ?YearlyStore $yearly = null;
 
     public function __construct(string $dataDir)
     {
         $this->dataDir = rtrim($dataDir, DIRECTORY_SEPARATOR);
     }
 
+    public function yearly(): YearlyStore
+    {
+        if ($this->yearly === null) {
+            require_once __DIR__ . '/JsonStore.php';
+            require_once __DIR__ . '/YearlyStore.php';
+            $this->yearly = new YearlyStore($this->dataDir, new JsonStore($this->dataDir));
+            $this->yearly->ensureMigrated();
+        }
+
+        return $this->yearly;
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function getTransactions(): array
+    public function getTransactions(?int $year = null): array
     {
-        return $this->readJsonList('transactions.json');
+        if ($year !== null) {
+            return $this->yearly()->readYear((string)$year);
+        }
+
+        return $this->yearly()->readAll();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function getAvailableTransactionYears(): array
+    {
+        return $this->yearly()->availableYears();
     }
 
     /**

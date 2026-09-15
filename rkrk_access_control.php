@@ -425,6 +425,12 @@ Function GrantAccess() {
 				$InputUserInfo['Login'] = array();
 			}
 			$sessionLevel = trim(strval($_SESSION[$SessNme_AccessLevel] ?? ''));
+			if ($sessionLevel === '' && isset($CookieKey) && isset($_COOKIE[$CookieKey]) && is_array($_COOKIE[$CookieKey])) {
+				$sessionLevel = trim(strval($_COOKIE[$CookieKey][$SessNme_AccessLevel] ?? ''));
+			}
+			if ($sessionLevel === '') {
+				$sessionLevel = trim(strval($InputUserInfo['Login']['Level'] ?? ''));
+			}
 			if ($sessionLevel !== '') {
 				$InputUserInfo['Login']['Level'] = $sessionLevel;
 				$WebFreigabe = $sessionLevel;

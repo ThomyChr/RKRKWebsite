@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Set, Tuple
 
 EXPECTED_FILES = [
     "cost_categories.json",
-    "transactions.json",
     "budget_plan_lines.json",
     "inventory_items.json",
     "import_runs.json",
@@ -25,6 +24,25 @@ def load_json_list(path: Path) -> List[Dict[str, Any]]:
     if not isinstance(data, list):
         raise RuntimeError(f"Invalid JSON root in {path}; expected list")
     return data
+
+
+def load_transactions(data_dir: Path) -> List[Dict[str, Any]]:
+    tdir = data_dir / "transactions"
+    if tdir.is_dir():
+        rows: List[Dict[str, Any]] = []
+        year_files = sorted(p for p in tdir.glob("*.json") if not p.name.startswith("_"))
+        if not year_files and not (tdir / "_index.json").exists():
+            monolith = data_dir / "transactions.json"
+            if monolith.exists():
+                return load_json_list(monolith)
+            raise RuntimeError(f"Missing yearly transactions in {tdir}")
+        for path in year_files:
+            rows.extend(load_json_list(path))
+        return rows
+    monolith = data_dir / "transactions.json"
+    if monolith.exists():
+        return load_json_list(monolith)
+    raise RuntimeError(f"Missing transactions: {tdir} or {monolith}")
 
 
 def parse_date(value: Any) -> bool:
@@ -66,6 +84,7 @@ class Validator:
     def load(self) -> None:
         for file_name in EXPECTED_FILES:
             self.data[file_name] = load_json_list(self.data_dir / file_name)
+        self.data["transactions.json"] = load_transactions(self.data_dir)
 
     def validate_categories(self) -> Tuple[Set[str], Set[str]]:
         rows = self.data["cost_categories.json"]

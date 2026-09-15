@@ -134,7 +134,6 @@ $formatCell = static fn(float $v): string => abs($v) < 0.00001 ? '' : ('CHF ' . 
         <a href="reports.php">Reports</a>
         <a class="active" href="jahresabschluss.php">Jahresabschluss</a>
         <a href="cashflow.php">Cashflow</a>
-        <a href="manage.php">Legacy Eingaben</a>
     </nav>
 
     <header class="header">

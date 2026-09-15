@@ -7,7 +7,6 @@ require_once __DIR__ . '/../src/JsonStore.php';
 require_once __DIR__ . '/../src/AccountHelpers.php';
 require_once __DIR__ . '/rkrk_ar_shell.php';
 rkrk_ar_boot();
-rkrk_ar_emit_chrome('styles.css');
 
 $dataDir = realpath(__DIR__ . '/../../../rkrk/data/ar') ?: (__DIR__ . '/../../../rkrk/data/ar');
 $repo = new DataRepository($dataDir);
@@ -87,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bank_strasse = trim((string)($_POST['bank_strasse'] ?? ''));
             $bank_plz = trim((string)($_POST['bank_plz'] ?? ''));
             $bank_ort = trim((string)($_POST['bank_ort'] ?? ''));
-            $bic = trim((string)($_POST['bic'] ?? ''));
+            $bic = strtoupper((string)preg_replace('/[^A-Za-z0-9]/', '', (string)($_POST['bic'] ?? '')));
             $currency = strtoupper(trim((string)($_POST['currency'] ?? 'CHF')));
             $kontotyp = trim((string)($_POST['kontotyp'] ?? 'Giro'));
             $isActive = isset($_POST['is_active']) && $_POST['is_active'] === '1';
@@ -208,6 +207,7 @@ $editId = trim((string)($_GET['edit'] ?? ''));
 $editRow = $editId !== '' ? find_account_by_id($accounts, $editId) : null;
 
 $kontotypen = ['Giro', 'Sparkonto', 'Festgeld', 'Kreditkarte', 'Depot', 'Krypto', 'Sonstiges'];
+rkrk_ar_emit_chrome('styles.css');
 ?>
 <!doctype html>
 <html lang="de">
@@ -333,6 +333,7 @@ $kontotypen = ['Giro', 'Sparkonto', 'Festgeld', 'Kreditkarte', 'Depot', 'Krypto'
                     <th>Kürzel</th>
                     <th>Kontoname</th>
                     <th>IBAN</th>
+                    <th>BIC/SWIFT</th>
                     <th>Bank</th>
                     <th>Typ</th>
                     <th>Währung</th>
@@ -350,6 +351,7 @@ $kontotypen = ['Giro', 'Sparkonto', 'Festgeld', 'Kreditkarte', 'Depot', 'Krypto'
                         <td><?= h_acc($ku) ?></td>
                         <td><?= h_acc((string)($acc['name'] ?? '')) ?></td>
                         <td><?= h_acc((string)($acc['iban'] ?? '–')) ?></td>
+                        <td><?= h_acc((string)($acc['bic'] ?? '–')) ?></td>
                         <td><?= h_acc((string)($acc['bank_name'] ?? $acc['bank'] ?? '–')) ?></td>
                         <td><?= h_acc((string)($acc['kontotyp'] ?? '–')) ?></td>
                         <td><?= h_acc((string)($acc['currency'] ?? '')) ?></td>

@@ -554,17 +554,15 @@ if (!function_exists('rkrk_admin_nav')) {
 			'rkrk_admin_branding.php' => 'Branding / Karte',
 			'rkrk_admin_unterhalt.php' => 'Unterhalt',
 		);
-		echo "<p class='rkrk-shell-user'>";
-		$parts = array();
+		echo "<nav class='rkrk-sels rkrk-reg-pills rkrk-admin-nav' aria-label='Konfiguration'>";
 		foreach ($links as $href => $label) {
+			$cls = 'rkrk-sel rkrk-reg-pill';
 			if ($href === $current) {
-				$parts[] = '<b>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</b>';
-			} else {
-				$parts[] = '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+				$cls .= ' is-active';
 			}
+			echo '<a class="' . htmlspecialchars($cls, ENT_QUOTES, 'UTF-8') . '" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
 		}
-		echo implode(' · ', $parts);
-		echo "</p>\n";
+		echo "</nav>\n";
 	}
 }
 
@@ -579,9 +577,9 @@ if (!function_exists('rkrk_admin_boot')) {
 			return false;
 		}
 		CreateTopMenu();
-		echo "<link rel='stylesheet' href='template/rkrk_reg_pills.css?v=20260912admin'>\n";
+		echo "<link rel='stylesheet' href='template/rkrk_reg_pills.css?v=20260915adminnav'>\n";
 		echo "<main class='rkrk-shell-main'>\n";
-		echo "<style>.rkrk-shell-main table.big td .rkrk-sel,.rkrk-shell-main table.big td .rkrk-reg-pill{font-size:11px;padding:1px 8px;min-height:20px}</style>\n";
+		echo "<style>.rkrk-admin-nav{margin:0 0 14px}.rkrk-shell-main table.big td .rkrk-sel,.rkrk-shell-main table.big td .rkrk-reg-pill{font-size:11px;padding:1px 8px;min-height:20px}</style>\n";
 		echo "<h1 class='rkrk-shell-page-title'>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</h1>\n";
 		return true;
 	}

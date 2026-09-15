@@ -51,7 +51,6 @@ rkrk_ar_emit_chrome('styles.css');
         <a href="reports.php">Reports</a>
         <a href="jahresabschluss.php">Jahresabschluss</a>
         <a href="cashflow.php">Cashflow</a>
-        <a href="manage.php">Legacy Eingaben</a>
     </nav>
 
     <header class="header">

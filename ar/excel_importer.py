@@ -191,20 +191,125 @@ class Importer:
         except OSError as exc:
             raise RuntimeError(f"Could not archive file before write: {path.name}") from exc
 
-    def write_json_list(self, name: str, rows: List[Dict[str, Any]]) -> None:
+    def write_json(self, name: str, data: Any) -> None:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         path = self.output_dir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
         self._archive_existing_json_before_write(path)
-        tmp = self.output_dir / f".{name}.tmp"
+        tmp = path.with_name(path.name + ".tmp")
         with tmp.open("w", encoding="utf-8") as f:
-            json.dump(rows, f, ensure_ascii=False, indent=2)
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
         os.replace(tmp, path)
         self._prune_old_archives()
+
+    def write_json_list(self, name: str, rows: List[Dict[str, Any]]) -> None:
+        self.write_json(name, list(rows))
+
+    @staticmethod
+    def year_key_from_date(raw: Any) -> str:
+        text = str(raw or "").strip()
+        if len(text) >= 4 and text[:4].isdigit():
+            year = int(text[:4])
+            if 1990 <= year <= 2100:
+                return str(year)
+        return "_undated"
+
+    @staticmethod
+    def account_key(row: Dict[str, Any]) -> str:
+        t = str(row.get("account") or "").strip()
+        if t == "" or t == "-":
+            return "-"
+        return "".join(t.split()).upper()
+
+    def load_transactions(self) -> List[Dict[str, Any]]:
+        tdir = self.output_dir / "transactions"
+        rows: List[Dict[str, Any]] = []
+        if tdir.is_dir():
+            year_files = sorted(
+                p for p in tdir.glob("*.json") if not p.name.startswith("_")
+            )
+            for path in year_files:
+                rel = path.relative_to(self.output_dir).as_posix()
+                rows.extend(self.load_json_list(rel))
+            if rows or (tdir / "_index.json").is_file():
+                return rows
+        return self.load_json_list("transactions.json")
+
+    def save_transactions(self, rows: List[Dict[str, Any]]) -> None:
+        buckets: Dict[str, List[Dict[str, Any]]] = {}
+        idmap: Dict[str, str] = {}
+        index_years: List[Dict[str, Any]] = []
+        totals_by_year: Dict[str, Dict[str, Dict[str, float]]] = {}
+        for row in rows:
+            key = self.year_key_from_date(row.get("booking_date"))
+            buckets.setdefault(key, []).append(row)
+            rid = str(row.get("id") or "").strip()
+            if rid:
+                idmap[rid] = key
+        tdir = self.output_dir / "transactions"
+        tdir.mkdir(parents=True, exist_ok=True)
+        existing = {p.stem for p in tdir.glob("*.json") if not p.name.startswith("_")}
+        for key, yrows in buckets.items():
+            self.write_json_list(f"transactions/{key}.json", yrows)
+            dates = [str(r.get("booking_date") or "").strip() for r in yrows]
+            dates = [d for d in dates if d]
+            year_map: Dict[str, Dict[str, float]] = {}
+            for row in yrows:
+                acc = self.account_key(row)
+                bucket = year_map.setdefault(acc, {"all": 0.0, "n": 0.0, "v": 0.0, "x": 0.0})
+                delta = float(row.get("amount_in") or 0) - float(row.get("amount_out") or 0)
+                bucket["all"] += delta
+                st = str(row.get("booking_status") or "x").strip().lower()
+                if st not in ("n", "v", "x"):
+                    st = "x"
+                bucket[st] += delta
+            totals_by_year[key] = year_map
+            index_years.append(
+                {
+                    "key": key,
+                    "count": len(yrows),
+                    "min": min(dates) if dates else None,
+                    "max": max(dates) if dates else None,
+                }
+            )
+        for stale in existing - set(buckets):
+            stale_path = tdir / f"{stale}.json"
+            if stale_path.is_file():
+                self._archive_existing_json_before_write(stale_path)
+                try:
+                    stale_path.unlink()
+                except OSError:
+                    pass
+        index_years.sort(key=lambda m: str(m.get("key") or ""))
+        self.write_json(
+            "transactions/_index.json",
+            {
+                "updated_at": datetime.now().isoformat(timespec="seconds"),
+                "count": len(rows),
+                "years": index_years,
+            },
+        )
+        self.write_json(
+            "transactions/_totals.json",
+            {
+                "updated_at": datetime.now().isoformat(timespec="seconds"),
+                "by_year": totals_by_year,
+            },
+        )
+        self.write_json("transactions/_idmap.json", {"ids": idmap})
+        monolith = self.output_dir / "transactions.json"
+        if monolith.is_file():
+            self._archive_existing_json_before_write(monolith)
+            try:
+                monolith.unlink()
+            except OSError:
+                pass
 
     def load_data_files(self) -> Dict[str, List[Dict[str, Any]]]:
         return {
             "cost_categories": self.load_json_list("cost_categories.json"),
-            "transactions": self.load_json_list("transactions.json"),
+            "transactions": self.load_transactions(),
             "budget_plan_lines": self.load_json_list("budget_plan_lines.json"),
             "inventory_items": self.load_json_list("inventory_items.json"),
             "import_runs": self.load_json_list("import_runs.json"),
@@ -213,7 +318,7 @@ class Importer:
 
     def save_data_files(self) -> None:
         self.write_json_list("cost_categories.json", self.data["cost_categories"])
-        self.write_json_list("transactions.json", self.data["transactions"])
+        self.save_transactions(self.data["transactions"])
         self.write_json_list("budget_plan_lines.json", self.data["budget_plan_lines"])
         self.write_json_list("inventory_items.json", self.data["inventory_items"])
         self.write_json_list("import_runs.json", self.data["import_runs"])

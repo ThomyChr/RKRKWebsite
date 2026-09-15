@@ -14,24 +14,49 @@ final class JsonStore
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function absolutePath(string $fileName): string
+    {
+        return $this->dataDir . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $fileName);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function readList(string $fileName): array
     {
-        $path = $this->dataDir . DIRECTORY_SEPARATOR . $fileName;
-        if (!is_file($path)) {
+        $decoded = $this->readJson($fileName);
+        if ($decoded === null || $decoded === []) {
             return [];
         }
-
-        $raw = file_get_contents($path);
-        if ($raw === false) {
-            return [];
-        }
-
-        $decoded = json_decode($raw, true);
-        if (!is_array($decoded)) {
+        $keys = array_keys($decoded);
+        if ($keys !== range(0, count($decoded) - 1)) {
             return [];
         }
 
         return array_values(array_filter($decoded, static fn($row): bool => is_array($row)));
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function readJson(string $fileName): ?array
+    {
+        $path = $this->absolutePath($fileName);
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $raw = file_get_contents($path);
+        if ($raw === false) {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+
+        return $decoded;
     }
 
     /**
@@ -99,7 +124,7 @@ final class JsonStore
             throw new RuntimeException('Could not create archive directory: ' . $archivDir);
         }
 
-        $base = pathinfo($fileName, PATHINFO_FILENAME);
+        $base = str_replace(['/', '\\'], '_', pathinfo(str_replace(['/', '\\'], '_', $fileName), PATHINFO_FILENAME));
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
         $ext = $ext !== '' ? $ext : 'json';
         $stamp = $this->archiveFilenameTimestamp();
@@ -122,9 +147,47 @@ final class JsonStore
             throw new RuntimeException('Could not create data directory: ' . $this->dataDir);
         }
 
-        $path = $this->dataDir . DIRECTORY_SEPARATOR . $fileName;
+        $path = $this->absolutePath($fileName);
+        $dir = dirname($path);
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new RuntimeException('Could not create directory: ' . $dir);
+        }
         $this->archiveExistingFileBeforeWrite($path, $fileName);
-        $json = json_encode(array_values($rows), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $this->writeJsonBytes($path, $fileName, array_values($rows));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function writeJson(string $fileName, array $data): void
+    {
+        $path = $this->absolutePath($fileName);
+        $dir = dirname($path);
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new RuntimeException('Could not create directory: ' . $dir);
+        }
+        $this->archiveExistingFileBeforeWrite($path, $fileName);
+        $this->writeJsonBytes($path, $fileName, $data);
+    }
+
+    public function deleteFile(string $fileName): void
+    {
+        $path = $this->absolutePath($fileName);
+        if (!is_file($path)) {
+            return;
+        }
+        $this->archiveExistingFileBeforeWrite($path, $fileName);
+        if (!@unlink($path)) {
+            throw new RuntimeException('Could not delete JSON file: ' . $fileName);
+        }
+    }
+
+    /**
+     * @param array<mixed> $data
+     */
+    private function writeJsonBytes(string $path, string $fileName, array $data): void
+    {
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         if ($json === false) {
             throw new RuntimeException('Could not encode JSON for file: ' . $fileName);
         }
