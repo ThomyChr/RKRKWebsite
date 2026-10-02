@@ -325,7 +325,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.overview'],
       title: 'Karte & SwissTopo-Overlays',
-      what: 'Basis Swisstopo Farbe, schwarz-weiss (S/W), Swissimage oder OSM. Optional Strom, Grenzen, Jagdbann, RPAS, UAS, Wohngebiete nach AuLaV, swissALTI3D und swissSURFACE3D Relief (multidirektional), DABS, Hindernisse, Grundbuch, Naturschutz, Seilbahnen. AuLaV und beide Relief-Ebenen sind standard aus.',
+      what: 'Basis Swisstopo Farbe, schwarz-weiss (S/W), Swissimage oder OSM. Optional Strom, Grenzen, Jagdbanngebiete AuLaV, RPAS, UAS, Wohngebiete nach AuLaV, swissALTI3D und swissSURFACE3D Relief (multidirektional), DABS, Hindernisse, Grundbuch, Naturschutz, Seilbahnen. AuLaV und beide Relief-Ebenen sind standard aus.',
       inputs: [{ name: 'Kartenbasis', where: 'Swisstopo-Box', required: false }]
     },
     {

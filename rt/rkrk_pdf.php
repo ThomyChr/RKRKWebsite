@@ -108,6 +108,10 @@ function format_iban_ch(string $iban): string {
     return trim(chunk_split($iban, 4, ' '));
 }
 
+function format_bic(string $bic): string {
+    return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $bic));
+}
+
 /** Erste nicht-leere Zeichenkette (leerer String zählt als fehlend). */
 function first_nonempty_str(...$candidates): string {
     foreach ($candidates as $v) {
@@ -493,11 +497,13 @@ $bankOrt = first_nonempty_str(
     $finanz['bank_plz_ort'] ?? null,
     $pdfLayout['finanzinstitut_ort'] ?? null
 );
-$bic = first_nonempty_str(
+$bic = format_bic(first_nonempty_str(
+    getv($data, ['bank', 'bic']),
+    getv($data, ['bank', 'bic_swift']),
     $finanz['bic'] ?? null,
     $finanz['bic_swift'] ?? null,
     $pdfLayout['bic'] ?? null
-);
+));
 $ibanFormatted = format_iban_ch($iban);
 
 $absenderBankLines = [];
@@ -510,14 +516,13 @@ if ($bankName !== '' || $bankOrt !== '') {
         $absenderBankLines[] = $bankOrt;
     }
 }
-if ($bic !== '' || $ibanFormatted !== '') {
+if ($bic !== '') {
     $absenderBankLines[] = 'BIC/SWIFT:';
-    if ($bic !== '') {
-        $absenderBankLines[] = $bic;
-    }
-    if ($ibanFormatted !== '') {
-        $absenderBankLines[] = $ibanFormatted;
-    }
+    $absenderBankLines[] = $bic;
+}
+if ($ibanFormatted !== '') {
+    $absenderBankLines[] = 'IBAN:';
+    $absenderBankLines[] = $ibanFormatted;
 }
 $absenderBankText = implode("\n", $absenderBankLines);
 if ($isExamplePdf) {
@@ -652,6 +657,29 @@ $showPdfDetails = $pdfBool('pdf_details_positionen', true);
 
 $lines = [];
 $sections = getv($data, ['sections'], []);
+$pdfSectionCount = 0;
+if (is_array($sections)) {
+    foreach ($sections as $sec) {
+        if (!is_array($sec)) {
+            continue;
+        }
+        $hasTitle = trim((string) getv($sec, ['title'], '')) !== '';
+        $secLines = getv($sec, ['lines'], []);
+        $hasLine = false;
+        if (is_array($secLines)) {
+            foreach ($secLines as $l) {
+                if (is_array($l)) {
+                    $hasLine = true;
+                    break;
+                }
+            }
+        }
+        if ($hasTitle || $hasLine) {
+            $pdfSectionCount++;
+        }
+    }
+}
+$showSectionZwischensumme = $pdfSectionCount > 1;
 
 if ($showPdfSektionen && is_array($sections)) {
     foreach ($sections as $sec) {
@@ -685,11 +713,18 @@ if ($showPdfSektionen && is_array($sections)) {
             }
         }
 
-        if ($sectionSum > 0) {
+        $secAnm = trim((string) getv($sec, ['anmerkungen'], ''));
+        if ($showSectionZwischensumme && $sectionSum > 0) {
             $lines[] = [
                 'label'       => '###SECTION_SUM###',
                 'sum'         => $sectionSum,
-                'anmerkungen' => trim((string) getv($sec, ['anmerkungen'], '')),
+                'anmerkungen' => $secAnm,
+            ];
+        } elseif ($secAnm !== '') {
+            $lines[] = [
+                'label'       => '###SECTION_SUM###',
+                'sum'         => null,
+                'anmerkungen' => $secAnm,
             ];
         }
     }
@@ -1026,6 +1061,7 @@ ob_start();
 
         if (isset($l['label']) && $l['label'] === '###SECTION_SUM###') {
             $secAnm = trim((string) (getv($l, ['anmerkungen']) ?? ''));
+            $secSum = getv($l, ['sum']);
       ?>
         <?php if ($secAnm !== ''): ?>
         <tr>
@@ -1034,17 +1070,19 @@ ob_start();
           </td>
         </tr>
         <?php endif; ?>
+        <?php if ($secSum !== null && $secSum !== '' && (float)$secSum > 0): ?>
         <tr>
           <td colspan="3" class="section-sum" style="border:1px solid <?= h($catBorderColor) ?>; padding:1.5mm 2mm; color: <?= h($catDesign['color']) ?>; font-weight:700; font-size:11px; line-height:1;">
             <table style="width:100%; border-collapse:collapse;">
               <tr>
                 <td style="width:56%;"></td>
                 <td style="width:24%; text-align:right; vertical-align:middle;">Zwischensumme:</td>
-                <td style="width:20%; text-align:right; vertical-align:middle;"><?= chf($l['sum']) ?> <?= h($currency) ?></td>
+                <td style="width:20%; text-align:right; vertical-align:middle;"><?= chf($secSum) ?> <?= h($currency) ?></td>
               </tr>
             </table>
           </td>
         </tr>
+        <?php endif; ?>
       <?php
           continue;
         }
@@ -1116,7 +1154,12 @@ ob_start();
 
 <!-- ========================= GESAMTSUMMEN ========================= -->
 <div class="sumBlock">
-  <?php if ($zwischensumme !== null && $zwischensumme !== ''): ?>
+  <?php
+    $hasRabatt = ($rabattCHF !== null && (float)$rabattCHF != 0.0)
+        || ($rabattProz !== null && (float)$rabattProz != 0.0);
+    $showInvoiceZwischensumme = !empty($showSectionZwischensumme) || $hasRabatt;
+  ?>
+  <?php if ($showInvoiceZwischensumme && $zwischensumme !== null && $zwischensumme !== ''): ?>
     <span class="sumLine">Zwischensumme: <?= chf($zwischensumme) ?> <?= h($currency) ?></span>
   <?php endif; ?>
 

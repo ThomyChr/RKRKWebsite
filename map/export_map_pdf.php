@@ -214,7 +214,7 @@ try {
         $x = 8 + ($pageW - $imgWmm) / 2;
         $y = 8 + ($pageH - $imgHmm) / 2;
     }
-    $pdf->Image($tmpImg, $x, $y, $imgWmm, $imgHmm, $img['format'], '', '', false, 150, '', false, false, 0, false, false, false);
+    $pdf->Image($tmpImg, $x, $y, $imgWmm, $imgHmm, $img['format'], '', '', false, 600, '', false, false, 0, false, false, false);
 
     $scaleLabel = trim((string)($payload['scale'] ?? ''));
     if ($scaleLabel !== '' && preg_match("/^1:[0-9']+$/u", $scaleLabel) && ($y + $imgHmm + 7) <= $pageHfull) {

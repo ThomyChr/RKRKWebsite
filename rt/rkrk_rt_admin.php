@@ -120,6 +120,18 @@ function media_web_src(string $path): string {
     }
     return $path;
 }
+function admin_header_logo_src(): string {
+    global $IconLoc, $folderoffset;
+    $rel = rtrim((string)($IconLoc !== '' ? $IconLoc : 'images/23color'), '/') . '/202302 Logo_RKRKZ_dark';
+    if (function_exists('rkrk_menu_apply_diroffset')) {
+        return rkrk_menu_apply_diroffset($rel);
+    }
+    $off = trim((string)($folderoffset ?? '../'));
+    if ($off !== '' && substr($off, -1) !== '/') {
+        $off .= '/';
+    }
+    return $off . $rel;
+}
 function generatePosId(&$DEFAULTS) {
     $max = 0;
     foreach ($DEFAULTS["standardpositionen"] as $id => $p) {
@@ -259,7 +271,7 @@ if (isset($_POST["save_global_cat"])) {
         $cfg["finanz"]["land"]       = $_POST["land_cat"]       ?? "";
         $cfg["finanz"]["bank"]       = trim((string)($_POST["bank_cat"] ?? ""));
         $cfg["finanz"]["bank_ort"]   = trim((string)($_POST["bank_ort_cat"] ?? ""));
-        $cfg["finanz"]["bic"]        = trim((string)($_POST["bic_cat"] ?? ""));
+        $cfg["finanz"]["bic"]        = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string)($_POST["bic_cat"] ?? "")));
 
         $uploadDir = $imagesDir;
         ensure_dir($uploadDir);
@@ -692,7 +704,7 @@ rkrk_rt_emit_chrome('rkrk_rt.css');
 <div class="header-top" style="display:flex; justify-content:space-between; align-items:center;">
     <h1>Admin – Rechnungsmodul</h1>
     <div class="header-logos">
-        <img src="<?= safe(media_web_src('logo.png')) ?>" style="height:60px;">
+        <img src="<?= safe(admin_header_logo_src()) ?>" alt="RKRK" style="height:60px;" onerror="this.style.display='none'">
     </div>
 </div>
 

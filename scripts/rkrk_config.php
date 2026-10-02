@@ -543,6 +543,16 @@ if (!function_exists('rkrk_admin_echo_pill')) {
 	}
 }
 
+if (!function_exists('rkrk_admin_msg_pages')) {
+	function rkrk_admin_msg_pages(): array {
+		return array(
+			'rkrk_admin_mail.php' => 'Mail',
+			'rkrk_admin_telegram.php' => 'Telegram',
+			'rkrk_admin_whatsapp.php' => 'WhatsApp',
+		);
+	}
+}
+
 if (!function_exists('rkrk_admin_nav')) {
 	function rkrk_admin_nav(string $current = ''): void {
 		$links = array(
@@ -552,10 +562,26 @@ if (!function_exists('rkrk_admin_nav')) {
 			'rkrk_admin_pilots.php' => 'Piloten',
 			'rkrk_admin_menu.php' => 'Menü',
 			'rkrk_admin_branding.php' => 'Branding / Karte',
+			'rkrk_admin_nachrichten.php' => 'Nachrichten',
 			'rkrk_admin_unterhalt.php' => 'Unterhalt',
 		);
+		$msgOn = ($current === 'rkrk_admin_nachrichten.php' || isset(rkrk_admin_msg_pages()[$current]));
 		echo "<nav class='rkrk-sels rkrk-reg-pills rkrk-admin-nav' aria-label='Konfiguration'>";
 		foreach ($links as $href => $label) {
+			$cls = 'rkrk-sel rkrk-reg-pill';
+			if ($href === $current || ($href === 'rkrk_admin_nachrichten.php' && $msgOn)) {
+				$cls .= ' is-active';
+			}
+			echo '<a class="' . htmlspecialchars($cls, ENT_QUOTES, 'UTF-8') . '" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+		}
+		echo "</nav>\n";
+	}
+}
+
+if (!function_exists('rkrk_admin_msg_nav')) {
+	function rkrk_admin_msg_nav(string $current = ''): void {
+		echo "<nav class='rkrk-sels rkrk-reg-pills rkrk-admin-subnav' aria-label='Nachrichten'>";
+		foreach (rkrk_admin_msg_pages() as $href => $label) {
 			$cls = 'rkrk-sel rkrk-reg-pill';
 			if ($href === $current) {
 				$cls .= ' is-active';
@@ -579,7 +605,7 @@ if (!function_exists('rkrk_admin_boot')) {
 		CreateTopMenu();
 		echo "<link rel='stylesheet' href='template/rkrk_reg_pills.css?v=20260915adminnav'>\n";
 		echo "<main class='rkrk-shell-main'>\n";
-		echo "<style>.rkrk-admin-nav{margin:0 0 14px}.rkrk-shell-main table.big td .rkrk-sel,.rkrk-shell-main table.big td .rkrk-reg-pill{font-size:11px;padding:1px 8px;min-height:20px}</style>\n";
+		echo "<style>.rkrk-admin-nav{margin:0 0 14px}.rkrk-admin-subnav{margin:-6px 0 14px}.rkrk-admin-form label{display:block;margin:8px 0 4px;font-weight:600}.rkrk-admin-form input[type=text],.rkrk-admin-form input[type=email],.rkrk-admin-form input[type=number],.rkrk-admin-form input[type=password],.rkrk-admin-form select,.rkrk-admin-form textarea{width:100%;max-width:720px;box-sizing:border-box;padding:6px 8px}.rkrk-admin-form textarea{min-height:90px}.rkrk-shell-main table.big td .rkrk-sel,.rkrk-shell-main table.big td .rkrk-reg-pill{font-size:11px;padding:1px 8px;min-height:20px}</style>\n";
 		echo "<h1 class='rkrk-shell-page-title'>" . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . "</h1>\n";
 		return true;
 	}

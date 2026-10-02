@@ -29,8 +29,22 @@ if ($showTopMenu) {
     .weather-app .muted{color:#666}
     .weather-app .row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
     .weather-app label{display:flex; flex-direction:column; font-size:.92em; gap:6px}
-    .weather-app input,.weather-app select{padding:10px 12px;border:1px solid #ccc;border-radius:10px}
-    .weather-app button{padding:10px 14px;border:1px solid #ccc;border-radius:10px;background:#fafafa;cursor:pointer}
+    .weather-app input,.weather-app select,.weather-app button{
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.25;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    .weather-app button{
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      background: #fafafa;
+      color: #222;
+      cursor: pointer;
+      white-space: nowrap;
+    }
     .weather-app button:hover{background:#f0f0f0}
     .weather-app .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     /* Detailkarten: 1–3 Spalten je nach Bildschirmbreite */
@@ -55,6 +69,9 @@ if ($showTopMenu) {
 
 
     @media (max-width: 900px){ .weather-app .grid{grid-template-columns:1fr} }
+    @media (max-width: 600px){
+      .weather-app input,.weather-app select,.weather-app button{ font-size: 16px; }
+    }
     .weather-app .card{border:1px solid #ddd;border-radius:12px;padding:14px;background:#fff}
     .weather-app .title{font-weight:700;margin-bottom:10px}
     .weather-app .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed #eee}
@@ -120,8 +137,8 @@ if ($showTopMenu) {
       <input id="time" type="time" step="60">
     </label>
 
-    <button id="load">Daten laden</button>
-	<button type="button" onclick="rkrk_copyShareLink()">Link kopieren</button>
+    <button id="load" type="button">Daten laden</button>
+    <button id="shareLink" type="button" title="Link mit Ort, Datum und Zeit teilen">Link teilen</button>
 
     <span id="status" class="muted"></span>
   </div>
@@ -159,54 +176,61 @@ if ($showTopMenu) {
 <script src="https://unpkg.com/satellite.js@5.0.0/dist/satellite.min.js"></script>
 <script>
 // --- URL-Parameter einlesen (ohne Defaults zu überschreiben) ---
+function rkrk_paramAliases(params, names) {
+  for (let i = 0; i < names.length; i += 1) {
+    const v = params.get(names[i]);
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  return '';
+}
+
+function rkrk_normalizeTime(value) {
+  const m = String(value || '').trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+  return String(m[1]).padStart(2, '0') + ':' + m[2];
+}
+
 function rkrk_applyUrlParams_noDefaultOverwrite() {
   const params = new URLSearchParams(window.location.search);
 
-  // Aliases: place oder q
-  const place = params.get('place') ?? params.get('q');
-  const lat   = params.get('lat');
-  const lon   = params.get('lon');
-
-  // date/time oder datetime
-  let date = params.get('date');
-  let time = params.get('time');
-  const datetime = params.get('datetime');
+  const place = rkrk_paramAliases(params, ['place', 'ort', 'q']);
+  const lat   = rkrk_paramAliases(params, ['lat', 'latitude']);
+  const lon   = rkrk_paramAliases(params, ['lon', 'lng', 'longitude']);
+  let date = rkrk_paramAliases(params, ['date', 'datum']);
+  let time = rkrk_normalizeTime(rkrk_paramAliases(params, ['time', 'zeit']));
+  const datetime = rkrk_paramAliases(params, ['datetime']);
 
   if (datetime && (!date || !time)) {
-    // akzeptiert "YYYY-MM-DDTHH:MM" (oder ISO mit Sekunden/Zone am Ende)
     const m = String(datetime).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-    if (m) { date = date ?? m[1]; time = time ?? m[2]; }
+    if (m) { date = date || m[1]; time = time || m[2]; }
   }
 
-  // >>> Diese IDs/Selektoren ggf. auf deine tatsächlichen Felder anpassen <<<
   const elPlace = document.getElementById('place') || document.getElementById('ort');
   const elLat   = document.getElementById('lat')   || document.getElementById('latitude');
   const elLon   = document.getElementById('lon')   || document.getElementById('lng') || document.getElementById('longitude');
   const elDate  = document.getElementById('date')  || document.getElementById('datum');
   const elTime  = document.getElementById('time')  || document.getElementById('zeit');
 
-  // Priorität: lat/lon > place (wie in deiner Beschreibung: Ort ODER Lat/Lon) [1](https://onedrive.live.com?cid=22BFEB0FDC41B4C8&id=22BFEB0FDC41B4C8!s882e6eb549234bfb9e70689378a1d9a2)
-  const hasLatLon = (lat !== null && lon !== null && lat !== '' && lon !== '');
+  const hasLatLon = lat !== '' && lon !== '';
 
-  // NUR überschreiben, wenn Parameter vorhanden sind:
   if (hasLatLon) {
     if (elLat) elLat.value = lat;
     if (elLon) elLon.value = lon;
-
-    // Optional: nur leeren, wenn place explizit da war (sonst nicht anfassen)
-    if (place && elPlace) elPlace.value = '';
+    if (place && elPlace) elPlace.value = place;
   } else if (place) {
     if (elPlace) elPlace.value = place;
+    if (elLat) elLat.value = '';
+    if (elLon) elLon.value = '';
   }
 
   if (date && elDate) elDate.value = date;
   if (time && elTime) elTime.value = time;
 
-  // autoload nur signalisieren (nicht automatisch irgendwas ändern)
   const autoload = params.get('autoload');
-  const doAutoload = (autoload === '1' || autoload === 'true');
+  const doAutoload = (autoload === '1' || autoload === 'true'
+    || !!(place || hasLatLon || date || time));
 
-  return { doAutoload };
+  return { doAutoload, place, date, time, hasLatLon };
 }
 
 
@@ -1139,50 +1163,89 @@ function applyLayoutTweaks(){
 // =====================
 // Share-Link (URL kopieren)
 // =====================
-function rkrk_buildShareUrl_keepExistingParams() {
-  // Nimmt die aktuelle URL (inkl. aller vorhandenen Parameter wie drohnenwetter=...)
-  const url = new URL(window.location.href);
-
+function rkrk_currentShareFields() {
   const elPlace = document.getElementById('place') || document.getElementById('ort');
   const elLat   = document.getElementById('lat')   || document.getElementById('latitude');
   const elLon   = document.getElementById('lon')   || document.getElementById('lng') || document.getElementById('longitude');
   const elDate  = document.getElementById('date')  || document.getElementById('datum');
   const elTime  = document.getElementById('time')  || document.getElementById('zeit');
+  return {
+    place: (elPlace?.value || '').trim(),
+    lat: (elLat?.value || '').trim(),
+    lon: (elLon?.value || '').trim(),
+    date: (elDate?.value || '').trim(),
+    time: rkrk_normalizeTime(elTime?.value || '')
+  };
+}
 
-  const place = elPlace?.value?.trim();
-  const lat   = elLat?.value?.trim();
-  const lon   = elLon?.value?.trim();
-  const date  = elDate?.value;
-  const time  = elTime?.value;
+function rkrk_buildShareUrl_keepExistingParams() {
+  const url = new URL(window.location.href);
+  const f = rkrk_currentShareFields();
 
-  // Nur Wetter-Parameter überschreiben/setzen, alles andere bleibt erhalten!
-  if (lat && lon) {
-    url.searchParams.set('lat', lat);
-    url.searchParams.set('lon', lon);
-    url.searchParams.delete('place');
-    url.searchParams.delete('q');
-  } else if (place) {
-    url.searchParams.set('place', place);
-    url.searchParams.delete('lat');
-    url.searchParams.delete('lon');
+  url.searchParams.delete('q');
+  url.searchParams.delete('ort');
+  url.searchParams.delete('datum');
+  url.searchParams.delete('zeit');
+  url.searchParams.delete('datetime');
+
+  if (f.place) url.searchParams.set('place', f.place);
+  else url.searchParams.delete('place');
+
+  if (f.date) url.searchParams.set('date', f.date);
+  else url.searchParams.delete('date');
+
+  if (f.time) url.searchParams.set('time', f.time);
+  else url.searchParams.delete('time');
+
+  if (f.lat && f.lon) {
+    url.searchParams.set('lat', f.lat);
+    url.searchParams.set('lon', f.lon);
   }
-  if (date) url.searchParams.set('date', date);
-  if (time) url.searchParams.set('time', time);
 
   return url.toString();
 }
 
-async function rkrk_copyShareLink() {
+async function rkrk_copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  const ok = document.execCommand('copy');
+  ta.remove();
+  if (!ok) throw new Error('copy failed');
+  return true;
+}
+
+async function rkrk_shareOrCopyLink() {
   const shareUrl = rkrk_buildShareUrl_keepExistingParams();
+  const f = rkrk_currentShareFields();
+  const parts = [f.place, f.date, f.time].filter(Boolean);
+  const title = parts.length ? ('Wetter: ' + parts.join(', ')) : 'Wetter';
   try {
-    await navigator.clipboard.writeText(shareUrl);
-    // Optional: Statusmeldung anzeigen
-    // setStatus?.('Link kopiert', 'ok');
+    if (navigator.share) {
+      await navigator.share({ title: title, text: title, url: shareUrl });
+      setStatus('Link geteilt.');
+      return;
+    }
   } catch (e) {
-    // Optional: Fehler anzeigen
-    // setStatus?.('Konnte Link nicht kopieren', 'err');
+    if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) return;
+  }
+  try {
+    await rkrk_copyText(shareUrl);
+    setStatus('Link mit Ort, Datum und Zeit kopiert.');
+  } catch (e) {
+    setStatus('Link konnte nicht kopiert werden.', true);
+    window.prompt('Link kopieren:', shareUrl);
   }
 }
+window.rkrk_copyShareLink = rkrk_shareOrCopyLink;
 
 
 (function initDefaults(){
@@ -1215,12 +1278,16 @@ async function rkrk_copyShareLink() {
     applyLayoutTweaks();
   }
 
+  const urlState = rkrk_applyUrlParams_noDefaultOverwrite();
+
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth()+1).padStart(2,'0');
   const dd = String(now.getDate()).padStart(2,'0');
-  document.getElementById("date").value = `${yyyy}-${mm}-${dd}`;
-  document.getElementById("time").value = "09:00";
+  const dateEl = document.getElementById("date");
+  const timeEl = document.getElementById("time");
+  if (dateEl && !dateEl.value) dateEl.value = `${yyyy}-${mm}-${dd}`;
+  if (timeEl && !timeEl.value) timeEl.value = "09:00";
 
   loadAll();
 
@@ -1237,20 +1304,8 @@ async function rkrk_copyShareLink() {
 
 // Button lädt (auch wenn Auto-Sync schon lief)
 document.getElementById("load").addEventListener("click", loadAll);
-
-
-document.addEventListener('DOMContentLoaded', () => {
-  const urlState = rkrk_applyUrlParams_noDefaultOverwrite();
-
-  if (urlState.doAutoload) {
-    // >>> HIER deinen EXISTIERENDEN "Daten laden"-Trigger aufrufen <<<
-    // Beispiel 1: wenn du eine Funktion hast:
-    // loadWeatherData();
-
-    // Beispiel 2: wenn du über Button klickst:
-    // document.getElementById('btnLoad')?.click();
-  }
-});
+const shareBtn = document.getElementById("shareLink");
+if (shareBtn) shareBtn.addEventListener("click", rkrk_shareOrCopyLink);
 
 </script>
 

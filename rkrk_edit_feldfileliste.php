@@ -257,18 +257,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 	} else	{
 		$FeldNamenWahl = '';
 	}
+} else {
+	$FeldNamenWahl = '';
 }
 //echo "Namenwahl: " . $FeldNamenWahl . "<br>";
 
-if (isset($_GET["EnableDelete"])) {
-   if (strtolower($_GET["EnableDelete"])=="on") {
-		//echo "EnableDelete=on";
- 		$EnableDelete= true;
-	} else {
-		//echo "EnableDelete=on";
-		$EnableDelete= false;
-		$dodelete= false;
-	}
+if (isset($_GET["EnableDelete"]) && strtolower((string)$_GET["EnableDelete"])=="on") {
+	$EnableDelete= true;
+} else {
+	$EnableDelete= false;
+	$dodelete= false;
 }
 
 IF ($EnableDelete) {
@@ -350,8 +348,6 @@ function Legends() {
 // HEADER FORM
 // ===========================================
 
-//removes what does not belong to tick list
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 //form to change setting
 echo "<i>Wähle Regionen und Felder der Tabelle und Drücke einlesen.:</i><br>";
@@ -757,6 +753,8 @@ if (isset($_GET["ActPage"]) and $_GET["ActPage"]!="") {
 }
 if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 	$FontSize= $_POST["FontSize"];
+} else {
+	$FontSize= "100%";
 }
 
 //Erneutes Einlesen der Felddaten (nach Änderung)

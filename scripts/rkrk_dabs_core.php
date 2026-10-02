@@ -5,6 +5,16 @@
  */
 declare(strict_types=1);
 
+if (!function_exists('rkrk_dabs_aip_rings')) {
+	$aip = __DIR__ . DIRECTORY_SEPARATOR . 'rkrk_dabs_aip_rings.php';
+	if (!is_file($aip)) {
+		$aip = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'rkrk_dabs_aip_rings.php';
+	}
+	if (is_file($aip)) {
+		require_once $aip;
+	}
+}
+
 function rkrk_dabs_emit(): void
 {
 	header('Content-Type: application/json; charset=utf-8');
@@ -30,7 +40,7 @@ function rkrk_dabs_load($day)
 {
 	$cacheTtl = 20 * 60;
 	$cacheDir = rtrim(sys_get_temp_dir(), '\\/') . DIRECTORY_SEPARATOR;
-	$cacheFile = $cacheDir . 'rkrk_dabs_' . $day . '_agl120_poly2.json';
+	$cacheFile = $cacheDir . 'rkrk_dabs_' . $day . '_agl200_aip3.json';
 	if (is_file($cacheFile) && (time() - (int)filemtime($cacheFile)) < $cacheTtl) {
 		$cached = json_decode((string)file_get_contents($cacheFile), true);
 		if (is_array($cached) && !empty($cached['ok'])) {
@@ -78,7 +88,7 @@ function rkrk_dabs_load($day)
 		);
 	}
 
-	$maxAgl = 120;
+	$maxAgl = 200;
 	$items = rkrk_dabs_parse_items($strings);
 	$features = array();
 	$skipped = 0;
@@ -129,7 +139,7 @@ function rkrk_dabs_load($day)
 		'circles' => $circN,
 		'skipped_high' => $skipped,
 		'agl_max_m' => $maxAgl,
-		'disclaimer' => 'Nur Meldungen im Segment GND bis 120 m AGL. DABS ersetzt keine NOTAMs.',
+		'disclaimer' => 'Nur Meldungen im Segment GND bis 200 m AGL. DABS ersetzt keine NOTAMs.',
 	);
 	$result = array(
 		'ok' => true,
@@ -391,6 +401,45 @@ function rkrk_dabs_remark_ring($remark)
 	return $uniq;
 }
 
+function rkrk_dabs_normalize_area_id($s)
+{
+	$u = strtoupper(trim((string)$s));
+	$u = str_replace(array('-', ' '), '', $u);
+	if (preg_match('/^LSR([0-9]{1,3}[A-Z]{0,2})$/', $u, $m)) {
+		return 'LSR' . $m[1];
+	}
+	return '';
+}
+
+function rkrk_dabs_area_key($item)
+{
+	$direct = rkrk_dabs_normalize_area_id($item['area'] ?? '');
+	if ($direct !== '') {
+		return $direct;
+	}
+	$blob = strtoupper((string)($item['area'] ?? '') . ' ' . ($item['name'] ?? '') . ' ' . ($item['remark'] ?? ''));
+	if (preg_match('/\bLS-?R\s*([0-9]{1,3}[A-Z]{0,2})\b/', $blob, $m)) {
+		return 'LSR' . $m[1];
+	}
+	return '';
+}
+
+function rkrk_dabs_aip_ring_for_item($item)
+{
+	if (!function_exists('rkrk_dabs_aip_rings')) {
+		return null;
+	}
+	$key = rkrk_dabs_area_key($item);
+	if ($key === '') {
+		return null;
+	}
+	$rings = rkrk_dabs_aip_rings();
+	if (isset($rings[$key]) && is_array($rings[$key]) && count($rings[$key]) >= 4) {
+		return $rings[$key];
+	}
+	return null;
+}
+
 function rkrk_dabs_item_geometry($item)
 {
 	$remark = (string)($item['remark'] ?? '');
@@ -399,6 +448,13 @@ function rkrk_dabs_item_geometry($item)
 		return array(
 			'type' => 'Polygon',
 			'coordinates' => array($ring),
+		);
+	}
+	$aip = rkrk_dabs_aip_ring_for_item($item);
+	if (is_array($aip) && count($aip) >= 4) {
+		return array(
+			'type' => 'Polygon',
+			'coordinates' => array($aip),
 		);
 	}
 	$lon = isset($item['lon']) ? (float)$item['lon'] : null;
@@ -471,7 +527,7 @@ function rkrk_dabs_remark_agl_m($remark)
 	return $vals;
 }
 
-function rkrk_dabs_affects_agl($item, $maxAglM = 120)
+function rkrk_dabs_affects_agl($item, $maxAglM = 200)
 {
 	$lower = (string)($item['lower'] ?? '');
 	$remark = (string)($item['remark'] ?? '');

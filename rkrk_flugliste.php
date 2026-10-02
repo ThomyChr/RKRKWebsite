@@ -183,6 +183,10 @@ if (isset($_POST["Jaeger"])) {
 }
 
 $JaegerWahlSet  = "Jaeger=".$JaegerWahl;
+$JagerWahlSet = $JaegerWahlSet;
+if (!isset($EnableDeleteSet)) {
+	$EnableDeleteSet = "";
+}
 
 //echo "FromDate: " . $FromDate . " bis ToDate: " . $ToDate . "<br>";
 
@@ -424,7 +428,7 @@ Function CreateTitleLine($TableSetup) {
 	echo $ScreenTableSetup["<tr>"] .chr(10);
 	//echo "Title" . "<br>";
 	//foreach ($TableSetup AS $TableEntry) {
-	CreateTitleField($TableEntry);
+	CreateTitleField(array());
 	//}
 	echo $ScreenTableSetup["</tr>"] .chr(10);
 }
@@ -473,12 +477,12 @@ UpdateFlightsAndSaveKatalog(strval($Year));
 	if ($Mode=="J") {
 		array_multisort(array_column($data, 'Datum'), SORT_NUMERIC, SORT_ASC,
 						array_column($data, 'Zeit'), SORT_NUMERIC, SORT_ASC,	
-						array_column($data, 'Jaeger'), SORT_NUMERIC, SORT_STRING,
+						array_column($data, 'Jaeger'), SORT_ASC, SORT_STRING,
 						$data);	
 	} else {
 		array_multisort(array_column($data, 'Datum'), SORT_NUMERIC, SORT_ASC,
 						array_column($data, 'Zeit'), SORT_NUMERIC, SORT_ASC,	
-						array_column($data, 'Pilot'), SORT_NUMERIC, SORT_STRING,
+						array_column($data, 'Pilot'), SORT_ASC, SORT_STRING,
 						$data);	
 	}
 
@@ -516,6 +520,8 @@ UpdateFlightsAndSaveKatalog(strval($Year));
 	}
 	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 		$FontSize= $_POST["FontSize"];
+	} else {
+		$FontSize= "100%";
 	}
 
 
@@ -594,8 +600,6 @@ UpdateFlightsAndSaveKatalog(strval($Year));
 
 <?php
 
-//removes what does not belong to tick list
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 //form to change setting
 echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">';
@@ -665,7 +669,7 @@ if ($MenuOn) {
 		// ===========================================
 		$i=1;
 		//Write to LOGfile
-		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Edit Fluege ",$FeldID, $RKRKMissionSelected,"");
+		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Edit Fluege ", $FeldID ?? '', $RKRKMissionSelected,"");
 
 	echo "<tr><td>";
 	echo "Regionen: ";
@@ -681,14 +685,14 @@ if ($MenuOn) {
 		}
 		$GetRegions = $TmpArr;
 	} else
-		$GetRegions= "";
+		$GetRegions = array();
 	//process Regions form
 	//pre_r($RegionSettings);
 	$ListOfRegions = "";
 	Foreach ($RegionSettings as $Reg) {
 		if ($Reg["Aktiv"]) {
 			$RegOptions[$Reg["Reg"]]["Text"]= $Reg["Reg"];
-			if (($GetRegions[$Reg["Reg"]])!="") { 
+			if (!empty($GetRegions[$Reg["Reg"]])) { 
 				$RegOptions[$Reg["Reg"]]["Value"]=1;
 				$ListOfRegions .= $Reg["Reg"] . ",";
 			} elseif (isset($_POST[$GrpName."-".$i])) {
@@ -702,7 +706,11 @@ if ($MenuOn) {
 	$ListOfRegions = substr($ListOfRegions,0, -1);
 	$EnabledOptions["Regions"] = PrintSelection($RegOptions , $GrpName ,$Gruppe, true);
 	// JG/Region selection
-	foreach (explode(",",$ListOfRegions) as $Reg) {
+	$RegionsSelected = array();
+	foreach (explode(",", (string)$ListOfRegions) as $Reg) {
+		if ($Reg === '' || !isset($RegionSettings[$Reg]["JGList"])) {
+			continue;
+		}
 		$JGs2Select = explode(",", $RegionSettings[$Reg]["JGList"]);
 		foreach ($JGs2Select as $JGtoSelect)
 		{
@@ -762,8 +770,8 @@ if ($MenuOn) {
 						or like($Flug["Bemerkung"], $FeldNamenWahl)
 						or like($Flug["Felder"], $FeldNamenWahl)
 						or like($Flug["Landwirt"], $FeldNamenWahl)
-						or like($AdressDataArray[$Flug["Pilot"]]["Name"], $FeldNamenWahl)
-						or like($AdressDataArray[$Flug["Jaeger"]]["Name"], $FeldNamenWahl)
+						or like(($AdressDataArray[$Flug["Pilot"]]["Name"] ?? ''), $FeldNamenWahl)
+						or like(($AdressDataArray[$Flug["Jaeger"]]["Name"] ?? ''), $FeldNamenWahl)
 					) 
 					and 
 					(
@@ -845,9 +853,9 @@ if ($MenuOn) {
 	echo SelectField("Pilot", $PilotenWahl ,$Pilots) . chr(10);
 	$Legend= "";
 	foreach ($Pilots as $key => $entry) {
-		if ($key!="") {
+		if ($key !== "" && isset($AdressDataArray[$key]['Initialen'])) {
 			$Legend .= $AdressDataArray[$key]['Initialen'] . ": ";
-			$Legend .=  $AdressDataArray[$key]['Name'] . ", " ;
+			$Legend .=  ($AdressDataArray[$key]['Name'] ?? '') . ", " ;
 		}
 	}
 	echo "<i> - " .  substr($Legend,0, -2) . "</i>";
@@ -855,9 +863,9 @@ if ($MenuOn) {
 	echo SelectField("Jaeger", $JaegerWahl ,$Jaeger) . chr(10);
 	$Legend= "";
 	foreach ($Jaeger as $key => $entry) {
-		if ($key!="") {
+		if ($key !== "" && isset($AdressDataArray[$key]['Initialen'])) {
 			$Legend .=  $AdressDataArray[$key]['Initialen'] . ": ";
-			$Legend .=  $AdressDataArray[$key]['Name'] . ", " ;
+			$Legend .=  ($AdressDataArray[$key]['Name'] ?? '') . ", " ;
 		}
 	}
 	echo "<i> - " . substr($Legend,0, -2) . "</i>";
@@ -902,7 +910,7 @@ if ($MenuOn) {
 	//	echo $ScreenTableSetup["</div>"].chr(10);
 	//}
 	//echo "<div class='container content line-left padding-8' style='max-width:100%' id='table'>".chr(10);
-	echo $ScreenTableSetup["<table line>"];
+	echo ($ScreenTableSetup["<table line>"] ?? '');
 	//echo  "<div class='container content center padding-16'>";
 	//echo $ScreenTableSetup["<table>"] .chr(10);
 
@@ -920,7 +928,7 @@ if ($MenuOn) {
 	//form to change setting
 	echo "<small>";
 	echo $ScreenTableSetup["<table>"] .chr(10);
-	CreateTitleLine($TableSetup);
+	CreateTitleLine(array());
 
 	// Extisting Entries
 	$PrevPilot ="";
@@ -1036,7 +1044,7 @@ if ($MenuOn) {
 				echo $ScreenTableSetup["</tr>"] . chr(10);
 			}
 			// Existing Data
-			CreateOutputLine($dataline, $TableSetup, $i, $i);
+			CreateOutputLine($dataline, array(), $i, $i);
 			$PrevPilot =$dataline['Pilot'];
 			$PrevJaeger =$dataline['Jaeger'];
 			$PrevDate =$dataline['Datum'];
@@ -1059,6 +1067,8 @@ if ($MenuOn) {
 
 //$QRCode = $WebLink_public . "rkrk_flugliste.php" ."?" . str_replace(array("&", " "),array("%26","%2B"), $ParameterSet); 
 $QRCode = $WebLink_public . "rkrk_flugliste.php" ."?" . $ParameterSet; 
+$qrcode1 = "";
+$qrcode2 = "";
 if ($QRCode!="") {
 	//echo $QRCode;
 	$qrcode1.= "<br>Link zu diesem Flugplan:<br>";
@@ -1093,7 +1103,7 @@ echo "</div>";
 		echo $ScreenTableSetup["</div>"].chr(10);
 	}
 	//echo "<div class='container content line-left padding-8' style='max-width:100%' id='table'>".chr(10);
-	echo $ScreenTableSetup["<table line>"];
+	echo ($ScreenTableSetup["<table line>"] ?? '');
 	//echo  "<div class='container content center padding-16'>";
 	//echo $ScreenTableSetup["<table>"] .chr(10);
 	

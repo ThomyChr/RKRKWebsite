@@ -35,6 +35,8 @@ window.RKRK_HELP_CATALOG = {
     circles: '<svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
     polygon: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l8 5.5v7L12 21l-8-5.5v-7L12 3zm0 2.4L6.5 9.2v5.6L12 18.6l5.5-3.8V9.2L12 5.4z"/></svg>',
     show: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>',
+    hide: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.1 3.51 3.51 2.1l18.39 18.39-1.41 1.41-3.13-3.13A12.3 12.3 0 0 1 12 19c-5 0-9.27-3.11-11-7a13.4 13.4 0 0 1 4.35-5.13L2.1 3.51zM12 7a5 5 0 0 1 4.9 6.07l-1.52-1.52A3 3 0 0 0 12.45 8.6L12 7zm0 10c1.4 0 2.72-.3 3.92-.84l-1.56-1.56A5 5 0 0 1 8.4 9.64L6.84 8.08A11.4 11.4 0 0 0 1 12c1.73 3.89 6 7 11 7z"/></svg>',
+    fills: '<svg viewBox="0 0 24 24"><path fill="#00aa00" d="M3 3h8v8H3z"/><path fill="#ff2222" d="M13 3h8v8h-8z"/><path fill="#ffd400" d="M3 13h8v8H3z"/><path fill="#888888" d="M13 13h8v8h-8z"/></svg>',
     satellite: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M11 6.5A5.5 5.5 0 0 1 16.5 12H19A8 8 0 0 0 11 4v2.5zM6.5 13A5.5 5.5 0 0 1 12 7.5V5A8 8 0 0 0 4 13h2.5zM12 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>',
     search: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>',
     save: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg>',
@@ -49,16 +51,16 @@ window.RKRK_HELP_CATALOG = {
       icon: "draw",
       use: "Objekttyp wählen, zeichnen, fixieren. Die Karte bleibt zum Verschieben frei, solange Zeichnen nicht aktiv ist.",
       tools: [
-        { icon: "grid", name: "Objekttyp", text: "Links unter Objekt: Raster, Polygon, Linie, Punkte, Text, Kreis." },
+        { icon: "grid", name: "Objekttyp", text: "Links unter Objekt: Raster, Polygon, Linie, Pfeil, Punkte, Text, Kreis." },
         { icon: "draw", name: "Zeichnen", text: "Startet das Setzen auf der Karte. Ohne diesen Knopf bewegt ein Klick nur die Karte." },
-        { icon: "fix", name: "Fixieren", text: "Speichert den Entwurf in der Objektliste. Erst danach ist das Objekt «fertig»." },
+        { icon: "fix", name: "Fixieren", text: "Schliesst die Bearbeitung ab und schreibt das Objekt fest in die Liste (Badge «fix»). Danach keine versehentlichen Änderungen mehr." },
         { icon: "discard", name: "Verwerfen", text: "Nimmt den aktuellen Entwurf oder die letzten Änderungen zurück." },
         { icon: "clear", name: "Löschen", text: "Entfernt das angewählte Objekt." }
       ],
       steps: [
         { icon: "grid", text: "Objekttyp wählen." },
         { icon: "draw", text: "Zeichnen einschalten, dann auf die Karte klicken oder ziehen." },
-        { icon: "fix", text: "Fixieren, wenn Form und Lage stimmen." }
+        { icon: "fix", text: "Fixieren, wenn Form und Lage stimmen — Objekt ist danach «fertig»." }
       ]
     },
     "map.grid": {
@@ -69,9 +71,10 @@ window.RKRK_HELP_CATALOG = {
       tools: [
         { icon: "draw", name: "Zeichnen", text: "Einschalten, danach ein Klick setzt die Südwest-Ecke." },
         { icon: "stop", name: "Stop", text: "Zeichnen aus — Karte wieder verschieben und zoomen." },
-        { icon: "fix", name: "Fixieren", text: "Raster in der Objektliste speichern." },
+        { icon: "fix", name: "Fixieren", text: "Bearbeitung abschliessen. Danach Badge «fix»; Winkel und Rahmen sind nicht mehr aktiv." },
         { icon: "color", name: "Kachelfarbe", text: "Doppelklick oder Rechtsklick auf die Beschriftung: grün → rot → orange → gelb → grau → durchsichtig." },
-        { icon: "ruler", name: "Lineal", text: "Nach dem Setzen: Raster drehen, indem Sie den Rand greifen oder das Lineal nutzen." }
+        { icon: "fills", name: "Resultatflächen", text: "Häkchen «Resultatflächen anzeigen» oder Farb-Icon in der Objektliste blendet die Kachelfarben ein/aus. Die Farben bleiben gespeichert." },
+        { icon: "ruler", name: "Lineal / Winkel", text: "Nur während der Bearbeitung: Rand greifen oder Lineal drehen. Am fixierten Raster ist der Winkel ausgeblendet." }
       ],
       steps: [
         { icon: "draw", text: "Zeichnen starten." },
@@ -104,7 +107,8 @@ window.RKRK_HELP_CATALOG = {
       tools: [
         { icon: "draw", name: "Zeichnen", text: "Startet das Setzen von Eckpunkten." },
         { icon: "stop", name: "Stop", text: "Zeichnen beenden. Das Polygon bleibt editierbar, bis Sie fixieren." },
-        { icon: "fix", name: "Fixieren", text: "Polygon in der Objektliste speichern." }
+        { icon: "fix", name: "Fixieren", text: "Bearbeitung abschliessen und Polygon fest in der Liste speichern (Badge «fix»)." },
+        { icon: "fills", name: "Flächenfärbung", text: "Häkchen «Flächenfärbung anzeigen» oder Farb-Icon in der Objektliste blendet die Füllfarbe ein/aus. Die Farbe bleibt gespeichert." }
       ],
       steps: [
         { icon: "draw", text: "Zeichnen starten, dann Eckpunkte per Klick setzen." },
@@ -309,10 +313,11 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "satellite",
       title: "Basiskarte",
-      what: "Oben links zwischen Pixelkarte und Satellit umschalten.",
+      what: "Oben links zwischen Pixelkarte, Satellit und Schwarz-weiss umschalten.",
       tools: [
-        { icon: "map", name: "Karte", text: "SwissTopo Pixelkarte." },
-        { icon: "satellite", name: "Satellit", text: "Swissimage Luftbild." }
+        { icon: "map", name: "Karte", text: "SwissTopo Pixelkarte (Farbe)." },
+        { icon: "satellite", name: "Satellit", text: "Swissimage Luftbild." },
+        { icon: "map", name: "S/W", text: "SwissTopo schwarz-weiss." }
       ]
     },
     {
@@ -345,9 +350,9 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "fix",
       title: "Fixieren, verwerfen, Undo",
-      what: "Nur ein Objekt gleichzeitig bearbeiten. Fixierte Objekte ändern Sie erst nach Bestätigung.",
+      what: "Fixieren schliesst die Bearbeitung ab: das Objekt steht danach fest in der Liste (Badge «fix») und ändert sich nicht mehr versehentlich. Nur ein Objekt gleichzeitig in Bearbeitung. Ein fixiertes Objekt öffnen Sie wieder mit Bearbeiten.",
       tools: [
-        { icon: "fix", name: "Fixieren", text: "Entwurf in die Objektliste übernehmen." },
+        { icon: "fix", name: "Fixieren", text: "Bearbeitung beenden und Objekt festschreiben. Doppelklick auf der Karte kann dasselbe tun." },
         { icon: "discard", name: "Verwerfen", text: "Letzte Änderungen am aktuellen Objekt rückgängig." },
         { icon: "undo", name: "Rückgängig", text: "← für fixierte Objekte (Ctrl+Z)." },
         { icon: "redo", name: "Wiederholen", text: "↪ (Ctrl+Y)." },
@@ -361,12 +366,13 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "show",
       title: "Objektliste",
-      what: "Alle fixierten und offenen Objekte. Sichtbarkeit, Bearbeiten, Gruppe, Reihenfolge.",
+      what: "Alle fixierten und offenen Objekte. Sichtbarkeit, Bearbeiten, Flächenfarben, Gruppe, Reihenfolge. Badge «fix» = abgeschlossen, «Bearb.» = in Bearbeitung.",
       tools: [
         { icon: "show", name: "Auge", text: "Objekt auf der Karte ein-/ausblenden." },
+        { icon: "fills", name: "Flächenfarben", text: "Beim Raster: Resultatflächen. Beim Polygon: Füllfarbe. Ein/aus, Farben bleiben gespeichert." },
         { icon: "draw", name: "Bearbeiten", text: "Fixiertes Objekt wieder zum Ändern öffnen." },
         { icon: "fix", name: "Fixieren", text: "Offenes Objekt aus der Liste abschliessen." },
-        { icon: "text", name: "Name", text: "Doppelklick auf den Namen zum Umbenennen." },
+        { icon: "text", name: "Name", text: "Name anklicken zum Umbenennen. Enter übernimmt, Esc bricht ab." },
         { icon: "grid", name: "Ziehen", text: "Reihenfolge ändern oder in eine Gruppe legen." }
       ]
     },
@@ -414,10 +420,24 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "color",
       title: "Rasterkacheln einfärben",
-      what: "Farbe bleibt nach Fixieren und im geo.admin-Export erhalten.",
+      what: "Farbe bleibt nach Fixieren und im geo.admin-Export erhalten. Im Raster-Formular oder in der Objektliste können die Resultatflächen ein- und ausgeblendet werden; die Farben bleiben gespeichert.",
       tools: [
         { icon: "color", name: "Doppelklick", text: "grün → rot → orange → gelb → grau → durchsichtig." },
-        { icon: "color", name: "Rechtsklick", text: "Farbmenü direkt wählen." }
+        { icon: "color", name: "Rechtsklick", text: "Farbmenü direkt wählen." },
+        { icon: "fills", name: "Resultatflächen", text: "Häkchen beim Raster oder Farb-Icon in der Objektliste blendet die Kachelfarben ein/aus." }
+      ]
+    },
+    {
+      id: "map.polygon_fill",
+      pages: ["map"],
+      views: ["map.polygon", "map.draw_polygon", "map.overview"],
+      roles: ["editor", "kos"],
+      icon: "fills",
+      title: "Polygon-Flächenfärbung",
+      what: "Die Füllfarbe bleibt gespeichert. Ausblenden zeigt nur den Rahmen — sinnvoll, wenn die Karte darunter lesbar bleiben soll.",
+      tools: [
+        { icon: "fills", name: "Häkchen", text: "«Flächenfärbung anzeigen» im Polygon-Formular." },
+        { icon: "fills", name: "Objektliste", text: "Farb-Icon am Polygon blendet dieselbe Füllung ein/aus." }
       ]
     },
     {
@@ -427,10 +447,11 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "show",
       title: "SwissTopo-Overlays & KML-Layer",
-      what: "Schwebendes Fenster: Strom, Grenzen, RPAS, Hindernisse, swissALTI3D und swissSURFACE3D Relief u. a. mit Transparenz. AuLaV und beide Relief-Ebenen sind standard aus. Unten: KML als Layer laden.",
+      what: "Schwebendes Fenster: Strom, Grenzen, RPAS, Hindernisse, swissALTI3D und swissSURFACE3D Relief u. a. mit Transparenz. AuLaV und beide Relief-Ebenen sind standard aus. Unten: KML als Layer laden. Fenster am Titel greifen und verschieben (auch Tablet). Doppelklick auf den Titel dockt es klein oben rechts an; erneuter Doppelklick holt es zurück.",
       tools: [
         { icon: "show", name: "Overlay", text: "Häkchen + Schieberegler für Deckkraft." },
-        { icon: "kmlLoad", name: "KML laden", text: "Fremde KML ein-/ausschaltbar unter den Overlays." }
+        { icon: "kmlLoad", name: "KML laden", text: "Fremde KML ein-/ausschaltbar unter den Overlays." },
+        { icon: "draw", name: "Andocken", text: "Doppelklick auf den Fenstertitel: klein neben die runden Knöpfe oben rechts." }
       ]
     },
     {
@@ -461,9 +482,13 @@ window.RKRK_HELP_CATALOG = {
       icon: "save",
       title: "Zeichnung speichern / laden",
       what: "Unter Objektliste → Zeichnungen: Name, speichern, laden, löschen. Speicherfrist 30/90 Tage.",
+      whatUnlock: "Mit URL ?ADMIN zusätzlich: Overlay als Datei auf dem Gerät speichern und laden (PC/USB).",
+      urlUnlock: ["ADMIN"],
       tools: [
         { icon: "save", name: "Speichern", text: "Aktuelle Objekte unter einem Namen ablegen." },
-        { icon: "kmlLoad", name: "Laden", text: "Gespeicherte Zeichnung zurückholen." }
+        { icon: "kmlLoad", name: "Laden", text: "Gespeicherte Zeichnung zurückholen." },
+        { icon: "save", name: "Datei speichern", text: "Nur mit URL ?ADMIN. Overlay lokal als .rkrkoverlay speichern.", urlUnlock: ["ADMIN"] },
+        { icon: "kmlLoad", name: "Datei laden", text: "Nur mit URL ?ADMIN. Overlay von einer lokalen Datei laden.", urlUnlock: ["ADMIN"] }
       ]
     },
     {

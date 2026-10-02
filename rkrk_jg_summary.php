@@ -374,20 +374,20 @@ body {font-family: Arial;}
 	}
 	//$MapSetting=$UrlOffset.'rkrk_map.php?Reg='.$Jagdgebiet.'&Strt=on&Cntr=off&Area=on&Pfad=on&EX=NO&Poi=on&KA='.$Karte.'&MAP=1&Zoom=0.6&MapZoomOut=1.2&MenuOn=off&GA=gast&Color=white';
 	if ($UseSecUrl) {
-		$MapSetting=$UrlOffset.'rkrk_map.php?'.base64_encode('Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white');
+		$MapSetting=$UrlOffset.'rkrk_map.php?'.base64_encode('Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&Label=on&JGLabel=off&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white');
 	} else {
-		$MapSetting=$UrlOffset.'rkrk_map.php?'.'Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white';
+		$MapSetting=$UrlOffset.'rkrk_map.php?'.'Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&Label=on&JGLabel=off&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white';
 	}
 	
 	$ListSetting=$UrlOffset.'rkrk_felderliste.php?Reg='.$Jagdgebiet.'&MenuOn=off&GA=gast&Color=white';
 	$ListHeight="1500";
 	
 	//https://tchr-frog.synology.me:5682/rkropen/test/rkrk_flugstatistik.php?RegList=28&Color=white&Charts=Top&GA=gast;
-	$StatSettingThisYear=$UrlOffset.'rkrk_flugstatistik.php?RegList='.$Jagdgebiet.'&Jahr='.$thisyear.'&Color='.$BaseColor.'&Charts=Top,Entwicklung1,Entwicklung2&ChartWidth=480&GA=gast&MenuOn=off';
+	$StatSettingThisYear=$UrlOffset.'rkrk_flugstatistik.php?RegList='.$Jagdgebiet.'&Jahr='.$thisyear.'&Color='.$BaseColor.'&Charts=Top,Entwicklung1,Entwicklung2,Kumulativ&ChartWidth=480&GA=gast&MenuOn=off';
 	//https://tchr-frog.synology.me:5682/rkropen/test/rkrk_flugstatistik.php?RegList=28&Jahr=2023&Color=white&Charts=Top&GA=gast;
 	//https://tchr-frog.synology.me:5682/rkropen/test/rkrk_flugstatistik.php?RegList=28&Jahr=2023&Color=white&Charts=Top,Entwicklung1,Entwicklung2&GA=gast;
-	$StatSettingLastYear=$UrlOffset.'rkrk_flugstatistik.php?RegList='.$Jagdgebiet.'&Jahr='.$lastyear.'&Color='.$BaseColor.'&Charts=Top,Entwicklung1,Entwicklung2&ChartWidth=480&GA=gast&MenuOn=off';
-	$StatHeight="900";
+	$StatSettingLastYear=$UrlOffset.'rkrk_flugstatistik.php?RegList='.$Jagdgebiet.'&Jahr='.$lastyear.'&Color='.$BaseColor.'&Charts=Top,Entwicklung1,Entwicklung2,Kumulativ&ChartWidth=480&GA=gast&MenuOn=off';
+	$StatHeight="1300";
 	//$StatHeight="5000";		
 
 	$FlightListSettingTodayAndTomorrow=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$Today.'&SelTo='.$FormatedTomorrow.'&MenuOn=off&Color='.$BaseColor.'&GA=gast';

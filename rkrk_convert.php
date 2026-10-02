@@ -119,6 +119,7 @@ foreach ($TargetMissionsArray as $TargetMission) {
 
 function DoConvertDataList ($FilterJG, $Stop=0) {
 global 	$RKRKRelWebLocation,
+		$RKRKLocalLoactionMissionFiles,
 		$xmlMissionLocation, 
 		$RKRKFelderfileXML, 
 		$TargetFeldkatalog,
@@ -347,8 +348,8 @@ echo "<table class='rkrk-filter-form' width=100%>";
 	$RegionList= implode(" ",$RegionsSelected);
 	//echo "RegList: " . ($RegionList) . "<br>";
 	
-	echo '<input type="hidden" name="Act" id="Act" value="save" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'">'. chr(10);
-	echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'"> '. chr(10);
+	echo '<input type="hidden" name="Act" id="Act" value="save" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. ($EnableDeleteSet ?? '').'">'. chr(10);
+	echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. ($EnableDeleteSet ?? '').'"> '. chr(10);
 	echo '<br>';
 	echo '</form>';
 	echo '<br>';

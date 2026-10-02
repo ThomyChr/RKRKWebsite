@@ -64,14 +64,10 @@
 		$ListenWahl = '';
 	}
 
-	if (isset($_GET["EnableDelete"])) {
-	   if (strtolower($_GET["EnableDelete"])=="on") {
-			//echo "EnableDelete=on";
-			$EnableDelete= true;
-		} else {
-			//echo "EnableDelete=off";
-			$EnableDelete= false;
-		}
+	if (isset($_GET["EnableDelete"]) && strtolower((string)$_GET["EnableDelete"])=="on") {
+		$EnableDelete= true;
+	} else {
+		$EnableDelete= false;
 	}
 
 	IF ($EnableDelete) {
@@ -80,7 +76,7 @@
 		$EnableDeleteSet = "EnableDelete=off";
 	}
 	
-	if ($_GET["DoSafe"]=="Y") {
+	if (isset($_GET["DoSafe"]) && $_GET["DoSafe"]=="Y") {
 		$dosafe= true;
 	} else {
 		$dosafe= false;
@@ -203,7 +199,6 @@
 			// safe file
 			//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			fclose($df);
 		} else {

@@ -162,7 +162,7 @@ if ($themeRkrs) {
 	echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars($themeRkrsCssHref, ENT_QUOTES, "UTF-8") . "\">\n";
 }
 echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"lernunterlagen.css\">\n";
-echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars(($assessScriptDir !== "" ? $assessScriptDir : "") . "/rkrk_schulung_lern.css", ENT_QUOTES, "UTF-8") . "\">\n";
+echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars(($assessScriptDir !== "" ? $assessScriptDir : "") . "/rkrk_schulung_lern.css?v=20260923sheetlogor", ENT_QUOTES, "UTF-8") . "\">\n";
 if ($printView) {
 	echo "<style>"
 		. ".dle-learn-print-toolbar{margin:0 0 14px;padding:10px 12px;background:#f4f7f3;border:1px solid #d8dfd6;border-radius:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;}"
@@ -171,12 +171,18 @@ if ($printView) {
 		. ".dle-learn-print-header{margin:0 0 1.25rem;padding-bottom:.6rem;border-bottom:2px solid #003366;}"
 		. ".dle-learn-print-header h1{margin:0 0 .25rem;font-size:1.4rem;color:#003366;line-height:1.25;}"
 		. ".dle-learn-print-meta{margin:0;font-size:.9rem;color:#64748b;}"
+		. ".schulung-print-logo{display:block;position:fixed;top:4mm;right:10mm;z-index:1000;height:28px;max-height:28px;width:auto;max-width:90px;border:0;border-radius:0;box-shadow:none;}"
+		. ".schulung-print-footer{display:flex;justify-content:space-between;align-items:baseline;position:fixed;left:12mm;right:12mm;bottom:5mm;z-index:1000;margin:0;padding:0;font-size:7.5pt;font-style:italic;color:#64748b;background:#fff;line-height:1.3;}"
 		. "@media print{.dle-learn-print-toolbar{display:none!important;}html,body{margin:0;padding:0;background:#fff!important;}"
 		. "body{padding:8mm 12mm 14mm;}section,figure{page-break-inside:avoid;}h1,h2,h3{page-break-after:avoid;}"
-		. "img:not(.schulung-print-logo){max-width:100%!important;height:auto!important;}thead{display:table-header-group;}tr{page-break-inside:avoid;}}"
+		. "img:not(.schulung-print-logo){max-width:100%!important;height:auto!important;}thead{display:table-header-group;}tr{page-break-inside:avoid;}"
+		. ".schulung-print-logo{display:block!important;height:28px!important;max-height:28px!important;width:auto!important;max-width:90px!important;}}"
 		. "</style>\n";
 } else {
-	echo "<style>html,body{margin:0;}</style>\n";
+	echo "<style>html,body{margin:0;}.schulung-print-logo,.schulung-print-footer{display:none!important;}"
+		. ".cl-sheet-head{display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start;gap:.75rem;}"
+		. ".cl-sheet-head>div:first-child{flex:1 1 auto;min-width:0;}"
+		. "img.cl-sheet-logo{display:block;height:auto!important;width:auto!important;max-height:56px;max-width:min(240px,42%);object-fit:contain;margin:0 0 .75rem auto;flex:0 0 auto;}</style>\n";
 }
 echo "<style>html{scroll-behavior:auto;}#rkrk-learn-doc-top{display:block;height:0;width:0;margin:0;padding:0;border:0;overflow:hidden;}</style>\n";
 echo "</head>\n<body>\n";

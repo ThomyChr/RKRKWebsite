@@ -177,7 +177,7 @@ $categoryRows = [];
 foreach ($categoriesByCode as $code => $name) {
     $categoryRows[] = ['code' => $code, 'name' => $name];
 }
-usort($categoryRows, static fn(array $a, array $b): int => strcmp($a['code'], $b['code']));
+usort($categoryRows, static fn(array $a, array $b): int => strcmp((string)$a['code'], (string)$b['code']));
 
 $transactions = $repo->getTransactions();
 usort(

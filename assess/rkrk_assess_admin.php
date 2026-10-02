@@ -53,6 +53,18 @@ if (function_exists('WriteToLog')) {
 
 GrantAccess($folderoffset);
 
+if (strtolower(trim((string)($_GET['page'] ?? ''))) === 'access') {
+	$loc = 'rkrk_assess_admin_access.php';
+	if (function_exists('rkrk_assess_append_setting_href')) {
+		$loc = rkrk_assess_append_setting_href($loc);
+	}
+	while (function_exists('ob_get_level') && ob_get_level() > 0) {
+		@ob_end_clean();
+	}
+	header('Location: ' . $loc, true, 303);
+	exit;
+}
+
 $currentAccessLevel = '';
 if (isset($SessNme_AccessLevel) && isset($_SESSION[$SessNme_AccessLevel])) {
 	$currentAccessLevel = strtolower(trim((string)$_SESSION[$SessNme_AccessLevel]));

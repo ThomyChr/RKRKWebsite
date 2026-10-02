@@ -63,8 +63,13 @@ if (!$rkrkAssessSilent && !$onRKRS && $modeEarly !== "paperform") {
 	$isGuestRequest = (isset($_GET['GA']) && strtolower(trim((string)$_GET['GA'])) === 'gast');
 	$showTopMenu = (!$isGuestRequest && !empty($LoggedOn) && $currentAccessLevel !== 'gast' && !$onRKRS)
 		&& !(function_exists("rkrk_assess_nom_mode") && rkrk_assess_nom_mode());
-	// Menü erst nach headerpage (sonst Body vor DOCTYPE/Favicon)
-	$GLOBALS['rkrk_assess_pending_top_menu'] = $showTopMenu ? $folderoffset : false;
+	if ($showTopMenu) {
+		CreateTopMenu($folderoffset);
+		echo "<br><br>";
+		if (function_exists("rkrk_assess_emit_admin_url_managers_menu_strip")) {
+			rkrk_assess_emit_admin_url_managers_menu_strip();
+		}
+	}
 }
 
 $pagetitle = "RKRS+ Assessments";
@@ -72,14 +77,6 @@ if (!$rkrkAssessSilent && $modeEarly !== "paperform"
 	&& $modeEarly !== "einsatzpruefunglink_cs"
 	&& $modeEarly !== "einsatzpruefunglink_prefs") {
 	headerpage("$pagetitle", false, $folderoffset);
-	if (array_key_exists('rkrk_assess_pending_top_menu', $GLOBALS) && $GLOBALS['rkrk_assess_pending_top_menu'] !== false) {
-		CreateTopMenu((string)$GLOBALS['rkrk_assess_pending_top_menu']);
-		echo "<br><br>";
-		if (function_exists("rkrk_assess_emit_admin_url_managers_menu_strip")) {
-			rkrk_assess_emit_admin_url_managers_menu_strip();
-		}
-		unset($GLOBALS['rkrk_assess_pending_top_menu']);
-	}
 }
 
 
@@ -4468,13 +4465,7 @@ function renderField($secName, $label, $type, $value, $readonly, $renderMeta = a
     echo "</label>";
     $pcEmit = function_exists("rkrk_extract_point_code") ? rkrk_extract_point_code((string)$label) : "";
     if (!$isPrintType && ($process !== "" || $checks !== "") && function_exists("rkrk_assess_emit_point_flow_block")) {
-        $tplProcess = $process;
-        if (!empty($GLOBALS["rkrkAssessActiveStory"]) && is_array($GLOBALS["rkrkAssessActiveStory"])) {
-            $tplProcess = "";
-        }
-        if ($tplProcess !== "" || $checks !== "") {
-            rkrk_assess_emit_point_flow_block($tplProcess, $checks, $pcEmit);
-        }
+        rkrk_assess_emit_point_flow_block($process, $checks, $pcEmit);
     }
     if ($isPrintType) {
         $printText = trim((string)$info);
@@ -5887,6 +5878,9 @@ function showChecklistForm(){
 	if (isset($_GET["err"]) && (string)$_GET["err"] === "importjson") {
 		echo "<div class='rkrk-card' style='border-color:#fca5a5;background:#fff5f5;margin-bottom:12px;'><strong>Import</strong>: Ungültige JSON-Datei — es wird ein Objekt mit Schlüssel <code>fields</code> (Objekt) erwartet.</div>";
 	}
+	if (isset($_GET["saved"])) {
+		echo "<div class='rkrk-card success' style='margin-bottom:12px;'>✓ Assessment erfolgreich gespeichert.</div>";
+	}
 	if (isset($_GET["imported"])) {
 		echo "<div class='rkrk-card success' style='margin-bottom:12px;'>✓ Import: Felder aus der JSON-Datei wurden übernommen.</div>";
 	}
@@ -6389,7 +6383,7 @@ function showChecklistForm(){
     // Auto-Refresh wenn Flugzeit oder Flugort geändert werden
 
     echo "<div class='rkrk-card'>
-            <form method='post' action='?mode=save'>
+            <form method='post' action='" . safe(rkrk_assess_append_setting_href("?mode=save")) . "'>
             <input type='hidden' name='file' value='$file'>";
 	if (is_array($story) && $storyId !== "") {
 		echo "<input type='hidden' name='story' value='" . htmlspecialchars($storyId, ENT_QUOTES, "UTF-8") . "'>";
@@ -6863,6 +6857,19 @@ function saveChecklist(){
 		});
 	}
 
+    $staffOverview = function_exists("rkrk_assess_url_has_staff_flag") && rkrk_assess_url_has_staff_flag();
+    if (!$staffOverview) {
+        $back = array(
+            "mode" => "form",
+            "file" => $file,
+            "edit" => $id,
+            "saved" => "1",
+        );
+        if ($storyIdSave !== "") {
+            $back["story"] = $storyIdSave;
+        }
+        rkrk_redirect("?" . http_build_query($back));
+    }
     rkrk_redirect("?mode=list&saved=1");
 }
 
@@ -7534,6 +7541,7 @@ function eplb_prefs_defaults(): array {
 	return array(
 		"material_template" => "einsatzpruefung_rkrs_materialliste.json",
 		"praxis_template" => "einsatzpruefung_rkrs.json",
+		"praxis_storyboard" => "",
 		"theorie_quiz" => "RKRSp-EP-preuf",
 	);
 }
@@ -7549,7 +7557,7 @@ function eplb_prefs_path(): string {
 }
 
 /**
- * @return array{material_template:string,praxis_template:string,theorie_quiz:string}
+ * @return array{material_template:string,praxis_template:string,praxis_storyboard:string,theorie_quiz:string}
  */
 function eplb_prefs_load(): array {
 	$out = eplb_prefs_defaults();
@@ -7570,6 +7578,16 @@ function eplb_prefs_load(): array {
 			$out[$k] = basename(str_replace("\\", "/", trim($data[$k])));
 		}
 	}
+	if (array_key_exists("praxis_storyboard", $data) && is_string($data["praxis_storyboard"])) {
+		$sid = trim($data["praxis_storyboard"]);
+		if ($sid === "") {
+			$out["praxis_storyboard"] = "";
+		} elseif (function_exists("rkrk_assess_storyboard_normalize_id")) {
+			$out["praxis_storyboard"] = rkrk_assess_storyboard_normalize_id($sid);
+		} else {
+			$out["praxis_storyboard"] = preg_replace('/[^A-Za-z0-9_-]+/', "", $sid);
+		}
+	}
 	return $out;
 }
 
@@ -7583,6 +7601,16 @@ function eplb_prefs_save(array $in): bool {
 			$cur[$k] = basename(str_replace("\\", "/", trim($in[$k])));
 		}
 	}
+	if (array_key_exists("praxis_storyboard", $in)) {
+		$sid = is_string($in["praxis_storyboard"]) ? trim($in["praxis_storyboard"]) : "";
+		if ($sid === "") {
+			$cur["praxis_storyboard"] = "";
+		} elseif (function_exists("rkrk_assess_storyboard_normalize_id")) {
+			$cur["praxis_storyboard"] = rkrk_assess_storyboard_normalize_id($sid);
+		} else {
+			$cur["praxis_storyboard"] = preg_replace('/[^A-Za-z0-9_-]+/', "", $sid);
+		}
+	}
 	$path = eplb_prefs_path();
 	$dir = dirname($path);
 	if ($dir !== "" && !is_dir($dir)) {
@@ -7593,6 +7621,7 @@ function eplb_prefs_save(array $in): bool {
 		"updated_at" => date("c"),
 		"material_template" => $cur["material_template"],
 		"praxis_template" => $cur["praxis_template"],
+		"praxis_storyboard" => $cur["praxis_storyboard"],
 		"theorie_quiz" => $cur["theorie_quiz"],
 	);
 	$json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -7767,6 +7796,9 @@ function showEinsatzpruefungLinkBuilder(): void {
 	$quizBase = $scheme . "://" . $host . rtrim($dir, "/") . "/rkrk_digitalassess.php";
 	$appRoot = rtrim(str_replace("\\", "/", dirname(dirname(rtrim($dir, "/")))), "/");
 	$zieleBase = $scheme . "://" . $host . $appRoot . "/data/rkrsplus_ep/" . rawurlencode("RKRS Ziele.php");
+	$personelBase = $scheme . "://" . $host . rtrim($dir, "/") . "/rkrk_assess_live_personel.php";
+	$personelMapBase = $scheme . "://" . $host . rtrim($dir, "/") . "/rkrk_assess_live_personel_map.php";
+	$personelCsApi = rkrk_assess_append_setting_href("rkrk_assess_live_personel.php?mode=personel_cs");
 	$carrySuffix = function_exists("rkrk_assess_carry_url_suffix") ? rkrk_assess_carry_url_suffix() : "";
 	// Generierte Einsatzprüfungs-Links: Kanal (RKRS / RKRSplus / RKRSprev) nicht mitgeben —
 	// Portal erkennt den Kontext über Host/Pfad; Audienz-Familie deckt das ab.
@@ -7844,11 +7876,36 @@ function showEinsatzpruefungLinkBuilder(): void {
 	$assessBaseJson = json_encode($assessBase, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$quizBaseJson = json_encode($quizBase, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$zieleBaseJson = json_encode($zieleBase, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+	$personelBaseJson = json_encode($personelBase, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+	$personelMapBaseJson = json_encode($personelMapBase, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+	$personelCsApiJson = json_encode($personelCsApi, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$carryJson = json_encode($carrySuffix, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$csApiJson = json_encode($csApi, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$prefsApiJson = json_encode($prefsApi, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$prefsJson = json_encode($prefs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 	$pilotMapJs = $pilotMapJson;
+
+	$storyOptions = array();
+	if (function_exists("rkrk_assess_storyboard_list")) {
+		foreach (rkrk_assess_storyboard_list("") as $__sb) {
+			if (!is_array($__sb)) {
+				continue;
+			}
+			$__sid = (string) ($__sb["id"] ?? "");
+			if ($__sid === "") {
+				continue;
+			}
+			$storyOptions[] = array(
+				"id" => $__sid,
+				"title" => trim((string) ($__sb["title"] ?? $__sid)),
+				"template" => basename(trim((string) ($__sb["template"] ?? ""))),
+			);
+		}
+	}
+	$storyOptionsJson = json_encode($storyOptions, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+	if ($storyOptionsJson === false) {
+		$storyOptionsJson = "[]";
+	}
 
 	$optMat = "";
 	$optPra = "";
@@ -7910,7 +7967,10 @@ function showEinsatzpruefungLinkBuilder(): void {
 	echo "<div class='field'><label class='field-label' for='eplb_tpl_material'>Materialprüfung — Assessment-Template</label>";
 	echo "<select id='eplb_tpl_material' class='text-input' style='width:100%;'>" . $optMat . "</select></div>";
 	echo "<div class='field'><label class='field-label' for='eplb_tpl_praxis'>Praxisprüfung — Assessment-Template</label>";
-	echo "<select id='eplb_tpl_praxis' class='text-input' style='width:100%;'>" . $optPra . "</select></div>";
+	echo "<select id='eplb_tpl_praxis' class='text-input' style='width:100%;' onchange='eplb_refillStories()'>" . $optPra . "</select></div>";
+	echo "<div class='field'><label class='field-label' for='eplb_story_praxis'>Praxisprüfung — Storyboard</label>";
+	echo "<small style=\"display:block;color:#64748b;margin-bottom:6px;line-height:1.35;\">Optional. Leer lassen = reines Assessment ohne Storyboard (<code>story</code> fehlt in der URL).</small>";
+	echo "<select id='eplb_story_praxis' class='text-input' style='width:100%;'><option value=''>— kein Storyboard —</option></select></div>";
 	echo "<div class='field'><label class='field-label' for='eplb_quiz_theorie'>Theorieprüfung — Quiz</label>";
 	echo "<select id='eplb_quiz_theorie' class='text-input' style='width:100%;'>" . $optQuiz . "</select></div>";
 	echo "<div style='margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;'>";
@@ -7926,7 +7986,7 @@ function showEinsatzpruefungLinkBuilder(): void {
 	echo "<div style='margin-top:8px;'><button type='button' class='btn' onclick=\"eplb_copy('eplb_res_material', this)\">Kopieren</button></div>";
 
 	echo "<h3 style='margin-top:22px;'>2. Praxisprüfung (Flugteil)</h3>";
-	echo "<p style='color:#64748b;font-size:13px;'>Ohne Remote/Betreiber-ID in der URL</p>";
+	echo "<p style='color:#64748b;font-size:13px;'>Ohne Remote/Betreiber-ID in der URL. Storyboard nur wenn oben gewählt (<code>&amp;story=…</code>).</p>";
 	echo "<button type='button' class='btn btn-primary' onclick='eplb_genPraxis()'>Praxis-URL erzeugen</button>";
 	echo "<input type='text' id='eplb_res_praxis' class='text-input' readonly style='width:100%;margin-top:8px;'>";
 	echo "<div style='margin-top:8px;'><button type='button' class='btn' onclick=\"eplb_copy('eplb_res_praxis', this)\">Kopieren</button></div>";
@@ -7964,6 +8024,16 @@ function showEinsatzpruefungLinkBuilder(): void {
 	echo "<input type='text' id='eplb_res_ziele' class='text-input' readonly style='width:100%;margin-top:8px;'>";
 	echo "<div style='margin-top:8px;'><button type='button' class='btn' onclick=\"eplb_copy('eplb_res_ziele', this)\">Ziele-URL kopieren (inkl. cs)</button></div>";
 
+	echo "<h3 style='margin-top:22px;'>5. Live Personel (Portal)</h3>";
+	echo "<p style='color:#64748b;font-size:13px;'>Pflicht: <strong>Name</strong> und <strong>RKRS Piloten ID</strong> — Zugriff auf dem Portal nur mit gültigem <code>cs</code> (Lesansicht). Nutzt die Felder <em>Pilot / Name</em> und <em>RKRS Piloten ID</em> oben.</p>";
+	echo "<button type='button' class='btn btn-primary' onclick='eplb_genPersonel()'>Personel-URLs erzeugen</button>";
+	echo "<label class='field-label' style='display:block;margin-top:10px;'>Personalliste</label>";
+	echo "<input type='text' id='eplb_res_personel' class='text-input' readonly style='width:100%;'>";
+	echo "<div style='margin-top:8px;'><button type='button' class='btn' onclick=\"eplb_copy('eplb_res_personel', this)\">Liste kopieren</button></div>";
+	echo "<label class='field-label' style='display:block;margin-top:10px;'>Pilotenkarte</label>";
+	echo "<input type='text' id='eplb_res_personel_map' class='text-input' readonly style='width:100%;'>";
+	echo "<div style='margin-top:8px;'><button type='button' class='btn' onclick=\"eplb_copy('eplb_res_personel_map', this)\">Karte kopieren</button></div>";
+
 	echo "<div style='margin-top:18px;padding-top:14px;border-top:1px solid #e2e8f0;'>";
 	echo "<button type='button' class='btn btn-primary' onclick='eplb_copyAll(this)'>Alle erzeugten Links kopieren</button>";
 	echo "<span id='eplb_copy_hint' style='margin-left:10px;font-size:13px;color:#48673A;'></span>";
@@ -7976,11 +8046,15 @@ function showEinsatzpruefungLinkBuilder(): void {
 	echo "var EPLB_ASSESS = " . $assessBaseJson . ";\n";
 	echo "var EPLB_QUIZ = " . $quizBaseJson . ";\n";
 	echo "var EPLB_ZIELE = " . $zieleBaseJson . ";\n";
+	echo "var EPLB_PERSONEL = " . $personelBaseJson . ";\n";
+	echo "var EPLB_PERSONEL_MAP = " . $personelMapBaseJson . ";\n";
+	echo "var EPLB_PERSONEL_CS_API = " . $personelCsApiJson . ";\n";
 	echo "var EPLB_CARRY = " . $carryJson . ";\n";
 	echo "var EPLB_CS_API = " . $csApiJson . ";\n";
 	echo "var EPLB_PREFS_API = " . $prefsApiJson . ";\n";
 	echo "var EPLB_PREFS = " . $prefsJson . ";\n";
 	echo "var EPLB_PILOT_MAP = " . $pilotMapJs . ";\n";
+	echo "var EPLB_STORIES = " . $storyOptionsJson . ";\n";
 	echo <<<'EPLB_JS'
 function eplb_val(id){ var el=document.getElementById(id); return el?(el.value||'').trim():''; }
 function eplb_idsForName(nm){
@@ -8083,7 +8157,7 @@ function eplb_copy(id, btn){
 }
 function eplb_copyAll(btn){
   var parts=[];
-  ['eplb_res_material','eplb_res_praxis','eplb_res_theorie','eplb_res_ziele'].forEach(function(id){
+  ['eplb_res_material','eplb_res_praxis','eplb_res_theorie','eplb_res_ziele','eplb_res_personel','eplb_res_personel_map'].forEach(function(id){
     var el=document.getElementById(id);
     var v=el?(el.value||'').trim():'';
     if(v) parts.push(v);
@@ -8095,6 +8169,7 @@ function eplb_collectPrefs(){
   return {
     material_template: eplb_val('eplb_tpl_material'),
     praxis_template: eplb_val('eplb_tpl_praxis'),
+    praxis_storyboard: eplb_val('eplb_story_praxis'),
     theorie_quiz: eplb_val('eplb_quiz_theorie')
   };
 }
@@ -8123,6 +8198,7 @@ function eplb_savePrefs(btn){
     }
   }).catch(function(){ if(hint)hint.textContent='Speichern fehlgeschlagen.'; alert('Speichern fehlgeschlagen.'); });
 }
+eplb_refillStories();
 function eplb_genMaterial(){
   eplb_syncRkrsFromName({onlyEmpty:true});
   var file=eplb_val('eplb_tpl_material');
@@ -8132,11 +8208,37 @@ function eplb_genMaterial(){
   if(EPLB_CARRY)u+=EPLB_CARRY;
   document.getElementById('eplb_res_material').value=u;
 }
+function eplb_refillStories(){
+  var sel=document.getElementById('eplb_story_praxis');
+  if(!sel) return;
+  var tpl=eplb_val('eplb_tpl_praxis');
+  var keep=eplb_val('eplb_story_praxis');
+  if(!keep && EPLB_PREFS && EPLB_PREFS.praxis_storyboard) keep=String(EPLB_PREFS.praxis_storyboard||'');
+  var html="<option value=''>— kein Storyboard —</option>";
+  var list=Array.isArray(EPLB_STORIES)?EPLB_STORIES:[];
+  list.forEach(function(s){
+    if(!s||!s.id) return;
+    var st=String(s.template||'');
+    if(tpl && st && st.toLowerCase()!==tpl.toLowerCase()) return;
+    var lab=String(s.title||s.id);
+    html+="<option value='"+String(s.id).replace(/'/g,"&#39;")+"'>"+lab.replace(/</g,"&lt;")+"</option>";
+  });
+  sel.innerHTML=html;
+  if(keep){
+    var ok=false;
+    for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===keep){ ok=true; break; } }
+    sel.value=ok?keep:'';
+  } else {
+    sel.value='';
+  }
+}
 function eplb_genPraxis(){
   eplb_syncRkrsFromName({onlyEmpty:true});
   var file=eplb_val('eplb_tpl_praxis');
   if(!file){ alert('Bitte Praxis-Template wählen.'); return; }
   var u=EPLB_ASSESS+'?mode=form&file='+encodeURIComponent(file);
+  var story=eplb_val('eplb_story_praxis');
+  if(story) u+='&story='+encodeURIComponent(story);
   var q=eplb_commonParams(false); if(q.length)u+='&'+q.join('&');
   if(EPLB_CARRY)u+=EPLB_CARRY;
   document.getElementById('eplb_res_praxis').value=u;
@@ -8284,6 +8386,41 @@ function eplb_genZiele(){
     document.getElementById('eplb_res_ziele').value=u;
   }).catch(function(err){ alert('cs-Anfrage fehlgeschlagen'+(err&&err.message?': '+err.message:'.')); });
 }
+function eplb_genPersonel(){
+  eplb_syncRkrsFromName({onlyEmpty:true});
+  var name=eplb_val('eplb_pilot'), rk=eplb_val('eplb_rkrsid');
+  if(!name){ alert('Bitte Pilot/Name eingeben.'); return; }
+  if(!rk){ alert('Bitte RKRS Piloten ID eingeben.'); return; }
+  var body={Name:name, RKRSPilotID:rk};
+  var apiQs='Name='+encodeURIComponent(name)+'&RKRSPilotID='+encodeURIComponent(rk);
+  var sep=(String(EPLB_PERSONEL_CS_API).indexOf('?')>=0)?'&':'?';
+  var apiUrl=EPLB_PERSONEL_CS_API+sep+apiQs;
+  fetch(apiUrl,{
+    method:'POST',
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    return r.text().then(function(t){
+      var j=null;
+      try{ j=JSON.parse(t); }catch(e){ j=null; }
+      if(!j){
+        throw new Error('Personel-cs-API lieferte kein JSON.');
+      }
+      return j;
+    });
+  }).then(function(j){
+    if(!j){ alert('cs-Antwort ungültig.'); return; }
+    if(j.assessment_ok===false){ alert('cs-Berechnung: assessment-Klasse fehlt auf dem Server.'); return; }
+    if(j.missing_field){ alert('cs: Pflichtfeld fehlt: '+j.missing_field); return; }
+    if(!j.ok || !j.cs){ alert('cs konnte nicht berechnet werden.'); return; }
+    var q='Name='+encodeURIComponent(name)+'&RKRSPilotID='+encodeURIComponent(rk)+'&cs='+encodeURIComponent(j.cs);
+    document.getElementById('eplb_res_personel').value=EPLB_PERSONEL+'?'+q;
+    document.getElementById('eplb_res_personel_map').value=EPLB_PERSONEL_MAP+'?'+q;
+    document.getElementById('eplb_res_payload').value=j.payload||'';
+    document.getElementById('eplb_res_cs').value=j.cs||'';
+  }).catch(function(err){ alert('Personel-cs-Anfrage fehlgeschlagen'+(err&&err.message?': '+err.message:'.')); });
+}
 var eplbNm=document.getElementById('eplb_pilot');
 if(eplbNm){ eplbNm.addEventListener('input',eplb_syncRkrsFromName); eplbNm.addEventListener('change',eplb_syncRkrsFromName); }
 ['eplb_tpl_material','eplb_tpl_praxis','eplb_quiz_theorie'].forEach(function(id){
@@ -8317,7 +8454,7 @@ function showUrlManagersHub(): void {
 	echo "<li style='margin-bottom:12px;'><a class='btn' href='" . safe($hAssess) . "'>Checklisten / Assessments</a> <span style='color:#64748b;font-size:13px;'>— Preset-URLs (<code>rkrk_assess.php</code>)</span></li>";
 	echo "<li style='margin-bottom:12px;'><a class='btn' href='" . safe($hLive) . "'>Live-Beurteilungen</a> <span style='color:#64748b;font-size:13px;'>— Preset-URLs (<code>rkrk_assess_live.php</code>)</span></li>";
 	echo "<li style='margin-bottom:12px;'><a class='btn' href='" . safe($hQuiz) . "'>Quiz &amp; Schulung</a> <span style='color:#64748b;font-size:13px;'>— Links zu <code>rkrk_digitalassess.php</code></span></li>";
-	echo "<li style='margin-bottom:12px;'><a class='btn' href='" . safe($hEp) . "'>Einsatzprüfung</a> <span style='color:#64748b;font-size:13px;'>— Material, Praxis, Theorie inkl. <code>cs</code></span></li>";
+	echo "<li style='margin-bottom:12px;'><a class='btn' href='" . safe($hEp) . "'>Einsatzprüfung</a> <span style='color:#64748b;font-size:13px;'>— Material, Praxis, Theorie, Ziele, <strong>Live Personel</strong> inkl. <code>cs</code></span></li>";
 	echo "</ul>";
 	echo "<p style='margin-top:22px;'><a class='btn' href='" . safe(rkrk_assess_append_setting_href("?mode=list&ADMIN")) . "'>Zurück zur Checklisten-Liste</a></p>";
 	echo "</div>";

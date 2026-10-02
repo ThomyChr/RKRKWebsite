@@ -391,7 +391,14 @@ if ($UseKmlFile !== '') {
 	$KmlMapUrl = 'rkrk_dokml.php?' . $kmlQuery;
 
 	$Search = '';
-	$FullMapURL = $MapGeoAdminURL . $Search . 'lang=de&topic=ech&' . $Centering . $ZoomParamter . '&bgLayer=' . $KaType . '&layers=' . $KaLayer . ';KML|' . $geoweblocation . '/' . $DoKMLURL;
+	$kmlAbsolute = rtrim((string)$geoweblocation, '/') . '/' . $DoKMLURL;
+	$kmlLayerToken = 'KML%7C' . str_replace(
+		array('|', '?', '&', '#'),
+		array('%7C', '%3F', '%26', '%23'),
+		$kmlAbsolute
+	);
+	$layerPrefix = (trim((string)$KaLayer) === '') ? '' : ($KaLayer . ';');
+	$FullMapURL = $MapGeoAdminURL . $Search . 'lang=de&topic=ech&' . $Centering . $ZoomParamter . '&bgLayer=' . $KaType . '&layers=' . $layerPrefix . $kmlLayerToken;
 
 if (!empty($isEmbeddedMap)) {
 	while (ob_get_level() > 0) {
@@ -428,7 +435,17 @@ if (!empty($isEmbeddedMap)) {
 	$fitExtent = $hasFieldFilter || $egOn || $fitOn || ($multiJgOpen && $Flightday === '');
 	$fitKeepRatio = ($hasFieldFilter || $egOn) ? 1 : 0.95;
 	$fitTarget = $egOn ? 'polygons' : 'fields';
-	if ($fitExtent) {
+	$keepCurrentView = isset($_GET['CV']) && trim((string)$_GET['CV']) === '1';
+	$scaleDenom = 0;
+	if (isset($_GET['SCL']) && is_numeric($_GET['SCL'])) {
+		$scaleN = (int)$_GET['SCL'];
+		if ($scaleN === 10000 || $scaleN === 25000 || $scaleN === 50000) {
+			$scaleDenom = $scaleN;
+		}
+	}
+	if ($keepCurrentView) {
+		$fitExtent = false;
+	} elseif ($fitExtent) {
 		$latIn = '';
 		$lonIn = '';
 		$zoIn = '';
@@ -463,19 +480,20 @@ if (!empty($isEmbeddedMap)) {
 	$overlayRows = array(
 		array('electrical', 'Elektrische Anlagen', 100),
 		array('boundaries', 'Kantons, Gemeindegrenzen', 100),
-		array('hunting', 'Jagdbanngebiete', 50),
+		array('hunting', 'Jagdbanngebiete AuLaV', 50, 'Jagdbanngebiete AuLaV (Swisstopo/BAFU)'),
 		array('rpas', 'RPAS Karte', 50),
 		array('uasZones', 'UAS Aktivitätszonen', 50),
 		array('aulavWohngebiete', 'Wohngebiete nach AuLaV', 50, 'Wohngebiete nach AuLaV (BAZL, standard aus)'),
 		array('alti3dRelief', 'swissALTI3D Relief', 70, 'swissALTI3D multidirektionales Relief (standard aus)'),
 		array('surface3dRelief', 'swissSURFACE3D Relief', 70, 'swissSURFACE3D multidirektionales Relief (standard aus)'),
-		array('dabs', 'DABS bis 120 m AGL', 55),
+		array('dabs', 'DABS bis 200 m AGL', 75),
 		array('obstacles', 'Luftfahrthindernisse', 100),
 		array('landregister', 'Grundbuchinformationen', 100),
 		array('cadastralwebmap', 'CadastralWebMap', 100),
 		array('nature', 'Naturschutzgebiete', 100),
 		array('roadnames', 'Strassennamen', 100),
 		array('cableways', 'Seilbahnen', 100),
+		array('wanderwege', 'Wanderwege', 100, 'SwissTLM3D Wanderwege (Swisstopo)'),
 	);
 
 	if ($MenuOn) {
@@ -502,7 +520,7 @@ if (!empty($isEmbeddedMap)) {
 		echo '<link rel="stylesheet" href="mapII/rkrk_layout.css?v=20260905narrow" />' . "\n";
 		echo '<link rel="stylesheet" href="template/rkrk_reg_pills.css?v=20260907nodbl" />' . "\n";
 	}
-	echo '<link rel="stylesheet" href="template/rkrk_map.css?v=20260905d" />' . "\n";
+	echo '<link rel="stylesheet" href="template/rkrk_map.css?v=20260930xprint" />' . "\n";
 	echo '<script>document.documentElement.classList.add(' . ($MenuOn ? '"rkrk-map27"' : '"rkrk-map27","rkrk-map27-embed"') . ');';
 	if (!$MenuOn) {
 		echo 'document.documentElement.setAttribute("data-rkrk-layout","off");';
@@ -712,6 +730,7 @@ window.RKRK_MAP27 = <?php
 		'mapType' => (string)$MapType,
 		'menuOn' => (bool)$MenuOn,
 		'fitExtent' => !empty($fitExtent),
+		'scaleDenom' => (int)$scaleDenom,
 		'fitKeepRatio' => isset($fitKeepRatio) ? (float)$fitKeepRatio : 0.95,
 		'fitTarget' => isset($fitTarget) ? (string)$fitTarget : 'fields',
 		'fFilter' => (string)$FFilter,
@@ -721,6 +740,7 @@ window.RKRK_MAP27 = <?php
 		'fitCrop' => (($Flugplan === 'on') || !empty($MapOptions['Pfad']['Value'])) ? 'flugplan' : 'suchfeld',
 		'labelScale' => (float)$SelectedZoom,
 		'showLabels' => !empty($MapOptions['Label']['Value']),
+		'hideJgLabel' => (isset($_GET['JGLabel']) && $_GET['JGLabel'] === 'off'),
 		'geLa' => !empty($MapOptions['GeLa']['Value']),
 		'iconLoc' => (string)$IconLoc,
 		'geoAdminUrl' => (string)$FullMapURL,
@@ -735,6 +755,6 @@ window.RKRK_MAP27 = <?php
 <?php if ($MenuOn) { ?>
 <script src="mapII/rkrk_layout.js?v=20260905narrow"></script>
 <?php } ?>
-<script src="scripts/rkrk_swiss_overlays.js?v=20260906a"></script>
-<script src="scripts/rkrk_map27.js?v=20260912surface"></script>
+<script src="scripts/rkrk_swiss_overlays.js?v=20260917dabs1"></script>
+<script src="scripts/rkrk_map27.js?v=20261001jglabel"></script>
 <?php

@@ -41,10 +41,8 @@ if (!$onRKRS) {
 	$isGuestRequest = (isset($_GET['GA']) && strtolower(trim((string)$_GET['GA'])) === 'gast');
 	$showTopMenu = (!$isGuestRequest && !empty($LoggedOn) && $currentAccessLevel !== 'gast' && !$onRKRS)
 		&& !(function_exists("rkrk_assess_nom_mode") && rkrk_assess_nom_mode());
-	if ($showTopMenu) {
-		CreateTopMenu($folderoffset);
-		echo "<br><br>";
-	}
+	// Menü erst nach headerpage (sonst HTML vor DOCTYPE — grüne RKRK-Leiste wird riesig).
+	$GLOBALS['rkrk_assess_pending_top_menu'] = $showTopMenu ? $folderoffset : false;
 }
 $isAdminMode = (isset($_GET['ADMIN']) || (isset($onAdmin) && (bool)$onAdmin));
 $isInstrMode = (isset($_GET['INSTR']) || isset($_POST['INSTR']) || (isset($onInstr) && (bool)$onInstr));
@@ -61,6 +59,13 @@ if ($digitalassessSchulungMode) {
 $paperFormEarly = isset($_GET["paper"]) && (string)$_GET["paper"] === "1" && trim((string)($_GET["quiz"] ?? "")) !== "";
 if (!$paperFormEarly) {
 	headerpage($pagetitle, false, $folderoffset);
+	if (array_key_exists('rkrk_assess_pending_top_menu', $GLOBALS) && $GLOBALS['rkrk_assess_pending_top_menu'] !== false) {
+		if (function_exists('CreateTopMenu')) {
+			CreateTopMenu((string)$GLOBALS['rkrk_assess_pending_top_menu']);
+			echo "<br><br>";
+		}
+		unset($GLOBALS['rkrk_assess_pending_top_menu']);
+	}
 }
 
 if (!$paperFormEarly && function_exists("rkrk_assess_emit_admin_url_managers_menu_strip")) {
@@ -803,13 +808,6 @@ if (function_exists('rkrk_assess_theme_rkrs_layer_link')) {
 			$urladder = $rkSetting;
 		}
 	}
-	if ($dgaQuizModus === "pruefung") {
-		if ($urladder !== "") {
-			$urladder .= "&QuizModus=pruefung";
-		} else {
-			$urladder = "QuizModus=pruefung";
-		}
-	}
 
 	if (isset($_GET["quiz"])) {
 		$set_quiz = $_GET["quiz"];
@@ -888,6 +886,13 @@ if (function_exists('rkrk_assess_theme_rkrs_layer_link')) {
 		$dgaQuizModus = "pruefung";
 	} else {
 		$dgaQuizModus = "";
+	}
+	if ($dgaQuizModus === "pruefung") {
+		if ($urladder !== "") {
+			$urladder .= "&QuizModus=pruefung";
+		} else {
+			$urladder = "QuizModus=pruefung";
+		}
 	}
 
 	// Nach Quiz-Abschluss (POST): pro Frage Text + richtig/falsch (JSON vom Client)
@@ -1067,6 +1072,11 @@ if (function_exists('rkrk_assess_theme_rkrs_layer_link')) {
 		} else {
 			$urladder = $__examUrlBit;
 		}
+	}
+	if (function_exists("rkrk_assess_hash_gate_append_urladder")) {
+		$urladder = rkrk_assess_hash_gate_append_urladder($urladder);
+	}
+	if ($dgaExamCode !== "") {
 		if (function_exists("rkrk_assess_exam_load")) {
 			$dgaExamSession = rkrk_assess_exam_load($dgaExamCode, (string) $Name);
 		}
@@ -1690,8 +1700,11 @@ if (function_exists('rkrk_assess_theme_rkrs_layer_link')) {
 		}
 		$schulCtxRo = ($digitalassessSchulungMode || strtolower(trim((string)($Questionair["Schulung"] ?? ""))) === "ja");
 		$showLearnRo = $schulCtxRo && empty($_GET["ohne_lerntext"]);
-		rkrk_dga_rh_echo_styles($printViewRo);
-		echo "<div class='dr-wrap'>";
+		rkrk_dga_rh_echo_styles($printViewRo, $schulCtxRo);
+		if ($schulCtxRo) {
+			rkrk_dga_rh_echo_learn_theme_links();
+		}
+		echo "<div class='dr-wrap" . ($schulCtxRo ? " dr-schulung-read" : "") . "'>";
 		rkrk_dga_rh_render_detail($Questionair, $questionsRo, $onlyActiveRo, $printViewRo, $learnFsRo, $showLearnRo && ($learnFsRo !== ""), $schulCtxRo);
 		echo "</div>";
 		exit;
@@ -2291,31 +2304,15 @@ if (function_exists('rkrk_assess_theme_rkrs_layer_link')) {
 	echo "        <label for='nein'><b>Nein</b></label>" . chr(10);
 	echo "      </span>" . chr(10);
 
-	// A-F
-	echo "      <span id='a-a' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='A' name='response' value='A' />" . chr(10);
-	echo "        <label id='labelA' for='A'>A</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-b' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='B' name='response' value='B' />" . chr(10);
-	echo "        <label id='labelB' for='B'>B</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-c' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='C' name='response' value='C' />" . chr(10);
-	echo "        <label id='labelC' for='C'>C</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-d' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='D' name='response' value='D' />" . chr(10);
-	echo "        <label id='labelD' for='D'>D</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-e' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='E' name='response' value='E' />" . chr(10);
-	echo "        <label id='labelE' for='E'>E</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-f' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='F' name='response' value='F' />" . chr(10);
-	echo "        <label id='labelF' for='F'>F</label>" . chr(10);
-	echo "      </span>" . chr(10);
+	// A–H (nicht belegte Buchstaben blendet GoToQuestion aus)
+	foreach (array("A", "B", "C", "D", "E", "F", "G", "H") as $rkrkOptLetter) {
+		$rkrkOptLow = strtolower($rkrkOptLetter);
+		echo "      <span id='a-" . $rkrkOptLow . "' class='rkrk-opt'>" . chr(10);
+		echo "        <input type='radio' id='" . $rkrkOptLetter . "' name='response' value='" . $rkrkOptLetter . "' />" . chr(10);
+		echo "        <label id='label" . $rkrkOptLetter . "' for='" . $rkrkOptLetter . "'>" . $rkrkOptLetter . "</label>" . chr(10);
+		echo "      </span>" . chr(10);
+	}
+	unset($rkrkOptLetter, $rkrkOptLow);
 
 	echo "    </div>" . chr(10);
 	echo "    <p id=\"rkrk-answer-color-legend\" class=\"rkrk-answer-color-legend\" hidden>✓ richtig gewählt · ★ richtig, aber nicht gewählt · ✗ falsch gewählt</p>" . chr(10);
@@ -3884,7 +3881,7 @@ function rkrkDigiAssessSyncQuizUrl() {
     try {
         const u = new URL(window.location.href);
         u.searchParams.set("quiz", set_quiz);
-        u.searchParams.set("Status", "Quiz");
+        // Status nicht in die URL: Status ist cs-Hash-Feld, Reload würde sonst hash_mismatch.
         if (Schulung) {
             u.searchParams.set("Schulung", Schulung);
         }
@@ -4976,7 +4973,7 @@ function LockWahl() {
 
     let locked = rkrkDigiAssessQuestionLockedJa(Questions[AtQuestion]);
 
-    document.querySelectorAll("#ja, #nein, #A, #B, #C, #D, #E, #F")
+    document.querySelectorAll("#ja, #nein, #A, #B, #C, #D, #E, #F, #G, #H")
         .forEach(el => el.disabled = locked);
     rkrkDigiAssessSyncChangeAnswerButton();
 }
@@ -5055,7 +5052,7 @@ function GoToQuestion(ToQuestion) {
     }
     document.getElementById("mehrfach").innerHTML = mehrfachHtml;
 
-    ["A","B","C","D","E","F"].forEach(id => {
+    ["A","B","C","D","E","F","G","H"].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.type = isMulti ? "checkbox" : "radio";
@@ -5067,7 +5064,7 @@ function GoToQuestion(ToQuestion) {
         document.getElementById("a-ja").style.display = 'block';
         document.getElementById("a-nein").style.display = 'block';
 
-        ["a-a","a-b","a-c","a-d","a-e","a-f"].forEach(id => {
+        ["a-a","a-b","a-c","a-d","a-e","a-f","a-g","a-h"].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
 
@@ -5076,15 +5073,16 @@ function GoToQuestion(ToQuestion) {
         document.getElementById("a-ja").style.display = 'none';
         document.getElementById("a-nein").style.display = 'none';
 
-        const labels = ["A","B","C","D","E","F"];
+        const labels = ["A","B","C","D","E","F","G","H"];
 
         labels.forEach((letter, idx) => {
             let span = document.getElementById("a-" + letter.toLowerCase());
             let label = document.getElementById("label" + letter);
 
-            if (Questions[ToQuestion]["Loesungsauswahl"][idx] != null) {
+            const optText = Questions[ToQuestion]["Loesungsauswahl"][idx];
+            if (optText != null && String(optText).trim() !== "") {
                 span.style.display = 'block';
-                label.innerHTML = "<b>" + letter + "</b> <i>" + rkrkDigiAssessFixMojibake(Questions[ToQuestion]["Loesungsauswahl"][idx]) + "</i><br><br>";
+                label.innerHTML = "<b>" + letter + "</b> <i>" + rkrkDigiAssessFixMojibake(optText) + "</i><br><br>";
             } else {
                 span.style.display = 'none';
                 label.innerHTML = "";
@@ -5378,7 +5376,7 @@ function applyAnswerFeedbackStyles() {
 
     const correctSet = new Set(rkrkDigiAssessParseAntwortTeile(loes));
     const pickedSet = new Set(rkrkDigiAssessParseAntwortTeile(ant));
-    const letters = ["A", "B", "C", "D", "E", "F"];
+    const letters = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
     letters.forEach(function (letter) {
         const span = document.getElementById("a-" + letter.toLowerCase());

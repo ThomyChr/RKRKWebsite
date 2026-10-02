@@ -12,11 +12,28 @@ include_once(__DIR__ . "/rkrk_assess_common.php");
 
 $f = isset($_GET["f"]) ? (string) $_GET["f"] : "";
 $d = isset($_GET["d"]) ? (string) $_GET["d"] : "";
+if ($d === "") {
+	foreach ($_GET as $gk => $gv) {
+		if (preg_match('/(?:^|;)d$/i', (string) $gk) === 1) {
+			$d = (string) $gv;
+			break;
+		}
+	}
+}
 
 $f = str_replace("\\", "/", $f);
 $d = str_replace("\\", "/", $d);
 $f = ltrim($f, "/");
 $d = trim($d, "/");
+for ($__dec = 0; $__dec < 4; $__dec++) {
+	$nf = rawurldecode($f);
+	$nd = rawurldecode($d);
+	if ($nf === $f && $nd === $d) {
+		break;
+	}
+	$f = $nf;
+	$d = $nd;
+}
 
 // Keine Path-Traversal, nur Dateiname (+ erlaubte Zeichen).
 if ($f === "" || strpos($f, "..") !== false || preg_match('#^[\\p{L}\\p{N}_\\-\\. ]+$#u', $f) !== 1) {

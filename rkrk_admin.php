@@ -22,6 +22,7 @@ echo "<li><a href='rkrk_admin_regions.php'>Regionen</a> — Aktiv, Text, Kartena
 echo "<li><a href='rkrk_admin_pilots.php'>Piloten</a> — Kürzel, Sichtbarkeit, PV-Datensätze (EASA, Tel, Foto)</li>\n";
 echo "<li><a href='rkrk_admin_menu.php'>Menü</a> — sichtbar, Reihenfolge, Freigabe, Personen, Icon</li>\n";
 echo "<li><a href='rkrk_admin_branding.php'>Branding / Karte</a> — Default-Farbe, GeoAdmin-URL</li>\n";
+echo "<li><a href='rkrk_admin_nachrichten.php'>Nachrichten</a> — <a href='rkrk_admin_mail.php'>Mail</a>, <a href='rkrk_admin_telegram.php'>Telegram</a>, <a href='rkrk_admin_whatsapp.php'>WhatsApp</a></li>\n";
 echo "<li><a href='rkrk_admin_unterhalt.php'>Unterhalt</a> — Katalog-Backup, Website-Sicherung, Code-Sync (Steuerung: test27)</li>\n";
 echo "</ul>\n";
 echo "</main>\n";

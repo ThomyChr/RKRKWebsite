@@ -148,7 +148,7 @@
 	$DebugInfo = "";
 	foreach ($OptionPilot as $PP) {
 		//pre_R( $_SESSION[$SessNme_RegisteredInitialen]);
-		if ($PP["Opt"]==$_SESSION[$SessNme_RegisteredInitialen]) {
+		if ($PP["Opt"]==($_SESSION[$SessNme_RegisteredInitialen] ?? '')) {
 			$Pilot= $PP["Opt"];
 			//pre_R($PP);
 		}	

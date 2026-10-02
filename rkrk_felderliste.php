@@ -8,7 +8,8 @@
 	include_once('scripts/rkrk_csvfiles.php');
 	include_once('scripts/rkrk_inputforms.php');
 	include_once('scripts/rkrk_felddaten.php');
-	include_once('rkrk_access_control.php'); 
+	include_once('rkrk_access_control.php');
+	include_once('scripts/rkrk_channels.php'); 
 
 	// ===========================================
 	// Gobal Defintions
@@ -59,7 +60,7 @@
 	
 	//FeldNamenWahl: FFilter
 	$FeldNamenWahl = str_replace("_"," ",GetURLwDefault("FFilter", "FFilter", "", ""));
-	$DebugText .= "FFilter: " . $FFilter . chr(10);
+	$FFilter = $FeldNamenWahl;
 	
 /*
 	if (isset($_GET["FFilter"])) {
@@ -187,7 +188,10 @@ $MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 
 
 Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data") {
-	global $FlugzeitTreshold, $FluzeitStartUndLandung, $ScreenTableSetup, $MainMenu, $RKRKLocalLoactionMissionFiles, $ImageHeight,$OptionFrei,$OptionWarning,$IconLoc,$GenIconLoc, $Flughoehe, $OptionFlughoehe, $ButtonHeightSmall,$Adresskatalog,$FlyFileSetting;
+	global $FlugzeitTreshold, $FluzeitStartUndLandung, $ScreenTableSetup, $MainMenu, $RKRKLocalLoactionMissionFiles, $ImageHeight,$OptionFrei,$OptionWarning,$IconLoc,$GenIconLoc, $Flughoehe, $OptionFlughoehe, $ButtonHeightSmall,$Adresskatalog,$FlyFileSetting, $RegionSelected;
+	$FonzSize2 = $FonzSize2 ?? '';
+	$FonzSize3 = $FonzSize3 ?? '';
+	$FonzSize4 = $FonzSize4 ?? '';
 	while ($line <= $MaxLine) {
 		//pre_R($dataline);
 		//echo $line . " " . $dataline["Datum"]. " " . $dataline["Pilot"]. " " . $dataline["Feld"] . "<br>";
@@ -213,7 +217,7 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 		if ($dataline['Gemeinde']!="") {
 			echo "Gde: " . $dataline['Gemeinde'];
 		}
-		if (GrundstueckID) {
+		if (($dataline['GrundstueckID'] ?? '') !== '') {
 			echo ", Gis#: " . $dataline['GrundstueckID'];
 		}
 		if ($dataline['Jaeger']!="") {
@@ -275,11 +279,11 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 			echo " <a href='rkrk_fluege.php?add=Y&AddFlugID=" . $dataline['FeldID'] . "&AddFlugToDate=" . date("Y-m-d", strtotime('tomorrow')). "' target='_editfluege'><img src='" . $IconLoc . "/addflug.png' height='" . $ButtonHeightSmall . "px' title='Flugfeld " . $dataline['FeldID'] . " für Morgen hinzugfügen'></a>  ";
 		}
 		// Nehme Parkplatz falls definiert, ansonsten den Startpunkt
-		if ($dataline['Grundstueckdaten']['Parkplatz']!="") {
+		if (($dataline['Grundstueckdaten']['Parkplatz'] ?? '')!="") {
 			$StartLat = explode(",", $dataline['Grundstueckdaten']['Parkplatz'])[0];
 			$StartLon = explode(",", $dataline['Grundstueckdaten']['Parkplatz'])[1];
 		}
-		elseif ($dataline['Grundstueckdaten']['Startplatz']!="") {
+		elseif (($dataline['Grundstueckdaten']['Startplatz'] ?? '')!="") {
 			$StartLat = explode(",", $dataline['Grundstueckdaten']['Startplatz'])[0];
 			$StartLon = explode(",", $dataline['Grundstueckdaten']['Startplatz'])[1];
 		}
@@ -378,7 +382,6 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 			}
 			$Betreff = "Rehkitzrettung Feld " . $Feld;
 			$Text= "Wir möchten das Feld " . $Feld . " wie folgt für die Rehkitzrettung mit Drohnen abfliegen lassen: ";
-			$WhatsappMeldung = str_replace(" ", "%20", "Feldmeldung für Rehkitzrettung mit Drohnen, Feld: " . $Feld . ": ");
 			foreach ($Adresskatalog as $data) {
 				if (in_array($dataline['JG'],explode(",",$data["Jagdgebiet"])) and
 					("Pilot"==$data["Typ"])
@@ -386,7 +389,7 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 					
 					echo "<br>Pilot: " . $data["Name"] . "<br>";
 					echo "<a href='tel:" . $data["Kontaktnummer"] . "'><img src='" . $GenIconLoc . "/call.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
-					echo " <a href='https://wa.me/" . str_replace('.0','41', str_replace(' ','', "."  . $data["Kontaktnummer"])) . "?text=" . $WhatsappMeldung . "'><img src='" . $GenIconLoc . "/whatsapp.png' height='" . $ButtonHeightSmall ."'></a>" . chr(10);
+					echo rkrk_whatsapp_anchor($data["Kontaktnummer"], $Feld, $GenIconLoc . "/whatsapp.png", $ButtonHeightSmall) . chr(10);
 					echo " <a href='mailto:"  . $data["Mail"]. "?subject=". $Betreff . "&body=" . $Text . "'><img src='" . $GenIconLoc . "/mail.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
 					if ($ListType =="intern" or $ListType =="listintern") {
 						echo "Kontakt:  " . $data["Kontaktnummer"] . "<wbr>";
@@ -407,14 +410,13 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 			}
 			$Betreff = "Rehkitzrettung Feld " . $Feld;
 			$Text= "Hoi ";
-			$WhatsappMeldung = str_replace(" ", "%20", "Feldmeldung für Rehkitzrettung mit Drohnen, Feld: " . $Feld . ": ");
 			foreach ($Adresskatalog as $data) {
 				if (in_array($dataline['Jaeger'],explode(",",$data["Initialen"])) and
 					(("Jäger"==$data["Typ"]) or ("Jäger Amt"==$data["Typ"]))) 
 					{
 					echo "<br>Jäger: " . $data["Name"] . "<br>";
 					echo "<a href='tel:" . $data["Kontaktnummer"] . "'><img src='" . $GenIconLoc . "/call.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
-					echo " <a href='https://wa.me/" . str_replace('.0','41', str_replace(' ','', "."  . $data["Kontaktnummer"])) . "?text=" . $WhatsappMeldung . "'><img src='" . $GenIconLoc . "/whatsapp.png' height='" . $ButtonHeightSmall ."'></a>" . chr(10);
+					echo rkrk_whatsapp_anchor($data["Kontaktnummer"], $Feld, $GenIconLoc . "/whatsapp.png", $ButtonHeightSmall) . chr(10);
 					echo " <a href='mailto:"  . $data["Mail"]. "?subject=". $Betreff . "&body=" . $Text . "'><img src='" . $GenIconLoc . "/mail.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
 					//echo "<b>Jäger:  ". $data[$Nmecol] . "</b><br>" .chr(10);
 					if ($ListType =="intern" or $ListType =="listintern") {
@@ -477,7 +479,7 @@ Function CreateTitleLine($TableSetup) {
 	echo $ScreenTableSetup["<tr>"] .chr(10);
 	//echo "Title" . "<br>";
 	//foreach ($TableSetup AS $TableEntry) {
-	CreateTitleField($TableEntry);
+	CreateTitleField(array());
 	//}
 	echo $ScreenTableSetup["</tr>"] .chr(10);
 }
@@ -485,6 +487,9 @@ Function CreateTitleLine($TableSetup) {
 
 
 // Update Flightdata
+if (!isset($FromDate) || $FromDate === '') {
+	$FromDate = date('Y-m-d');
+}
 $Year = date('Y', strtotime($FromDate));
 UpdateFlightsAndSaveKatalog(strval($Year));
 
@@ -519,6 +524,8 @@ UpdateFlightsAndSaveKatalog(strval($Year));
 	}
 	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 		$FontSize= $_POST["FontSize"];
+	} else {
+		$FontSize= "100%";
 	}
 
 
@@ -583,8 +590,6 @@ UpdateFlightsAndSaveKatalog(strval($Year));
 
 <?php
 
-//removes what does not belong to tick list
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 
 //form to change setting
@@ -618,7 +623,7 @@ if ($MenuOn) {
 		// ===========================================
 		$i=1;
 		//Write to LOGfile
-		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Edit Fluege ",$FeldID,$RKRKMissionSelected,"");
+		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Edit Fluege ", $FeldID ?? '', $RKRKMissionSelected,"");
 
 	echo "<tr><td>";
 	echo "Regionen: ";
@@ -634,7 +639,7 @@ if ($MenuOn) {
 		}
 		$GetRegions = $TmpArr;
 	} else
-		$GetRegions= "";
+		$GetRegions = array();
 /*
 	if (isset($_GET["Reg"])) {
 		$GetRegions = multiexplode(array(" ", ","),$_GET["Reg"]);
@@ -651,7 +656,7 @@ if ($MenuOn) {
 	Foreach ($RegionSettings as $Reg) {
 		if ($Reg["Aktiv"]) {
 			$RegOptions[$Reg["Reg"]]["Text"]= $Reg["Reg"];
-			if (($GetRegions[$Reg["Reg"]])!="") { 
+			if (!empty($GetRegions[$Reg["Reg"]])) { 
 				$RegOptions[$Reg["Reg"]]["Value"]=1;
 				$ListOfRegions .= $Reg["Reg"] . ",";
 			} elseif (isset($_POST[$GrpName."-".$i])) {
@@ -718,7 +723,7 @@ if ($MenuOn) {
 				//echo "A: " . $Feld["FeldID"] . "  " . $i . "/  "; 
 				$i++;
 			} else {
-				$FeldkatalogList[$Flug["FeldID"]]["ListNr"]= "";
+				$FeldkatalogList[$Feld["FeldID"]]["ListNr"]= "";
 				//echo "B: " . $Feld["FeldID"] . "/  "; 
 			}
 			//pre_r($Flug);
@@ -805,12 +810,13 @@ if ($MenuOn) {
 	//form to change setting
 	echo "<table id='myTB'>";
 	//echo $ScreenTableSetup["<table>"] .chr(10);
-	CreateTitleLine($TableSetup);
+	CreateTitleLine(array());
 
 	// Extisting Entries
 	$PrevPilot ="";
 	$PrevJaeger ="";
 	$ActDate =$FromDate;
+	$Tomorrow = date('Y-m-d', strtotime('tomorrow'));
 	$PrevDate =$Tomorrow;
 //https://tchr-frog.synology.me:5682/rkropen/test/rkrk_map.php?FFilter=25-048+25-049+21-001+21-004+21-007&Reg=ALL&Strt=on&Cntr=off&Area=on&Pfad=on&GDE=off&JGG=off&Poi=on&Label=off&EX=NO&KA=S&MAP=&Zoom=0.8
 	$GeoMapURL1 = "rkrk_map.php?FFilter=";
@@ -899,10 +905,10 @@ if ($MenuOn) {
 				echo $ScreenTableSetup["</tr>"] . chr(10);
 			}
 */			// Existing Data
-			CreateOutputLine($dataline, $TableSetup, $i, $i);
-			$PrevPilot =$dataline['Pilot'];
-			$PrevJaeger =$dataline['Jaeger'];
-			$PrevDate =$dataline['Datum'];
+			CreateOutputLine($dataline, array(), $i, $i);
+			$PrevPilot =$dataline['Pilot'] ?? '';
+			$PrevJaeger =$dataline['Jaeger'] ?? '';
+			$PrevDate =$dataline['Datum'] ?? '';
 			$ActDate =$PrevDate;
 
 		}

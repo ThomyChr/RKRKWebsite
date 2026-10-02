@@ -927,7 +927,7 @@ $mapllBrand = mapll_favicon_brand();
             <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerBoundariesOpacity" type="range" min="0" max="100" step="5" value="100" /><span id="layerBoundariesOpacityLabel">100%</span></span>
           </div>
           <div class="swiss-overlay-item">
-            <label class="rkrk-sel rkrk-reg-pill" title="Schutzgebiete fuer Jagd"><input id="layerJagdbann" type="checkbox" /> Jagdbanngebiete</label>
+            <label class="rkrk-sel rkrk-reg-pill" title="Jagdbanngebiete AuLaV (Swisstopo/BAFU)"><input id="layerJagdbann" type="checkbox" /> Jagdbanngebiete AuLaV</label>
             <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerJagdbannOpacity" type="range" min="0" max="100" step="5" value="50" /><span id="layerJagdbannOpacityLabel">50%</span></span>
           </div>
           <div class="swiss-overlay-item">
@@ -951,8 +951,8 @@ $mapllBrand = mapll_favicon_brand();
             <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerSurface3dOpacity" type="range" min="0" max="100" step="5" value="70" /><span id="layerSurface3dOpacityLabel">70%</span></span>
           </div>
           <div class="swiss-overlay-item">
-            <label class="rkrk-sel rkrk-reg-pill" title="DABS bis 120 m AGL"><input id="layerDabs" type="checkbox" /> DABS bis 120 m AGL</label>
-            <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerDabsOpacity" type="range" min="0" max="100" step="5" value="55" /><span id="layerDabsOpacityLabel">55%</span></span>
+            <label class="rkrk-sel rkrk-reg-pill" title="DABS bis 200 m AGL"><input id="layerDabs" type="checkbox" /> DABS bis 200 m AGL</label>
+            <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerDabsOpacity" type="range" min="0" max="100" step="5" value="75" /><span id="layerDabsOpacityLabel">75%</span></span>
           </div>
           <div class="swiss-overlay-item">
             <label class="rkrk-sel rkrk-reg-pill" title="Luftfahrthindernisse"><input id="layerObstacles" type="checkbox" /> Luftfahrthindernisse</label>
@@ -980,6 +980,10 @@ $mapllBrand = mapll_favicon_brand();
           <div class="swiss-overlay-item">
             <label class="rkrk-sel rkrk-reg-pill" title="Seilbahnen / Winterbahnen"><input id="layerCableways" type="checkbox" /> Seilbahnen</label>
             <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerCablewaysOpacity" type="range" min="0" max="100" step="5" value="100" /><span id="layerCablewaysOpacityLabel">100%</span></span>
+          </div>
+          <div class="swiss-overlay-item">
+            <label class="rkrk-sel rkrk-reg-pill" title="SwissTLM3D Wanderwege (Swisstopo)"><input id="layerWanderwege" type="checkbox" /> Wanderwege</label>
+            <span class="opacity-wrap" title="Durchsicht dieses Layers"><input id="layerWanderwegeOpacity" type="range" min="0" max="100" step="5" value="100" /><span id="layerWanderwegeOpacityLabel">100%</span></span>
           </div>
           <p class="small" id="overlayStatus"></p>
         </div>
@@ -1348,7 +1352,7 @@ $mapllBrand = mapll_favicon_brand();
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
-  <script src="rkrk_swiss_overlays.js?v=20260906a"></script>
+  <script src="rkrk_swiss_overlays.js?v=20260917dabs1"></script>
   <script src="rkrk_help_catalog.js?v=20260912surface"></script>
   <script src="rkrk_help.js"></script>
   <script src="rkrk_layout.js"></script>
@@ -1557,6 +1561,9 @@ $mapllBrand = mapll_favicon_brand();
       layerCableways: document.getElementById('layerCableways'),
       layerCablewaysOpacity: document.getElementById('layerCablewaysOpacity'),
       layerCablewaysOpacityLabel: document.getElementById('layerCablewaysOpacityLabel'),
+      layerWanderwege: document.getElementById('layerWanderwege'),
+      layerWanderwegeOpacity: document.getElementById('layerWanderwegeOpacity'),
+      layerWanderwegeOpacityLabel: document.getElementById('layerWanderwegeOpacityLabel'),
       editorMap: document.getElementById('editorMap'),
       wsSourceInfo: document.getElementById('wsSourceInfo'),
     };
@@ -1714,9 +1721,9 @@ $mapllBrand = mapll_favicon_brand();
         ],
       },
       jagdbann: {
-        label: 'Jagdbanngebiete',
-        fixedLayerIds: ['ch.bafu.jagdbanngebiete'],
-        searches: [{ text: 'Jagdbanngebiete', tokens: ['jagdbann'] }],
+        label: 'Jagdbanngebiete AuLaV',
+        fixedLayerIds: ['ch.bafu.schutzgebiete-aulav_jagdbanngebiete'],
+        searches: [{ text: 'Jagdbanngebiete AuLaV', tokens: ['aulav', 'jagdbann'] }],
       },
       rpas: {
         label: 'RPAS Karte',
@@ -1757,7 +1764,7 @@ $mapllBrand = mapll_favicon_brand();
         ],
       },
       dabs: {
-        label: 'DABS bis 120 m AGL',
+        label: 'DABS bis 200 m AGL',
         kind: 'dabs',
       },
       obstacles: {
@@ -1793,6 +1800,11 @@ $mapllBrand = mapll_favicon_brand();
           'ch.swisstopo.swisstlm3d-uebrigerverkehr',
         ],
         searches: [{ text: 'bahnen-winter', tokens: ['bahnen-winter'] }],
+      },
+      wanderwege: {
+        label: 'Wanderwege',
+        fixedLayerIds: ['ch.swisstopo.swisstlm3d-wanderwege'],
+        searches: [{ text: 'Wanderwege', tokens: ['wanderwege'] }],
       },
     };
     let isEditModeActive = false;
@@ -2797,6 +2809,7 @@ $mapllBrand = mapll_favicon_brand();
         cadastral: normalizeOpacityPercent(els.layerCadastralOpacity && els.layerCadastralOpacity.value),
         nature: normalizeOpacityPercent(els.layerNatureOpacity && els.layerNatureOpacity.value),
         cableways: normalizeOpacityPercent(els.layerCablewaysOpacity && els.layerCablewaysOpacity.value),
+        wanderwege: normalizeOpacityPercent(els.layerWanderwegeOpacity && els.layerWanderwegeOpacity.value),
       };
     }
 
@@ -2817,6 +2830,7 @@ $mapllBrand = mapll_favicon_brand();
         cadastral: !!(els.layerCadastral && els.layerCadastral.checked),
         nature: !!(els.layerNature && els.layerNature.checked),
         cableways: !!(els.layerCableways && els.layerCableways.checked),
+        wanderwege: !!(els.layerWanderwege && els.layerWanderwege.checked),
         obstacleHeights: !!(els.obstacleHeights && els.obstacleHeights.checked),
       };
     }
@@ -2843,6 +2857,7 @@ $mapllBrand = mapll_favicon_brand();
       if (els.layerCadastral && typeof t.cadastral === 'boolean') els.layerCadastral.checked = t.cadastral;
       if (els.layerNature && typeof t.nature === 'boolean') els.layerNature.checked = t.nature;
       if (els.layerCableways && typeof t.cableways === 'boolean') els.layerCableways.checked = t.cableways;
+      if (els.layerWanderwege && typeof t.wanderwege === 'boolean') els.layerWanderwege.checked = t.wanderwege;
       const o = state && state.overlayOpacity && typeof state.overlayOpacity === 'object' ? state.overlayOpacity : {};
       if (els.layerRoadNamesOpacity && Number.isFinite(Number(o.roadNames))) els.layerRoadNamesOpacity.value = String(normalizeOpacityPercent(o.roadNames));
       if (els.layerElectricOpacity && Number.isFinite(Number(o.electric))) els.layerElectricOpacity.value = String(normalizeOpacityPercent(o.electric));
@@ -2862,6 +2877,7 @@ $mapllBrand = mapll_favicon_brand();
       if (els.layerCadastralOpacity && Number.isFinite(Number(o.cadastral))) els.layerCadastralOpacity.value = String(normalizeOpacityPercent(o.cadastral));
       if (els.layerNatureOpacity && Number.isFinite(Number(o.nature))) els.layerNatureOpacity.value = String(normalizeOpacityPercent(o.nature));
       if (els.layerCablewaysOpacity && Number.isFinite(Number(o.cableways))) els.layerCablewaysOpacity.value = String(normalizeOpacityPercent(o.cableways));
+      if (els.layerWanderwegeOpacity && Number.isFinite(Number(o.wanderwege))) els.layerWanderwegeOpacity.value = String(normalizeOpacityPercent(o.wanderwege));
 
       setOpacityLabel(els.layerRoadNamesOpacityLabel, els.layerRoadNamesOpacity);
       setOpacityLabel(els.layerElectricOpacityLabel, els.layerElectricOpacity);
@@ -2878,6 +2894,7 @@ $mapllBrand = mapll_favicon_brand();
       setOpacityLabel(els.layerCadastralOpacityLabel, els.layerCadastralOpacity);
       setOpacityLabel(els.layerNatureOpacityLabel, els.layerNatureOpacity);
       setOpacityLabel(els.layerCablewaysOpacityLabel, els.layerCablewaysOpacity);
+      setOpacityLabel(els.layerWanderwegeOpacityLabel, els.layerWanderwegeOpacity);
     }
 
     function saveEditorLastSettings() {
@@ -5236,6 +5253,7 @@ $mapllBrand = mapll_favicon_brand();
         await setOverlayEnabled('cadastral', false);
         await setOverlayEnabled('nature', false);
         await setOverlayEnabled('cableways', false);
+        await setOverlayEnabled('wanderwege', false);
         syncObstacleHeightsSwitch(false);
         return;
       }
@@ -5254,6 +5272,7 @@ $mapllBrand = mapll_favicon_brand();
       await setOverlayEnabled('cadastral', !!els.layerCadastral.checked, opacityFromElement(els.layerCadastralOpacity));
       await setOverlayEnabled('nature', !!els.layerNature.checked, opacityFromElement(els.layerNatureOpacity));
       await setOverlayEnabled('cableways', !!els.layerCableways.checked, opacityFromElement(els.layerCablewaysOpacity));
+      await setOverlayEnabled('wanderwege', !!(els.layerWanderwege && els.layerWanderwege.checked), opacityFromElement(els.layerWanderwegeOpacity));
       syncObstacleHeightsSwitch(!!(els.layerObstacles && els.layerObstacles.checked));
 
       setOpacityLabel(els.layerRoadNamesOpacityLabel, els.layerRoadNamesOpacity);
@@ -5271,6 +5290,7 @@ $mapllBrand = mapll_favicon_brand();
       setOpacityLabel(els.layerCadastralOpacityLabel, els.layerCadastralOpacity);
       setOpacityLabel(els.layerNatureOpacityLabel, els.layerNatureOpacity);
       setOpacityLabel(els.layerCablewaysOpacityLabel, els.layerCablewaysOpacity);
+      setOpacityLabel(els.layerWanderwegeOpacityLabel, els.layerWanderwegeOpacity);
 
       saveFloatingUiState({
         overlayOpacity: overlayOpacityStateFromInputs(),
@@ -6292,6 +6312,7 @@ $mapllBrand = mapll_favicon_brand();
     els.layerCadastral.addEventListener('change', applyOverlayLayers);
     els.layerNature.addEventListener('change', applyOverlayLayers);
     els.layerCableways.addEventListener('change', applyOverlayLayers);
+    if (els.layerWanderwege) els.layerWanderwege.addEventListener('change', applyOverlayLayers);
     els.layerRoadNamesOpacity.addEventListener('input', applyOverlayLayers);
     els.layerElectricOpacity.addEventListener('input', applyOverlayLayers);
     els.layerBoundariesOpacity.addEventListener('input', applyOverlayLayers);
@@ -6307,6 +6328,7 @@ $mapllBrand = mapll_favicon_brand();
     els.layerCadastralOpacity.addEventListener('input', applyOverlayLayers);
     els.layerNatureOpacity.addEventListener('input', applyOverlayLayers);
     els.layerCablewaysOpacity.addEventListener('input', applyOverlayLayers);
+    if (els.layerWanderwegeOpacity) els.layerWanderwegeOpacity.addEventListener('input', applyOverlayLayers);
     els.backBtn.addEventListener('click', () => {
       const from = new URLSearchParams(window.location.search).get('from') || 'analyse_ui.php';
       window.open(from, '_blank', 'noopener');

@@ -422,7 +422,7 @@
     <div class="overlay-box-content">
       <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="electrical" /> Elektrische Anlagen</label>
       <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="boundaries" /> Kantons, Gemeindegrenzen</label>
-      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="hunting" /> Jagdbanngebiete</label>
+      <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="hunting" /> Jagdbanngebiete AuLaV</label>
       <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="rpas" /> RPAS karte</label>
       <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="obstacles" /> Luftfahrhindernisse</label>
       <label class="overlay-option"><input class="overlay-toggle" type="checkbox" data-overlay-key="landregister" /> Grundbuchinformationen</label>
@@ -694,8 +694,9 @@
         ]
       },
       hunting: {
-        label: "Jagdbanngebiete",
-        searches: [{ text: "Jagdbanngebiete", tokens: ["jagdbann"] }]
+        label: "Jagdbanngebiete AuLaV",
+        fixedLayerIds: ["ch.bafu.schutzgebiete-aulav_jagdbanngebiete"],
+        searches: [{ text: "Jagdbanngebiete AuLaV", tokens: ["aulav", "jagdbann"] }]
       },
       rpas: {
         label: "RPAS karte",

@@ -70,7 +70,7 @@ if (!is_array($FilesList)) {
 }
 array_multisort($FilesList, SORT_DESC);
 	$FontSizeInPoints = 11;
-	if ($FontSize== "") {
+	if (!isset($FontSize) || $FontSize === "") {
 		$FontSize= "100%";
 	}
 	$TableColor =  GetTableColor ("");

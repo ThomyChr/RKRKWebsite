@@ -830,7 +830,6 @@ weiter bla bla bla
 		$filepath= $kmlFilelocations  . $kmloutputfile . ".kml";
 		//echo $filepath;
 		$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			if ($SaveDebugOutput) {
 				$fileoutput = $fileoutput. $DebugText;
 			}	

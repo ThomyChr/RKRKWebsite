@@ -22,11 +22,107 @@ if (ob_get_level() === 0) {
     ob_start();
 }
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+$__rkrkPersonelModePeek = isset($_GET["mode"]) ? trim((string) $_GET["mode"]) : "";
+if ($__rkrkPersonelModePeek === "personel_cs" && !defined("RKRK_ASSESS_SKIP_HASH_GATE_BOOTSTRAP")) {
+    define("RKRK_ASSESS_SKIP_HASH_GATE_BOOTSTRAP", true);
 }
 
 include_once('rkrk_assess_common.php');
+
+if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && function_exists("rkrk_assess_personel_merge_cs_query")) {
+    foreach (rkrk_assess_personel_merge_cs_query(array()) as $__pk => $__pv) {
+        if (!is_string($__pk) || $__pk === "" || is_array($__pv)) {
+            continue;
+        }
+        if (!array_key_exists($__pk, $_GET)) {
+            $_GET[$__pk] = (string) $__pv;
+        }
+    }
+    unset($__pk, $__pv);
+}
+
+if ($__rkrkPersonelModePeek === "personel_cs") {
+    while (ob_get_level() > 0) {
+        @ob_end_clean();
+    }
+    header("Content-Type: application/json; charset=utf-8");
+    $personelGateOn = function_exists("rkrk_assess_rkrs_strict_host") && rkrk_assess_rkrs_strict_host();
+    $personelRule = function_exists("rkrk_assess_access_policy_rule")
+        ? rkrk_assess_access_policy_rule("personel")
+        : array();
+    if (is_array($personelRule) && array_key_exists("enabled", $personelRule)) {
+        $personelGateOn = !empty($personelRule["enabled"]);
+    }
+    if ($personelGateOn) {
+        $moodleUp = function_exists("rkrk_assess_rkrs_moodle_bootstrap") && rkrk_assess_rkrs_moodle_bootstrap();
+        $cohorts = array("RKRSplusKerngruppe", "RKRSplusEinsatzleiter");
+        if (function_exists("rkrk_assess_access_policy_cohort_names") && is_array($personelRule)) {
+            $cohorts = rkrk_assess_access_policy_cohort_names($personelRule);
+        }
+        $personelCsAllowed = false;
+        if ($moodleUp && !empty($personelRule["allow_siteadmin"]) && function_exists("is_siteadmin") && is_siteadmin()) {
+            $personelCsAllowed = true;
+        }
+        if (!$personelCsAllowed && $moodleUp && $cohorts && function_exists("rkrk_assess_rkrs_moodle_in_any_cohort")) {
+            $personelCsAllowed = rkrk_assess_rkrs_moodle_in_any_cohort($cohorts, false, false);
+        }
+        $portalHost = function_exists("rkrk_assess_hash_gate_is_portal_host") && rkrk_assess_hash_gate_is_portal_host();
+        $failClosed = !isset($personelRule["fail_closed"]) || !empty($personelRule["fail_closed"]);
+        if (!$personelCsAllowed && ($moodleUp || $portalHost || $failClosed)) {
+            http_response_code(403);
+            echo json_encode(array(
+                "ok" => false,
+                "error" => "no_access",
+                "payload" => "",
+                "cs" => "",
+                "required_fields" => array("RKRSPilotID", "Name"),
+                "missing_field" => null,
+                "assessment_ok" => class_exists("assessment") && is_callable(array("assessment", "entry")),
+            ), JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+    $src = is_array($_GET) ? $_GET : array();
+    if (strtoupper((string) ($_SERVER["REQUEST_METHOD"] ?? "GET")) === "POST") {
+        $raw = file_get_contents("php://input");
+        if (is_string($raw) && trim($raw) !== "") {
+            $j = @json_decode($raw, true);
+            if (is_array($j)) {
+                $src = array_merge($src, $j);
+            }
+        } elseif (!empty($_POST) && is_array($_POST)) {
+            $src = array_merge($src, $_POST);
+        }
+    }
+    $params = array(
+        "Name" => trim((string) ($src["Name"] ?? "")),
+    );
+    $pilotIdVal = trim((string) ($src["RKRSPilotID"] ?? $src["PilotID"] ?? ""));
+    if ($pilotIdVal !== "") {
+        $params["RKRSPilotID"] = $pilotIdVal;
+        $params["PilotID"] = $pilotIdVal;
+    }
+    $build = function_exists("rkrk_assess_hash_build_cs_for_personel")
+        ? rkrk_assess_hash_build_cs_for_personel($params)
+        : array("payload" => "", "cs" => "", "required_fields" => array(), "missing_field" => null);
+    $missing = $build["missing_field"] ?? null;
+    echo json_encode(array(
+        "ok" => ($missing === null && trim((string) ($build["cs"] ?? "")) !== ""),
+        "payload" => (string) ($build["payload"] ?? ""),
+        "cs" => (string) ($build["cs"] ?? ""),
+        "required_fields" => $build["required_fields"] ?? array("RKRSPilotID", "Name"),
+        "missing_field" => $missing,
+        "assessment_ok" => class_exists("assessment") && is_callable(array("assessment", "entry")),
+    ), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (function_exists("rkrk_assess_portal_personel_enforce_access")) {
+    rkrk_assess_portal_personel_enforce_access();
+}
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 if (function_exists('ProtectFromAccess')) {
     CheckIPandExit($folderoffset);
@@ -159,6 +255,7 @@ function rkrk_live_personel_discover_columns(array $pilots, array $columnsFile):
         "fpl_gueltig",
         "einsatzpruefung_rkrsplus",
         "rkrsplus",
+        "suspendiert",
         "bemerkung",
         "note",
         "kommentar",
@@ -373,6 +470,32 @@ function rkrk_live_personel_columns_ensure_rkrsplus_fields(array $columns): arra
     return $out;
 }
 
+/** Spalte „Suspendiert“ nach RKRS+ (sonst nach Instruktor) einfügen. */
+function rkrk_live_personel_columns_ensure_suspendiert(array $columns): array
+{
+    $base = [];
+    foreach ($columns as $c) {
+        if ($c === "suspendiert") {
+            continue;
+        }
+        $base[] = $c;
+    }
+    $pos = array_search("rkrsplus", $base, true);
+    if ($pos === false) {
+        $pos = array_search("einsatzpruefung_rkrsplus", $base, true);
+    }
+    if ($pos === false) {
+        $pos = array_search("instruktor", $base, true);
+    }
+    if ($pos === false) {
+        $base[] = "suspendiert";
+        return $base;
+    }
+    $out = $base;
+    array_splice($out, (int)$pos + 1, 0, ["suspendiert"]);
+    return $out;
+}
+
 /** Discover + Instruktor-Tail + PilotID-Spalte + RKRS-IDs; Fallback wenn leer. */
 function rkrk_live_personel_finalize_columns(array $pilots, array $columnsFileOrder): array
 {
@@ -380,6 +503,7 @@ function rkrk_live_personel_finalize_columns(array $pilots, array $columnsFileOr
     $c = rkrk_live_personel_columns_ensure_pilot_id_front($c);
     $c = rkrk_live_personel_columns_ensure_id_fields($c);
     $c = rkrk_live_personel_columns_ensure_rkrsplus_fields($c);
+    $c = rkrk_live_personel_columns_ensure_suspendiert($c);
     if ($c === []) {
         return ["pilot_id", "rkrs_pilot_id", "vorname", "nachname", "note"];
     }
@@ -686,9 +810,15 @@ function rkrk_live_personel_echo_column_visibility_panel(array $columns, array $
     $actionView = ($view === "list") ? "list" : "edit";
     echo "<details class='personel-col-vis' id='personel-col-vis'>";
     echo "<summary>Spalten ein-/ausblenden</summary>";
-    echo "<form method='post' action='rkrk_assess_live_personel.php' class='personel-col-vis-form'>";
+    $formAction = function_exists("rkrk_assess_personel_form_action_href")
+        ? rkrk_assess_personel_form_action_href()
+        : "rkrk_assess_live_personel.php";
+    echo "<form method='post' action='" . rkrk_live_esc($formAction) . "' class='personel-col-vis-form'>";
     echo "<input type='hidden' name='save_personel_ui' value='1'>";
     echo "<input type='hidden' name='ui_view' value='" . rkrk_live_esc($actionView) . "'>";
+    if (function_exists("rkrk_assess_personel_echo_carry_hidden_inputs")) {
+        rkrk_assess_personel_echo_carry_hidden_inputs();
+    }
     echo "<p class='personel-col-vis-hint'>Abgewählt = ausgeblendet. Die Einstellung wird in <code>personel_ui.json</code> gespeichert (unabhängig von den Pilotendaten). In der Bearbeitung bleiben ausgeblendete Felder beim Speichern erhalten.</p>";
     echo "<div class='personel-col-vis-grid'>";
     foreach ($columns as $col) {
@@ -777,6 +907,7 @@ function rkrk_live_personel_label(string $key): string
         "fpl_gueltig" => "FPL gültig bis",
         "einsatzpruefung_rkrsplus" => "EP RKRS+",
         "rkrsplus" => "RKRS+",
+        "suspendiert" => "Susp.",
         "note" => "Bemerkung",
         "kommentar" => "Kommentar",
         "bemerkung" => "Bemerkung",
@@ -794,6 +925,7 @@ function rkrk_live_personel_label_title(string $key): string
         "einsatzpruefung_rkrsplus" => "Einsatzprüfung RKRS+",
         "rkrsplus" => "RKRS+",
         "instruktor" => "Instruktor",
+        "suspendiert" => "Suspendiert",
         "erste_erfahrung" => "Maturität",
         "pilot_id" => "PilotID",
         "rkrs_pilot_id" => "RKRS Piloten ID",
@@ -806,6 +938,105 @@ function rkrk_live_personel_label_title(string $key): string
 function rkrk_live_personel_is_checkbox_col(string $key): bool
 {
     return $key === "instruktor" || $key === "rkrsplus";
+}
+
+function rkrk_live_personel_is_flag_on(string $val): bool
+{
+    $s = trim($val);
+    return $s === "1" || strcasecmp($s, "ja") === 0 || strcasecmp($s, "true") === 0 || strcasecmp($s, "yes") === 0;
+}
+
+function rkrk_live_personel_is_suspend_col(string $key): bool
+{
+    return $key === "suspendiert";
+}
+
+function rkrk_live_personel_es_include(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    $p = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+    if (is_file($p)) {
+        include_once $p;
+    }
+    $tr = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_trainingstatus.inc.php";
+    if (is_file($tr)) {
+        include_once $tr;
+    }
+}
+
+/**
+ * @return array<string, array<string, mixed>>
+ */
+function rkrk_live_personel_es_map(): array
+{
+    static $map = null;
+    if (is_array($map)) {
+        return $map;
+    }
+    $map = [];
+    try {
+        rkrk_live_personel_es_include();
+        if (!function_exists("rkrk_es_build_rows")) {
+            return $map;
+        }
+        foreach (rkrk_es_build_rows() as $er) {
+            if (!is_array($er)) {
+                continue;
+            }
+            foreach (["id", "rkrs_id", "pilot_id"] as $k) {
+                $v = trim((string) ($er[$k] ?? ""));
+                if ($v !== "") {
+                    $map[$v] = $er;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        $map = [];
+    }
+    return $map;
+}
+
+/** ban | ok | neutral */
+function rkrk_live_personel_suspend_state(array $r): string
+{
+    $id = trim((string) ($r["id"] ?? ""));
+    $rkrs = trim((string) ($r["rkrs_pilot_id"] ?? ""));
+    $pid = trim((string) ($r["pilot_id"] ?? ""));
+    $map = rkrk_live_personel_es_map();
+    $er = ($id !== "" && isset($map[$id])) ? $map[$id] : null;
+    if ($er === null && $rkrs !== "" && isset($map[$rkrs])) {
+        $er = $map[$rkrs];
+    }
+    if ($er === null && $pid !== "" && isset($map[$pid])) {
+        $er = $map[$pid];
+    }
+    if (is_array($er)) {
+        $m = (string) ($er["mark"] ?? "");
+        if ($m === "ban" || $m === "ok" || $m === "neutral") {
+            return $m;
+        }
+    }
+    return rkrk_live_personel_is_flag_on(rkrk_live_personel_cell_string($r["suspendiert"] ?? "")) ? "ban" : "ok";
+}
+
+/** Verbotsschild / Häkchen / neutral (Übergang bis Sept. 2027). */
+function rkrk_live_personel_suspend_html(string $state): string
+{
+    if ($state === "ban") {
+        return "<span class='personel-susp-icon personel-susp-on' title='Suspendiert / gesperrt' aria-label='Suspendiert'>"
+            . "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' aria-hidden='true'>"
+            . "<circle cx='12' cy='12' r='9'/><line x1='5' y1='5' x2='19' y2='19'/></svg></span>";
+    }
+    if ($state === "neutral") {
+        return "<span class='personel-susp-icon personel-susp-neutral' title='Neutral — Prüfung noch offen, bis Sept. 2027 einsatzberechtigt' aria-label='Neutral'>–</span>";
+    }
+    return "<span class='personel-susp-icon personel-susp-off' title='Einsatzberechtigt' aria-label='Einsatzberechtigt'>"
+        . "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' aria-hidden='true'>"
+        . "<polyline points='20 6 9 17 4 12'/></svg></span>";
 }
 
 function rkrk_live_personel_is_date_col(string $key): bool
@@ -852,7 +1083,7 @@ function rkrk_live_personel_date_display(string $raw): string
 
 function rkrk_live_personel_use_textarea(string $key, ?string $val = null): bool
 {
-    if (rkrk_live_personel_is_checkbox_col($key) || rkrk_live_personel_is_date_col($key)) {
+    if (rkrk_live_personel_is_checkbox_col($key) || rkrk_live_personel_is_date_col($key) || rkrk_live_personel_is_suspend_col($key)) {
         return false;
     }
     if ($key === "pilot_id") {
@@ -893,7 +1124,7 @@ function rkrk_live_personel_col_cell_attrs(string $col, string $tableMode = "lis
         }
         return ' style="max-width:5rem;width:1%;white-space:nowrap"';
     }
-    if ($col === "instruktor" || $col === "rkrsplus") {
+    if ($col === "instruktor" || $col === "rkrsplus" || $col === "suspendiert") {
         return ' style="max-width:3.5rem;width:1%;text-align:center;white-space:nowrap"';
     }
     if ($col === "fpl_gueltig" || $col === "einsatzpruefung_rkrsplus") {
@@ -939,7 +1170,10 @@ function rkrk_live_personel_redirect(array $queryParams): void
     if ($ak !== "" && !array_key_exists($ak, $queryParams)) {
         $queryParams[$ak] = "";
     }
-    $qs = http_build_query($queryParams);
+    if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+        $queryParams = rkrk_assess_personel_merge_cs_query($queryParams);
+    }
+    $qs = http_build_query($queryParams, "", "&", PHP_QUERY_RFC3986);
     $target = $script . ($qs !== "" ? "?" . $qs : "");
 
     if (!headers_sent()) {
@@ -976,7 +1210,19 @@ require_once __DIR__ . "/rkrk_checklist_toolbar_inc.php";
 
 GrantAccess($folderoffset );
 
+$__rkrkPersonelAccess = function_exists("rkrk_assess_portal_personel_bootstrap_access")
+    ? rkrk_assess_portal_personel_bootstrap_access()
+    : array("portal" => false, "cs_only" => false);
+$rkrkPersonelCsOnly = !empty($__rkrkPersonelAccess["cs_only"]);
+
 if (empty($LoggedOn)) {
+    if (!empty($__rkrkPersonelAccess["portal"])
+        && function_exists("rkrk_assess_hash_gate_skip_cs_check")
+        && !rkrk_assess_hash_gate_skip_cs_check()) {
+        if (function_exists("rkrk_assess_portal_personel_emit_access_denied")) {
+            rkrk_assess_portal_personel_emit_access_denied();
+        }
+    }
     if (function_exists('WriteToLog')) {
         WriteToLog("open", basename($_SERVER['PHP_SELF']), "", "", "", "",$folderoffset );
     }
@@ -1010,6 +1256,18 @@ if (!is_dir($rkrkLivePersonelRoot)) {
 }
 
 [$rows, $columnsFile] = rkrk_live_personel_load_rows($pilotFile);
+
+if ($rkrkPersonelCsOnly) {
+    if ($_SERVER["REQUEST_METHOD"] === "POST") {
+        rkrk_live_personel_redirect(["err" => "cs_readonly", "view" => "list"]);
+    }
+    if (isset($_GET["export"]) || isset($_GET["del"])) {
+        rkrk_live_personel_redirect(["err" => "cs_readonly", "view" => "list"]);
+    }
+    if (isset($_GET["view"]) && (string) $_GET["view"] === "edit") {
+        rkrk_live_personel_redirect(["view" => "list"]);
+    }
+}
 
 /* UI: ausgeblendete Spalten speichern */
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["save_personel_ui"])) {
@@ -1207,7 +1465,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["save_pilots"])) {
             }
             $clean[$k] = is_array($v) ? rkrk_live_personel_cell_string($v) : trim((string)$v);
         }
-        foreach (["instruktor", "rkrsplus"] as $flagCol) {
+        foreach (["instruktor", "rkrsplus", "suspendiert"] as $flagCol) {
             $clean[$flagCol] = (!empty($r[$flagCol]) && (string)$r[$flagCol] !== "0") ? "1" : "";
         }
         if (!rkrk_live_personel_row_is_empty($clean)) {
@@ -1261,12 +1519,15 @@ if ($visibleColumns === []) {
 }
 
 $personelUiView = (isset($_GET["view"]) && (string)$_GET["view"] === "list") ? "list" : "edit";
+if (!empty($rkrkPersonelCsOnly)) {
+    $personelUiView = "list";
+}
 
 /** Query für Ansichts-Umschalter (?view=list|edit), behält Statusmeldungen. */
 function rkrk_live_personel_view_href(string $view): string
 {
     $q = ["view" => $view];
-    foreach (["saved", "err", "deduped", "imp", "imp_upd", "GA", "TEST", "RKRK", "RKRS", "RKRSplus", "RKRSprev"] as $k) {
+    foreach (["saved", "err", "deduped", "imp", "imp_upd", "GA", "TEST", "RKRK", "RKRS", "RKRSplus", "RKRSprev", "ADMIN", "INSTR", "NOH"] as $k) {
         if (!array_key_exists($k, $_GET)) {
             continue;
         }
@@ -1280,6 +1541,9 @@ function rkrk_live_personel_view_href(string $view): string
     if ($ak !== "" && array_key_exists($ak, $_GET)) {
         $v = $_GET[$ak];
         $q[$ak] = (is_string($v) || $v === null || $v === false) ? (string)$v : "";
+    }
+    if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+        $q = rkrk_assess_personel_merge_cs_query($q);
     }
     $qs = http_build_query($q, "", "&", PHP_QUERY_RFC3986);
     return "rkrk_assess_live_personel.php" . ($qs !== "" ? "?" . $qs : "");
@@ -1334,8 +1598,12 @@ function rkrk_live_personel_drohnentyp_warn_level(string $raw): string
 function rkrk_live_personel_list_sort_string(array $r, string $col): string
 {
     $val = rkrk_live_personel_cell_string($r[$col] ?? "");
+    if (rkrk_live_personel_is_suspend_col($col)) {
+        $st = rkrk_live_personel_suspend_state($r);
+        return $st === "ban" ? "2" : ($st === "ok" ? "1" : "0");
+    }
     if (rkrk_live_personel_is_checkbox_col($col)) {
-        return ($val === "1" || strcasecmp($val, "ja") === 0) ? "1" : "0";
+        return rkrk_live_personel_is_flag_on($val) ? "1" : "0";
     }
     return mb_strtolower(trim($val), "UTF-8");
 }
@@ -1344,8 +1612,11 @@ function rkrk_live_personel_list_sort_string(array $r, string $col): string
 function rkrk_live_personel_list_cell_html(array $r, string $col): string
 {
     $val = rkrk_live_personel_cell_string($r[$col] ?? "");
+    if (rkrk_live_personel_is_suspend_col($col)) {
+        return rkrk_live_personel_suspend_html(rkrk_live_personel_suspend_state($r));
+    }
     if (rkrk_live_personel_is_checkbox_col($col)) {
-        $on = ($val === "1" || strcasecmp($val, "ja") === 0);
+        $on = rkrk_live_personel_is_flag_on($val);
         return $on ? "<span class='personel-instr-yes'>Ja</span>" : "<span class='personel-instr-no'>—</span>";
     }
     if (rkrk_live_personel_is_date_col($col)) {
@@ -1497,6 +1768,12 @@ body .rkrk-wrap[data-mode='personel'] table.personel-table{width:max-content;min
 .personel-read-table th{white-space:normal;word-break:break-word;}
 .personel-read-table .personel-instr-yes{font-weight:600;color:#254428;}
 .personel-read-table .personel-instr-no{color:#9aa89e;}
+.personel-susp-icon{display:inline-flex;align-items:center;justify-content:center;width:1.3rem;height:1.3rem;vertical-align:middle;}
+.personel-susp-icon svg{width:18px;height:18px;display:block;}
+.personel-susp-on{color:#b42318;}
+.personel-susp-off{color:#2f6a3a;}
+.personel-table td[data-col='suspendiert']{text-align:center;}
+.personel-susp-neutral{color:#7a8680;font-weight:700;font-size:1.05rem;line-height:1;}
 .personel-read-table .personel-warn-mark{font-weight:700;}
 .personel-read-table .personel-warn-mark-red{color:#c22;}
 .personel-read-table .personel-warn-mark-orange{color:#c86b00;}
@@ -1662,6 +1939,7 @@ if (isset($_GET["err"])) {
         "import_fmt" => "Import: nur .xlsx oder .csv (erste Zeile = Überschriften wie Vorname, Nachname, Telefon, E-Mail, …).",
         "import_empty" => "Import: keine verwertbaren Zeilen (Kopfzeile prüfen).",
         "post_size" => "Anfrage zu groß (PHP post_max_size) — Liste kürzen/teilen oder Server-Limit erhöhen. Sonst wird nichts gespeichert.",
+        "cs_readonly" => "Mit cs-Link ist nur die Lesansicht erlaubt (kein Speichern/Import/Löschen).",
     ][$err] ?? "Unbekannter Fehler.";
     echo "<div class='rkrk-card' style='border-color:#c9a5a5;background:#fff5f5;'><strong>Hinweis:</strong> " . rkrk_live_esc($msg) . "</div>";
 }
@@ -1671,11 +1949,26 @@ $hrefList = rkrk_live_personel_view_href("list");
 $hrefEdit = rkrk_live_personel_view_href("edit");
 echo "<nav class='personel-view-toggle' aria-label='Ansicht wechseln'>";
 echo "<a href='" . rkrk_live_esc($hrefList) . "' class='" . ($personelUiView === "list" ? "is-active " : "") . "btn secondary'" . ($personelUiView === "list" ? " aria-current='page'" : "") . ">Liste lesen</a>";
-echo "<a href='" . rkrk_live_esc($hrefEdit) . "' class='" . ($personelUiView === "edit" ? "is-active " : "") . "btn secondary'" . ($personelUiView === "edit" ? " aria-current='page'" : "") . ">Tabelle bearbeiten</a>";
+if (empty($rkrkPersonelCsOnly)) {
+    echo "<a href='" . rkrk_live_esc($hrefEdit) . "' class='" . ($personelUiView === "edit" ? "is-active " : "") . "btn secondary'" . ($personelUiView === "edit" ? " aria-current='page'" : "") . ">Tabelle bearbeiten</a>";
+}
+$mapHref = "rkrk_assess_live_personel_map.php";
+if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+    $mapQs = http_build_query(rkrk_assess_personel_merge_cs_query(array()), "", "&", PHP_QUERY_RFC3986);
+    if ($mapQs !== "") {
+        $mapHref .= "?" . $mapQs;
+    }
+}
+echo "<a href='" . rkrk_live_esc($mapHref) . "' class='btn secondary'>Pilotenkarte</a>";
+rkrk_live_personel_es_include();
+$esHref = function_exists("rkrk_es_page_href") ? rkrk_es_page_href() : "rkrk_assess_einsatzstatus.php";
+echo "<a href='" . rkrk_live_esc($esHref) . "' class='btn secondary'>Einsatzberechtigung</a>";
+$trHref = function_exists("rkrk_tr_page_href") ? rkrk_tr_page_href() : "rkrk_assess_trainingstatus.php";
+echo "<a href='" . rkrk_live_esc($trHref) . "' class='btn secondary'>Teilnehmerliste</a>";
 echo "</nav>";
 
 if ($personelUiView === "list") {
-    echo "<p class='personel-list-hint'>Lesbare Übersicht aus <code>pilotenliste.json</code> — sortieren (Spaltenkopf), filtern (Suche / Spalten). Spalte <strong>PilotID</strong>: fortlaufend 1…<em>n</em> nach Listenreihenfolge (nicht die RKRS-ID). Spalte <strong>RKRS Piloten ID</strong> ist getrennt und kann bei Aufruf von Prüfung/Test/Assessment nachgetragen werden. <strong>Löschen</strong> wirkt sofort. <strong>Farbcodierung</strong> steht unten nach der Tabelle.</p>";
+    echo "<p class='personel-list-hint'>Lesbare Übersicht aus <code>pilotenliste.json</code> — sortieren (Spaltenkopf), filtern (Suche / Spalten). Spalte <strong>PilotID</strong>: fortlaufend 1…<em>n</em> nach Listenreihenfolge (nicht die RKRS-ID). Spalte <strong>RKRS Piloten ID</strong> ist getrennt und kann bei Aufruf von Prüfung/Test/Assessment nachgetragen werden. <strong>Susp.</strong>: Häkchen = berechtigt · – = Prüfung noch offen (bis Sept. 2027 berechtigt) · Verbotsschild = suspendiert/gesperrt. <strong>Löschen</strong> wirkt sofort. <strong>Farbcodierung</strong> steht unten nach der Tabelle.</p>";
     rkrk_live_personel_echo_column_visibility_panel($columns, $hiddenColumns, "list");
     echo "<div class='personel-read-wrap'>";
     echo "<div class='personel-toolbar personel-read-toolbar'>";
@@ -1692,20 +1985,24 @@ if ($personelUiView === "list") {
     echo "<span class='personel-read-count' id='personel-list-count'></span>";
     echo "</div>";
     rkrk_live_personel_echo_mobile_sort_bar($visibleColumns, "personel-list-mobile-sort");
-    $listColspan = count($visibleColumns) + 2;
+    $listColspan = count($visibleColumns) + (empty($rkrkPersonelCsOnly) ? 2 : 1);
     echo "<div class='personel-table-wrap'><table class='personel-table personel-read-table list-table' id='personel-list-table'><thead><tr>";
     echo "<th class='personel-warn-col' title='Warnung'>!</th>";
     foreach ($visibleColumns as $col) {
         $thTitle = rkrk_live_personel_label_title($col);
         echo "<th class='sortable personel-list-sort' data-col='" . rkrk_live_esc($col) . "' data-sort-key='" . rkrk_live_esc($col) . "' title='" . rkrk_live_esc($thTitle) . "'" . rkrk_live_personel_col_cell_attrs($col) . ">" . rkrk_live_esc(rkrk_live_personel_label($col)) . "<span class='sort-ind'></span></th>";
     }
-    echo "<th class='personel-actions' title='Aktion'>×</th>";
+    if (empty($rkrkPersonelCsOnly)) {
+        echo "<th class='personel-actions' title='Aktion'>×</th>";
+    }
     echo "</tr><tr class='personel-filter-row'>";
     echo "<th class='personel-warn-col'></th>";
     foreach ($visibleColumns as $col) {
         echo "<th data-col='" . rkrk_live_esc($col) . "'" . rkrk_live_personel_col_cell_attrs($col) . "><input type='search' class='personel-col-filter personel-list-col-filter' data-col='" . rkrk_live_esc($col) . "' placeholder='…' title='Filter " . rkrk_live_esc(rkrk_live_personel_label($col)) . "' autocomplete='off'></th>";
     }
-    echo "<th class='personel-actions'></th>";
+    if (empty($rkrkPersonelCsOnly)) {
+        echo "<th class='personel-actions'></th>";
+    }
     echo "</tr></thead><tbody id='personel-list-tbody'>";
     if ($rows === []) {
         echo "<tr><td colspan='" . (int)$listColspan . "' class='personel-list-hint personel-empty-msg' style='padding:14px;'>Noch keine Einträge — in der Bearbeitungsansicht einen Piloten hinzufügen.</td></tr>";
@@ -1728,6 +2025,12 @@ if ($personelUiView === "list") {
         if ($rps === "1" || strcasecmp($rps, "ja") === 0) {
             $searchBits[] = "rkrsplus ja rkrs+";
         }
+        $susSt = rkrk_live_personel_suspend_state($r);
+        if ($susSt === "ban") {
+            $searchBits[] = "suspendiert ja gesperrt";
+        } elseif ($susSt === "neutral") {
+            $searchBits[] = "neutral pruefung offen";
+        }
         $dataSearch = mb_strtolower(implode(" ", array_filter($searchBits, static function ($s): bool {
             return trim((string)$s) !== "";
         })), "UTF-8");
@@ -1746,8 +2049,14 @@ if ($personelUiView === "list") {
             $dLab = rkrk_live_esc(rkrk_live_personel_label($col));
             echo "<td data-label='" . $dLab . "' data-col='" . rkrk_live_esc($col) . "' data-sort='" . $sortAttr . "'" . rkrk_live_personel_col_cell_attrs($col) . ">" . $inner . "</td>";
         }
-        $delQs = "rkrk_assess_live_personel.php?del=" . rawurlencode($id) . "&view=list";
-        echo "<td class='personel-actions' data-label='Aktion'><a href='" . rkrk_live_esc($delQs) . "' class='personel-del' title='Eintrag löschen' onclick='return confirm(\"Diesen Eintrag aus pilotenliste.json löschen?\");'>&times;</a></td>";
+        if (empty($rkrkPersonelCsOnly)) {
+            $delQs = "rkrk_assess_live_personel.php?del=" . rawurlencode($id) . "&view=list";
+            if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+                $delMerged = rkrk_assess_personel_merge_cs_query(array("del" => $id, "view" => "list"));
+                $delQs = "rkrk_assess_live_personel.php?" . http_build_query($delMerged, "", "&", PHP_QUERY_RFC3986);
+            }
+            echo "<td class='personel-actions' data-label='Aktion'><a href='" . rkrk_live_esc($delQs) . "' class='personel-del' title='Eintrag löschen' onclick='return confirm(\"Diesen Eintrag aus pilotenliste.json löschen?\");'>&times;</a></td>";
+        }
         echo "</tr>";
     }
     echo "</tbody></table></div></div>";
@@ -1774,7 +2083,9 @@ if ($personelUiView === "list") {
     echo "</ul>";
     echo "<p class='personel-card-hint' style='margin:8px 0 0;'>Hinweis: Die Markierung ist eine schnelle visuelle Hilfe; die genaue Gerätebezeichnung steht immer in der Zelle <strong>Drohnentyp</strong>.</p>";
     echo "</details>";
-    echo "<p class='personel-list-toedit'><a href='" . rkrk_live_esc($hrefEdit) . "' class='btn btn-primary'>Bearbeitungstabelle</a> <span style='font-size:12px;color:#5f6b66;'>Import, Export, neue Zeilen und Speichern</span></p>";
+    if (empty($rkrkPersonelCsOnly)) {
+        echo "<p class='personel-list-toedit'><a href='" . rkrk_live_esc($hrefEdit) . "' class='btn btn-primary'>Bearbeitungstabelle</a> <span style='font-size:12px;color:#5f6b66;'>Import, Export, neue Zeilen und Speichern</span></p>";
+    }
     echo "<script>
 (function(){
   var columns = " . json_encode($visibleColumns, JSON_UNESCAPED_UNICODE) . ";
@@ -1937,8 +2248,11 @@ if ($personelUiView === "list") {
     echo "<!-- Referenz-Vorlage (lokal): Telefonliste_Instruktoren.xlsx — WK2510 RKRS+ Instruktoren/Teilnehmerlisten -->";
     rkrk_live_personel_echo_column_visibility_panel($columns, $hiddenColumns, "edit");
 
-    echo "<form id='personel-form' method='post' action='rkrk_assess_live_personel.php'>";
+    echo "<form id='personel-form' method='post' action='" . rkrk_live_esc(function_exists("rkrk_assess_personel_form_action_href") ? rkrk_assess_personel_form_action_href() : "rkrk_assess_live_personel.php") . "'>";
 echo "<input type='hidden' name='save_pilots' value='1'>";
+if (function_exists("rkrk_assess_personel_echo_carry_hidden_inputs")) {
+    rkrk_assess_personel_echo_carry_hidden_inputs();
+}
 echo "<input type='hidden' name='columns_order' id='personel-columns-order' value='" . rkrk_live_esc(json_encode($columns, JSON_UNESCAPED_UNICODE)) . "'>";
 echo "<input type='hidden' name='rows_json' id='personel-rows-json' value=''>";
 
@@ -1991,7 +2305,11 @@ foreach ($rows as $i => $r) {
             echo "<input type='hidden' name='" . rkrk_live_esc($pfx) . "[id]' value='" . rkrk_live_esc($id) . "' class='personel-id-input' data-field='id'>";
             $first = false;
         }
-        if (rkrk_live_personel_is_checkbox_col($col)) {
+        if (rkrk_live_personel_is_suspend_col($col)) {
+            $st = rkrk_live_personel_suspend_state($r);
+            echo "<input type='hidden' name='" . rkrk_live_esc($pfx) . "[suspendiert]' value='" . rkrk_live_esc($val) . "' class='personel-field' data-field='suspendiert'>";
+            echo rkrk_live_personel_suspend_html($st);
+        } elseif (rkrk_live_personel_is_checkbox_col($col)) {
             $on = ($val === "1" || strcasecmp($val, "ja") === 0);
             echo "<input type='checkbox' name='" . rkrk_live_esc($pfx) . "[" . rkrk_live_esc($col) . "]' value='1' class='personel-field personel-checkbox' data-field='" . rkrk_live_esc($col) . "' title='" . rkrk_live_esc(rkrk_live_personel_label_title($col)) . "'" . ($on ? " checked" : "") . ">";
         } elseif (rkrk_live_personel_is_date_col($col)) {
@@ -2017,9 +2335,17 @@ echo "</form>";
 
 echo "<p class='personel-io-ref' style='margin-top:18px;'>Vorlage-Struktur orientiert an <code>Telefonliste_Instruktoren.xlsx</code> (Spalten z. B. Vorname, Nachname, Telefon, E-Mail). <strong>Export JSON</strong> = Backup der Datei <code>pilotenliste.json</code>. Import weiterhin .xlsx/.csv.</p>";
 echo "<div class='chk-toolbar no-print personel-io-toolbar' role='region' aria-label='Personal Export und Import'>";
-echo "<a class='chk-tbtn' href='?export=json' title='pilotenliste.json als Datei herunterladen (Backup)' aria-label='JSON exportieren'>" . rkrk_checklist_toolbar_svg_export() . "<span>Export JSON</span></a>";
-echo "<form class='chk-import' method='post' action='rkrk_assess_live_personel.php' enctype='multipart/form-data' title='Import'>";
+$personelExportHref = "?export=json";
+if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+    $personelExportHref = "?" . http_build_query(rkrk_assess_personel_merge_cs_query(array("export" => "json")), "", "&", PHP_QUERY_RFC3986);
+}
+echo "<a class='chk-tbtn' href='" . rkrk_live_esc($personelExportHref) . "' title='pilotenliste.json als Datei herunterladen (Backup)' aria-label='JSON exportieren'>" . rkrk_checklist_toolbar_svg_export() . "<span>Export JSON</span></a>";
+$personelImportAction = function_exists("rkrk_assess_personel_form_action_href") ? rkrk_assess_personel_form_action_href() : "rkrk_assess_live_personel.php";
+echo "<form class='chk-import' method='post' action='" . rkrk_live_esc($personelImportAction) . "' enctype='multipart/form-data' title='Import'>";
 echo "<input type='hidden' name='import_merge' value='1'>";
+if (function_exists("rkrk_assess_personel_echo_carry_hidden_inputs")) {
+    rkrk_assess_personel_echo_carry_hidden_inputs();
+}
 echo "<input type='file' name='import_file' accept='.xlsx,.csv' required title='Telefonliste_Instruktoren.xlsx oder CSV'>";
 echo "<label style='font-size:11px;color:#5f6b66;display:inline-flex;align-items:center;gap:4px;'><input type='checkbox' name='import_all_instruktor' value='1'> alle import. Zeilen als Instruktor</label>";
 echo "<button type='submit' name='import_action' value='merge' class='chk-tbtn' title='Mit bestehender Liste zusammenführen' aria-label='Import zusammenführen'>" . rkrk_checklist_toolbar_svg_import() . "<span>Import zusammenführen</span></button>";
@@ -2047,7 +2373,10 @@ foreach ($columns as $ci => $col) {
     if ($ci === 0) {
         echo "<input type='hidden' value='' class='personel-id-input' data-field='id'>";
     }
-    if (rkrk_live_personel_is_checkbox_col($col)) {
+    if (rkrk_live_personel_is_suspend_col($col)) {
+        echo "<input type='hidden' value='' class='personel-field' data-field='suspendiert'>";
+        echo rkrk_live_personel_suspend_html("neutral");
+    } elseif (rkrk_live_personel_is_checkbox_col($col)) {
         echo "<input type='checkbox' value='1' class='personel-field personel-checkbox' data-field='" . rkrk_live_esc($col) . "' title='" . rkrk_live_esc(rkrk_live_personel_label_title($col)) . "'>";
     } elseif (rkrk_live_personel_is_date_col($col)) {
         echo "<input type='date' class='text-input personel-field' data-field='" . rkrk_live_esc($col) . "' value='' title='" . rkrk_live_esc(rkrk_live_personel_label_title($col)) . "'>";
@@ -2328,4 +2657,8 @@ echo "<script>
   applyFilter();
 })();
 </script>";
+}
+
+if (function_exists("rkrk_assess_footer_echo")) {
+    rkrk_assess_footer_echo();
 }

@@ -768,6 +768,57 @@ if (!function_exists("rkrk_assess_storyboard_chrono_plan")) {
 	}
 }
 
+if (!function_exists("rkrk_assess_storyboard_point_process_map")) {
+	/**
+	 * Normalisierter Punktcode → Ablauf (process) aus dem Template.
+	 * @return array<string,string>
+	 */
+	function rkrk_assess_storyboard_point_process_map(string $templateFile): array {
+		$out = array();
+		$templateFile = basename(trim($templateFile));
+		if ($templateFile === "" || !function_exists("loadTemplate")) {
+			return $out;
+		}
+		$tpl = loadTemplate($templateFile);
+		if (!is_array($tpl) || !isset($tpl["sections"]) || !is_array($tpl["sections"])) {
+			return $out;
+		}
+		foreach ($tpl["sections"] as $fields) {
+			if (!is_array($fields)) {
+				continue;
+			}
+			foreach ($fields as $label => $meta) {
+				if (!is_string($label)) {
+					continue;
+				}
+				$code = function_exists("rkrk_assess_storyboard_field_code")
+					? rkrk_assess_storyboard_field_code($label)
+					: "";
+				$code = function_exists("rkrk_assess_storyboard_normalize_code")
+					? rkrk_assess_storyboard_normalize_code($code)
+					: strtoupper(trim($code));
+				if ($code === "") {
+					continue;
+				}
+				$process = "";
+				if (is_array($meta) && isset($meta["process"])) {
+					$process = trim((string) $meta["process"]);
+				}
+				if ($process === "" && function_exists("rkrk_find_point_evaluation_meta")) {
+					$found = rkrk_find_point_evaluation_meta($fields, $code);
+					if (is_array($found)) {
+						$process = trim((string) ($found["process"] ?? ""));
+					}
+				}
+				if ($process !== "" && !isset($out[$code])) {
+					$out[$code] = $process;
+				}
+			}
+		}
+		return $out;
+	}
+}
+
 if (!function_exists("rkrk_assess_storyboard_overview_html")) {
 	/**
 	 * Storyboard-Übersicht (Phasen/Fragen/Zusatzinfo) — wie Druckansicht, ohne Dokument-Chrome.
@@ -834,8 +885,12 @@ if (!function_exists("rkrk_assess_storyboard_overview_html")) {
 			}
 		}
 
+		$tplFile = (string) ($story["template"] ?? "");
 		$pointTitles = function_exists("rkrk_assess_storyboard_point_titles_map")
-			? rkrk_assess_storyboard_point_titles_map((string) ($story["template"] ?? ""))
+			? rkrk_assess_storyboard_point_titles_map($tplFile)
+			: array();
+		$pointProcess = function_exists("rkrk_assess_storyboard_point_process_map")
+			? rkrk_assess_storyboard_point_process_map($tplFile)
 			: array();
 
 		$steps = isset($story["steps"]) && is_array($story["steps"]) ? $story["steps"] : array();
@@ -889,6 +944,19 @@ if (!function_exists("rkrk_assess_storyboard_overview_html")) {
 					}
 					if ($info !== "") {
 						$html .= "<div class=\"" . $esc($p) . "__info\"><em>Zusatzinfo:</em> " . nl2br($esc($info)) . "</div>";
+					}
+					$process = ($fieldCode !== "" && isset($pointProcess[$fieldCode]))
+						? trim((string) $pointProcess[$fieldCode])
+						: "";
+					if ($process !== "") {
+						if (function_exists("rkrk_assess_format_process_html_for_screen")) {
+							$procHtml = rkrk_assess_format_process_html_for_screen($process);
+						} elseif (function_exists("rkrk_render_process_html")) {
+							$procHtml = rkrk_render_process_html($process);
+						} else {
+							$procHtml = nl2br($esc($process));
+						}
+						$html .= "<div class=\"" . $esc($p) . "__process\"><em>Ablauf:</em> " . $procHtml . "</div>";
 					}
 					if (isset($item["inject"]) && is_array($item["inject"]) && $item["inject"] !== array()) {
 						$html .= "<div class=\"" . $esc($p) . "__inject\"><em>Störung:</em> " . $esc(implode(", ", array_map("strval", $item["inject"]))) . "</div>";
@@ -1140,7 +1208,9 @@ if (!function_exists("rkrk_assess_storyboard_emit_run_ui")) {
 .rkrk-sb-ov__phase-prep,.rkrk-sb-ov__cont{margin:0 0 4px;font-size:12px;}
 .rkrk-sb-ov__items{margin:4px 0 0 1.2em;padding:0;}
 .rkrk-sb-ov__items li{margin:3px 0;}
-.rkrk-sb-ov__cue,.rkrk-sb-ov__info,.rkrk-sb-ov__inject{margin:2px 0;font-size:12px;}
+.rkrk-sb-ov__cue,.rkrk-sb-ov__info,.rkrk-sb-ov__inject,.rkrk-sb-ov__process{margin:2px 0;font-size:12px;}
+.rkrk-sb-ov__process{color:#1f3d1f;}
+.rkrk-sb-ov__process .live-point-flow__prose{margin:2px 0 0;}
 .rkrk-sb-ov__nb{margin:8px 0 0;font-size:12px;color:#64748b;}
 .rkrk-story-prep{font-size:13px;margin:0 0 8px;}
 .rkrk-story-prep ul{margin:6px 0 0 1.1em;padding:0;}

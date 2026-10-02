@@ -127,7 +127,7 @@ function finance_account_balances(array $accounts, array $transactions): array
             'balance' => (float)($byKuerzel[$ku] ?? 0.0),
         ];
     }
-    usort($registered, static fn(array $a, array $b): int => strcmp($a['kuerzel'], $b['kuerzel']));
+    usort($registered, static fn(array $a, array $b): int => strcmp((string)$a['kuerzel'], (string)$b['kuerzel']));
 
     $orphanTotal = 0.0;
     foreach ($orphanParts as $v) {

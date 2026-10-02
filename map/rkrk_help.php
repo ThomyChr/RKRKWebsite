@@ -26,8 +26,8 @@ $h = static function ($s) {
   </div>
   <div id="helpRoot"></div>
   <script src="rkrk_env_branding.js?v=20260912title"></script>
-  <script src="rkrk_help_catalog.js?v=20260914hub2c"></script>
-  <script src="rkrk_help.js?v=20260914hub2c"></script>
+  <script src="rkrk_help_catalog.js?v=20260922help3"></script>
+  <script src="rkrk_help.js?v=20260922help3"></script>
   <script>
     (function () {
       var t = (typeof rkrOverlayEditorTitle === "function") ? rkrOverlayEditorTitle() : "Overlay-Editor";

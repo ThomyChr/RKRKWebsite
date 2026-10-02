@@ -30,10 +30,10 @@ window.RKRK_HELP_CATALOG = {
       icon: "overview",
       use: "Steuerung nur auf test27 oder test. Sichern und Synchronisieren läuft in der Kette weiter: test27 → test → v2 → pub. Katalog-Daten und Website-Code sind getrennte Wiederherstellungen.",
       tools: [
+        { icon: "sync", name: "Code-Sync", text: "Dateien spiegeln. Mirror löscht Extra-Dateien im Ziel; Ergänzen nicht." },
         { icon: "dirs", name: "Verzeichnisse", text: "Sites, Datenpfad, Missionsbibliotheken und welche Ordner wohin dürfen." },
         { icon: "catalog", name: "Katalog", text: "Gemeinsame Daten (JSON) plus Missions-JSON. Kein Code-Sync." },
-        { icon: "site", name: "Website", text: "Programmstand nur dieser Instanz." },
-        { icon: "sync", name: "Code-Sync", text: "Dateien spiegeln. Mirror löscht Extra-Dateien im Ziel; Ergänzen nicht." }
+        { icon: "site", name: "Website", text: "Programmstand nur dieser Instanz." }
       ],
       steps: [
         { icon: "overview", text: "Prüfen, dass Sie auf test27 oder test stehen." },
@@ -172,7 +172,7 @@ window.RKRK_HELP_CATALOG = {
       roles: ["admin"],
       icon: "sync",
       title: "Vorschau und Synchronisieren",
-      what: "jsonfiles, Missions-Medien und rkrs data/ werden nicht kopiert. Assess nach rkrs geht nach assess/public/. Nach rkrs immer ein Modul wählen; Alle Ebenen nimmt rkrs nicht mit. Das letzte Sync-Datum steht unter der Pille. Mirror bestätigt extra, weil Extra-Dateien gelöscht werden."
+      what: "jsonfiles, Missions-Medien, rkrs data/, results/ (Reports) und Live-Personel-JSON (pilotenliste, pilotlistfull, teilnehmerliste_config) werden nicht kopiert — die kommen von rehkitzrettung.ch. Assess nach rkrs geht nach assess/public/. Nach rkrs immer ein Modul wählen; Alle Ebenen nimmt rkrs nicht mit. Das letzte Sync-Datum steht unter der Pille. Mirror bestätigt extra, weil Extra-Dateien gelöscht werden."
     }
   ]
 };

@@ -241,7 +241,10 @@ if (function_exists("rkrk_dga_rh_web_assess_root")) {
 if ((string) $daLearnEditor["body"] !== "") {
 	$bodyNorm = (string) $daLearnEditor["body"];
 	if ($daLearnLernRel !== "" && function_exists("rkrk_dga_rh_normalize_learn_inner_html")) {
-		$bodyNorm = rkrk_dga_rh_normalize_learn_inner_html($bodyNorm, $daLearnLernRel);
+		$daLearnDrive = function_exists("rkrk_assess_effective_drive_location")
+			? rkrk_assess_effective_drive_location($selectedAssessment, array())
+			: (string) ($selectedAssessment["DriveLocation"] ?? "");
+		$bodyNorm = rkrk_dga_rh_normalize_learn_inner_html($bodyNorm, $daLearnLernRel, $daLearnDrive);
 	} else {
 		$bodyNorm = preg_replace('#/data/assess/quiz/images/#i', "/data/assess/images/", $bodyNorm);
 		$bodyNorm = preg_replace('#(["\'(])quiz/images/#i', '$1images/', $bodyNorm);
@@ -547,6 +550,8 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 		+ '.dle-print-header{margin:0 0 1.25rem;padding-bottom:.6rem;border-bottom:2px solid #003366;}'
 		+ '.dle-print-header h1{margin:0 0 .25rem;font-size:1.4rem;color:#003366;line-height:1.25;}'
 		+ '.dle-print-meta{margin:0;font-size:.9rem;color:#64748b;}'
+		+ '.schulung-print-logo{display:block;position:fixed;top:4mm;right:10mm;z-index:1000;height:28px;max-height:28px;width:auto;max-width:90px;border:0;border-radius:0;box-shadow:none;}'
+		+ '.schulung-print-footer{display:flex;justify-content:space-between;align-items:baseline;position:fixed;left:12mm;right:12mm;bottom:5mm;z-index:1000;margin:0;padding:0;font-size:7.5pt;font-style:italic;color:#64748b;background:#fff;line-height:1.3;}'
 		+ '@media print{'
 		+ '.dle-print-toolbar{display:none!important;}'
 		+ '@page{size:A4 portrait;margin:0;}'
@@ -569,10 +574,32 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 		return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 	}
 
+	function decodeAttrUrl(u) {
+		let s = String(u || '');
+		const ta = document.createElement('textarea');
+		for (let i = 0; i < 12; i++) {
+			ta.innerHTML = s;
+			const d = ta.value;
+			if (d === s) break;
+			s = d;
+		}
+		return s;
+	}
+
+	function stripScripts(html) {
+		return String(html || '').replace(/<script\b[\s\S]*?<\/script>/gi, '');
+	}
+
 	function buildPrintDocument(bodyHtml) {
-		let doc = buildPreviewDocument(bodyHtml);
+		let doc = stripScripts(buildPreviewDocument(bodyHtml));
 		const title = escapeHtmlText(learnPrintTitle);
-		doc = doc.replace(/<style>/i, '<style>' + learnPrintExtraStyle);
+		if (/<style>/i.test(doc)) {
+			doc = doc.replace(/<style>/i, '<style>' + learnPrintExtraStyle);
+		} else if (/<\/head>/i.test(doc)) {
+			doc = doc.replace(/<\/head>/i, '<style>' + learnPrintExtraStyle + '</style></head>');
+		} else {
+			doc = '<style>' + learnPrintExtraStyle + '</style>' + doc;
+		}
 		if (/<title>/i.test(doc)) {
 			doc = doc.replace(/<title>[^<]*<\/title>/i, '<title>' + title + ' — Druck</title>');
 		}
@@ -592,28 +619,64 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 				: '')
 			+ '</div>';
 		if (/<body[^>]*>/i.test(doc)) {
-			doc = doc.replace(/<body([^>]*)>/i, '<body$1>' + toolbar + header + printChrome);
+			doc = doc.replace(/<body([^>]*)>/i, function (full, attrs) {
+				let a = attrs || '';
+				if (/\bclass\s*=/i.test(a)) {
+					a = a.replace(/\bclass\s*=\s*(["'])([^"']*)\1/i, function (cm, q, cls) {
+						return 'class=' + q + (cls ? cls + ' ' : '') + 'dle-print-doc' + q;
+					});
+				} else {
+					a += ' class="dle-print-doc"';
+				}
+				return '<body' + a + '>' + toolbar + header + printChrome;
+			});
 		} else {
-			doc = toolbar + header + printChrome + doc;
+			doc = '<body class="dle-print-doc">' + toolbar + header + printChrome + doc + '</body>';
 		}
 		return doc;
 	}
 
 	function openPrintView() {
 		const bodyHtml = getEditorBody();
-		if (!bodyHtml || !String(bodyHtml).replace(/\s/g, '').length) {
+		const hasBody = !!(bodyHtml && String(bodyHtml).replace(/\s/g, '').length);
+		if (!hasBody && learnPrintServerUrl) {
+			const wSrv = window.open(learnPrintServerUrl, '_blank');
+			if (!wSrv) {
+				window.alert('Pop-up blockiert — bitte Pop-ups für diese Seite erlauben.');
+			}
+			return;
+		}
+		if (!hasBody) {
 			window.alert('Kein Lerntext zum Drucken.');
 			return;
 		}
-		const w = window.open('', '_blank', 'noopener,noreferrer');
-		if (!w) {
-			window.alert('Pop-up blockiert — bitte Pop-ups für diese Seite erlauben.');
-			return;
+		const html = buildPrintDocument(bodyHtml);
+		try {
+			const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+			const url = URL.createObjectURL(blob);
+			const wBlob = window.open(url, '_blank');
+			if (wBlob) {
+				setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 120000);
+				try { wBlob.focus(); } catch (e2) {}
+				return;
+			}
+			try { URL.revokeObjectURL(url); } catch (e3) {}
+		} catch (e4) {}
+		try {
+			const wDoc = window.open('about:blank', '_blank');
+			if (wDoc && wDoc.document) {
+				wDoc.document.open();
+				wDoc.document.write(html);
+				wDoc.document.close();
+				try { wDoc.focus(); } catch (e5) {}
+				return;
+			}
+		} catch (e6) {}
+		if (learnPrintServerUrl) {
+			const wFb = window.open(learnPrintServerUrl, '_blank');
+			if (wFb) return;
 		}
-		w.document.open();
-		w.document.write(buildPrintDocument(bodyHtml));
-		w.document.close();
-		w.focus();
+		window.alert('Pop-up blockiert — bitte Pop-ups für diese Seite erlauben.');
 	}
 
 	const splitEl = document.getElementById('dle-split');
@@ -761,7 +824,7 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 		return u;
 	}
 	function encodeLearnUrl(raw) {
-		return encodeUrlForRequest(resolveLearnUrlOne(raw));
+		return encodeUrlForRequest(resolveLearnUrlOne(decodeAttrUrl(raw)));
 	}
 	function encodeUrlsInHtmlFragment(html) {
 		let h = String(html || '');

@@ -1740,31 +1740,15 @@ if (function_exists('rkrk_assess_theme_rkrs_layer_link')) {
 	echo "        <label for='nein'><b>Nein</b></label>" . chr(10);
 	echo "      </span>" . chr(10);
 
-	// A-F
-	echo "      <span id='a-a' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='A' name='response' value='A' />" . chr(10);
-	echo "        <label id='labelA' for='A'>A</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-b' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='B' name='response' value='B' />" . chr(10);
-	echo "        <label id='labelB' for='B'>B</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-c' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='C' name='response' value='C' />" . chr(10);
-	echo "        <label id='labelC' for='C'>C</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-d' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='D' name='response' value='D' />" . chr(10);
-	echo "        <label id='labelD' for='D'>D</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-e' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='E' name='response' value='E' />" . chr(10);
-	echo "        <label id='labelE' for='E'>E</label>" . chr(10);
-	echo "      </span>" . chr(10);
-	echo "      <span id='a-f' class='rkrk-opt'>" . chr(10);
-	echo "        <input type='radio' id='F' name='response' value='F' />" . chr(10);
-	echo "        <label id='labelF' for='F'>F</label>" . chr(10);
-	echo "      </span>" . chr(10);
+	// A–H (nicht belegte Buchstaben blendet GoToQuestion aus)
+	foreach (array("A", "B", "C", "D", "E", "F", "G", "H") as $rkrkOptLetter) {
+		$rkrkOptLow = strtolower($rkrkOptLetter);
+		echo "      <span id='a-" . $rkrkOptLow . "' class='rkrk-opt'>" . chr(10);
+		echo "        <input type='radio' id='" . $rkrkOptLetter . "' name='response' value='" . $rkrkOptLetter . "' />" . chr(10);
+		echo "        <label id='label" . $rkrkOptLetter . "' for='" . $rkrkOptLetter . "'>" . $rkrkOptLetter . "</label>" . chr(10);
+		echo "      </span>" . chr(10);
+	}
+	unset($rkrkOptLetter, $rkrkOptLow);
 
 	echo "    </div>" . chr(10);
 	echo "  </fieldset>" . chr(10);
@@ -2455,7 +2439,7 @@ function LockWahl() {
 
     let locked = (Questions[AtQuestion]["Locked"] == "Ja");
 
-    document.querySelectorAll("#ja, #nein, #A, #B, #C, #D, #E, #F")
+    document.querySelectorAll("#ja, #nein, #A, #B, #C, #D, #E, #F, #G, #H")
         .forEach(el => el.disabled = locked);
 }
 
@@ -2524,7 +2508,7 @@ function GoToQuestion(ToQuestion) {
     const isMulti = Questions[ToQuestion]["Loesung"].includes("|");
     document.getElementById("mehrfach").innerHTML = isMulti ? " (Mehrfachauswahl)" : "";
 
-    ["A","B","C","D","E","F"].forEach(id => {
+    ["A","B","C","D","E","F","G","H"].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.type = isMulti ? "checkbox" : "radio";
@@ -2536,7 +2520,7 @@ function GoToQuestion(ToQuestion) {
         document.getElementById("a-ja").style.display = 'block';
         document.getElementById("a-nein").style.display = 'block';
 
-        ["a-a","a-b","a-c","a-d","a-e","a-f"].forEach(id => {
+        ["a-a","a-b","a-c","a-d","a-e","a-f","a-g","a-h"].forEach(id => {
             document.getElementById(id).style.display = 'none';
         });
 
@@ -2545,15 +2529,16 @@ function GoToQuestion(ToQuestion) {
         document.getElementById("a-ja").style.display = 'none';
         document.getElementById("a-nein").style.display = 'none';
 
-        const labels = ["A","B","C","D","E","F"];
+        const labels = ["A","B","C","D","E","F","G","H"];
 
         labels.forEach((letter, idx) => {
             let span = document.getElementById("a-" + letter.toLowerCase());
             let label = document.getElementById("label" + letter);
 
-            if (Questions[ToQuestion]["Loesungsauswahl"][idx] != null) {
+            const optText = Questions[ToQuestion]["Loesungsauswahl"][idx];
+            if (optText != null && String(optText).trim() !== "") {
                 span.style.display = 'block';
-                label.innerHTML = "<b>" + letter + "</b> <i>" + Questions[ToQuestion]["Loesungsauswahl"][idx] + "</i><br><br>";
+                label.innerHTML = "<b>" + letter + "</b> <i>" + optText + "</i><br><br>";
             } else {
                 span.style.display = 'none';
                 label.innerHTML = "";

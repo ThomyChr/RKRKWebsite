@@ -2,11 +2,15 @@
 if (ob_get_level() === 0) {
     ob_start();
 }
+
+include_once('rkrk_assess_common.php');
+
+if (function_exists("rkrk_assess_portal_personel_enforce_access")) {
+    rkrk_assess_portal_personel_enforce_access();
+}
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
-
-include_once('rkrk_assess_common.php');
 
 if (function_exists('ProtectFromAccess')) {
     CheckIPandExit($folderoffset);
@@ -133,6 +137,80 @@ function rkrk_live_map_is_warn_drohnentyp(string $raw): bool
     return false;
 }
 
+function rkrk_live_map_field_label(string $key): string
+{
+    static $map = [
+        "pilot_id" => "PilotID",
+        "vorname" => "Vorname",
+        "nachname" => "Nachname",
+        "strasse" => "Straße",
+        "plz" => "PLZ",
+        "ort" => "Ort",
+        "email" => "E-Mail",
+        "telefon" => "Telefon",
+        "erste_erfahrung" => "Maturität",
+        "instruktor" => "Instruktor",
+        "alternative_rollen" => "Alternative Rollen",
+        "drohnentyp" => "Drohnentyp",
+        "rkrs_pilot_id" => "RKRS Piloten ID",
+        "remote_pilot_id" => "Remote Pilot ID",
+        "betreiber_id" => "Betreiber ID",
+        "fpl_gueltig" => "FPL gültig bis",
+        "einsatzpruefung_rkrsplus" => "EP RKRS+",
+        "rkrsplus" => "RKRS+",
+        "note" => "Bemerkung",
+        "kommentar" => "Kommentar",
+        "bemerkung" => "Bemerkung",
+    ];
+    return $map[$key] ?? $key;
+}
+
+function rkrk_live_map_skip_filter_key(string $key): bool
+{
+    return in_array($key, ["id", "name", "display", "updated_at", "version"], true);
+}
+
+function rkrk_live_map_row_fields(array $r): array
+{
+    $fields = [];
+    foreach ($r as $k => $v) {
+        if (!is_string($k) || $k === "" || rkrk_live_map_skip_filter_key($k)) {
+            continue;
+        }
+        $s = trim(rkrk_live_map_cell_string($v));
+        if ($k === "instruktor" || $k === "rkrsplus") {
+            if ($s === "1" || strcasecmp($s, "ja") === 0) {
+                $s = "ja";
+            } elseif ($s === "0" || strcasecmp($s, "nein") === 0) {
+                $s = "nein";
+            }
+        }
+        $fields[$k] = $s;
+    }
+    return $fields;
+}
+
+function rkrk_live_map_search_blob(array $fields, array $extra = []): string
+{
+    $bits = array_values($fields);
+    foreach ($extra as $x) {
+        $t = trim((string)$x);
+        if ($t !== "") {
+            $bits[] = $t;
+        }
+    }
+    if (($fields["instruktor"] ?? "") === "ja") {
+        $bits[] = "instruktor ja";
+    }
+    if (($fields["rkrsplus"] ?? "") === "ja") {
+        $bits[] = "rkrsplus ja rkrs+";
+    }
+    $bits = array_filter($bits, static function ($s): bool {
+        return trim((string)$s) !== "";
+    });
+    return mb_strtolower(implode(" ", $bits), "UTF-8");
+}
+
 function rkrk_live_map_geocode_cache_file(string $pilotFile): string
 {
     return rtrim(dirname($pilotFile), "/\\") . DIRECTORY_SEPARATOR . "geocode_cache.json";
@@ -242,11 +320,60 @@ if (isset($_GET["geocode"]) && (string)$_GET["geocode"] === "1") {
         echo json_encode(["ok" => false, "error" => "missing_coords"]);
         exit;
     }
-    $label = strip_tags((string)($attrs["label"] ?? $q));
+    $label = strip_tags((string)($attrs["label"] ?? $q), "<b><i><em><strong><br>");
     $cache[$q] = ["lat" => $lat, "lon" => $lon, "label" => $label, "updated_at" => date("c")];
     rkrk_live_map_geocode_cache_save($pilotFile, $cache);
     echo json_encode(["ok" => true, "cached" => false, "lat" => $lat, "lon" => $lon, "label" => $label]);
     exit;
+}
+
+$filterPriority = [
+    "drohnentyp",
+    "nachname",
+    "vorname",
+    "ort",
+    "plz",
+    "strasse",
+    "email",
+    "telefon",
+    "erste_erfahrung",
+    "instruktor",
+    "alternative_rollen",
+    "rkrs_pilot_id",
+    "remote_pilot_id",
+    "betreiber_id",
+    "fpl_gueltig",
+    "einsatzpruefung_rkrsplus",
+    "rkrsplus",
+    "bemerkung",
+    "note",
+    "kommentar",
+    "pilot_id",
+];
+$presentKeys = [];
+foreach ($rows as $r) {
+    if (!is_array($r)) {
+        continue;
+    }
+    foreach (array_keys($r) as $k) {
+        if (is_string($k) && $k !== "" && !rkrk_live_map_skip_filter_key($k)) {
+            $presentKeys[$k] = true;
+        }
+    }
+}
+$filterColumns = [];
+foreach ($filterPriority as $k) {
+    if (!empty($presentKeys[$k])) {
+        $filterColumns[] = $k;
+        unset($presentKeys[$k]);
+    }
+}
+$restKeys = array_keys($presentKeys);
+sort($restKeys, SORT_NATURAL | SORT_FLAG_CASE);
+$filterColumns = array_merge($filterColumns, $restKeys);
+$filterColumnOptions = [];
+foreach ($filterColumns as $k) {
+    $filterColumnOptions[] = ["key" => $k, "label" => rkrk_live_map_field_label($k)];
 }
 
 $points = [];
@@ -260,6 +387,7 @@ foreach ($rows as $i => $r) {
         rkrk_live_map_cell_string($r["plz"] ?? "") . " " .
         rkrk_live_map_cell_string($r["ort"] ?? "")
     );
+    $fields = rkrk_live_map_row_fields($r);
     $points[] = [
         "idx" => $i,
         "title" => $title,
@@ -270,7 +398,9 @@ foreach ($rows as $i => $r) {
         "phone" => $phone,
         "email" => $mail,
         "address" => trim($addr, ", "),
-        "exp" => $exp
+        "exp" => $exp,
+        "fields" => $fields,
+        "search" => rkrk_live_map_search_blob($fields, [$title, $addr, (string)$exp]),
     ];
 }
 
@@ -302,10 +432,15 @@ echo "<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.
 echo "<style>
 .map-wrap{max-width:1200px;margin:0 auto;}
 .map-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
-.map-toolbar input[type=search]{min-width:220px;max-width:420px;flex:1;padding:6px 9px;border:1px solid #cfd8cc;border-radius:7px;}
+.map-toolbar input[type=search]{min-width:180px;max-width:420px;flex:1;padding:6px 9px;border:1px solid #cfd8cc;border-radius:7px;}
+.map-toolbar .map-filter-col-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.map-toolbar .map-filter-col-wrap select,.map-toolbar .map-filter-col-wrap input[type=search]{padding:6px 9px;border:1px solid #cfd8cc;border-radius:7px;font-size:13px;}
+.map-toolbar .map-filter-col-wrap select{max-width:min(100%,16rem);}
+.map-toolbar .map-filter-col-wrap input[type=search]{min-width:140px;max-width:260px;flex:1;}
 #personel-map{height:72vh;min-height:420px;border:1px solid #cfd8cc;border-radius:10px;overflow:hidden;}
 .pilot-name-label{background:rgba(255,255,255,.92);border:1px solid #cfd8cc;border-radius:6px;padding:1px 6px;color:#1f2c24;font-size:11px;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.18);}
 .warn-mark{color:#c22;font-weight:700;}
+.leaflet-popup-content .geo-label b,.leaflet-popup-content .geo-label strong{font-weight:700;}
 .map-legend{font-size:12px;color:#5f6b66;margin:8px 0 0;display:flex;gap:10px;flex-wrap:wrap;}
 .legend-dot{display:inline-flex;align-items:center;gap:5px;}
 .legend-dot i{display:inline-block;width:11px;height:11px;border-radius:50%;}
@@ -316,8 +451,26 @@ echo "<div class='rkrk-wrap map-wrap'>";
 echo "<div class='cl-header'><h1>Pilotenkarte (Swisstopo)</h1></div>";
 echo "<div class='rkrk-card'>";
 echo "<div class='map-toolbar'>";
-echo "<input type='search' id='map-search' placeholder='Suche Name / Vorname / Ort / E-Mail ...' autocomplete='off'>";
-echo "<a class='btn' href='rkrk_assess_live_personel.php'>Personal-Tabelle</a>";
+echo "<input type='search' id='map-search' placeholder='Alle Angaben durchsuchen (Name, Drohnentyp, Ort, …)' autocomplete='off'>";
+echo "<span class='map-filter-col-wrap'><label for='map-filter-col'>Spalte</label> ";
+echo "<select id='map-filter-col' title='Nur diese Listen-Spalte filtern'>";
+echo "<option value=''>— alle —</option>";
+foreach ($filterColumnOptions as $opt) {
+    $sel = (($opt["key"] ?? "") === "drohnentyp") ? " selected" : "";
+    echo "<option value='" . rkrk_live_map_esc($opt["key"] ?? "") . "'" . $sel . ">" . rkrk_live_map_esc($opt["label"] ?? "") . "</option>";
+}
+echo "</select>";
+echo " <input type='search' id='map-filter-col-text' list='map-filter-col-list' placeholder='z. B. Drohnentyp …' autocomplete='off'>";
+echo "<datalist id='map-filter-col-list'></datalist>";
+echo "</span>";
+$personelTableHref = "rkrk_assess_live_personel.php";
+if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+    $personelTableQs = http_build_query(rkrk_assess_personel_merge_cs_query(array()), "", "&", PHP_QUERY_RFC3986);
+    if ($personelTableQs !== "") {
+        $personelTableHref .= "?" . $personelTableQs;
+    }
+}
+echo "<a class='btn' href='" . rkrk_live_map_esc($personelTableHref) . "'>Personal-Tabelle</a>";
 echo "<span id='map-debug' style='margin-left:auto;font-size:12px;color:#5f6b66;'>Lade Punkte ...</span>";
 echo "</div>";
 echo "<div id='personel-map'></div>";
@@ -330,14 +483,22 @@ echo "<div class='map-legend'>
 <span class='legend-dot'><i style='background:#2a9d8f'></i>5</span>
 <span class='legend-dot'><i style='background:#3d7ab8'></i>6</span>
 </div>";
-echo "<p class='map-side'>Rechtsklick auf einen Punkt ruft die Pilotendaten ab und zeigt sie im Popup.</p>";
+echo "<p class='map-side'>Suche durchsucht alle Listenfelder. Über <strong>Spalte</strong> lässt sich zusätzlich z.&nbsp;B. nach Drohnentyp filtern (Vorschläge erscheinen automatisch). Rechtsklick auf einen Punkt zeigt die Pilotendaten.</p>";
 echo "</div></div>";
+
+$geocodeUrlBase = basename(__FILE__) . "?geocode=1";
+if (function_exists("rkrk_assess_personel_merge_cs_query")) {
+    $geocodeQs = http_build_query(rkrk_assess_personel_merge_cs_query(array()), "", "&", PHP_QUERY_RFC3986);
+    if ($geocodeQs !== "") {
+        $geocodeUrlBase .= "&" . $geocodeQs;
+    }
+}
 
 echo "<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' integrity='sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=' crossorigin='anonymous'></script>";
 echo "<script>
 (function(){
   var points = " . json_encode($points, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ";
-  var geocodeUrlBase = " . json_encode(basename(__FILE__) . "?geocode=1", JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . ";
+  var geocodeUrlBase = " . json_encode($geocodeUrlBase, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . ";
   var swissBounds = L.latLngBounds([45.70, 5.70], [47.95, 10.70]);
   var map = L.map('personel-map', {
     zoomControl:true,
@@ -358,15 +519,105 @@ echo "<script>
   var markers = [];
   var markerLats = [];
   var dbg = document.getElementById('map-debug');
+  var searchEl = document.getElementById('map-search');
+  var filterColEl = document.getElementById('map-filter-col');
+  var filterColTextEl = document.getElementById('map-filter-col-text');
+  var filterColListEl = document.getElementById('map-filter-col-list');
   var okCount = 0, failCount = 0;
+  function visibleCount(){
+    var n = 0;
+    markers.forEach(function(m){ if (map.hasLayer(m)) n++; });
+    return n;
+  }
   function updDbg(){
     if (!dbg) return;
-    dbg.textContent = 'Punkte: ' + okCount + ' sichtbar, ' + failCount + ' ohne Koordinate';
+    var vis = visibleCount();
+    var extra = vis !== okCount ? (', Filter: ' + vis + ' angezeigt') : '';
+    dbg.textContent = 'Punkte: ' + okCount + ' sichtbar, ' + failCount + ' ohne Koordinate' + extra;
+  }
+
+  function fieldVal(p, key){
+    if (!p) return '';
+    if (p.fields && p.fields[key] != null) return String(p.fields[key]);
+    if (key === 'telefon') return String(p.phone || '');
+    if (key === 'email') return String(p.email || '');
+    return String(p[key] || '');
+  }
+  function matchesFilter(p){
+    var q = (searchEl && searchEl.value || '').trim().toLowerCase();
+    var col = filterColEl && filterColEl.value || '';
+    var colQ = (filterColTextEl && filterColTextEl.value || '').trim().toLowerCase();
+    var hay = String(p.search || [p.vorname, p.nachname, p.address, p.email, p.phone, p.drohnentyp, p.title].join(' ')).toLowerCase();
+    if (q && hay.indexOf(q) === -1) return false;
+    if (col && colQ) {
+      var cell = fieldVal(p, col).toLowerCase();
+      if (cell.indexOf(colQ) === -1) return false;
+    }
+    return true;
+  }
+  function applyFilter(){
+    markers.forEach(function(m){
+      var show = matchesFilter(m.__pilot || {});
+      if (show && !map.hasLayer(m)) m.addTo(map);
+      if (!show && map.hasLayer(m)) map.removeLayer(m);
+    });
+    updDbg();
+  }
+  function uniqueFieldValues(key){
+    var seen = {};
+    var out = [];
+    points.forEach(function(p){
+      var v = fieldVal(p, key).trim();
+      if (!v) return;
+      var k = v.toLowerCase();
+      if (seen[k]) return;
+      seen[k] = true;
+      out.push(v);
+    });
+    out.sort(function(a, b){ return a.localeCompare(b, 'de', {sensitivity:'base'}); });
+    return out;
+  }
+  function syncColDatalist(){
+    if (!filterColListEl) return;
+    var col = filterColEl && filterColEl.value || '';
+    filterColListEl.innerHTML = '';
+    if (!col) return;
+    uniqueFieldValues(col).slice(0, 80).forEach(function(v){
+      var opt = document.createElement('option');
+      opt.value = v;
+      filterColListEl.appendChild(opt);
+    });
+    if (filterColTextEl) {
+      var lab = (filterColEl && filterColEl.options[filterColEl.selectedIndex])
+        ? filterColEl.options[filterColEl.selectedIndex].text
+        : 'Spalte';
+      filterColTextEl.placeholder = lab ? ('Filter ' + lab + ' …') : 'Text in Spalte…';
+    }
   }
 
   function esc(s){
     var m = {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'};
     return String(s==null?'':s).replace(/[&<>\"']/g, function(c){ return m[c] || c; });
+  }
+  function labelHtml(s){
+    var raw = String(s==null?'':s);
+    var n = 0;
+    while (n < 2 && /&lt;\/?[a-z]/i.test(raw)) {
+      raw = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '\"');
+      n += 1;
+    }
+    var d = document.createElement('div');
+    d.innerHTML = raw;
+    Array.prototype.slice.call(d.querySelectorAll('script,style,iframe,object,img,link,meta')).forEach(function(el){ el.remove(); });
+    Array.prototype.slice.call(d.querySelectorAll('*')).forEach(function(el){
+      var tag = String(el.tagName || '').toLowerCase();
+      if (tag === 'b' || tag === 'i' || tag === 'em' || tag === 'strong' || tag === 'br') return;
+      var parent = el.parentNode;
+      if (!parent) return;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+    });
+    return d.innerHTML;
   }
   function markerIcon(color){
     return L.divIcon({
@@ -385,7 +636,7 @@ echo "<script>
       html += '<br>Drohnentyp: ' + (p.warn_drohnentyp ? '<span class=\"warn-mark\">❗</span> ' : '') + esc(p.drohnentyp);
     }
     html += '<br>Stufe: '+esc(p.exp);
-    if (extra) html += '<br>'+extra;
+    if (extra) html += '<br><span class=\"geo-label\">'+labelHtml(extra)+'</span>';
     return html;
   }
 
@@ -412,7 +663,7 @@ echo "<script>
           return;
         }
         var m = L.marker([res.lat, res.lon], {icon:markerIcon(colorByExp[p.exp] || colorByExp[0])}).addTo(map);
-        m.bindPopup(popupHtml(p, '<em>'+esc(res.label || '')+'</em>'));
+        m.bindPopup(popupHtml(p, res.label || ''), {autoPan:true});
         var nm = ((p.nachname || '') + ' ' + (p.vorname || '')).trim() || (p.title || 'Pilot');
         m.bindTooltip(esc(nm), {permanent:true, direction:'top', offset:[0,-10], className:'pilot-name-label'});
         m.__pilot = p;
@@ -434,6 +685,7 @@ echo "<script>
         markers.push(m);
         markerLats.push([res.lat, res.lon]);
         okCount++;
+        if (!matchesFilter(p) && map.hasLayer(m)) map.removeLayer(m);
         updDbg();
         if (markerLats.length === 1) {
           map.setView([res.lat, res.lon], 10);
@@ -455,16 +707,10 @@ echo "<script>
     }
   }, 1600);
 
-  document.getElementById('map-search').addEventListener('input', function(){
-    var q = this.value.trim().toLowerCase();
-    markers.forEach(function(m){
-      var p = m.__pilot || {};
-      var hay = [p.vorname,p.nachname,p.address,p.email,p.phone].join(' ').toLowerCase();
-      var show = !q || hay.indexOf(q) !== -1;
-      if (show && !map.hasLayer(m)) m.addTo(map);
-      if (!show && map.hasLayer(m)) map.removeLayer(m);
-    });
-  });
+  if (searchEl) searchEl.addEventListener('input', applyFilter);
+  if (filterColEl) filterColEl.addEventListener('change', function(){ syncColDatalist(); applyFilter(); });
+  if (filterColTextEl) filterColTextEl.addEventListener('input', applyFilter);
+  syncColDatalist();
 })();
 </script>";
 

@@ -67,7 +67,7 @@ $MapSettings = Array(
 							"Visibility" => "false,false,false,false,false,true,false,false",
 							"Opacity" => "&layers_opacity=0.75,0.75,0.1,1,0.6,1,1,1,1",
 							//"Opacity" => "",
-							"Layer24" => "ch.bafu.bundesinventare-jagdbanngebiete,f;ch.pronatura.naturschutzgebiete,f;ch.swisstopo-vd.geometa-gemeinde,f;ch.kantone.cadastralwebmap-farbe,f;ch.swisstopo.swisstlm3d-karte-farbe,f;ch.bazl.einschraenkungen-drohnen,f;ch.bazl.uas-aktivitaetszonen,f;ch.bazl.wohngebiete-aulav,f;ch.swisstopo.swissalti3d-reliefschattierung,f;ch.swisstopo.swisssurface3d-reliefschattierung-multidirektional,f;ch.swisstopo.swisstlm3d-uebrigerverkehr,f;ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f",
+							"Layer24" => "ch.bafu.schutzgebiete-aulav_jagdbanngebiete,f;ch.pronatura.naturschutzgebiete,f;ch.swisstopo-vd.geometa-gemeinde,f;ch.kantone.cadastralwebmap-farbe,f;ch.swisstopo.swisstlm3d-karte-farbe,f;ch.bazl.einschraenkungen-drohnen,f;ch.bazl.uas-aktivitaetszonen,f;ch.bazl.wohngebiete-aulav,f;ch.swisstopo.swissalti3d-reliefschattierung,f;ch.swisstopo.swisssurface3d-reliefschattierung-multidirektional,f;ch.swisstopo.swisstlm3d-uebrigerverkehr,f;ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f",
 					),
 				),
 				"Options" => Array(
@@ -309,8 +309,9 @@ function PageButton ($ThisPage, $Reg, $EX, $FFilter) {
 	//$ButtonHeight= 40;
 	//if ($EX=='NO') {
 	//$output .= $Reg . "  ";
-	if ((($Reg=="ALL") or ($Reg=="all")) or (count(explode(" ", $Reg))==1)) {
-		$output .= CreateSiteLink ("UAVFeldkatalog", "/".$RegionSettings[$Reg]["GroupAreaName"], false, false);
+	$groupArea = (isset($RegionSettings[$Reg]) && is_array($RegionSettings[$Reg])) ? (string)($RegionSettings[$Reg]["GroupAreaName"] ?? '') : '';
+	if ($groupArea !== '') {
+		$output .= CreateSiteLink ("UAVFeldkatalog", "/".$groupArea, false, false);
 	}
 	$output .= CreateSiteLink ("Feldanmeldung", "");
 	$output .= CreateSiteLink ("FeldListe", "Reg=" . $Reg);
@@ -456,16 +457,18 @@ function KartenSettings($MapType, &$KaType, &$KaLayer, &$KaVisLayer, &$KaOpacity
 	global $MapOptions, $MapSettings;
 	$KaType=$MapSettings["Types"][$MapType]["Type"];
 	//pre_R($MapSettings["Types"]);
-	if ($MapOptions["GeLa"]["Value"])
+	$geLaOn = !empty($MapOptions["GeLa"]["Value"]);
+	if ($geLaOn)
 		$MType = "advanced";
 	else
 		$MType = "simple";
 
-	// New MAP.GEO.ADMIN from 25. June 2024		
-	if ($MapSettings["Types"][$MapType][$MType]["Layer"]!="") 
-		$KaLayer= $MapSettings["Types"][$MapType][$MType]["Layer24"];
+	// New MAP.GEO.ADMIN from 25. June 2024
+	$typeLayer = $MapSettings["Types"][$MapType][$MType]["Layer"] ?? '';
+	if ($typeLayer !== '')
+		$KaLayer= $MapSettings["Types"][$MapType][$MType]["Layer24"] ?? '';
 	else
-		$KaLayer= $MapSettings["MapLayer"][$MType]["Layer24"];
+		$KaLayer= $MapSettings["MapLayer"][$MType]["Layer24"] ?? '';
 
 	$KaVisLayer= "";
 	$KaOpacity= "";

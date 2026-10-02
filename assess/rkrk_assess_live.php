@@ -1182,9 +1182,6 @@ function rkrk_live_emit_point_flow_block(string $process, string $checks, string
 {
     $process = trim($process);
     $checks = trim($checks);
-    if (!empty($GLOBALS["rkrkAssessActiveStory"]) && is_array($GLOBALS["rkrkAssessActiveStory"])) {
-        $process = "";
-    }
     if ($process === "" && $checks === "") {
         return;
     }
@@ -2962,7 +2959,7 @@ document.addEventListener("DOMContentLoaded", loadWeatherForChecklist);
       <button class='btn btn-primary' type='submit' name='save_mode' value='overwrite'>Template speichern</button>
       <button class='btn secondary' type='submit' name='save_mode' value='new_version'
               title='Original bleibt unverändert; speichert Bahn/Parameter als neue Template-Datei'
-              onclick="var s=document.getElementById('save_as_stem'); if(s && !s.value.trim()){ s.value=document.querySelector('[name=title]').value + ' Version'; }">
+              onclick='var s=document.getElementById(\"save_as_stem\"); if(s && !s.value.trim()){ s.value=document.querySelector(\"[name=title]\").value + \" Version\"; }'>
         Als neue Version speichern
       </button>
       <label style='font-size:13px;color:#475569;display:flex;align-items:center;gap:6px;'>

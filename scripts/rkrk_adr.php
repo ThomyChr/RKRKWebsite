@@ -312,6 +312,16 @@ if ($AdressTableType=="Kontakt") {
 											"Order" => 9,
 											"Sort" => "",
 											"Show" => true),
+						"GeoMapLoc" => array ( "Field" => "GeoMapLoc",
+											"Text" => "GeoMapLoc",
+											"Type" => "InputArea",
+											"Length" => "30",
+											"Align" => "left",
+											"Options" => "",
+											"Order" => 10,
+											"Sort" => "",
+											"Show" => false),
+											//GeoMapLoc: LON (~8), LAT (~46), Hoehe
 						"Typ" => array ( "Field" => "Typ",
 											"Text" => "Typ",
 											"Type" => "select",
@@ -542,7 +552,14 @@ Function GetAdrListKntkt ($data, $ColSort="ID") {
 	$NewData = Array();
 	foreach ($data as $key => $dataline) {
 		$NewData[$dataline["ID"]] = $dataline;
-		$NewData[$dataline["ID"]]["TypOrder"]=sprintf('%04d',$AddressTypeOptions[$dataline["Typ"]]["Order"]) . sprintf('%04d',$OptionRKRS[$dataline["RKRS"]]["Order"]);
+		if (!isset($NewData[$dataline["ID"]]["GeoMapLoc"])) {
+			$NewData[$dataline["ID"]]["GeoMapLoc"] = "";
+		}
+		$typKey = (string)($dataline["Typ"] ?? '');
+		$rkrsKey = (string)($dataline["RKRS"] ?? '');
+		$typOpt = (isset($AddressTypeOptions[$typKey]) && is_array($AddressTypeOptions[$typKey])) ? $AddressTypeOptions[$typKey] : array();
+		$rkrsOpt = (isset($OptionRKRS[$rkrsKey]) && is_array($OptionRKRS[$rkrsKey])) ? $OptionRKRS[$rkrsKey] : array();
+		$NewData[$dataline["ID"]]["TypOrder"]=sprintf('%04d', $typOpt["Order"] ?? 0) . sprintf('%04d', $rkrsOpt["Order"] ?? 0);
 		//echo "NewDataID: " . $NewData["ID"] . " - ". $NewData[$dataline["ID"]]["TypOrder"] . "<br>";
 	}
 	//sort data
@@ -699,6 +716,9 @@ Function GetAdrListBtr ($data, $FeldList=Array(), $ColSort="Text", $Feldkatalog=
 	$NewData = Array();
 	foreach ($data as $key => $dataline) {
 		$NewData[$dataline["ID"]] = $dataline;
+		if (!isset($NewData[$dataline["ID"]]["GeoMapLoc"])) {
+			$NewData[$dataline["ID"]]["GeoMapLoc"] = "";
+		}
 		$felder = rkrk_adr_felder_for_address_row($NewData[$dataline["ID"]], $FeldList, $Feldkatalog);
 		if (count($felder) > 0) {
 			$NewData[$dataline["ID"]]["Felder"] = implode(", ", $felder);
@@ -2365,6 +2385,208 @@ Function GetNotListedAdresses($FeldListe, $Adresses) {
 	//pre_r($NewData);
 	aasort($NewData, "Name");
 	return $NewData;
+}
+
+/**
+ * Suchtext für swisstopo: Länderzusatz am Ende entfernen.
+ */
+function rkrk_adr_geomaploc_search_text($address) {
+	$text = trim(preg_replace('/\s+/u', ' ', (string)$address));
+	$text = preg_replace('/,\s*(schweiz|switzerland|suisse|svizzera)\s*$/iu', '', $text);
+	return trim((string)$text, " ,");
+}
+
+function rkrk_adr_geomaploc_format($lon, $lat) {
+	return $lon . ', ' . $lat . ', 0';
+}
+
+function rkrk_adr_geomaploc_from_payload($json) {
+	$data = json_decode((string)$json, true);
+	if (!is_array($data) || empty($data['results'][0]['attrs']) || !is_array($data['results'][0]['attrs'])) {
+		return '';
+	}
+	$attrs = $data['results'][0]['attrs'];
+	if (!isset($attrs['lon'], $attrs['lat']) || !is_numeric($attrs['lon']) || !is_numeric($attrs['lat'])) {
+		return '';
+	}
+	$lon = (float)$attrs['lon'];
+	$lat = (float)$attrs['lat'];
+	if ($lon < 5.9 || $lon > 10.6 || $lat < 45.7 || $lat > 47.9) {
+		return '';
+	}
+	return rkrk_adr_geomaploc_format($attrs['lon'], $attrs['lat']);
+}
+
+function rkrk_adr_geomaploc_request_url($query, $origins) {
+	$url = 'https://api3.geo.admin.ch/rest/services/api/SearchServer?type=locations&sr=4326&limit=1&searchText=' . rawurlencode($query);
+	if ($origins !== '') {
+		$url .= '&origins=' . rawurlencode($origins);
+	}
+	return $url;
+}
+
+/**
+ * Mehrere Suchtexte parallel geokodieren. Schlüssel bleiben erhalten.
+ * Rückgabe: key => "lon, lat, 0" oder "".
+ */
+function rkrk_adr_geocode_queries($queriesByKey, $origins) {
+	$hits = array();
+	if (!is_array($queriesByKey) || count($queriesByKey) === 0) {
+		return $hits;
+	}
+	if (!function_exists('curl_multi_init')) {
+		foreach ($queriesByKey as $key => $query) {
+			$hits[$key] = rkrk_adr_geomaploc_from_payload(rkrk_adr_http_get(rkrk_adr_geomaploc_request_url($query, $origins)));
+		}
+		return $hits;
+	}
+	$keys = array_keys($queriesByKey);
+	$batchSize = 12;
+	$count = count($keys);
+	for ($offset = 0; $offset < $count; $offset += $batchSize) {
+		$slice = array_slice($keys, $offset, $batchSize);
+		$mh = curl_multi_init();
+		$handles = array();
+		foreach ($slice as $key) {
+			$ch = curl_init(rkrk_adr_geomaploc_request_url($queriesByKey[$key], $origins));
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+			curl_setopt($ch, CURLOPT_USERAGENT, 'RKRK-GeoMapLoc/1.0');
+			curl_multi_add_handle($mh, $ch);
+			$handles[$key] = $ch;
+		}
+		$active = null;
+		do {
+			$status = curl_multi_exec($mh, $active);
+			if ($active) {
+				curl_multi_select($mh, 1.0);
+			}
+		} while ($active && $status === CURLM_OK);
+		foreach ($handles as $key => $ch) {
+			$code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$body = curl_multi_getcontent($ch);
+			$hits[$key] = ($code >= 200 && $code < 300) ? rkrk_adr_geomaploc_from_payload($body) : '';
+			curl_multi_remove_handle($mh, $ch);
+			curl_close($ch);
+		}
+		curl_multi_close($mh);
+	}
+	return $hits;
+}
+
+function rkrk_adr_http_get($url) {
+	if (function_exists('curl_init')) {
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'RKRK-GeoMapLoc/1.0');
+		$body = curl_exec($ch);
+		$code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+		if ($body === false || $code < 200 || $code >= 300) {
+			return '';
+		}
+		return (string)$body;
+	}
+	$context = stream_context_create(array(
+		'http' => array(
+			'timeout' => 12,
+			'header' => "User-Agent: RKRK-GeoMapLoc/1.0\r\n",
+		),
+	));
+	$body = @file_get_contents($url, false, $context);
+	return ($body === false) ? '' : (string)$body;
+}
+
+/**
+ * Zusätzliche Suchtexte, wenn die ganze Adresszeile keinen Treffer liefert.
+ * z. B. Name vor der Strasse, oder Ortsteil vor PLZ.
+ */
+function rkrk_adr_geomaploc_fallback_queries($query) {
+	$extra = array();
+	if (preg_match('/(\p{L}[\p{L}\.\-]*\s+\d+[a-zA-Z]?)\s+(\d{4})\s+(.+)$/u', $query, $m)) {
+		$extra[] = trim($m[1] . ' ' . $m[2] . ' ' . trim($m[3], " ,"));
+	}
+	if (preg_match('/\b(\d{4})\b/u', $query, $plz)) {
+		if (preg_match('/^([^,\d][^,]*)/u', $query, $loc)) {
+			$locality = trim($loc[1]);
+			if ($locality !== '') {
+				$extra[] = $locality . ' ' . $plz[1];
+			}
+		}
+		if (preg_match('/\b(\d{4})\s+(.+)$/u', $query, $place)) {
+			$extra[] = $place[1] . ' ' . trim($place[2], " ,");
+		}
+	}
+	$unique = array();
+	foreach ($extra as $item) {
+		$item = trim($item);
+		if ($item !== '' && $item !== $query) {
+			$unique[$item] = $item;
+		}
+	}
+	return array_values($unique);
+}
+
+/**
+ * Adresse → "lon, lat, 0" (WGS84). Leer, wenn kein Treffer in der Schweiz.
+ */
+function rkrk_adr_geocode_address($address) {
+	static $cache = array();
+	$query = rkrk_adr_geomaploc_search_text($address);
+	if ($query === '') {
+		return '';
+	}
+	$key = function_exists('mb_strtolower') ? mb_strtolower($query, 'UTF-8') : strtolower($query);
+	if (array_key_exists($key, $cache)) {
+		return $cache[$key];
+	}
+	$candidates = array($query);
+	foreach (rkrk_adr_geomaploc_fallback_queries($query) as $alt) {
+		$candidates[] = $alt;
+	}
+	$hit = '';
+	foreach ($candidates as $candidate) {
+		$hit = rkrk_adr_geomaploc_from_payload(rkrk_adr_http_get(rkrk_adr_geomaploc_request_url($candidate, 'address')));
+		if ($hit === '') {
+			$hit = rkrk_adr_geomaploc_from_payload(rkrk_adr_http_get(rkrk_adr_geomaploc_request_url($candidate, '')));
+		}
+		if ($hit !== '') {
+			break;
+		}
+	}
+	$cache[$key] = $hit;
+	return $hit;
+}
+
+/**
+ * GeoMapLoc aus der Adresse setzen, wenn sie leer ist oder die Adresse geändert wurde.
+ * $previousAddress === null: nur auffüllen, bestehende Koordinate behalten.
+ */
+function rkrk_adr_apply_geomaploc(&$row, $previousAddress = null) {
+	if (!is_array($row)) {
+		return false;
+	}
+	$address = trim((string)(isset($row['Adresse']) ? $row['Adresse'] : ''));
+	$current = trim((string)(isset($row['GeoMapLoc']) ? $row['GeoMapLoc'] : ''));
+	if (!isset($row['GeoMapLoc'])) {
+		$row['GeoMapLoc'] = '';
+	}
+	if ($address === '') {
+		return false;
+	}
+	$addressChanged = ($previousAddress !== null && trim((string)$previousAddress) !== $address);
+	if ($current !== '' && !$addressChanged) {
+		return false;
+	}
+	$hit = rkrk_adr_geocode_address($address);
+	if ($hit === '') {
+		return false;
+	}
+	$row['GeoMapLoc'] = $hit;
+	return true;
 }
 
 Function CreateTable($data, $TableSetup, $TblOptions) {

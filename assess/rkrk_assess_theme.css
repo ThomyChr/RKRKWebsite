@@ -1829,6 +1829,20 @@ body.rkrk-assess-print .print-options button{
 body .top{
 	position:relative;
 	z-index:400;
+	width:100%;
+	height:auto;
+}
+body .rkrk-shell-header > .bar.black,
+body .rkrk-shell-header > .bar.black.card{
+	min-height:52px;
+	max-height:56px;
+	overflow:visible;
+}
+body .rkrk-shell-header .rkrk-shell-logo{
+	height:40px !important;
+	width:auto !important;
+	max-height:40px !important;
+	object-fit:contain;
 }
 
 

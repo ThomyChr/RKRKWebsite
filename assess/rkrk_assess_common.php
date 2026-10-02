@@ -1,13 +1,31 @@
 <?php
 	$onRKRS = false;
 	$folderoffset = "../";
-	//echo "<br><br>";
-	//echo "<div>Host: ". $_SERVER['HTTP_HOST']. "</div>";
+	// Portal-Login hängt an MoodleSession. Eine schon aktive PHP-Session
+	// (auto_start / anderer Name) blockiert sonst das Lesen dieser Anmeldung.
+	$__rkrkHostEarly = strtolower(trim((string) ($_SERVER["HTTP_HOST"] ?? "")));
+	$__rkrkMoodleHostEarly = ($__rkrkHostEarly !== ""
+		&& strpos($__rkrkHostEarly, "drohnenrehkitzrettung.ch") === false
+		&& (strpos($__rkrkHostEarly, "portal.rehkitzrettung.ch") !== false
+			|| preg_match('/(^|\.)rehkitzrettung\.ch$/i', $__rkrkHostEarly) === 1));
+	if ($__rkrkMoodleHostEarly && session_status() === PHP_SESSION_ACTIVE) {
+		$__rkrkSessNameEarly = (string) session_name();
+		if (stripos($__rkrkSessNameEarly, "MoodleSession") !== 0) {
+			session_write_close();
+			unset($_SESSION);
+		}
+	}
+	unset($__rkrkHostEarly, $__rkrkMoodleHostEarly, $__rkrkSessNameEarly);
 	include_once($folderoffset . 'scripts/rkrk_gen_ext.php');
 	$hashAssessmentPath = $folderoffset . 'scripts/hash_assessment.php';
 	if (is_file($hashAssessmentPath)) {
 		include_once($hashAssessmentPath);
 	}
+	$__rkrkAccessPolicyInc = __DIR__ . "/rkrk_assess_access_policy.inc.php";
+	if (is_file($__rkrkAccessPolicyInc)) {
+		include_once $__rkrkAccessPolicyInc;
+	}
+	unset($__rkrkAccessPolicyInc);
 	/**
 	 * Portal-Host-Erkennung für Hash-Gate (früh im Bootstrap, unabhängig von späteren Helpern).
 	 */
@@ -37,7 +55,11 @@
 	 * Abschaltbar per RKRK_ASSESS_HASH_ENABLED (Constant/Env) oder im Debug per hash_debug=off.
 	 */
 	function rkrk_assess_hash_gate_enabled(): bool {
-		if (!rkrk_assess_hash_gate_is_portal_host()) {
+		$hostOk = rkrk_assess_hash_gate_is_portal_host();
+		if (function_exists("rkrk_assess_access_policy_hash_gate_active")) {
+			$hostOk = rkrk_assess_access_policy_hash_gate_active();
+		}
+		if (!$hostOk) {
 			return false;
 		}
 		if (defined("RKRK_ASSESS_HASH_ENABLED")) {
@@ -363,7 +385,86 @@
 	 *   expected_cs: string
 	 * }
 	 */
-	function rkrk_assess_hash_gate_evaluate_request(): array {
+	/**
+	 * QUERY_STRING enthält quiz, aber cs/EXAM/Name … nur in $_GET (Session-Grant oder POST).
+	 * Strikte URL-Keys würden dann nur «quiz» hashen → hash_mismatch trotz gültigem Grant.
+	 */
+	function rkrk_assess_hash_gate_query_is_truncated(): bool {
+		$urlKeys = rkrk_assess_hash_gate_url_param_keys();
+		$csInGet = trim((string) ($_GET["cs"] ?? "")) !== "";
+		$csInQs = rkrk_assess_hash_gate_url_has_param($urlKeys, "cs");
+		if ($csInGet && !$csInQs) {
+			return true;
+		}
+		foreach (array("EXAM", "QuizModus", "Name", "Drone", "RKRSPilotID") as $field) {
+			$inGet = array_key_exists($field, $_GET) && trim((string) $_GET[$field]) !== "";
+			if ($inGet && !rkrk_assess_hash_gate_url_has_param($urlKeys, $field)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Session-Grant für dieses Quiz (unabgelaufen, cs passt oder URL hat keinen anderen cs).
+	 */
+	function rkrk_assess_hash_gate_grant_matches(string $quiz): bool {
+		$quiz = trim($quiz);
+		if ($quiz === "") {
+			return false;
+		}
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			@session_start();
+		}
+		$g = $_SESSION["rkrkAssessHashGrant"][$quiz] ?? null;
+		if (!is_array($g)) {
+			return false;
+		}
+		if ((time() - (int) ($g["ts"] ?? 0)) > 28800) {
+			return false;
+		}
+		$grantCs = strtolower(trim((string) ($g["cs"] ?? "")));
+		if ($grantCs === "") {
+			return false;
+		}
+		$clientCs = strtolower(trim((string) ($_GET["cs"] ?? "")));
+		if ($clientCs !== "" && !hash_equals($grantCs, $clientCs)) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Hash-Felder aus dem aktuellen Request (für Menü-Links / urladder), ohne Status:
+	 * Status wird intern gesetzt und darf den cs nicht nachträglich ändern.
+	 *
+	 * @return array<string, string>
+	 */
+	function rkrk_assess_hash_gate_carry_fields_from_request(): array {
+		$out = array();
+		foreach (array("quiz", "QuizModus", "EXAM", "RKRSPilotID", "Name", "Drone", "cs") as $k) {
+			if (isset($_GET[$k]) && trim((string) $_GET[$k]) !== "") {
+				$out[$k] = (string) $_GET[$k];
+			}
+		}
+		return $out;
+	}
+
+	function rkrk_assess_hash_gate_append_urladder(string $urladder): string {
+		foreach (rkrk_assess_hash_gate_carry_fields_from_request() as $k => $v) {
+			if ($k === "quiz") {
+				continue;
+			}
+			if (preg_match("/(?:^|&)" . preg_quote($k, "/") . "(?:=|&|$)/", $urladder) === 1) {
+				continue;
+			}
+			$bit = $k . "=" . rawurlencode($v);
+			$urladder = ($urladder === "") ? $bit : ($urladder . "&" . $bit);
+		}
+		return $urladder;
+	}
+
+	function rkrk_assess_hash_gate_evaluate_request(bool $strictUrlKeys = true): array {
 		$scope = basename((string) ($_SERVER["PHP_SELF"] ?? ""));
 		$quiz = trim((string) ($_GET["quiz"] ?? ""));
 		$result = array(
@@ -390,7 +491,7 @@
 			return $result;
 		}
 		$result["rule_found"] = true;
-		$build = rkrk_assess_hash_gate_build_payload_from_rule($rule, $_GET, true);
+		$build = rkrk_assess_hash_gate_build_payload_from_rule($rule, $_GET, $strictUrlKeys);
 		$result["required_fields"] = $build["required_fields"];
 		$result["missing_field"] = $build["missing_field"];
 		$result["payload"] = $build["payload"];
@@ -448,6 +549,10 @@
 			case "staff_or_cs_required":
 				return "Zugriff auf dem Portal nur mit &ADMIN, &INSTR, &NOH oder einem gültigen cs-Link "
 					. "(Link-Generator / Schulungsleitung).";
+			case "cohort_or_link_required":
+				return "Auf rehkitzrettung.ch ist der Zugriff nur für die berechtigte Moodle-Gruppe "
+					. "(zuerst im Portal anmelden) oder mit einem gültigen Verbindungs-/Verknüpfungs-Link "
+					. "(Parameter cs) erlaubt.";
 			default:
 				return "Zugriff auf dieses Quiz ist mit den angegebenen Parametern nicht möglich.";
 		}
@@ -511,13 +616,35 @@
 			. rkrk_assess_hash_gate_h($message)
 			. "</p>";
 		// Immer kurze Diagnose (ohne Hashes), damit fehlendes PilotID etc. sichtbar ist.
+		$denyHint = "Wenn die QUERY_STRING nur quiz/PersPick zeigt, kam der Aufruf aus dem Menü oder einem internen Link ohne cs. Bitte den vollständigen Generator-Link (mit EXAM, Name, Drone, cs) in die Adresszeile einfügen.";
+		$portalLoginRow = "";
+		if ((string) ($result["reason"] ?? "") === "cohort_or_link_required") {
+			$scope = (string) ($result["scope"] ?? "");
+			$groups = ($scope === "sessions")
+				? "Kerngruppe oder Instruktoren"
+				: "die berechtigte Moodle-Gruppe";
+			$moodleUp = function_exists("rkrk_assess_rkrs_moodle_bootstrap") && rkrk_assess_rkrs_moodle_bootstrap();
+			$uid = function_exists("rkrk_assess_rkrs_moodle_user_id") ? rkrk_assess_rkrs_moodle_user_id() : 0;
+			$guest = function_exists("isguestuser") && isguestuser();
+			$logged = $moodleUp && $uid > 1 && !$guest;
+			$sessName = (session_status() === PHP_SESSION_ACTIVE) ? (string) session_name() : "keine";
+			$portalLoginRow = $logged
+				? ("erkannt, aber nicht in " . $groups)
+				: "nicht erkannt";
+			$portalLoginRow .= " (Moodle " . ($moodleUp ? "geladen" : "nicht geladen")
+				. ", Benutzer " . (string) $uid
+				. ", Session " . $sessName . ")";
+			$denyHint = "Zuerst im Portal anmelden (gleiche Browser-Sitzung), danach diese Seite neu laden. "
+				. "ADMIN allein genügt nicht. Zugriff haben " . $groups . " oder ein gültiger cs-Link.";
+		}
 		$publicRows = array(
 			"Quiz" => (string) ($result["quiz"] ?? ""),
 			"Grund" => (string) ($result["reason"] ?? ""),
 			"Fehlendes Feld" => (string) ($result["missing_field"] ?? ""),
+			"Portal-Login" => $portalLoginRow,
 			"Empfangene Parameter" => implode(", ", array_keys($_GET)),
 			"QUERY_STRING (gekürzt)" => substr((string)($_SERVER["QUERY_STRING"] ?? ""), 0, 300),
-			"Hinweis" => "Wenn «Empfangene Parameter» EXAM/cs nicht listet, war die Anfrage an PHP bereits verkürzt (z. B. Klick «Quiz» im Menü ohne cs, oder Proxy). Vollständigen Link aus dem Generator in die Adresszeile einfügen — ohne über Menü-Hubs.",
+			"Hinweis" => $denyHint,
 		);
 		$html .= "<table>";
 		foreach ($publicRows as $label => $value) {
@@ -712,7 +839,8 @@
 			return true;
 		}
 		if ($quizMatch && trim((string)($_GET["cs"] ?? "")) !== "") {
-			$eval = rkrk_assess_hash_gate_evaluate_request();
+			$strict = !rkrk_assess_hash_gate_query_is_truncated();
+			$eval = rkrk_assess_hash_gate_evaluate_request($strict);
 			if (!empty($eval["ok"]) && !empty($eval["rule_found"])) {
 				return true;
 			}
@@ -757,13 +885,30 @@
 
 	/** Hash-Gate für diesen Request überspringen (ADMIN, INSTR oder NOH). */
 	function rkrk_assess_hash_gate_skip_cs_check(): bool {
-		if (array_key_exists("ADMIN", $_GET)) {
+		if (array_key_exists("ADMIN", $_GET)
+			&& function_exists("rkrk_assess_access_policy_is_live_host")
+			&& !rkrk_assess_access_policy_is_live_host()
+		) {
 			return true;
 		}
-		if (isset($_GET["INSTR"]) || isset($_POST["INSTR"])) {
+		$allowAdmin = true;
+		$allowInstr = true;
+		$allowNoh = true;
+		if (function_exists("rkrk_assess_access_policy_rule")) {
+			$rule = rkrk_assess_access_policy_rule("hash_gate");
+			if (is_array($rule) && !empty($rule["enabled"])) {
+				$allowAdmin = !empty($rule["allow_admin_flag"]);
+				$allowInstr = !empty($rule["allow_instr_flag"]);
+				$allowNoh = !empty($rule["allow_noh"]);
+			}
+		}
+		if ($allowAdmin && array_key_exists("ADMIN", $_GET)) {
 			return true;
 		}
-		if (rkrk_assess_hash_gate_noh_requested()) {
+		if ($allowInstr && (isset($_GET["INSTR"]) || isset($_POST["INSTR"]))) {
+			return true;
+		}
+		if ($allowNoh && rkrk_assess_hash_gate_noh_requested()) {
 			return true;
 		}
 		return false;
@@ -788,15 +933,18 @@
 	 * Auf Nicht-Portal-Hosts immer true (kein zusätzlicher Gate).
 	 */
 	function rkrk_assess_portal_digitalassess_access_allowed(): bool {
-		if (!function_exists("rkrk_assess_hash_gate_is_portal_host") || !rkrk_assess_hash_gate_is_portal_host()) {
-			return true;
-		}
 		$scope = basename((string)($_SERVER["PHP_SELF"] ?? ""));
 		if ($scope !== "rkrk_digitalassess.php") {
 			return true;
 		}
 		$mode = trim((string)($_GET["mode"] ?? ""));
 		if (in_array($mode, array("einsatzpruefunglink_cs", "einsatzpruefunglink_prefs"), true)) {
+			return true;
+		}
+		if (function_exists("rkrk_assess_access_policy_allowed")) {
+			return rkrk_assess_access_policy_allowed("digitalassess");
+		}
+		if (!function_exists("rkrk_assess_hash_gate_is_portal_host") || !rkrk_assess_hash_gate_is_portal_host()) {
 			return true;
 		}
 		if (array_key_exists("ADMIN", $_GET) || (!empty($GLOBALS["onAdmin"]))) {
@@ -813,7 +961,8 @@
 			return true;
 		}
 		if ($quiz !== "" && trim((string)($_GET["cs"] ?? "")) !== "" && function_exists("rkrk_assess_hash_gate_evaluate_request")) {
-			$eval = rkrk_assess_hash_gate_evaluate_request();
+			$strict = !function_exists("rkrk_assess_hash_gate_query_is_truncated") || !rkrk_assess_hash_gate_query_is_truncated();
+			$eval = rkrk_assess_hash_gate_evaluate_request($strict);
 			if (!empty($eval["ok"])) {
 				return true;
 			}
@@ -838,6 +987,828 @@
 			"client_cs" => trim((string)($_GET["cs"] ?? "")),
 			"expected_cs" => "",
 		));
+	}
+
+	/**
+	 * Strikte Moodle-/cs-Kontrolle nur auf portal.rehkitzrettung.ch und Live rehkitzrettung.ch.
+	 * NAS ./rkrs (Pfad /rkrs/, Host tchr-frog) ist nicht strict — ?ADMIN gilt.
+	 */
+	function rkrk_assess_rkrs_strict_host(): bool {
+		if (function_exists("rkrk_assess_access_policy_is_live_host")) {
+			return rkrk_assess_access_policy_is_live_host();
+		}
+		if (function_exists("rkrk_assess_hash_gate_is_portal_host") && rkrk_assess_hash_gate_is_portal_host()) {
+			return true;
+		}
+		$host = strtolower(trim((string) ($_SERVER["HTTP_HOST"] ?? "")));
+		if ($host === "" || strpos($host, "drohnenrehkitzrettung.ch") !== false) {
+			return false;
+		}
+		return (bool) preg_match('/(^|\.)rehkitzrettung\.ch$/i', $host);
+	}
+
+	/**
+	 * Original-Zugriffsprüfungen auf dem Portal:
+	 * /portal.rehkitzrettung.ch/rkrsplusassessment/testpermissions_*.php
+	 * Assess-Basis: /portal.rehkitzrettung.ch/rkrsplusassessment/assess/public
+	 *
+	 * @return list<string>
+	 */
+	function rkrk_assess_rkrs_permission_file_names(): array {
+		return array(
+			"testpermissions_kerngruppe.php",
+			"testpermissions_koordinator.php",
+			"testpermissions_instruktoren.php",
+			"testpermissions_teilnehmer.php",
+		);
+	}
+
+	/** Wurzel …/rkrsplusassessment (dort liegen die Original-testpermissions_*.php). */
+	function rkrk_assess_rkrsplusassessment_root(): string {
+		static $cached = null;
+		if ($cached !== null) {
+			return $cached;
+		}
+		$cached = "";
+		$norm = static function ($p): string {
+			return rtrim(str_replace("\\", "/", (string) $p), "/");
+		};
+		$hasPerm = static function (string $dir): bool {
+			if ($dir === "" || !is_dir($dir)) {
+				return false;
+			}
+			foreach (rkrk_assess_rkrs_permission_file_names() as $fn) {
+				if (is_file($dir . "/" . $fn)) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		$candidates = array();
+		$doc = $norm($_SERVER["DOCUMENT_ROOT"] ?? "");
+		// 1) Moodle-VHost: /portal.rehkitzrettung.ch/rkrsplusassessment/testpermissions_*.php
+		if ($doc !== "") {
+			$candidates[] = $doc . "/rkrsplusassessment";
+			if (strcasecmp(basename($doc), "rkrsplusassessment") === 0) {
+				$candidates[] = $doc;
+			}
+		}
+		// 2) Von assess/public zwei Ebenen hoch (…/rkrsplusassessment/assess/public)
+		$candidates[] = dirname(__DIR__, 2);
+		$sf = $norm($_SERVER["SCRIPT_FILENAME"] ?? "");
+		if ($sf !== "" && preg_match('#^(.*?/rkrsplusassessment)(?:/|$)#i', $sf, $m) === 1) {
+			$candidates[] = $m[1];
+		}
+		$sn = $norm($_SERVER["SCRIPT_NAME"] ?? "");
+		if ($doc !== "" && $sn !== "" && preg_match('#^(.*?/rkrsplusassessment)(?:/|$)#i', $doc . $sn, $m) === 1) {
+			$candidates[] = $m[1];
+		}
+		$dir = $norm(__DIR__);
+		for ($i = 0; $i < 8; $i++) {
+			$candidates[] = $dir;
+			$parent = dirname($dir);
+			if ($parent === $dir) {
+				break;
+			}
+			$dir = $parent;
+		}
+
+		$seen = array();
+		foreach ($candidates as $root) {
+			$root = $norm($root);
+			if ($root === "" || isset($seen[$root])) {
+				continue;
+			}
+			$seen[$root] = true;
+			if ($hasPerm($root)) {
+				$cached = $root;
+				return $cached;
+			}
+			if (strcasecmp(basename($root), "rkrsplusassessment") === 0) {
+				$cached = $root;
+				return $cached;
+			}
+		}
+		return $cached;
+	}
+
+	function rkrk_assess_rkrs_permission_file_path(string $fileName): string {
+		foreach (rkrk_assess_rkrs_permission_file_candidates($fileName) as $path) {
+			if ($path !== "" && is_file($path)) {
+				return $path;
+			}
+		}
+		return "";
+	}
+
+	/**
+	 * Originale zuerst (Portal …/rkrsplusassessment/), danach lokale Wrapper unter assess/scripts.
+	 *
+	 * @return list<string>
+	 */
+	function rkrk_assess_rkrs_permission_file_candidates(string $fileName): array {
+		$fileName = basename(str_replace("\\", "/", $fileName));
+		if ($fileName === "" || !preg_match('/^testpermissions_[a-z0-9_]+\.php$/i', $fileName)) {
+			return array();
+		}
+		$out = array();
+		$add = static function ($p) use (&$out): void {
+			$p = str_replace("\\", "/", (string) $p);
+			if ($p !== "" && !in_array($p, $out, true)) {
+				$out[] = $p;
+			}
+		};
+		$root = rkrk_assess_rkrsplusassessment_root();
+		if ($root !== "") {
+			$add($root . "/" . $fileName);
+		}
+		$doc = rtrim(str_replace("\\", "/", (string) ($_SERVER["DOCUMENT_ROOT"] ?? "")), "/");
+		if ($doc !== "") {
+			$add($doc . "/rkrsplusassessment/" . $fileName);
+			$add($doc . "/" . $fileName);
+			$add(dirname($doc) . "/portal.rehkitzrettung.ch/rkrsplusassessment/" . $fileName);
+			$add(dirname($doc) . "/rkrsplusassessment/" . $fileName);
+		}
+		foreach (array(
+			"/volume1/web/portal.rehkitzrettung.ch/rkrsplusassessment",
+			"/volume1/web/rkrsplusassessment",
+			"/var/www/portal.rehkitzrettung.ch/rkrsplusassessment",
+			"/var/www/html/rkrsplusassessment",
+		) as $dir) {
+			$add($dir . "/" . $fileName);
+		}
+		$sf = str_replace("\\", "/", (string) ($_SERVER["SCRIPT_FILENAME"] ?? ""));
+		if ($sf !== "" && preg_match('#^(.*?/rkrsplusassessment)(?:/|$)#i', $sf, $m) === 1) {
+			$add($m[1] . "/" . $fileName);
+		}
+		$add(dirname(__DIR__) . "/scripts/" . $fileName);
+		return $out;
+	}
+
+	/**
+	 * Soft-Kopie nach sys_get_temp_dir(): __DIR__/__FILE__ und relative require("../…")
+	 * auf den Originalordner umbiegen (sonst /tmp/../config.php).
+	 */
+	function rkrk_assess_rkrs_rewrite_permission_source(string $src, string $origPath): ?string {
+		$origDir = str_replace("\\", "/", dirname($origPath));
+		$origFile = str_replace("\\", "/", $origPath);
+		$rewritten = preg_replace('/\brequire_login\s*\([^;]*\)\s*;/i', "/* require_login skipped */;", $src);
+		if (!is_string($rewritten)) {
+			$rewritten = $src;
+		}
+		$rewritten = preg_replace('/\b(?:die|exit)\s*(?:\([^;]*\))?\s*;/i', "return false;", $rewritten);
+		if (!is_string($rewritten) || $rewritten === "") {
+			return null;
+		}
+		$rewritten = preg_replace('/\b__DIR__\b/', var_export($origDir, true), $rewritten);
+		if (!is_string($rewritten)) {
+			return null;
+		}
+		$rewritten = preg_replace('/\b__FILE__\b/', var_export($origFile, true), $rewritten);
+		if (!is_string($rewritten)) {
+			return null;
+		}
+		$norm = static function (string $base, string $rel): string {
+			$abs = str_replace("\\", "/", $base . "/" . $rel);
+			$parts = array();
+			foreach (explode("/", $abs) as $i => $seg) {
+				if ($seg === "." || ($seg === "" && $i > 0)) {
+					continue;
+				}
+				if ($seg === "..") {
+					if (!empty($parts) && end($parts) !== "") {
+						array_pop($parts);
+					}
+					continue;
+				}
+				$parts[] = $seg;
+			}
+			return implode("/", $parts);
+		};
+		$rewritten = preg_replace_callback(
+			'/\b((?:require|include)(?:_once)?)\s*\(\s*([\'"])(\.\.?\/[^\'"]+)\2\s*\)/i',
+			static function ($m) use ($origDir, $norm) {
+				return $m[1] . "(" . var_export($norm($origDir, $m[3]), true) . ")";
+			},
+			$rewritten
+		);
+		return is_string($rewritten) ? $rewritten : null;
+	}
+
+	/**
+	 * Original-testpermissions per require_once. Soft: die()/require_login() nicht abbrechen
+	 * (für OR mehrerer Gruppen).
+	 */
+	function rkrk_assess_rkrs_require_once_permission(string $fileName, bool $soft = true): bool {
+		if ($soft && function_exists("rkrk_assess_rkrs_moodle_bootstrap")) {
+			rkrk_assess_rkrs_moodle_bootstrap();
+		}
+		$path = rkrk_assess_rkrs_permission_file_path($fileName);
+		if ($path === "" || !is_file($path)) {
+			return false;
+		}
+		static $cache = array();
+		$key = $path . "|" . ($soft ? "soft" : "hard");
+		if (array_key_exists($key, $cache)) {
+			return $cache[$key];
+		}
+		if (!$soft) {
+			require_once $path;
+			$cache[$key] = true;
+			return true;
+		}
+		$GLOBALS["RKRK_ASSESS_PERM_SOFT"] = true;
+		$src = @file_get_contents($path);
+		if (!is_string($src) || trim($src) === "") {
+			$cache[$key] = false;
+			return false;
+		}
+		$rewritten = rkrk_assess_rkrs_rewrite_permission_source($src, $path);
+		if ($rewritten === null || $rewritten === "") {
+			$cache[$key] = false;
+			return false;
+		}
+		$tmp = rtrim(str_replace("\\", "/", (string) sys_get_temp_dir()), "/") . "/rkrk_perm_" . md5($path . $rewritten) . ".php";
+		if (!is_file($tmp)) {
+			@file_put_contents($tmp, $rewritten);
+		}
+		if (is_file($tmp)) {
+			$origDir = str_replace("\\", "/", dirname($path));
+			$prevCwd = @getcwd();
+			if ($origDir !== "" && is_dir($origDir)) {
+				@chdir($origDir);
+			}
+			$GLOBALS["RKRK_ASSESS_PERM_IN_REQUIRE"] = true;
+			try {
+				$prev = include $tmp;
+				$ok = ($prev !== false);
+			} catch (Throwable $e) {
+				$ok = false;
+			}
+			$GLOBALS["RKRK_ASSESS_PERM_IN_REQUIRE"] = false;
+			if (is_string($prevCwd) && $prevCwd !== "") {
+				@chdir($prevCwd);
+			}
+			$cache[$key] = $ok;
+			return $ok;
+		}
+		$GLOBALS["RKRK_ASSESS_PERM_SOFT"] = true;
+		$GLOBALS["RKRK_ASSESS_PERM_OK"] = false;
+		require_once $path;
+		$ok = !empty($GLOBALS["RKRK_ASSESS_PERM_OK"]);
+		$cache[$key] = $ok;
+		return $ok;
+	}
+
+	/**
+	 * @param list<string> $cohortKeys Catalog-Keys (kerngruppe, …)
+	 */
+	function rkrk_assess_rkrs_require_once_any_permission(array $cohortKeys): bool {
+		$map = array(
+			"kerngruppe" => "testpermissions_kerngruppe.php",
+			"koordinator" => "testpermissions_koordinator.php",
+			"instruktoren" => "testpermissions_instruktoren.php",
+			"teilnehmer" => "testpermissions_teilnehmer.php",
+		);
+		foreach ($cohortKeys as $key) {
+			$key = strtolower(trim((string) $key));
+			if ($key === "" || !isset($map[$key])) {
+				continue;
+			}
+			if (rkrk_assess_rkrs_require_once_permission($map[$key], true)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Moodle-Pfade wie in den Originaldateien unter …/rkrsplusassessment/:
+	 * ../config.php und ../../portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php
+	 *
+	 * @return array{config: list<string>, moodlefunctions: list<string>}
+	 */
+	function rkrk_assess_rkrs_moodle_candidate_paths(): array {
+		$root = rkrk_assess_rkrsplusassessment_root();
+		$config = array();
+		$mf = array();
+		$pub = str_replace("\\", "/", __DIR__);
+		if ($root !== "") {
+			$config[] = $root . "/../config.php";
+			$mf[] = $root . "/../../portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php";
+		}
+		// public → assess → rkrsplusassessment → Moodle-Root
+		$config[] = $pub . "/../../../config.php";
+		$mf[] = $pub . "/../../../../portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php";
+		$doc = rtrim(str_replace("\\", "/", (string) ($_SERVER["DOCUMENT_ROOT"] ?? "")), "/");
+		if ($doc !== "") {
+			$config[] = $doc . "/config.php";
+			$config[] = dirname($doc) . "/portal.rehkitzrettung.ch/config.php";
+			$config[] = $doc . "/rkrsplusassessment/../config.php";
+			$mf[] = dirname($doc) . "/portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php";
+			$mf[] = $doc . "/../portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php";
+			$mf[] = dirname($doc) . "/portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php";
+		}
+		foreach (array(
+			"/volume1/web/portal.rehkitzrettung.ch/config.php",
+			"/var/www/portal.rehkitzrettung.ch/config.php",
+		) as $absCfg) {
+			$config[] = $absCfg;
+		}
+		foreach (array(
+			"/volume1/web/portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php",
+			"/volume1/portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php",
+			"/var/www/portal.rehkitzrettung.ch-data/memberarea/moodlefunctions.inc.php",
+		) as $absMf) {
+			$mf[] = $absMf;
+		}
+		$dir = $pub;
+		for ($i = 0; $i < 6; $i++) {
+			$config[] = $dir . "/config.php";
+			$parent = dirname($dir);
+			if ($parent === $dir) {
+				break;
+			}
+			$dir = $parent;
+		}
+		return array(
+			"config" => $config,
+			"moodlefunctions" => $mf,
+		);
+	}
+
+	/**
+	 * Fremde PHP-Session schliessen. $_SESSION nur entfernen (nicht als
+	 * leeres Array setzen): ein gesetztes Array blockiert das Laden der
+	 * Portal-Anmeldung aus dem Cookie MoodleSession.
+	 */
+	function rkrk_assess_rkrs_prepare_moodle_session(): void {
+		$live = function_exists("rkrk_assess_access_policy_is_live_host") && rkrk_assess_access_policy_is_live_host();
+		if (!$live) {
+			return;
+		}
+		if (session_status() === PHP_SESSION_ACTIVE) {
+			$name = (string) session_name();
+			if (stripos($name, "MoodleSession") !== 0) {
+				session_write_close();
+			}
+		}
+		if (session_status() !== PHP_SESSION_ACTIVE && isset($_SESSION)) {
+			unset($_SESSION);
+		}
+	}
+
+	/** Moodle wie /rkrsplusassessment/testpermissions_*.php laden. */
+	function rkrk_assess_rkrs_moodle_bootstrap(): bool {
+		static $done = null;
+		if ($done === true) {
+			return true;
+		}
+		rkrk_assess_rkrs_prepare_moodle_session();
+		if ($done === false && (defined("MOODLE_INTERNAL") || (isset($GLOBALS["CFG"]) && is_object($GLOBALS["CFG"])))) {
+			return false;
+		}
+		$paths = rkrk_assess_rkrs_moodle_candidate_paths();
+		$config = "";
+		$fallback = "";
+		foreach ($paths["config"] as $p) {
+			$p = str_replace("\\", "/", (string) $p);
+			if ($p === "" || !is_file($p)) {
+				continue;
+			}
+			if ($fallback === "") {
+				$fallback = $p;
+			}
+			$head = @file_get_contents($p, false, null, 0, 8192);
+			if (is_string($head) && (stripos($head, "wwwroot") !== false || stripos($head, "dirroot") !== false || stripos($head, "MOODLE") !== false)) {
+				$config = $p;
+				break;
+			}
+		}
+		if ($config === "") {
+			$config = $fallback;
+		}
+		$mf = "";
+		foreach ($paths["moodlefunctions"] as $p) {
+			$p = str_replace("\\", "/", (string) $p);
+			if ($p !== "" && is_file($p)) {
+				$mf = $p;
+				break;
+			}
+		}
+		if ($config === "") {
+			$done = false;
+			return false;
+		}
+		require_once $config;
+		if ($mf === "" && isset($GLOBALS["CFG"]) && is_object($GLOBALS["CFG"]) && !empty($GLOBALS["CFG"]->dataroot)) {
+			$fromData = rtrim(str_replace("\\", "/", (string) $GLOBALS["CFG"]->dataroot), "/") . "/memberarea/moodlefunctions.inc.php";
+			if (is_file($fromData)) {
+				$mf = $fromData;
+			}
+		}
+		if ($mf !== "" && is_file($mf)) {
+			require_once $mf;
+		}
+		if (function_exists("rkrk_flush_deferred_session")) {
+			rkrk_flush_deferred_session();
+		}
+		$done = defined("MOODLE_INTERNAL") || (isset($GLOBALS["CFG"]) && is_object($GLOBALS["CFG"]));
+		return $done;
+	}
+
+	function rkrk_assess_rkrs_moodle_user_id(): int {
+		if (isset($GLOBALS["USER"]) && is_object($GLOBALS["USER"]) && isset($GLOBALS["USER"]->id)) {
+			return (int) $GLOBALS["USER"]->id;
+		}
+		if (isset($GLOBALS["USER"]) && is_array($GLOBALS["USER"]) && isset($GLOBALS["USER"]["id"])) {
+			return (int) $GLOBALS["USER"]["id"];
+		}
+		return 0;
+	}
+
+	/**
+	 * @param list<string> $cohorts
+	 */
+	function rkrk_assess_rkrs_moodle_db_in_cohort(string $cohort, int $uid): bool {
+		global $DB;
+		if ($uid <= 1 || $cohort === "" || !isset($DB) || !is_object($DB) || !method_exists($DB, "record_exists_sql")) {
+			return false;
+		}
+		$params = array(
+			"uid" => $uid,
+			"idn" => $cohort,
+			"idname" => $cohort,
+		);
+		$sql = "SELECT cm.id
+		          FROM {cohort_members} cm
+		          JOIN {cohort} c ON c.id = cm.cohortid
+		         WHERE cm.userid = :uid
+		           AND (LOWER(c.idnumber) = LOWER(:idn) OR LOWER(c.name) = LOWER(:idname)";
+		if (ctype_digit($cohort)) {
+			$sql .= " OR c.id = :cid";
+			$params["cid"] = (int) $cohort;
+		}
+		$sql .= ")";
+		try {
+			return (bool) $DB->record_exists_sql($sql, $params);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}
+
+	function rkrk_assess_rkrs_moodle_in_any_cohort(array $cohorts, bool $requireLogin = false, bool $includeSiteAdmin = true): bool {
+		if (!rkrk_assess_rkrs_moodle_bootstrap()) {
+			return false;
+		}
+		unset($requireLogin);
+		if ($includeSiteAdmin && function_exists("is_siteadmin") && is_siteadmin()) {
+			return true;
+		}
+		if (function_exists("isguestuser") && isguestuser()) {
+			return false;
+		}
+		$uid = rkrk_assess_rkrs_moodle_user_id();
+		if ($uid <= 1) {
+			return false;
+		}
+		foreach ($cohorts as $cohort) {
+			$cohort = trim((string) $cohort);
+			if ($cohort === "") {
+				continue;
+			}
+			$hit = false;
+			if (function_exists("ismemberofcohort")) {
+				try {
+					$hit = (bool) ismemberofcohort($cohort, $uid);
+				} catch (Throwable $e) {
+					$hit = false;
+				}
+			}
+			if (!$hit && rkrk_assess_rkrs_moodle_db_in_cohort($cohort, $uid)) {
+				$hit = true;
+			}
+			if ($hit) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function rkrk_assess_rkrs_access_session_bucket(): array {
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			@session_start();
+		}
+		$key = "rkrkAssessRkrsGate";
+		if (!isset($_SESSION[$key]) || !is_array($_SESSION[$key])) {
+			$_SESSION[$key] = array();
+		}
+		return $_SESSION[$key];
+	}
+
+	function rkrk_assess_rkrs_access_session_get(string $scope): array {
+		$scope = trim($scope);
+		if ($scope === "") {
+			return array();
+		}
+		$all = rkrk_assess_rkrs_access_session_bucket();
+		return (isset($all[$scope]) && is_array($all[$scope])) ? $all[$scope] : array();
+	}
+
+	function rkrk_assess_rkrs_access_session_store(string $scope, string $via, array $fields = array()): void {
+		$scope = trim($scope);
+		if ($scope === "") {
+			return;
+		}
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			@session_start();
+		}
+		$key = "rkrkAssessRkrsGate";
+		if (!isset($_SESSION[$key]) || !is_array($_SESSION[$key])) {
+			$_SESSION[$key] = array();
+		}
+		$_SESSION[$key][$scope] = array(
+			"via" => $via,
+			"ts" => time(),
+			"fields" => $fields,
+		);
+		$GLOBALS["rkrkAssessRkrsAccessVia"][$scope] = $via;
+	}
+
+	function rkrk_assess_rkrs_access_via(string $scope): string {
+		if (isset($GLOBALS["rkrkAssessRkrsAccessVia"][$scope])) {
+			return (string) $GLOBALS["rkrkAssessRkrsAccessVia"][$scope];
+		}
+		$grant = rkrk_assess_rkrs_access_session_get($scope);
+		return trim((string) ($grant["via"] ?? ""));
+	}
+
+	/** Portal-Menü-Verknüpfung: ?ADMIN / ?INSTR (auch als leere Flags). */
+	function rkrk_assess_rkrs_staff_link_requested(): bool {
+		$qs = (string) ($_SERVER["QUERY_STRING"] ?? "");
+		if ($qs !== "" && preg_match('/(?:^|&)(ADMIN|INSTR)(?:=|&|$)/i', $qs) === 1) {
+			return true;
+		}
+		foreach (array("ADMIN", "INSTR") as $k) {
+			if (array_key_exists($k, $_GET) || array_key_exists($k, $_POST)) {
+				return true;
+			}
+		}
+		if (!empty($GLOBALS["onAdmin"]) || !empty($GLOBALS["onInstr"])) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @param array<string, mixed> $params
+	 * @param list<string> $required
+	 * @param list<string> $payloadFields
+	 * @return array{payload:string, cs:string, required_fields:list<string>, missing_field:?string}
+	 */
+	function rkrk_assess_hash_build_cs_for_fields(array $params, array $required, array $payloadFields): array {
+		$out = array(
+			"payload" => "",
+			"cs" => "",
+			"required_fields" => $required,
+			"missing_field" => null,
+		);
+		foreach ($required as $field) {
+			if (trim((string) ($params[$field] ?? "")) === "") {
+				$out["missing_field"] = $field;
+				return $out;
+			}
+		}
+		$payload = "";
+		foreach ($payloadFields as $field) {
+			$payload .= (string) ($params[$field] ?? "");
+		}
+		$out["payload"] = $payload;
+		$out["cs"] = function_exists("rkrk_assess_hash_compute_cs")
+			? rkrk_assess_hash_compute_cs($payload)
+			: "";
+		return $out;
+	}
+
+	/**
+	 * cs für Personal-Verbindung (Link-Generator): RKRSPilotID + Name.
+	 *
+	 * @param array<string, mixed> $params
+	 * @return array{payload:string, cs:string, required_fields:list<string>, missing_field:?string}
+	 */
+	function rkrk_assess_hash_build_cs_for_personel(array $params): array {
+		$name = trim((string) ($params["Name"] ?? ""));
+		$pid = trim((string) ($params["RKRSPilotID"] ?? $params["PilotID"] ?? ""));
+		return rkrk_assess_hash_build_cs_for_fields(
+			array("RKRSPilotID" => $pid, "Name" => $name),
+			array("RKRSPilotID", "Name"),
+			array("RKRSPilotID", "Name")
+		);
+	}
+
+	/**
+	 * cs für Sessions-Verknüpfung (fester Scope-Hash, unguessbar durch assessment-Salt).
+	 *
+	 * @param array<string, mixed> $params
+	 * @return array{payload:string, cs:string, required_fields:list<string>, missing_field:?string}
+	 */
+	function rkrk_assess_hash_build_cs_for_sessions(array $params = array()): array {
+		unset($params);
+		return rkrk_assess_hash_build_cs_for_fields(
+			array("scope" => "rkrk_assess_sessions.php"),
+			array(),
+			array("scope")
+		);
+	}
+
+	/**
+	 * @param callable $builder
+	 * @param list<string> $carryKeys
+	 */
+	function rkrk_assess_rkrs_cs_request_matches(callable $builder, array $carryKeys): bool {
+		$src = array();
+		foreach ($carryKeys as $k) {
+			if (isset($_GET[$k]) && trim((string) $_GET[$k]) !== "") {
+				$src[$k] = (string) $_GET[$k];
+			} elseif (isset($_POST[$k]) && trim((string) $_POST[$k]) !== "") {
+				$src[$k] = (string) $_POST[$k];
+			}
+		}
+		$client = strtolower(trim((string) ($src["cs"] ?? $_GET["cs"] ?? $_POST["cs"] ?? "")));
+		if ($client === "") {
+			return false;
+		}
+		$build = $builder($src);
+		$expected = strtolower(trim((string) ($build["cs"] ?? "")));
+		if ($expected === "" || !empty($build["missing_field"])) {
+			return false;
+		}
+		return hash_equals($expected, $client);
+	}
+
+	function rkrk_assess_personel_cs_request_ok(): bool {
+		return rkrk_assess_rkrs_cs_request_matches("rkrk_assess_hash_build_cs_for_personel", array("Name", "RKRSPilotID", "PilotID", "cs"));
+	}
+
+	function rkrk_assess_sessions_cs_request_ok(): bool {
+		return rkrk_assess_rkrs_cs_request_matches("rkrk_assess_hash_build_cs_for_sessions", array("cs"));
+	}
+
+	/**
+	 * @param array<string, mixed> $queryParams
+	 * @return array<string, mixed>
+	 */
+	function rkrk_assess_personel_merge_cs_query(array $queryParams): array {
+		$grant = rkrk_assess_rkrs_access_session_get("personel");
+		$fields = (isset($grant["fields"]) && is_array($grant["fields"])) ? $grant["fields"] : array();
+		foreach (array("Name", "RKRSPilotID", "PilotID", "cs") as $k) {
+			if (array_key_exists($k, $queryParams) && trim((string) $queryParams[$k]) !== "") {
+				continue;
+			}
+			if (isset($_GET[$k]) && trim((string) $_GET[$k]) !== "") {
+				$queryParams[$k] = (string) $_GET[$k];
+				continue;
+			}
+			if (isset($fields[$k]) && trim((string) $fields[$k]) !== "") {
+				$queryParams[$k] = (string) $fields[$k];
+			}
+		}
+		return $queryParams;
+	}
+
+	/**
+	 * @param array<string, mixed> $queryParams
+	 * @return array<string, mixed>
+	 */
+	function rkrk_assess_sessions_merge_cs_query(array $queryParams): array {
+		$grant = rkrk_assess_rkrs_access_session_get("sessions");
+		$fields = (isset($grant["fields"]) && is_array($grant["fields"])) ? $grant["fields"] : array();
+		if (!array_key_exists("cs", $queryParams) || trim((string) $queryParams["cs"]) === "") {
+			if (isset($_GET["cs"]) && trim((string) $_GET["cs"]) !== "") {
+				$queryParams["cs"] = (string) $_GET["cs"];
+			} elseif (isset($fields["cs"]) && trim((string) $fields["cs"]) !== "") {
+				$queryParams["cs"] = (string) $fields["cs"];
+			}
+		}
+		return $queryParams;
+	}
+
+	function rkrk_assess_rkrs_echo_cs_hidden_inputs(array $keys): void {
+		$merged = array();
+		foreach ($keys as $k) {
+			$merged[$k] = "";
+		}
+		if (in_array("Name", $keys, true) || in_array("RKRSPilotID", $keys, true)) {
+			$merged = rkrk_assess_personel_merge_cs_query($merged);
+		} else {
+			$merged = rkrk_assess_sessions_merge_cs_query($merged);
+		}
+		foreach ($keys as $k) {
+			$v = trim((string) ($merged[$k] ?? ""));
+			if ($v === "") {
+				continue;
+			}
+			echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, "UTF-8")
+				. '" value="' . htmlspecialchars($v, ENT_QUOTES, "UTF-8") . '">';
+		}
+	}
+
+	/**
+	 * @param list<string> $cohorts
+	 */
+	function rkrk_assess_rkrs_strict_access_allowed(string $scope, array $cohorts, bool $allowCs, bool $requireLogin): bool {
+		unset($requireLogin);
+		if (function_exists("rkrk_assess_hash_gate_skip_cs_check") && rkrk_assess_hash_gate_skip_cs_check()) {
+			return true;
+		}
+		if (function_exists("rkrk_assess_access_policy_allowed")) {
+			$page = ($scope === "sessions") ? "sessions" : "personel";
+			return rkrk_assess_access_policy_allowed($page);
+		}
+		if (!rkrk_assess_rkrs_strict_host()) {
+			return true;
+		}
+		if ($allowCs) {
+			$csOk = ($scope === "sessions")
+				? rkrk_assess_sessions_cs_request_ok()
+				: rkrk_assess_personel_cs_request_ok();
+			if ($csOk) {
+				return true;
+			}
+		}
+		if (rkrk_assess_rkrs_moodle_in_any_cohort($cohorts, false)) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @param list<string> $cohorts
+	 */
+	function rkrk_assess_rkrs_strict_access_enforce(string $scope, array $cohorts, bool $allowCs = true): void {
+		if (rkrk_assess_rkrs_strict_access_allowed($scope, $cohorts, $allowCs, false)) {
+			return;
+		}
+		rkrk_assess_portal_personel_emit_access_denied($scope);
+	}
+
+	function rkrk_assess_portal_personel_emit_access_denied(string $scope = "personel"): void {
+		rkrk_assess_hash_gate_emit_deny_and_exit(array(
+			"ok" => false,
+			"reason" => "cohort_or_link_required",
+			"scope" => $scope,
+			"quiz" => "",
+			"rule_found" => false,
+			"required_fields" => ($scope === "sessions") ? array("cs") : array("RKRSPilotID", "Name", "cs"),
+			"missing_field" => null,
+			"payload" => null,
+			"client_cs" => trim((string) ($_GET["cs"] ?? "")),
+			"expected_cs" => "",
+		));
+	}
+
+	function rkrk_assess_portal_personel_access_allowed(bool $requireLogin = true): bool {
+		return rkrk_assess_rkrs_strict_access_allowed(
+			"personel",
+			array("RKRSplusKerngruppe", "RKRSplusEinsatzleiter"),
+			true,
+			$requireLogin
+		);
+	}
+
+	function rkrk_assess_portal_personel_enforce_access(): void {
+		rkrk_assess_rkrs_strict_access_enforce(
+			"personel",
+			array("RKRSplusKerngruppe", "RKRSplusEinsatzleiter"),
+			true
+		);
+	}
+
+	/** @return array{portal:bool, cs_only:bool} */
+	function rkrk_assess_portal_personel_bootstrap_access(): array {
+		$portal = rkrk_assess_rkrs_strict_host();
+		return array(
+			"portal" => $portal,
+			"cs_only" => $portal && rkrk_assess_rkrs_access_via("personel") === "cs",
+		);
+	}
+
+	function rkrk_assess_portal_sessions_access_allowed(bool $requireLogin = true): bool {
+		return rkrk_assess_rkrs_strict_access_allowed(
+			"sessions",
+			array("RKRSplusInstruktorenDE", "RKRSplusKerngruppe"),
+			true,
+			$requireLogin
+		);
+	}
+
+	function rkrk_assess_portal_sessions_enforce_access(): void {
+		rkrk_assess_rkrs_strict_access_enforce(
+			"sessions",
+			array("RKRSplusInstruktorenDE", "RKRSplusKerngruppe"),
+			true
+		);
 	}
 
 	/**
@@ -1034,6 +2005,9 @@
 
 		// CS-/Prefs-APIs des Link-Generators müssen quiz=* setzen, dürfen aber nicht selbst
 		// vom Hash-Gate blockiert werden (sonst schlägt die cs-Berechnung fehl).
+		if (function_exists("rkrk_assess_access_policy_is_open_form_mode") && rkrk_assess_access_policy_is_open_form_mode()) {
+			return;
+		}
 		if (in_array($mode, array("einsatzpruefunglink_cs", "einsatzpruefunglink_prefs"), true)) {
 			if ($trace) {
 				rkrk_assess_hash_gate_emit_trace_html_and_exit(array(
@@ -1048,26 +2022,14 @@
 			return;
 		}
 
-		if (!rkrk_assess_hash_gate_is_portal_host()) {
-			if ($trace) {
-				rkrk_assess_hash_gate_emit_trace_html_and_exit(array(
-					"Ergebnis" => "Hash-Prüfung übersprungen",
-					"Grund" => "not_portal_host",
-					"Host" => $host,
-					"Quiz" => $quiz,
-					"Hinweis" => "cs-Prüfung gilt nur auf portal.rehkitzrettung.ch",
-				), "Hash-Gate Diagnose — nicht Portal");
-			}
-			return;
-		}
 		if (!rkrk_assess_hash_gate_enabled()) {
 			if ($trace) {
 				rkrk_assess_hash_gate_emit_trace_html_and_exit(array(
-					"Ergebnis" => "Hash-Prüfung deaktiviert",
-					"Grund" => "gate_disabled",
+					"Ergebnis" => "Hash-Prüfung übersprungen",
+					"Grund" => "gate_disabled_or_host",
 					"Host" => $host,
 					"Quiz" => $quiz,
-					"Hinweis" => "RKRK_ASSESS_HASH_ENABLED=0 oder hash_debug=off",
+					"Hinweis" => "Hash-Gate laut Zugriffsregeln für diesen Server aus, oder per Env/hash_debug deaktiviert",
 				), "Hash-Gate Diagnose — deaktiviert");
 			}
 			return;
@@ -1113,10 +2075,11 @@
 			return;
 		}
 
-		$result = rkrk_assess_hash_gate_evaluate_request();
+		$result = rkrk_assess_hash_gate_evaluate_request(true);
 		if (!$result["ok"] && in_array((string)($result["reason"] ?? ""), array("missing_field", "missing_cs", "hash_mismatch"), true)) {
-			if (rkrk_assess_hash_gate_apply_session_grant_fields($quiz)) {
-				$result = rkrk_assess_hash_gate_evaluate_request();
+			rkrk_assess_hash_gate_apply_session_grant_fields($quiz);
+			if (rkrk_assess_hash_gate_query_is_truncated() || rkrk_assess_hash_gate_grant_matches($quiz)) {
+				$result = rkrk_assess_hash_gate_evaluate_request(false);
 			}
 		}
 		if (!$result["ok"]) {
@@ -3624,6 +4587,21 @@ function rkrk_assess_encode_url_path_segments(string $relPath): string {
 }
 
 /**
+ * HTML-Entities in Attribut-URLs vollständig auflösen (&amp;amp;d= → &d=).
+ */
+function rkrk_assess_decode_html_attr_url(string $url): string {
+	$u = $url;
+	for ($i = 0; $i < 12; $i++) {
+		$d = html_entity_decode($u, ENT_QUOTES | ENT_HTML5, "UTF-8");
+		if ($d === $u) {
+			break;
+		}
+		$u = $d;
+	}
+	return $u;
+}
+
+/**
  * Percent-Encoding für komplette URLs/Pfade (Umlaute in Ordner- und Dateinamen).
  */
 function rkrk_assess_encode_url_for_request(string $url): string {
@@ -3679,7 +4657,7 @@ function rkrk_assess_encode_urls_in_html_fragment(string $html): string {
 		return $html;
 	}
 	$enc = static function (string $u): string {
-		return rkrk_assess_encode_url_for_request($u);
+		return rkrk_assess_encode_url_for_request(rkrk_assess_decode_html_attr_url($u));
 	};
 	$html = preg_replace_callback(
 		'/\bsrc\s*=\s*(["\'])([^"\']*)\1/i',
@@ -3711,6 +4689,7 @@ function rkrk_assess_rewrite_image_url_to_drive_location(string $url, string $dr
 	if ($driveLocation === "") {
 		return $url;
 	}
+	$url = rkrk_assess_decode_html_attr_url($url);
 	$raw = trim(str_replace("\\", "/", $url));
 	if ($raw === "") {
 		return $url;
@@ -4285,7 +5264,7 @@ function rkrk_assess_fixup_csv_assoc_rows(array $rows): array {
 }
 
 /**
- * Ob ein Antwort-Wert wie eine Nutzerauswahl (A–F / Ja|Nein) aussieht.
+ * Ob ein Antwort-Wert wie eine Nutzerauswahl (A–H / Ja|Nein) aussieht.
  */
 function rkrk_assess_antwort_looks_like_user_pick(string $antwort): bool {
 	$antwort = trim($antwort);
@@ -4295,7 +5274,7 @@ function rkrk_assess_antwort_looks_like_user_pick(string $antwort): bool {
 	if (strcasecmp($antwort, "Ja") === 0 || strcasecmp($antwort, "Nein") === 0) {
 		return true;
 	}
-	return preg_match('/^[A-Fa-f](\s*\|\s*[A-Fa-f])*$/', $antwort) === 1;
+	return preg_match('/^[A-Ha-h](\s*\|\s*[A-Ha-h])*$/', $antwort) === 1;
 }
 
 /**
@@ -5151,7 +6130,7 @@ function rkrk_dga_build_stochastic_quiz_order(array $eligible, $pickN): array {
 }
 
 /**
- * Antwortoptionen einer Frage mischen (Loesungsauswahl) und Loesung-Buchstaben (A–F) anpassen.
+ * Antwortoptionen einer Frage mischen (Loesungsauswahl) und Loesung-Buchstaben (A–H) anpassen.
  * Ja/Nein-Fragen und weniger als zwei Optionen bleiben unveraendert.
  *
  * @param array<string, mixed> $qRow
@@ -5192,7 +6171,7 @@ function rkrk_assess_shuffle_question_answer_options(array $qRow): array {
 		if ($t === "") {
 			return "";
 		}
-		if (preg_match("/^[A-F]$/i", $t) === 1) {
+		if (preg_match("/^[A-H]$/i", $t) === 1) {
 			$oldIdx = ord(strtoupper($t)) - 65;
 			if ($oldIdx < 0 || $oldIdx >= $n || !isset($oldToNewLetter[$oldIdx])) {
 				return "";
@@ -5214,7 +6193,7 @@ function rkrk_assess_shuffle_question_answer_options(array $qRow): array {
 		if ($letter === "") {
 			continue;
 		}
-		if (preg_match("/^[A-F]$/i", $letter) === 1) {
+		if (preg_match("/^[A-H]$/i", $letter) === 1) {
 			$up = strtoupper($letter);
 			if ($up > $maxLetter) {
 				continue;
@@ -6858,7 +7837,7 @@ function rkrk_assess_theme_link_tags(): void {
 		rkrk_assess_emit_favicon_link_tags();
 	}
 	$th = htmlspecialchars(rkrk_assess_resolve_web_path_from_script('rkrk_assess_theme.css'), ENT_QUOTES, 'UTF-8');
-	echo "<link href=\"" . $th . "\" rel=\"stylesheet\" type=\"text/css\">\n";
+	echo "<link href=\"" . $th . "?v=20260923menu\" rel=\"stylesheet\" type=\"text/css\">\n";
 	if (rkrk_assess_ci_rkrs_mode()) {
 		$thr = htmlspecialchars(rkrk_assess_resolve_web_path_from_script('rkrk_assess_theme_rkrs.css'), ENT_QUOTES, 'UTF-8');
 		echo "<link href=\"" . $thr . "\" rel=\"stylesheet\" type=\"text/css\">\n";
@@ -7169,8 +8148,16 @@ function rkrk_assess_portal_nav_html(array $o): string {
 			$quizQ["quiz"] = $sel;
 		}
 	}
-	/* Portal → Digital Assess: Personal-Namensliste aktivieren (Default auf der Seite ist PersPick=off). */
+	/* Portal → Digital Assess: Personal-Namensliste aktivieren (Default auf der Seite ist PersPick=off).
+	 * cs/EXAM/Name mitnehmen, sonst wird aus «Quiz» im Menü quiz+PersPick — hash_mismatch. */
 	$dgaNavPick = array_merge($quizQ, array("PersPick" => "on"));
+	if (function_exists("rkrk_assess_hash_gate_carry_fields_from_request")) {
+		$carryHash = rkrk_assess_hash_gate_carry_fields_from_request();
+		$curQuiz = trim((string) ($carryHash["quiz"] ?? ""));
+		if ($sel === "" || $curQuiz === "" || strcasecmp($curQuiz, $sel) === 0) {
+			$dgaNavPick = array_merge($carryHash, $dgaNavPick);
+		}
+	}
 	$topQuizPath = "rkrk_digitalassess.php?" . http_build_query(rkrk_assess_merge_query_with_setting($dgaNavPick));
 	$topQuiz = $u($topQuizPath);
 	$schulParams = array_merge($dgaNavPick, array("Schulung" => ""));
@@ -7279,6 +8266,10 @@ function rkrk_assess_portal_nav_html(array $o): string {
 		$out .= '<div class="rkrk-portal-panel" role="menu">';
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_live_personel.php?view=list")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Personal</a>';
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_live_personel_map.php")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Pilotenkarte</a>';
+		$esNav = function_exists("rkrk_es_page_href") ? rkrk_es_page_href() : "rkrk_assess_einsatzstatus.php";
+		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u($esNav)) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Einsatzberechtigung</a>';
+		$trNav = function_exists("rkrk_tr_page_href") ? rkrk_tr_page_href() : "rkrk_assess_trainingstatus.php";
+		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u($trNav)) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Teilnehmerliste</a>';
 		$out .= "</div></div></li>";
 
 		$out .= '<li class="rkrk-portal-cell" data-rkrk-portal-tab="admin">';
@@ -7287,6 +8278,9 @@ function rkrk_assess_portal_nav_html(array $o): string {
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_sessions.php")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Tagesübersicht / Recovery</a>';
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_admin.php?page=planning")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Planungsübersicht</a>';
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_admin.php?page=results")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Ergebnisübersicht</a>';
+		if ($adm) {
+			$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_admin_access.php")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Zugriffsrechte</a>';
+		}
 		$out .= "</div></div></li>";
 	}
 
@@ -7335,6 +8329,10 @@ function rkrk_assess_portal_nav_echo(array $o): void {
 				break;
 			}
 		}
+	}
+
+	if (function_exists("rkrk_assess_access_policy_auto_enforce")) {
+		rkrk_assess_access_policy_auto_enforce();
 	}
 
 	//echo "<br><br>".$logo . "/".$logopic;

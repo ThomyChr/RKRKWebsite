@@ -44,6 +44,14 @@ if (!function_exists('rkrk_unterhalt_defaults')) {
 					'rkrs_source' => '',
 					'active' => true,
 				),
+				'newsletter' => array(
+					'label' => 'newsletter/',
+					'kind' => 'dir',
+					'rel' => 'newsletter',
+					'targets' => $targets,
+					'rkrs_source' => '',
+					'active' => true,
+				),
 				'template' => array(
 					'label' => 'template/',
 					'kind' => 'dir',
@@ -550,7 +558,7 @@ if (!function_exists('rkrk_unterhalt_skip_dir_names')) {
 	function rkrk_unterhalt_skip_dir_names() {
 		return array(
 			'kmlfiles', 'tmp', '._dav', '.git', 'node_modules', 'vendor',
-			'data', 'jsonfiles', 'webdaten', 'missionen', '_history', '_log',
+			'data', 'results', 'jsonfiles', 'webdaten', 'missionen', '_history', '_log',
 			'_deleted', '_temp', 'backups', 'sitebackups', 'archiv',
 			'volume1', '__macosx', '@eadir',
 		);
@@ -568,7 +576,14 @@ if (!function_exists('rkrk_unterhalt_allow_ext')) {
 
 if (!function_exists('rkrk_unterhalt_skip_file_names')) {
 	function rkrk_unterhalt_skip_file_names() {
-		return array('sync.log', '.ds_store', 'thumbs.db', 'desktop.ini');
+		return array(
+			'sync.log', '.ds_store', 'thumbs.db', 'desktop.ini',
+			// Live-geführt von rehkitzrettung.ch → ./rkrs; nie unbewusst spiegeln.
+			'pilotenliste.json',
+			'pilotlistfull.json',
+			'teilnehmerliste_config.json',
+			'trainingstatus_config.json',
+		);
 	}
 }
 

@@ -204,7 +204,6 @@
 			//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 			//echo  $filecontent;
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			fclose($df);
 		} else {

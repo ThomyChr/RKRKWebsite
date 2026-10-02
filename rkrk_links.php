@@ -40,11 +40,10 @@
 		foreach ($RegionSettings as $Key => $Reg) {
 		echo "<tr>" . chr(10);
 		echo "<td>" . chr(10);
+		$link  = $WebLink_Intern . "rkrk_map.php?Reg=" . $Reg["Reg"] . $MapParameter_Intern;
 		echo "<a href='" . $link.  "'  target='_geomap'>" . chr(10);
 		echo "<b>" . $Reg["Text"] ."</b><br>". chr(10);
 		echo "</a>" . chr(10);
-		//https://tchr-frog.synology.me:5682/rkropen/test/rkrk_map.php?Reg=24&Strt=on&Cntr=off&Area=on&Pfad=on&EX=NO&Poi=on&KA=S&MAP=1&Zoom=0.8
-		$link  = $WebLink_Intern . "rkrk_map.php?Reg=" . $Reg["Reg"] . $MapParameter_Intern;
 		$qrlink  = str_replace($LinkSearch ,$LinkReplace,$link );
 		if (GetAccess ("InternalQRCodes")) {
 			echo "<td>" . chr(10);

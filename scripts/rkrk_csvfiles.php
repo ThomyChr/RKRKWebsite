@@ -167,7 +167,6 @@ if (!function_exists('rkrk_flights_csv_write_rows')) {
 			}
 			return ($bytes !== false && is_file($path));
 		}
-		@file_put_contents($df, '');
 		$written = @fputs($df, $filecontent);
 		fclose($df);
 		return ($written !== false && is_file($path));
@@ -207,6 +206,27 @@ function transferGoogleSheetToCSV ($filename='') {
  * Zellen nach UTF-8; gültiges UTF-8 bleibt unverändert (RKRS und !onRKRS gleich).
  * Die frühere Umstellung „von ASCII“ hat Umlaute zerstört.
  */
+if (!function_exists('rkrk_csv_combine_row')) {
+	/**
+	 * PHP 8 throws ValueError when header and row lengths differ.
+	 * Short rows are padded; extra cells are ignored.
+	 */
+	function rkrk_csv_combine_row($header, $row) {
+		if (!is_array($header) || !is_array($row) || $header === array()) {
+			return null;
+		}
+		$headerCount = count($header);
+		$rowCount = count($row);
+		if ($rowCount < $headerCount) {
+			$row = array_pad($row, $headerCount, '');
+		} elseif ($rowCount > $headerCount) {
+			$row = array_slice($row, 0, $headerCount);
+		}
+		$combined = @array_combine($header, $row);
+		return is_array($combined) ? $combined : null;
+	}
+}
+
 if (!function_exists('rkrk_csv_strings_to_utf8')) {
 	function rkrk_csv_strings_to_utf8($data) {
 		if (is_array($data)) {
@@ -237,6 +257,9 @@ function csv_to_array_ascII($filename='', $delimiter=',')
 {
     if(!file_exists($filename) || !is_readable($filename))
         return FALSE;
+	if (function_exists('rkrk_log_if_address_file')) {
+		rkrk_log_if_address_file($filename);
+	}
 
     $header = NULL;
     $data = array();
@@ -253,7 +276,10 @@ function csv_to_array_ascII($filename='', $delimiter=',')
 					$header[0] = (string)preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
 				}
 			} else {
-                $data[] = array_combine($header, $row);
+				$combined = rkrk_csv_combine_row($header, $row);
+				if ($combined !== null) {
+					$data[] = $combined;
+				}
 			}
         }
         fclose($handle);
@@ -267,6 +293,9 @@ function csv_to_array($filename='', $delimiter=',')
 {
     if(!file_exists($filename) || !is_readable($filename))
         return FALSE;
+	if (function_exists('rkrk_log_if_address_file')) {
+		rkrk_log_if_address_file($filename);
+	}
 
     $header = NULL;
     $data = array();
@@ -278,19 +307,41 @@ function csv_to_array($filename='', $delimiter=',')
 			//pre_r($row);
             if(!$header)
                 $header = $row;
-            else
-                $data[] = array_combine($header, $row);
+            else {
+				$combined = rkrk_csv_combine_row($header, $row);
+				if ($combined !== null) {
+					$data[] = $combined;
+				}
+			}
         }
         fclose($handle);
     }
 	//pre_R($data);
+	// str_replace() only walks the top level. Under PHP 8 a row array becomes the
+	// string "Array", and ReadUserList() then fatals on $entry['Benutzername'].
+	global $searchUML, $replaceUML;
 	if (!isset($searchUML) || !is_array($searchUML)) {
 		$searchUML = array();
 	}
 	if (!isset($replaceUML) || !is_array($replaceUML)) {
 		$replaceUML = array();
 	}
-    return str_replace($searchUML, $replaceUML, $data);
+	if ($searchUML === array()) {
+		return $data;
+	}
+	$applyUml = function ($value) use (&$applyUml, $searchUML, $replaceUML) {
+		if (is_array($value)) {
+			foreach ($value as $key => $cell) {
+				$value[$key] = $applyUml($cell);
+			}
+			return $value;
+		}
+		if (is_string($value)) {
+			return str_replace($searchUML, $replaceUML, $value);
+		}
+		return $value;
+	};
+	return $applyUml($data);
 }
 
 function CheckForDiscriminator($Text, $Discriminator) 
@@ -439,7 +490,6 @@ function SaveArrayToCSVToLog ($data, $csv_file) {
 	if (true) {
 		//echo "FilePath: " . $filepath . " - NumEntries:" . count($data) . "<br>";
 		$df = fopen($filepath, 'w');
-		file_put_contents($df, "");
 		fputs($df, $filecontent);
 		fclose($df);
 	} else {
@@ -479,7 +529,6 @@ function SaveArrayToCSVToHistory ($data, $csv_file) {
 	if (true) {
 		//echo "FilePath: " . $filepath . " - NumEntries:" . count($data) . "<br>";
 		$df = fopen($filepath, 'w');
-		file_put_contents($df, "");
 		fputs($df, $filecontent);
 		fclose($df);
 	} else {
@@ -546,7 +595,6 @@ foreach ($data as $dataline) {
 		// safe file
 		//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 		$df = fopen($filepath, 'w');
-		file_put_contents($df, "");
 		if ($format!='UTF-8')
 			$filecontent = mb_convert_encoding( $filecontent, $format, 'UTF-8');
 		fputs($df, $filecontent);
@@ -615,7 +663,6 @@ foreach ($data as $key => $dataline) {
 		// safe file
 		//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 		$df = fopen($filepath, 'w');
-		file_put_contents($df, "");
 		if ($format!='UTF-8')
 			$filecontent = mb_convert_encoding( $filecontent, $format, 'UTF-8');
 		fputs($df, $filecontent);

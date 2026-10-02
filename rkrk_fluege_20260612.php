@@ -1445,7 +1445,6 @@ if (($ConFile!="") and ($ConTo!="")) {
 			// safe file
 			//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			fclose($df);
 		} else {

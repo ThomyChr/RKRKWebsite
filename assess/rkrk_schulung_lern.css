@@ -3,6 +3,88 @@
  * Tabellen und Overrides – wird von learn.php und dem Editor geladen.
  */
 
+/* Druck-Logo/Footer: im Iframe unsichtbar, nur auf Papier klein oben/unten. */
+.schulung-print-logo,
+.schulung-print-footer {
+  display: none !important;
+}
+
+/* Briefkopf: Titel links, Logo rechts über druckbaren Listen. */
+.cl-sheet-head {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cl-sheet-head > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+img.cl-sheet-logo {
+  display: block;
+  height: auto !important;
+  width: auto !important;
+  max-height: 56px;
+  max-width: min(240px, 42%);
+  object-fit: contain;
+  margin: 0 0 0.75rem auto;
+  flex: 0 0 auto;
+}
+
+@media print {
+  .schulung-print-logo {
+    display: block !important;
+    position: fixed;
+    top: 4mm;
+    right: 10mm;
+    z-index: 1000;
+    height: 28px !important;
+    max-height: 28px !important;
+    width: auto !important;
+    max-width: 90px !important;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .schulung-print-footer {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: baseline;
+    position: fixed;
+    left: 12mm;
+    right: 12mm;
+    bottom: 5mm;
+    z-index: 1000;
+    margin: 0;
+    padding: 0;
+    font-size: 7.5pt;
+    font-style: italic;
+    color: #64748b;
+    background: #fff;
+    line-height: 1.3;
+  }
+
+  .schulung-print-date {
+    text-align: left;
+  }
+
+  .schulung-print-copyright {
+    display: inline !important;
+    position: static;
+    margin: 0;
+    padding: 0;
+    text-align: right;
+    font-size: inherit;
+    font-style: inherit;
+    color: inherit;
+    background: transparent;
+  }
+}
+
 body table {
   width: 100%;
   border-collapse: separate;

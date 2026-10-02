@@ -212,6 +212,10 @@ function rkrk_object_mode_script(): string
       + "    <label for='gridRotationAngle'>Rasterrotation (Grad)</label>"
       + "    <input id='gridRotationAngle' type='number' min='0' max='359' step='1' value='0' />"
       + "    <input id='gridRotationWheel' type='range' min='0' max='359' step='1' value='0' />"
+      + "    <label class='obj-grid-fills-toggle' for='objGridShowResultFills'>"
+      + "      <input id='objGridShowResultFills' type='checkbox' checked />"
+      + "      Resultatflächen anzeigen"
+      + "    </label>"
       + "    <button id='gridRulerBtn' type='button'>Rotation mit Lineal setzen</button>"
       + "    <p class='small' id='gridRulerStatus'>Lineal aus.</p>"
       + "  </div>"
@@ -1023,10 +1027,10 @@ echo "<style>
   gap: 8px !important;
   margin: 5px 0 !important;
 }
-#rkrkMapObjRoot .overlay-box .overlay-option input[type="checkbox"] {
+#rkrkMapObjRoot .overlay-box .overlay-option input[type='checkbox'] {
   margin: 0 !important;
 }
-#rkrkMapObjRoot .overlay-box .overlay-option input[type="range"] {
+#rkrkMapObjRoot .overlay-box .overlay-option input[type='range'] {
   width: 120px !important;
   padding: 0 !important;
 }

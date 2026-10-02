@@ -72,7 +72,7 @@ https://www.chartjs.org/docs/latest/
 		: '');
 	$XMLSummaryStatisticsFile = $xmlMissionLocation."RKRK_SummaryFluege.xml";
 	$CSVSummaryStatisticsFile = "RKRK_SummaryFluege.csv";
-	$excel_csv_file = "RKRK_SummaryFluege (".$_SESSION[$SessNme_RegisteredInitialen].").csv";
+	$excel_csv_file = "RKRK_SummaryFluege (".($_SESSION[$SessNme_RegisteredInitialen] ?? '').").csv";
 	$excel_csv_path = $historyfilelocation . $excel_csv_file;	
 
 	function LoadSummaryStatistics() {
@@ -180,60 +180,128 @@ https://www.chartjs.org/docs/latest/
 		return true;
 	}
 
+	function rkrk_stat_num($value) {
+		if (is_int($value) || is_float($value)) {
+			return $value;
+		}
+		if (is_string($value)) {
+			$value = str_replace(',', '.', trim($value));
+			if (is_numeric($value)) {
+				return $value + 0;
+			}
+		}
+		return 0;
+	}
+
+	function rkrk_stat_inc(&$root, $path, $add) {
+		if (!is_array($root)) {
+			$root = array();
+		}
+		$node = &$root;
+		$last = array_pop($path);
+		foreach ($path as $key) {
+			if (!isset($node[$key]) || !is_array($node[$key])) {
+				$node[$key] = array();
+			}
+			$node = &$node[$key];
+		}
+		$node[$last] = rkrk_stat_num($node[$last] ?? 0) + rkrk_stat_num($add);
+	}
+
 	function rkrk_summary_accumulate_flight(&$yearStats, $statdataline) {
-		$yearStats['Pilot']['P'.$statdataline['Pilot']]['Felder'] += 1;
-		$yearStats['Pilot']['P'.$statdataline['Pilot']]['Flaeche'] += round($statdataline['Flaeche']);
-		if ($statdataline['Kontrollflug'] != "Ja") {
-			$yearStats['Pilot']['P'.$statdataline['Pilot']]['Fund'] += $statdataline['Fund'];
+		$pilotKey = 'P' . (string)($statdataline['Pilot'] ?? '');
+		$gdeKey = 'G' . (string)($statdataline['Gde'] ?? '');
+		$jgKey = 'J' . (string)($statdataline['JG'] ?? '');
+		$regKey = 'R' . (string)($statdataline['Reg'] ?? '');
+		$jgRegKey = 'R' . (string)($statdataline['JG'] ?? '');
+		$dateKey = 'D' . (string)($statdataline['Datum'] ?? '');
+		rkrk_stat_inc($yearStats, array('Pilot', $pilotKey, 'Felder'), 1);
+		rkrk_stat_inc($yearStats, array('Pilot', $pilotKey, 'Flaeche'), round(rkrk_stat_num($statdataline['Flaeche'] ?? 0)));
+		if (($statdataline['Kontrollflug'] ?? '') != "Ja") {
+			rkrk_stat_inc($yearStats, array('Pilot', $pilotKey, 'Fund'), $statdataline['Fund'] ?? 0);
 		}
-		$yearStats['Pilot']['P'.$statdataline['Pilot']]['Einsatztage']['D'.$statdataline['Datum']] = $statdataline['Datum'];
-		$yearStats['Pilot']['P'.$statdataline['Pilot']]['AnzEinsaetze'] = count($yearStats['Pilot']['P'.$statdataline['Pilot']]['Einsatztage']);
+		$yearStats['Pilot'][$pilotKey]['Einsatztage'][$dateKey] = $statdataline['Datum'] ?? '';
+		$yearStats['Pilot'][$pilotKey]['AnzEinsaetze'] = count($yearStats['Pilot'][$pilotKey]['Einsatztage']);
 
-		$yearStats['Gde']['G'.$statdataline['Gde']]['Felder'] += 1;
-		$yearStats['Gde']['G'.$statdataline['Gde']]['Flaeche'] += round($statdataline['Flaeche']);
-		if ($statdataline['Kontrollflug'] != "Ja") {
-			$yearStats['Gde']['G'.$statdataline['Gde']]['Fund'] += $statdataline['Fund'];
+		rkrk_stat_inc($yearStats, array('Gde', $gdeKey, 'Felder'), 1);
+		rkrk_stat_inc($yearStats, array('Gde', $gdeKey, 'Flaeche'), round(rkrk_stat_num($statdataline['Flaeche'] ?? 0)));
+		if (($statdataline['Kontrollflug'] ?? '') != "Ja") {
+			rkrk_stat_inc($yearStats, array('Gde', $gdeKey, 'Fund'), $statdataline['Fund'] ?? 0);
 		}
-		$yearStats['Gde']['G'.$statdataline['Gde']]['Einsatztage']['D'.$statdataline['Datum']] = $statdataline['Datum'];
-		$yearStats['Gde']['G'.$statdataline['Gde']]['AnzEinsaetze'] = count($yearStats['Gde']['G'.$statdataline['Gde']]['Einsatztage']);
+		$yearStats['Gde'][$gdeKey]['Einsatztage'][$dateKey] = $statdataline['Datum'] ?? '';
+		$yearStats['Gde'][$gdeKey]['AnzEinsaetze'] = count($yearStats['Gde'][$gdeKey]['Einsatztage']);
 
-		$yearStats['JG']['J'.$statdataline['JG']]['Felder'] += 1;
-		$yearStats['JG']['J'.$statdataline['JG']]['Flaeche'] += round($statdataline['Flaeche']);
-		if ($statdataline['Kontrollflug'] != "Ja") {
-			$yearStats['JG']['J'.$statdataline['JG']]['Fund'] += $statdataline['Fund'];
+		rkrk_stat_inc($yearStats, array('JG', $jgKey, 'Felder'), 1);
+		rkrk_stat_inc($yearStats, array('JG', $jgKey, 'Flaeche'), round(rkrk_stat_num($statdataline['Flaeche'] ?? 0)));
+		if (($statdataline['Kontrollflug'] ?? '') != "Ja") {
+			rkrk_stat_inc($yearStats, array('JG', $jgKey, 'Fund'), $statdataline['Fund'] ?? 0);
 		}
-		$yearStats['JG']['J'.$statdataline['JG']]['Einsatztage']['D'.$statdataline['Datum']] = $statdataline['Datum'];
-		$yearStats['JG']['J'.$statdataline['JG']]['AnzEinsaetze'] = count($yearStats['JG']['J'.$statdataline['JG']]['Einsatztage']);
+		$yearStats['JG'][$jgKey]['Einsatztage'][$dateKey] = $statdataline['Datum'] ?? '';
+		$yearStats['JG'][$jgKey]['AnzEinsaetze'] = count($yearStats['JG'][$jgKey]['Einsatztage']);
 
-		$yearStats['Reg']['R'.$statdataline['Reg']]['Felder'] += 1;
-		$yearStats['Reg']['R'.$statdataline['Reg']]['Flaeche'] += round($statdataline['Flaeche']);
-		if ($statdataline['Kontrollflug'] != "Ja") {
-			$yearStats['Reg']['R'.$statdataline['Reg']]['Fund'] += $statdataline['Fund'];
+		rkrk_stat_inc($yearStats, array('Reg', $regKey, 'Felder'), 1);
+		rkrk_stat_inc($yearStats, array('Reg', $regKey, 'Flaeche'), round(rkrk_stat_num($statdataline['Flaeche'] ?? 0)));
+		if (($statdataline['Kontrollflug'] ?? '') != "Ja") {
+			rkrk_stat_inc($yearStats, array('Reg', $regKey, 'Fund'), $statdataline['Fund'] ?? 0);
 		}
-		$yearStats['Reg']['R'.$statdataline['Reg']]['Einsatztage']['D'.$statdataline['Datum']] = $statdataline['Datum'];
-		$yearStats['Reg']['R'.$statdataline['Reg']]['AnzEinsaetze'] = count($yearStats['Reg']['R'.$statdataline['Reg']]['Einsatztage']);
+		$yearStats['Reg'][$regKey]['Einsatztage'][$dateKey] = $statdataline['Datum'] ?? '';
+		$yearStats['Reg'][$regKey]['AnzEinsaetze'] = count($yearStats['Reg'][$regKey]['Einsatztage']);
 
-		$yearStats['JGPIL']['R'.$statdataline['JG']]['P'.$statdataline['Pilot']]['Felder'] += 1;
-		$yearStats['JGPIL']['R'.$statdataline['JG']]['P'.$statdataline['Pilot']]['Flaeche'] += round($statdataline['Flaeche']);
-		if ($statdataline['Kontrollflug'] != "Ja") {
-			$yearStats['JGPIL']['R'.$statdataline['JG']]['P'.$statdataline['Pilot']]['Fund'] += $statdataline['Fund'];
+		rkrk_stat_inc($yearStats, array('JGPIL', $jgRegKey, $pilotKey, 'Felder'), 1);
+		rkrk_stat_inc($yearStats, array('JGPIL', $jgRegKey, $pilotKey, 'Flaeche'), round(rkrk_stat_num($statdataline['Flaeche'] ?? 0)));
+		if (($statdataline['Kontrollflug'] ?? '') != "Ja") {
+			rkrk_stat_inc($yearStats, array('JGPIL', $jgRegKey, $pilotKey, 'Fund'), $statdataline['Fund'] ?? 0);
 		}
-		$yearStats['JGPIL']['R'.$statdataline['JG']]['P'.$statdataline['Pilot']]['Einsatztage']['D'.$statdataline['Datum']] = $statdataline['Datum'];
-		$yearStats['JGPIL']['R'.$statdataline['JG']]['P'.$statdataline['Pilot']]['AnzEinsaetze'] = count($yearStats['JGPIL']['R'.$statdataline['JG']]['P'.$statdataline['Pilot']]['Einsatztage']);
+		$yearStats['JGPIL'][$jgRegKey][$pilotKey]['Einsatztage'][$dateKey] = $statdataline['Datum'] ?? '';
+		$yearStats['JGPIL'][$jgRegKey][$pilotKey]['AnzEinsaetze'] = count($yearStats['JGPIL'][$jgRegKey][$pilotKey]['Einsatztage']);
 
-		$yearStats['Sum']['Felder'] += 1;
-		$yearStats['Sum']['Flaeche'] += round($statdataline['Flaeche']);
-		if ($statdataline['Kontrollflug'] != "Ja") {
-			$yearStats['Sum']['Fund'] += $statdataline['Fund'];
+		rkrk_stat_inc($yearStats, array('Sum', 'Felder'), 1);
+		rkrk_stat_inc($yearStats, array('Sum', 'Flaeche'), round(rkrk_stat_num($statdataline['Flaeche'] ?? 0)));
+		if (($statdataline['Kontrollflug'] ?? '') != "Ja") {
+			rkrk_stat_inc($yearStats, array('Sum', 'Fund'), $statdataline['Fund'] ?? 0);
 		}
-		$yearStats['Sum']['Einsatztage'][$statdataline['Pilot']."-".$statdataline['Datum']] = $statdataline['Pilot']."-".$statdataline['Datum'];
+		$yearStats['Sum']['Einsatztage'][(string)($statdataline['Pilot'] ?? '')."-".(string)($statdataline['Datum'] ?? '')] = $statdataline['Pilot']."-".$statdataline['Datum'];
 		$yearStats['Sum']['AnzEinsaetze'] = count($yearStats['Sum']['Einsatztage']);
 
-		$yearStats['Warn']['CTR'] = ($yearStats['Warn']['CTR'] ?? 0) + preg_match("/(CTR)/", $statdataline['Warnung']);
-		$yearStats['Warn']['NGT'] = ($yearStats['Warn']['NGT'] ?? 0) + preg_match("/(NGT)/", $statdataline['Warnung']);
-		$yearStats['Warn']['STP'] = ($yearStats['Warn']['STP'] ?? 0) + preg_match("/(STP)/", $statdataline['Warnung']);
-		$yearStats['Warn']['SORA'] = ($yearStats['Warn']['SORA'] ?? 0) + preg_match("/(SORA)/", $statdataline['Warnung']);
-		$yearStats['Warn']['SPEZ'] = ($yearStats['Warn']['SPEZ'] ?? 0) + preg_match("/(NSG|NSF|FVB|USP)/", $statdataline['Warnung']);
+		$warnung = (string)($statdataline['Warnung'] ?? '');
+		rkrk_stat_inc($yearStats, array('Warn', 'CTR'), preg_match("/(CTR)/", $warnung));
+		rkrk_stat_inc($yearStats, array('Warn', 'NGT'), preg_match("/(NGT)/", $warnung));
+		rkrk_stat_inc($yearStats, array('Warn', 'STP'), preg_match("/(STP)/", $warnung));
+		rkrk_stat_inc($yearStats, array('Warn', 'SORA'), preg_match("/(SORA)/", $warnung));
+		rkrk_stat_inc($yearStats, array('Warn', 'SPEZ'), preg_match("/(NSG|NSF|FVB|USP)/", $warnung));
+	}
+
+	function rkrk_build_cumulative_year_stats($yearStats, $untilYear, $fromYear = 2020) {
+		$out = array();
+		if (!is_array($yearStats)) {
+			return $out;
+		}
+		$fromYear = intval($fromYear);
+		$untilYear = intval($untilYear);
+		if ($untilYear < $fromYear) {
+			return $out;
+		}
+		$years = range($fromYear, $untilYear);
+		$cumDays = 0;
+		$cumFunde = 0;
+		$cumHa = 0;
+		foreach ($years as $yn) {
+			$row = array();
+			if (isset($yearStats[$yn]) && is_array($yearStats[$yn])) {
+				$row = $yearStats[$yn];
+			} elseif (isset($yearStats[(string)$yn]) && is_array($yearStats[(string)$yn])) {
+				$row = $yearStats[(string)$yn];
+			}
+			$cumDays += intval($row['AnzEinsaetze'] ?? 0);
+			$cumFunde += intval($row['Fund'] ?? 0);
+			$cumHa += intval($row['Flaeche'] ?? 0);
+			$out[(string)$yn] = array(
+				'AnzEinsaetze' => $cumDays,
+				'Fund' => $cumFunde,
+				'Flaeche' => $cumHa,
+			);
+		}
+		return $out;
 	}
 
 	function rkrk_build_year_summary_from_statdata($statdata, $Jahr, $requireListNr = false) {
@@ -289,7 +357,7 @@ if (isset($_GET["RegList"])) {
 	foreach ($RegionSettings as $key => $Reg ) {
 		if ($Reg["Aktiv"] && ("NO" != $Reg["Reg"]) && ("ALL" !=$Reg["Reg"])) {
 			if ((in_array($key, explode(" ", $SelReg))
-				or 	(in_array("alle", $EnabledOptions["Regions"]["List"]))
+				or 	(in_array("alle", $EnabledOptions["Regions"]["List"] ?? array()))
 				or 	($SelReg==""))
 			) {
 				$EnabledRegion[$Reg["Reg"]] = 1;
@@ -305,7 +373,7 @@ if (isset($_GET["RegList"])) {
 	foreach ($RegionSettings as $key => $Reg ) {
 		if ($Reg["Aktiv"] && ("NO" != $Reg["Reg"]) && ("ALL" !=$Reg["Reg"])) {
 			if ((in_array($key, explode(" ", $SelReg))
-				or 	(in_array("alle", $EnabledOptions["Regions"]["List"]))
+				or 	(in_array("alle", $EnabledOptions["Regions"]["List"] ?? array()))
 				or 	($SelReg==""))
 			) {
 				$EnabledRegion[$Reg["Reg"]] = 1;
@@ -321,6 +389,9 @@ if (isset($_GET["RegList"])) {
 	$SelReg="";
 }
 
+if (!isset($Jahr) || $Jahr === '') {
+	$Jahr = date('Y');
+}
 if (isset($_POST["SelFrom"])) { 
 	$FromDate = $_POST["SelFrom"];
 } elseif (isset($_GET["SelFrom"])) { 
@@ -387,6 +458,11 @@ if (isset($_GET["ALL"])) {
 } else
 $all=false;
 
+$nlEmbed = isset($_GET['Embed']) && $_GET['Embed'] !== '' && $_GET['Embed'] !== '0';
+if ($nlEmbed) {
+	$all = true;
+}
+
 
 if (isset($_POST["FeldNamenWahl"])) {
 	$FeldNamenWahl = $_POST["FeldNamenWahl"];
@@ -394,11 +470,12 @@ if (isset($_POST["FeldNamenWahl"])) {
 	$FeldNamenWahl = '';
 }
 
+$PilotenWahl = '';
 if (isset($_GET["PilotenWahl"])) { 
 	$PilotenWahl = str_replace(array(",",";"), array(" ", " "), $_GET["PilotenWahl"]);
 	//pre_R(explode(" ", $PilotenWahl));
 	foreach ($OptionPilot as $Pilot ) {
-		if ((($_POST["Pilot" . $i])=="on") 
+		if ((($_POST["Pilot" . $i] ?? '')=="on") 
 				or isset($_GET["ALL"])
 				or in_array($Pilot["Opt"],explode(" ", $PilotenWahl))) {
 			$EnabledPilot[$Pilot["Opt"]] = 1;
@@ -412,7 +489,7 @@ if (isset($_GET["PilotenWahl"])) {
 	$PilotenWahl = str_replace(array(",",";"), array(" ", " "), $_GET["PilotenWahl"]);
 	//pre_R(explode(" ", $PilotenWahl));
 	foreach ($OptionPilot as $Pilot ) {
-		if ((($_POST["Pilot" . $i])=="on") 
+		if ((($_POST["Pilot" . $i] ?? '')=="on") 
 				or isset($_GET["ALL"])
 				or in_array($Pilot["Opt"],explode(" ", $PilotenWahl))) {
 			$EnabledPilot[$Pilot["Opt"]] = 1;
@@ -489,6 +566,7 @@ if ($PageFormat == 'reduced') {
 	$Chartslist[]="FelderProRegion";
 	$Chartslist[]="Entwicklung1";
 	$Chartslist[]="Entwicklung2";
+	$Chartslist[]="Kumulativ";
 	$Chartslist[]="AufbauFelder";
 //	$Chartslist[]="EinsaetzeProTagBreit";
 	$Chartslist[]="EinsaetzeProTagSchmal";
@@ -526,7 +604,7 @@ if ($PageFormat == 'reduced') {
 		foreach ($statdata as $linekey => $line) {
 			if ($linekey !=0) {
 				foreach ($line as $entrykey => $entry) {
-					$statdata[$linekey]["Total"] += strval($entry);
+					$statdata[$linekey]["Total"] = rkrk_stat_num($statdata[$linekey]["Total"] ?? 0) + rkrk_stat_num($entry);
 					//echo $entry . " ";
 				}
 			} else {
@@ -604,7 +682,7 @@ foreach ($LoadSummaryStatistics as $key => $data) {
     
 //Initialen,JG,Jagdgebiet,Name,Kontaktnummer,P Telefon,Mail,Adresse,RKRS,Bemerkung
 	$FontSizeInPoints = 12;
-	if ($FontSize== "") {
+	if (!isset($FontSize) || $FontSize === "") {
 		$FontSize= "120%";
 	}
 	$TableColor =  GetTableColor ($BaseColor);
@@ -694,9 +772,6 @@ table.rkrk-stat-flights {
 </style>
 <?php
 
-//removes what does not belong to tick list
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
-//Select all
 
 	//form to change setting
 	if (($PageFormat == 'full') and
@@ -721,14 +796,14 @@ $RegList = array_diff($RegionSettings, array('NO','ALL'));
 				}
 				$GetRegions = $TmpArr;
 			} else
-				$GetRegions= "";
+				$GetRegions = array();
 			//process Regions form
 			//pre_r($RegionSettings);
 			$ListOfRegions = "";
 			Foreach ($RegionSettings as $Reg) {
 				if ($Reg["Aktiv"]) {
 					$RegOptions[$Reg["Reg"]]["Text"]= $Reg["Reg"];
-					if (($GetRegions[$Reg["Reg"]])!="") { 
+					if (!empty($GetRegions[$Reg["Reg"]])) { 
 						$RegOptions[$Reg["Reg"]]["Value"]=1;
 						$ListOfRegions .= $Reg["Reg"] . ",";
 					} elseif (isset($_POST[$GrpName."-".$i])) {
@@ -744,7 +819,7 @@ $RegList = array_diff($RegionSettings, array('NO','ALL'));
 			foreach ($RegionSettings as $key => $Reg ) {
 				if ($Reg["Aktiv"] && ("NO" != $Reg["Reg"]) && ("ALL" !=$Reg["Reg"])) {
 					if ((in_array($key, $EnabledOptions["Regions"]["List"])
-						or 	(in_array("alle", $EnabledOptions["Regions"]["List"])))
+						or 	(in_array("alle", $EnabledOptions["Regions"]["List"] ?? array())))
 					) {
 						$EnabledRegion[$Reg["Reg"]] = 1;
 					} else {
@@ -853,7 +928,7 @@ $RegList = array_diff($RegionSettings, array('NO','ALL'));
 			rkrk_echo_pills_open();
 		}
 		foreach ($OptionPilot as $Pilot ) {
-			if ((($_POST["Pilot" . $i])=="on") 
+			if ((($_POST["Pilot" . $i] ?? '')=="on") 
 					or isset($_GET["ALL"])
 					or in_array($Pilot["Opt"],explode(" ", $PilotenWahl))) {
 				$checked = true;
@@ -877,13 +952,15 @@ $RegList = array_diff($RegionSettings, array('NO','ALL'));
 		}
 		echo '<br>'. chr(10);
 
-		$ParameterSet = "SelFrom=" . $FromDate . "&" . "SelTo=" . $ToDate . "&" . "RegList=" . str_replace(",", " ", $ListOfRegions) . "&" ."PilotenWahl=". str_replace(",", " ", $ListOfPilots). "&Charts=Top,EinsatzPiloten,EinsatzJagdgebiete,Einsatztage1,Rehkitzfunde,FelderProRegion,Entwicklung1,Entwicklung2,EinsaetzeProTagSchmal,Legende"."&Color=white&GA=gast&" . $MissionSelectionParameter;
+		$ParameterSet = "SelFrom=" . $FromDate . "&" . "SelTo=" . $ToDate . "&" . "RegList=" . str_replace(",", " ", $ListOfRegions) . "&" ."PilotenWahl=". str_replace(",", " ", $ListOfPilots). "&Charts=Top,EinsatzPiloten,EinsatzJagdgebiete,Einsatztage1,Rehkitzfunde,FelderProRegion,Entwicklung1,Entwicklung2,Kumulativ,EinsaetzeProTagSchmal,Legende"."&Color=white&GA=gast&" . $MissionSelectionParameter;
 		$PageLink =  $WebLink_public . "rkrk_flugstatistik.php" ."?" . $ParameterSet;
 		//echo "SeitenLink: " . $PageLink . "<br>";
 		//echo "RegList: " . $ListOfRegions . "   PilotList" .$ListOfPilots; 
 
 		$QRCode = $WebLink_public . "rkrk_flugstatistik.php" ."?" . str_replace(array("&", " "),array("%26","%2B"), $ParameterSet); 
 		//$QRCode = $WebLink_public . "rkrk_flugstatistik.php" ."?" . $ParameterSet; 
+		$qrcode1 = "";
+		$qrcode2 = "";
 		if ($QRCode!="") {
 			//echo $QRCode;
 			$qrcode1.= "<br>Link zur Flugstatisikseite:<br>";
@@ -987,14 +1064,14 @@ foreach ($EnabledRegion as $key => $Reg) {
 					(
 					  //($EnabledRegion[$Flug["JG"]]==1)
 					  (in_array($Flug["JG"], $RegionsSelected))
-						or (in_array("alle", $EnabledOptions["Regions"]["List"])
+						or (in_array("alle", $EnabledOptions["Regions"]["List"] ?? array())
  						or ($PageFormat == 'reduced')
  						or ($PageFormat == 'selected')
 						)
 					)
 					and
 					(
-					  ($EnabledPilot[$Flug["Pilot"]]==1)
+					  (($EnabledPilot[$Flug["Pilot"] ?? ''] ?? 0)==1)
  						or (($PageFormat == 'reduced')
  						or ($PageFormat == 'selected')
 						//or $PilotenWahl == ''
@@ -1025,7 +1102,9 @@ foreach ($EnabledRegion as $key => $Reg) {
 	//pre_r($FlightHistory);
 	//PRE_R($EnabledPilot);
 
-    include_once('scripts/rkrk_statdata.php');
+    if (is_file(__DIR__ . '/scripts/rkrk_statdata.php')) {
+		include_once(__DIR__ . '/scripts/rkrk_statdata.php');
+	}
 
 
 // ========================================
@@ -1033,21 +1112,33 @@ foreach ($EnabledRegion as $key => $Reg) {
 // ========================================
 // Felddaten 
 //if (!$NoRegSelection and !$NoPilSelection) {
-if (!$NoPilSelection) {
+if (empty($NoPilSelection)) {
+	if (!is_array($Feldkatalog ?? null)) {
+		$Feldkatalog = GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
+	}
+	if (!is_array($Feldkatalog)) {
+		$Feldkatalog = array();
+	}
 	foreach ($Feldkatalog as $JGFields) {
+		if (!is_array($JGFields)) {
+			continue;
+		}
 		foreach ($JGFields as $key => $Field)  {
-			$FieldDataArray[$key]["FeldID"] = $Field["FeldID"];
-			$FieldDataArray[$key]["Text"] = $Field["Feldname"];
-			if ($Field["Flurname"]!="") {
+			if (!is_array($Field)) {
+				continue;
+			}
+			$FieldDataArray[$key]["FeldID"] = $Field["FeldID"] ?? '';
+			$FieldDataArray[$key]["Text"] = $Field["Feldname"] ?? '';
+			if (($Field["Flurname"] ?? '') != "") {
 				$FieldDataArray[$key]["Text"] .= " " . $Field["Flurname"];
 			}
-			$FieldDataArray[$key]["Text"] .= " " . $Field["GrundstueckID"];
+			$FieldDataArray[$key]["Text"] .= " " . ($Field["GrundstueckID"] ?? '');
 			//$FieldDataArray[$key]["Flugzeit"] = $Field["Flugzeit"];
-			$FieldDataArray[$key]["Flaeche"] = $Field["Flaeche"];
-			$FieldDataArray[$key]["GrundstueckID"] = $Field["GrundstueckID"];
-			$FieldDataArray[$key]["JG"] = $Field["JG"];
-			$FieldDataArray[$key]["Gemeinde"] = $Field["Gemeinde"];
-			$FieldDataArray[$key]["Jaeger"] = $Field["Jaeger"];
+			$FieldDataArray[$key]["Flaeche"] = $Field["Flaeche"] ?? '';
+			$FieldDataArray[$key]["GrundstueckID"] = $Field["GrundstueckID"] ?? '';
+			$FieldDataArray[$key]["JG"] = $Field["JG"] ?? '';
+			$FieldDataArray[$key]["Gemeinde"] = $Field["Gemeinde"] ?? '';
+			$FieldDataArray[$key]["Jaeger"] = $Field["Jaeger"] ?? '';
 		} // JG Fields
 	} // $Feldkatalog
 
@@ -1058,11 +1149,21 @@ if (!$NoPilSelection) {
 
 	//Read CSV file
 	transferGoogleSheetToCSV();
-	$Adresskatalog = csv_to_array($csvDocLocation.$csv_file,',');
+	$Adresskatalog = csv_to_array($csvDocLocation.$csv_file, ';');
+	if (!is_array($Adresskatalog)) {
+		$Adresskatalog = array();
+	}
 
 	foreach ($Adresskatalog as $Person) {
-		$AdressDataArray[$Person['Initialen']]['Initialen']= $Person['Initialen'];
-		$AdressDataArray[$Person['Initialen']]['Text']= $Person['JG'] . " " . $Person['Name'] . " " . $Person['Kontaktnummer'];
+		if (!is_array($Person)) {
+			continue;
+		}
+		$initialen = trim((string)($Person['Initialen'] ?? ''));
+		if ($initialen === '') {
+			continue;
+		}
+		$AdressDataArray[$initialen]['Initialen'] = $initialen;
+		$AdressDataArray[$initialen]['Text'] = ($Person['JG'] ?? '') . " " . ($Person['Name'] ?? '') . " " . ($Person['Kontaktnummer'] ?? '');
 	}
 	//pre_R($AdressDataArray);
 
@@ -1083,32 +1184,47 @@ if (!$NoPilSelection) {
 	//pre_r($Feldkatalog);
 	//pre_R($EnabledRegion);
 	$FeldStatistics = Array();
+	if (!is_array($Feldkatalog)) {
+		$Feldkatalog = array();
+	}
 	foreach ($Feldkatalog as $JGkatalog) {
+		if (!is_array($JGkatalog)) {
+			continue;
+		}
 		foreach ($JGkatalog as $statdataline) {
-			if (($EnabledRegion[$statdataline['JG']]==1) or 
+			if (!is_array($statdataline)) {
+				continue;
+			}
+			$jg = (string)($statdataline['JG'] ?? '');
+			$regRow = $RegDataArray[$jg] ?? null;
+			$regUp = is_array($regRow) ? (string)($regRow['RegUp'] ?? '') : '';
+			if ((($EnabledRegion[$jg] ?? 0)==1) or 
 				($PageFormat == 'selected') or ($PageFormat == 'reduced'))
 				{
 				// Gemeinde
-				if ($statdataline['Gemeinde']=="") {
+				$Gde = (string)($statdataline['Gemeinde'] ?? '');
+				if ($Gde=="") {
 					$Gde="andere";
-				} else {
-					$Gde=$statdataline['Gemeinde'];
 				}
-				$FeldStatistics['Gde'][$Gde]['Felder'] += 1;
-				$FeldStatistics['Gde'][$Gde]['Fläche'] += round($statdataline['Flaeche']);
-				$FeldStatistics['Gde'][$Gde]['Flugzeit'] += round($statdataline['Flugzeit']);
+				$flaeche = round(rkrk_stat_num($statdataline['Flaeche'] ?? 0));
+				$flugzeit = round(rkrk_stat_num($statdataline['Flugzeit'] ?? 0));
+				$flugzeit1 = round(rkrk_stat_num($statdataline['Flugzeit'] ?? 0), 1);
+				rkrk_stat_inc($FeldStatistics, array('Gde', $Gde, 'Felder'), 1);
+				rkrk_stat_inc($FeldStatistics, array('Gde', $Gde, 'Fläche'), $flaeche);
+				rkrk_stat_inc($FeldStatistics, array('Gde', $Gde, 'Flugzeit'), $flugzeit);
 				// JG
-				$FeldStatistics['JG'][$statdataline['JG']]['Felder'] += 1;
-				$FeldStatistics['JG'][$statdataline['JG']]['Fläche'] += round($statdataline['Flaeche']);
-				$FeldStatistics['JG'][$statdataline['JG']]['Flugzeit'] += round($statdataline['Flugzeit'],1);
+				rkrk_stat_inc($FeldStatistics, array('JG', $jg, 'Felder'), 1);
+				rkrk_stat_inc($FeldStatistics, array('JG', $jg, 'Fläche'), $flaeche);
+				rkrk_stat_inc($FeldStatistics, array('JG', $jg, 'Flugzeit'), $flugzeit1);
 				// Reg
-				$FeldStatistics['Reg'][$RegDataArray[$statdataline['JG']]['RegUp']]['Felder'] += 1;
-				$FeldStatistics['Reg'][$RegDataArray[$statdataline['JG']]['RegUp']]['Fläche'] += round($statdataline['Flaeche']);
-				$FeldStatistics['Reg'][$RegDataArray[$statdataline['JG']]['RegUp']]['Flugzeit'] += round($statdataline['Flugzeit']);
+				rkrk_stat_inc($FeldStatistics, array('Reg', $regUp, 'Felder'), 1);
+				rkrk_stat_inc($FeldStatistics, array('Reg', $regUp, 'Fläche'), $flaeche);
+				rkrk_stat_inc($FeldStatistics, array('Reg', $regUp, 'Flugzeit'), $flugzeit);
 				// Year
-				$FeldStatistics['Felder'][$RegDataArray[$statdataline['JG']]['RegUp']][date('Y', strtotime($statdataline['Update']))]['Felder'] += 1;
-				$FeldStatistics['Felder'][$RegDataArray[$statdataline['JG']]['RegUp']][date('Y', strtotime($statdataline['Update']))]['Fläche'] += round($statdataline['Flaeche']);
-				$FeldStatistics['Felder'][$RegDataArray[$statdataline['JG']]['RegUp']][date('Y', strtotime($statdataline['Update']))]['Flugzeit'] += round($statdataline['Flugzeit']);
+				$updateYear = date('Y', strtotime((string)($statdataline['Update'] ?? '')));
+				rkrk_stat_inc($FeldStatistics, array('Felder', $regUp, $updateYear, 'Felder'), 1);
+				rkrk_stat_inc($FeldStatistics, array('Felder', $regUp, $updateYear, 'Fläche'), $flaeche);
+				rkrk_stat_inc($FeldStatistics, array('Felder', $regUp, $updateYear, 'Flugzeit'), $flugzeit);
 			}
 		}
 	}
@@ -1118,25 +1234,33 @@ if (!$NoPilSelection) {
 	//for ($x = 2021; $x <= date("Y"); $x++) {
 		$YearList[$x]=$x;
 	}
+	if (!isset($FeldStatistics['Felder']) || !is_array($FeldStatistics['Felder'])) {
+		$FeldStatistics['Felder'] = array();
+	}
 	foreach ($FeldStatistics['Felder'] as $Reg => $statdataReg) {
 		foreach ($statdataReg as $Year => $statdataline) {
 			// sum up per year
 			foreach ($YearList as $SumYear => $SumDataYear) {
 			//echo $Year . " ". $SumYear . " " . $FeldStatistics['Felder'][$Reg][$Year]['Felder']. "<br>";
-				if (($SumYear>=$Year) and ($FeldStatistics['Felder'][$Reg][$Year]['Felder']>0)) {
+				$yearFelder = rkrk_stat_num($statdataline['Felder'] ?? 0);
+				if (($SumYear>=$Year) and ($yearFelder>0)) {
 					$FeldStatistics['FelderRegSum'][$Reg][$SumYear]['Jahr'] = $SumYear;
-					$FeldStatistics['FelderRegSum'][$Reg][$SumYear]['Felder'] += round($FeldStatistics['Felder'][$Reg][$Year]['Felder']);
-					$FeldStatistics['FelderRegSum'][$Reg][$SumYear]['Fläche'] += round($FeldStatistics['Felder'][$Reg][$Year]['Fläche']);
-					$FeldStatistics['FelderRegSum'][$Reg][$SumYear]['Flugzeit'] += round($FeldStatistics['Felder'][$Reg][$Year]['Flugzeit']);
-					$FeldStatistics['FelderSum'][$SumYear]['Felder'] += round($FeldStatistics['Felder'][$Reg][$Year]['Felder']);
-					$FeldStatistics['FelderSum'][$SumYear]['Fläche'] += round($FeldStatistics['Felder'][$Reg][$Year]['Fläche']);
-					$FeldStatistics['FelderSum'][$SumYear]['Flugzeit'] += round($FeldStatistics['Felder'][$Reg][$Year]['Flugzeit']);
+					rkrk_stat_inc($FeldStatistics, array('FelderRegSum', $Reg, $SumYear, 'Felder'), round(rkrk_stat_num($statdataline['Felder'] ?? 0)));
+					rkrk_stat_inc($FeldStatistics, array('FelderRegSum', $Reg, $SumYear, 'Fläche'), round(rkrk_stat_num($statdataline['Fläche'] ?? 0)));
+					rkrk_stat_inc($FeldStatistics, array('FelderRegSum', $Reg, $SumYear, 'Flugzeit'), round(rkrk_stat_num($statdataline['Flugzeit'] ?? 0)));
+					rkrk_stat_inc($FeldStatistics, array('FelderSum', $SumYear, 'Felder'), round(rkrk_stat_num($statdataline['Felder'] ?? 0)));
+					rkrk_stat_inc($FeldStatistics, array('FelderSum', $SumYear, 'Fläche'), round(rkrk_stat_num($statdataline['Fläche'] ?? 0)));
+					rkrk_stat_inc($FeldStatistics, array('FelderSum', $SumYear, 'Flugzeit'), round(rkrk_stat_num($statdataline['Flugzeit'] ?? 0)));
 				}
 			}
 		}
-		ksort($FeldStatistics['FelderRegSum'][$Reg]);
+		if (isset($FeldStatistics['FelderRegSum'][$Reg]) && is_array($FeldStatistics['FelderRegSum'][$Reg])) {
+			ksort($FeldStatistics['FelderRegSum'][$Reg]);
+		}
 	}
-	ksort($FeldStatistics['FelderSum']);
+	if (isset($FeldStatistics['FelderSum']) && is_array($FeldStatistics['FelderSum'])) {
+		ksort($FeldStatistics['FelderSum']);
+	}
 	//pre_R($FeldStatistics['Felder']);
 	//pre_R($FeldStatistics);
 	///////////////////////////////////
@@ -1160,66 +1284,73 @@ if (!$NoPilSelection) {
 			and (($statdataline['Geflogen'] == "Ja")
 			or ($statdataline['Datum'] <= "2023-01-01")))
 			){
+			$pilot = (string)($statdataline['Pilot'] ?? '');
+			$jg = (string)($statdataline['JG'] ?? '');
+			$reg = (string)($statdataline['Reg'] ?? '');
+			$datum = (string)($statdataline['Datum'] ?? '');
+			$flaeche = round(rkrk_stat_num($statdataline['Flaeche'] ?? 0));
+			$flugzeit = round(rkrk_stat_num($statdataline['Flugzeit'] ?? 0));
+			$fund = $statdataline['Fund'] ?? 0;
+			$kontrollflug = ($statdataline['Kontrollflug'] ?? '') != "Ja";
 			// Pilot
-			$FlightStatistics['Pilot'][$statdataline['Pilot']]['Felder'] += 1;
-			$FlightStatistics['Pilot'][$statdataline['Pilot']]['Fläche'] += round($statdataline['Flaeche']);
-			$FlightStatistics['Pilot'][$statdataline['Pilot']]['Flugzeit'] += round($statdataline['Flugzeit']);
-			if ($statdataline['Kontrollflug']!= "Ja") {
-				$FlightStatistics['Pilot'][$statdataline['Pilot']]['Fund'] += $statdataline['Fund'];
+			rkrk_stat_inc($FlightStatistics, array('Pilot', $pilot, 'Felder'), 1);
+			rkrk_stat_inc($FlightStatistics, array('Pilot', $pilot, 'Fläche'), $flaeche);
+			rkrk_stat_inc($FlightStatistics, array('Pilot', $pilot, 'Flugzeit'), $flugzeit);
+			if ($kontrollflug) {
+				rkrk_stat_inc($FlightStatistics, array('Pilot', $pilot, 'Fund'), $fund);
 			}
-			$FlightStatistics['Pilot'][$statdataline['Pilot']]['Einsatztage'][$statdataline['Datum']] = $statdataline['Datum'];
-			$FlightStatistics['Pilot'][$statdataline['Pilot']]['AnzEinsätze'] = count($FlightStatistics['Pilot'][$statdataline['Pilot']]['Einsatztage']);
+			$FlightStatistics['Pilot'][$pilot]['Einsatztage'][$datum] = $datum;
+			$FlightStatistics['Pilot'][$pilot]['AnzEinsätze'] = count($FlightStatistics['Pilot'][$pilot]['Einsatztage']);
 			// Gemeinde
-			if ($statdataline['Gde']=="") {
+			$Gde = (string)($statdataline['Gde'] ?? '');
+			if ($Gde=="") {
 				$Gde="andere";
-			} else {
-				$Gde=$statdataline['Gde'];
 			}
-			$FlightStatistics['Gde'][$Gde]['Felder'] += 1;
-			$FlightStatistics['Gde'][$Gde]['Fläche'] += round($statdataline['Flaeche']);
-			$FlightStatistics['Gde'][$Gde]['Flugzeit'] += round($statdataline['Flugzeit']);
-			if ($statdataline['Kontrollflug']!= "Ja") {
-				$FlightStatistics['Gde'][$Gde]['Fund'] += $statdataline['Fund'];
+			rkrk_stat_inc($FlightStatistics, array('Gde', $Gde, 'Felder'), 1);
+			rkrk_stat_inc($FlightStatistics, array('Gde', $Gde, 'Fläche'), $flaeche);
+			rkrk_stat_inc($FlightStatistics, array('Gde', $Gde, 'Flugzeit'), $flugzeit);
+			if ($kontrollflug) {
+				rkrk_stat_inc($FlightStatistics, array('Gde', $Gde, 'Fund'), $fund);
 			}
-			$FlightStatistics['Gde'][$Gde]['Einsatztage'][$statdataline['Datum']] = $statdataline['Datum'];
-			$FlightStatistics['Gde'][$Gde]['AnzEinsätze'] = count($FlightStatistics['Gde'][$statdataline['Gde']]['Einsatztage']);
+			$FlightStatistics['Gde'][$Gde]['Einsatztage'][$datum] = $datum;
+			$FlightStatistics['Gde'][$Gde]['AnzEinsätze'] = count($FlightStatistics['Gde'][$Gde]['Einsatztage']);
 			// JG
-			$FlightStatistics['JG'][$statdataline['JG']]['Felder'] += 1;
-			$FlightStatistics['JG'][$statdataline['JG']]['Fläche'] += round($statdataline['Flaeche']);
-			$FlightStatistics['JG'][$statdataline['JG']]['Flugzeit'] += round($statdataline['Flugzeit']);
-			if ($statdataline['Kontrollflug']!= "Ja") {
-				$FlightStatistics['JG'][$statdataline['JG']]['Fund'] += $statdataline['Fund'];
+			rkrk_stat_inc($FlightStatistics, array('JG', $jg, 'Felder'), 1);
+			rkrk_stat_inc($FlightStatistics, array('JG', $jg, 'Fläche'), $flaeche);
+			rkrk_stat_inc($FlightStatistics, array('JG', $jg, 'Flugzeit'), $flugzeit);
+			if ($kontrollflug) {
+				rkrk_stat_inc($FlightStatistics, array('JG', $jg, 'Fund'), $fund);
 			}
-			$FlightStatistics['JG'][$statdataline['JG']]['Einsatztage'][$statdataline['Datum']] = $statdataline['Datum'];
-			$FlightStatistics['JG'][$statdataline['JG']]['AnzEinsätze'] = count($FlightStatistics['JG'][$statdataline['JG']]['Einsatztage']);
+			$FlightStatistics['JG'][$jg]['Einsatztage'][$datum] = $datum;
+			$FlightStatistics['JG'][$jg]['AnzEinsätze'] = count($FlightStatistics['JG'][$jg]['Einsatztage']);
 			// Reg
-			$FlightStatistics['Reg'][$statdataline['Reg']]['Felder'] += 1;
-			$FlightStatistics['Reg'][$statdataline['Reg']]['Fläche'] += round($statdataline['Flaeche']);
-			$FlightStatistics['Reg'][$statdataline['Reg']]['Flugzeit'] += round($statdataline['Flugzeit']);
-			if ($statdataline['Kontrollflug']!= "Ja") {
-				$FlightStatistics['Reg'][$statdataline['Reg']]['Fund'] += $statdataline['Fund'];
+			rkrk_stat_inc($FlightStatistics, array('Reg', $reg, 'Felder'), 1);
+			rkrk_stat_inc($FlightStatistics, array('Reg', $reg, 'Fläche'), $flaeche);
+			rkrk_stat_inc($FlightStatistics, array('Reg', $reg, 'Flugzeit'), $flugzeit);
+			if ($kontrollflug) {
+				rkrk_stat_inc($FlightStatistics, array('Reg', $reg, 'Fund'), $fund);
 			}
-			$FlightStatistics['Reg'][$statdataline['Reg']]['Einsatztage'][$statdataline['Datum']] = $statdataline['Datum'];
-			$FlightStatistics['Reg'][$statdataline['Reg']]['AnzEinsätze'] = count($FlightStatistics['Reg'][$statdataline['Reg']]['Einsatztage']);
+			$FlightStatistics['Reg'][$reg]['Einsatztage'][$datum] = $datum;
+			$FlightStatistics['Reg'][$reg]['AnzEinsätze'] = count($FlightStatistics['Reg'][$reg]['Einsatztage']);
 			// Datum
-			$FlightStatistics['Datum'][$statdataline['Datum']]['Felder'] += 1;
-			$FlightStatistics['Datum'][$statdataline['Datum']]['Fläche'] += round($statdataline['Flaeche']);
-			$FlightStatistics['Datum'][$statdataline['Datum']]['Flugzeit'] += round($statdataline['Flugzeit']);
-			if ($statdataline['Kontrollflug']!= "Ja") {
-				$FlightStatistics['Datum'][$statdataline['Datum']]['Fund'] += $statdataline['Fund'];
+			rkrk_stat_inc($FlightStatistics, array('Datum', $datum, 'Felder'), 1);
+			rkrk_stat_inc($FlightStatistics, array('Datum', $datum, 'Fläche'), $flaeche);
+			rkrk_stat_inc($FlightStatistics, array('Datum', $datum, 'Flugzeit'), $flugzeit);
+			if ($kontrollflug) {
+				rkrk_stat_inc($FlightStatistics, array('Datum', $datum, 'Fund'), $fund);
 			}
-			$FlightStatistics['Datum'][$statdataline['Datum']]['Einsatztage'][$statdataline['Datum']] = $statdataline['Datum'];
-			$FlightStatistics['Datum'][$statdataline['Datum']]['AnzEinsätze'] = count($FlightStatistics['Datum'][$statdataline['Datum']]['Einsatztage']);
-			$FlightStatistics['Datum'][$statdataline['Datum']]['Piloten'][$statdataline['Pilot']] = $statdataline['Pilot'];
-			$FlightStatistics['Datum'][$statdataline['Datum']]['AnzPiloten'] = count($FlightStatistics['Datum'][$statdataline['Datum']]['Piloten']);
+			$FlightStatistics['Datum'][$datum]['Einsatztage'][$datum] = $datum;
+			$FlightStatistics['Datum'][$datum]['AnzEinsätze'] = count($FlightStatistics['Datum'][$datum]['Einsatztage']);
+			$FlightStatistics['Datum'][$datum]['Piloten'][$pilot] = $pilot;
+			$FlightStatistics['Datum'][$datum]['AnzPiloten'] = count($FlightStatistics['Datum'][$datum]['Piloten']);
 			// Sum
-			$FlightStatistics['Sum']['Felder'] += 1;
-			$FlightStatistics['Sum']['Fläche'] += round($statdataline['Flaeche']);
-			$FlightStatistics['Sum']['Flugzeit'] += round($statdataline['Flugzeit']);
-			if ($statdataline['Kontrollflug']!= "Ja") {
-				$FlightStatistics['Sum']['Fund'] += $statdataline['Fund'];
+			rkrk_stat_inc($FlightStatistics, array('Sum', 'Felder'), 1);
+			rkrk_stat_inc($FlightStatistics, array('Sum', 'Fläche'), $flaeche);
+			rkrk_stat_inc($FlightStatistics, array('Sum', 'Flugzeit'), $flugzeit);
+			if ($kontrollflug) {
+				rkrk_stat_inc($FlightStatistics, array('Sum', 'Fund'), $fund);
 			}
-			$FlightStatistics['Sum']['Einsatztage'][$statdataline['Datum']."-".$statdataline['Pilot']] = $statdataline['Datum'];
+			$FlightStatistics['Sum']['Einsatztage'][$datum."-".$pilot] = $datum;
 			$FlightStatistics['Sum']['AnzEinsätze'] = count($FlightStatistics['Sum']['Einsatztage']);
 			//Day
 			//$FlightStatistics['Day']['Felder'][$statdataline['Datum']] += 1;
@@ -1230,16 +1361,17 @@ if (!$NoPilSelection) {
 			//}
 			//$FlightStatistics['Day']['Einsatztage'[$statdataline['Datum']]][$statdataline['Datum']] = $statdataline['Datum'];
 			//$FlightStatistics['Day']['AnzEinsätze'][$statdataline['Datum']] = count($FlightStatistics['Datum'][$statdataline['Datum']]['Einsatztage']);
-			$FlightStatistics['Warn']['CTR'] = $FlightStatistics['Warn']['CTR']  + preg_match("/(CTR)/", $statdataline['Warnung']);
+			$warnung = (string)($statdataline['Warnung'] ?? '');
+			rkrk_stat_inc($FlightStatistics, array('Warn', 'CTR'), preg_match("/(CTR)/", $warnung));
 			if ($Jahr<2024) {
-				$FlightStatistics['Warn']['NGT'] = $FlightStatistics['Warn']['NGT']  + preg_match("/(NGT)/", $statdataline['Warnung']);
+				rkrk_stat_inc($FlightStatistics, array('Warn', 'NGT'), preg_match("/(NGT)/", $warnung));
 			} else {	
-				$FlightStatistics['Warn']['NGT1'] = $FlightStatistics['Warn']['NGT1']  + preg_match("/(NGT1)/", $statdataline['Warnung']);
-				$FlightStatistics['Warn']['NGT2'] = $FlightStatistics['Warn']['NGT2']  + preg_match("/(NGT2)/", $statdataline['Warnung']);
+				rkrk_stat_inc($FlightStatistics, array('Warn', 'NGT1'), preg_match("/(NGT1)/", $warnung));
+				rkrk_stat_inc($FlightStatistics, array('Warn', 'NGT2'), preg_match("/(NGT2)/", $warnung));
 			}
-			$FlightStatistics['Warn']['STP'] = $FlightStatistics['Warn']['STP']  + preg_match("/(STP)/", $statdataline['Warnung']);
-			$FlightStatistics['Warn']['SORA'] = $FlightStatistics['Warn']['SORA'] + preg_match("/(SORA)/", $statdataline['Warnung']);
-			$FlightStatistics['Warn']['SPEZ'] = $FlightStatistics['Warn']['SPEZ'] + preg_match("/(NSG|NSF|FVB|USP)/", $statdataline['Warnung']);
+			rkrk_stat_inc($FlightStatistics, array('Warn', 'STP'), preg_match("/(STP)/", $warnung));
+			rkrk_stat_inc($FlightStatistics, array('Warn', 'SORA'), preg_match("/(SORA)/", $warnung));
+			rkrk_stat_inc($FlightStatistics, array('Warn', 'SPEZ'), preg_match("/(NSG|NSF|FVB|USP)/", $warnung));
 		}
 	}
 	//pre_r($FlightStatistics['JG']);
@@ -1261,44 +1393,69 @@ if (!$NoPilSelection) {
 	//pre_R($FeldStatistics['FelderSum']);
 	//pre_r($EnabledRegion);
 
-	ksort($FlightStatistics['JG']);
-	ksort($FlightStatistics['Gde']);
+	if (isset($FlightStatistics['JG']) && is_array($FlightStatistics['JG'])) {
+		ksort($FlightStatistics['JG']);
+	}
+	if (isset($FlightStatistics['Gde']) && is_array($FlightStatistics['Gde'])) {
+		ksort($FlightStatistics['Gde']);
+	}
 	// create summary data
+	if (!isset($SumStats) || !is_array($SumStats)) {
+		$SumStats = array();
+	}
+	if (!isset($SumStats['JGPIL']) || !is_array($SumStats['JGPIL'])) {
+		$SumStats['JGPIL'] = array();
+	}
 	
 	foreach ($SummaryStatistics as $Y_key => $Y_data) {
 		ksort($SumStats['JGPIL']);
 		//echo $Y_key;
-		if (substr($Y_key,-4) <= $Jahr) {
+		if (!is_array($Y_data) || substr($Y_key,-4) > $Jahr) {
+			continue;
+		}
 			//echo "a";
-			foreach ($Y_data["JGPIL"] as $J_key => $J_data) {
+			$jgPil = (isset($Y_data["JGPIL"]) && is_array($Y_data["JGPIL"])) ? $Y_data["JGPIL"] : array();
+			foreach ($jgPil as $J_key => $J_data) {
 				//echo substr($J_key,1) . "<br>";
-				if (($EnabledRegion[substr($J_key,1)]==1)
+				if (!is_array($J_data)) {
+					continue;
+				}
+				if ((($EnabledRegion[substr((string)$J_key,1)] ?? 0)==1)
 					or $all){
 					
 					//echo "b";
 					foreach ($J_data as $P_key => $P_data) {
 					//echo "b1";
 					//echo substr($P_key,1) . "<br>";
-						$SumStats[substr($Y_key,1)]['JGPIL']['AnzEinsaetze']=0;
+						if (!is_array($P_data)) {
+							continue;
+						}
+						$yearKey = substr($Y_key,1);
+						$SumStats[$yearKey]['JGPIL']['AnzEinsaetze']=0;
 						//pre_R($P_data);
-						if (($EnabledPilot[substr($P_key,1)]==1) 
+						if ((($EnabledPilot[substr((string)$P_key,1)] ?? 0)==1) 
 							or $all){
 							//echo "c";
 					
-							foreach ($P_data["Einsatztage"] as $key => $data) {
-								$SumStats['JGPIL'][substr($Y_key,1)]['Einsatztage'][$P_key.$key] = $data;
+							if (isset($P_data["Einsatztage"]) && is_array($P_data["Einsatztage"])) {
+								foreach ($P_data["Einsatztage"] as $key => $data) {
+									$SumStats['JGPIL'][$yearKey]['Einsatztage'][$P_key.$key] = $data;
+								}
 							}
 							//echo "d";
-							$SumStats['JGPIL'][substr($Y_key,1)]['Felder'] += $P_data['Felder'];
-							$SumStats['JGPIL'][substr($Y_key,1)]['Flaeche'] += $P_data['Flaeche'];
-							$SumStats['JGPIL'][substr($Y_key,1)]['Fund'] += $P_data['Fund'];
+							rkrk_stat_inc($SumStats, array('JGPIL', $yearKey, 'Felder'), $P_data['Felder'] ?? 0);
+							rkrk_stat_inc($SumStats, array('JGPIL', $yearKey, 'Flaeche'), $P_data['Flaeche'] ?? 0);
+							rkrk_stat_inc($SumStats, array('JGPIL', $yearKey, 'Fund'), $P_data['Fund'] ?? 0);
 						}
-						$SumStats['JGPIL'][substr($Y_key,1)]['AnzEinsaetze'] = count($SumStats['JGPIL'][substr($Y_key,1)]['Einsatztage']);
+						$tage = $SumStats['JGPIL'][$yearKey]['Einsatztage'] ?? array();
+						$SumStats['JGPIL'][$yearKey]['AnzEinsaetze'] = is_array($tage) ? count($tage) : 0;
 					}	
 				}	
 			}
 
-			ksort($Y_data['JG']);
+			if (isset($Y_data['JG']) && is_array($Y_data['JG'])) {
+				ksort($Y_data['JG']);
+			}
 	/*
 			foreach ($Y_data["JG"] as $J_key => $J_data) {
 				echo substr($J_key,1) . "<br>";
@@ -1317,11 +1474,12 @@ if (!$NoPilSelection) {
 			//TOTAL SUM
 			//echo($Y_key);
 			//pre_r($SummaryStatistics[$Y_key]['Sum']);
-			$SumStats[substr($Y_key,1)]['Felder'] = $Y_data['Sum']['Felder'];
-			$SumStats[substr($Y_key,1)]['Flaeche'] = $Y_data['Sum']['Flaeche'];
-			$SumStats[substr($Y_key,1)]['Fund'] = $Y_data['Sum']['Fund'];
-			$SumStats[substr($Y_key,1)]['AnzEinsaetze'] = $Y_data['Sum']['AnzEinsaetze'];
-		}
+			$sum = (isset($Y_data['Sum']) && is_array($Y_data['Sum'])) ? $Y_data['Sum'] : array();
+			$yearKey = substr($Y_key,1);
+			$SumStats[$yearKey]['Felder'] = $sum['Felder'] ?? 0;
+			$SumStats[$yearKey]['Flaeche'] = $sum['Flaeche'] ?? 0;
+			$SumStats[$yearKey]['Fund'] = $sum['Fund'] ?? 0;
+			$SumStats[$yearKey]['AnzEinsaetze'] = $sum['AnzEinsaetze'] ?? 0;
 	}
 	//sort($SumStats);
 	//uksort($SumStats);
@@ -1348,13 +1506,22 @@ if (!$NoPilSelection) {
 			){
 				//echo "Date: " .$statdataline['Datum'] . "<br>";
 				//echo "Fund: " . $FlightStatistics['Datum'][$statdataline['Datum']]['Fund'] . "<br>";
-				$MissionsStatistics['Datum'][$statdataline['Datum']]['Datum'] = $statdataline['Datum'];
-				$MissionsStatistics['Datum'][$statdataline['Datum']]['Wetter'] = $Weather[$statdataline['Datum']]['Wetter'];
-				$MissionsStatistics['Datum'][$statdataline['Datum']]['Temperatur'] = $Weather[$statdataline['Datum']]['Temp'];
-				$MissionsStatistics['Datum'][$statdataline['Datum']]["Wetter_Icon"] = str_replace($WeatherText, $WeatherIcon, $Weather[$statdataline['Datum']]['Wetter']);
-				$MissionsStatistics['Datum'][$statdataline['Datum']]['Fund'] = intval($FlightStatistics['Datum'][$statdataline['Datum']]['Fund']);
-				$MissionsStatistics['Datum'][$statdataline['Datum']]['Felder'] = intval($FlightStatistics['Datum'][$statdataline['Datum']]['Felder']);
-				$MissionsStatistics['Datum'][$statdataline['Datum']]['Piloten'] = intval($FlightStatistics['Datum'][$statdataline['Datum']]['AnzPiloten']);
+				$datum = (string)$statdataline['Datum'];
+				$flightDay = $FlightStatistics['Datum'][$datum] ?? array();
+				if (!is_array($flightDay)) {
+					$flightDay = array();
+				}
+				$weatherDay = $Weather[$datum] ?? array();
+				if (!is_array($weatherDay)) {
+					$weatherDay = array();
+				}
+				$MissionsStatistics['Datum'][$datum]['Datum'] = $datum;
+				$MissionsStatistics['Datum'][$datum]['Wetter'] = $weatherDay['Wetter'] ?? '';
+				$MissionsStatistics['Datum'][$datum]['Temperatur'] = $weatherDay['Temp'] ?? '';
+				$MissionsStatistics['Datum'][$datum]["Wetter_Icon"] = str_replace($WeatherText, $WeatherIcon, (string)($weatherDay['Wetter'] ?? ''));
+				$MissionsStatistics['Datum'][$datum]['Fund'] = intval(rkrk_stat_num($flightDay['Fund'] ?? 0));
+				$MissionsStatistics['Datum'][$datum]['Felder'] = intval(rkrk_stat_num($flightDay['Felder'] ?? 0));
+				$MissionsStatistics['Datum'][$datum]['Piloten'] = intval(rkrk_stat_num($flightDay['AnzPiloten'] ?? 0));
 				//MissionsStatistics['Datum'][$statdataline['Datum']]['Wetter'] = 
 			}
 	}	
@@ -1440,6 +1607,14 @@ if (!$NoPilSelection) {
 								GetDataFromStrArrayField($SumStats['JGPIL'], 'Fund', 'Funde' ),
 							);
 
+	$KumulativStats = rkrk_build_cumulative_year_stats($SumStats['JGPIL'] ?? array(), $Jahr, 2020);
+	$Kumulativ_Data = array(
+		GetDataFromStrArrayKey($KumulativStats, 'Kumulativ seit 2020 [Jahr]'),
+		GetDataFromStrArrayField($KumulativStats, 'AnzEinsaetze', 'Einsatztage'),
+		GetDataFromStrArrayField($KumulativStats, 'Fund', 'Gerettete Rehkitze'),
+		GetDataFromStrArrayField($KumulativStats, 'Flaeche', 'Fläche [ha]'),
+	);
+
 	//pre_R($FeldStatistics['FelderSum']);
 	//pre_R($FeldStat_Data);
 	//pre_R($SumStats);
@@ -1517,35 +1692,51 @@ if (!$NoPilSelection) {
 	
 	//Create Legends
 	//JG
+	$JGLegend = array();
 	$JGList = GetDataFromStrArrayKey($FlightStatistics['JG']);
 	foreach ($JGList as $entry) {
 	  $JG = str_replace("'","", $entry);
-	  if ($JG!="") $JGLegend[$JG] = $JG . ": " . $RegionSettings[$JG]['Text'];	
+	  if ($JG!="") {
+		$jgText = (isset($RegionSettings[$JG]) && is_array($RegionSettings[$JG])) ? (string)($RegionSettings[$JG]['Text'] ?? '') : '';
+		$JGLegend[$JG] = $JG . ": " . $jgText;
+	  }
 	}
 	$JGLegend = implode (', ', $JGLegend);
 	//echo $JGLegend;
 	//Gde
+	$GdeLegend = array();
 	$GdeList = GetDataFromStrArrayKey($FlightStatistics['Gde']);
 	foreach ($GdeList as $entry) {
 	  $Gde = str_replace("'","", $entry);	
-	  if ($Gde!="") $GdeLegend[$Gde] = $Gde . ": " . $OptionGemeinde[$Gde]['Text'];	
+	  if ($Gde!="") {
+		$gdeText = (isset($OptionGemeinde[$Gde]) && is_array($OptionGemeinde[$Gde])) ? (string)($OptionGemeinde[$Gde]['Text'] ?? '') : '';
+		$GdeLegend[$Gde] = $Gde . ": " . $gdeText;
+	  }
 	}
 	$GdeLegend = implode (', ', $GdeLegend);
 	//echo $GdeLegend;
 
 	//Pilots
+	$PilotsLegend = array();
 	$PilotList = GetDataFromStrArrayKey($FlightStatistics['Pilot']);
 	foreach ($PilotList as $entry) {
 	  $Pilot = str_replace("'","", $entry);	
-	  if ($Pilot!="") $PilotsLegend[$Pilot] = $Pilot . ": " . $OptionPilot[$Pilot]['Text'];	
+	  if ($Pilot!="") {
+		$pilotText = (isset($OptionPilot[$Pilot]) && is_array($OptionPilot[$Pilot])) ? (string)($OptionPilot[$Pilot]['Text'] ?? '') : '';
+		$PilotsLegend[$Pilot] = $Pilot . ": " . $pilotText;
+	  }
 	}
 	$PilotsLegend = implode (', ', $PilotsLegend);
 	//echo $PilotsLegend;
 	//Reg
+	$RegionsLegend = array();
 	$RegList = GetDataFromStrArrayKey($FlightStatistics['Reg']);
 	foreach ($RegList as $entry) {
 	  $Regup = str_replace("'","", $entry);	
-	  if ($Regup!="") $RegionsLegend[$Regup] = $Regup . ": " . $OptionRegUp[$Regup]['Text'];	
+	  if ($Regup!="") {
+		$regText = (isset($OptionRegUp[$Regup]) && is_array($OptionRegUp[$Regup])) ? (string)($OptionRegUp[$Regup]['Text'] ?? '') : '';
+		$RegionsLegend[$Regup] = $Regup . ": " . $regText;
+	  }
 	}
 	$RegionsLegend = implode (', ', $RegionsLegend);
 	//echo $RegionsLegend;
@@ -1577,7 +1768,7 @@ if (!$NoPilSelection) {
 		$Day_Data[$i][1]=$day['Felder'];
 		$Day_Data[$i][2]=$day['Fläche'];
 		//$Day_Data[$i][3]=$day['Flugzeit'];
-		$Day_Data[$i][4]=$day['Fund'];
+		$Day_Data[$i][4]=$day['Fund'] ?? 0;
 		$i++;
 	}
 	
@@ -1654,6 +1845,7 @@ if (!$NoPilSelection) {
 		}
 		function rkrk_emit_stat_chart($cfg) {
 			global $NumChart, $ChartHeight, $ChartWidth, $BarColors;
+			$useColors = (isset($cfg['colors']) && $cfg['colors'] !== '') ? $cfg['colors'] : $BarColors;
 			$id = 'Chart' . $NumChart;
 			$NumChart++;
 			$wanted = array_key_exists('wanted', $cfg)
@@ -1693,15 +1885,15 @@ if (!$NoPilSelection) {
 			$hTitle = isset($cfg['hTitle']) ? $cfg['hTitle'] : '';
 			$vTitle = isset($cfg['vTitle']) ? $cfg['vTitle'] : '';
 			if ($type === 'column') {
-				echo createColumnChart($id, $title, $data, $BarColors, $hTitle, $vTitle, $h, $w);
+				echo createColumnChart($id, $title, $data, $useColors, $hTitle, $vTitle, $h, $w);
 			} elseif ($type === 'bar') {
-				echo createBarChart($id, $title, $data, $BarColors, $hTitle, $vTitle, $h, $w);
+				echo createBarChart($id, $title, $data, $useColors, $hTitle, $vTitle, $h, $w);
 			} elseif ($type === 'line') {
-				echo createLineChart($id, $title, $data, $BarColors, $hTitle, $vTitle, $h, $w);
+				echo createLineChart($id, $title, $data, $useColors, $hTitle, $vTitle, $h, $w);
 			} elseif ($type === 'pie') {
-				echo createPieChart($id, $title, $data, $BarColors, $h, $w);
+				echo createPieChart($id, $title, $data, $useColors, $h, $w);
 			} elseif ($type === 'combo') {
-				echo createComboChart($id, $title, $data, $BarColors, $hTitle, $vTitle, $h, $w);
+				echo createComboChart($id, $title, $data, $useColors, $hTitle, $vTitle, $h, $w);
 			}
 			if (!array_key_exists('table', $cfg) || $cfg['table'] !== false) {
 				$tableRows = isset($cfg['tableRows']) ? $cfg['tableRows'] : $rows;
@@ -1815,6 +2007,15 @@ if (!$NoPilSelection) {
 		'title' => 'Entwicklung Felder/Fläche', 'rows' => $EntFeFl_Data,
 		'prep' => 'optionsX', 'countAxis' => 0, 'hTitle' => 'Jahr',
 		'emptyMsg' => 'Keine Daten über die Feld- und Flächenentwicklung.<br>',
+	));
+	rkrk_emit_stat_chart(array(
+		'name' => 'Kumulativ', 'type' => 'line', 'slot' => 'span', 'alsoOnFull' => true,
+		'title' => 'Kumulativ seit 2020', 'rows' => $Kumulativ_Data,
+		'prep' => 'optionsX', 'countAxis' => 0, 'hTitle' => 'Jahr',
+		'vTitle' => 'Summe',
+		'width' => 2 * $ChartWidth,
+		'colors' => "['#e67e22','#2e7d32','#1565c0']",
+		'emptyMsg' => 'Keine kumulierten Daten seit 2020.<br>',
 	));
 	rkrk_emit_stat_chart(array(
 		'name' => 'FelderProRegion', 'type' => 'column', 'slot' => '1',
@@ -2052,5 +2253,30 @@ function Swop(mybloc1, mybloc2, mybutton, mytext1, mytext2) {
 }
 
 </script>
+<?php if (!empty($nlEmbed)) { ?>
+<script>
+(function () {
+	var charts = document.querySelector('.rkrk-stat-charts');
+	if (!charts) return;
+	document.body.insertBefore(charts, document.body.firstChild);
+	var nodes = document.body.children;
+	for (var i = 0; i < nodes.length; i++) {
+		var n = nodes[i];
+		if (n === charts || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') continue;
+		n.style.display = 'none';
+	}
+	document.body.style.margin = '0';
+	document.body.style.background = '#fff';
+	charts.style.display = 'grid';
+	charts.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+	charts.style.maxWidth = 'none';
+	charts.style.margin = '0';
+	charts.style.width = '100%';
+	charts.style.gap = '8px';
+	var tables = charts.querySelectorAll('table');
+	for (var t = 0; t < tables.length; t++) tables[t].style.display = 'none';
+})();
+</script>
+<?php } ?>
 </body>
 </HTML>

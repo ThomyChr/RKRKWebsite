@@ -76,6 +76,12 @@ if (isset($_GET["DoSafe"])) {
 } else {
 	$dosafe= false;
 }
+if (!isset($EnableDelete)) {
+	$EnableDelete = false;
+}
+if (!isset($EnableDeleteSet)) {
+	$EnableDeleteSet = "";
+}
 
 if (isset($_GET["Jahr"])) {
 	$Jahr = $_GET["Jahr"];
@@ -100,7 +106,7 @@ if (isset($_GET["SelFrom"])) {
 elseif (isset($_POST["SelFrom"])) { 
 	$FromDate = $_POST["SelFrom"];
 } else {
-	if (GetSasionStartDate($Jahr)<date())
+	if (GetSasionStartDate($Jahr) < date('Y-m-d'))
 		$FromDate = GetSasionStartDate($Jahr);
 	else
 		$FromDate = date('Y-m-d', strtotime('last monday', strtotime('next monday')));
@@ -222,10 +228,10 @@ elseif (isset($_POST["SelFrom"])) {
 				//$rowcontent = chr(34);
 				$rowcontent = "";
 				$rowcontent .= $entry["Datum"] . $csv_deliminator;
-				$rowcontent .= $entry["Wetter"] . $csv_deliminator;
-				$rowcontent .= $entry["Temp"] . $csv_deliminator;
+				$rowcontent .= ($entry["Wetter"] ?? '') . $csv_deliminator;
+				$rowcontent .= ($entry["Temp"] ?? '') . $csv_deliminator;
 				foreach ($PilotListWrite as $Pilot) {
-					$rowcontent .= $entry["Plan_"  . $Pilot["Opt"]] . $csv_deliminator;
+					$rowcontent .= ($entry["Plan_"  . $Pilot["Opt"]] ?? '') . $csv_deliminator;
 				}
 				$rowcontent = substr($rowcontent,0,-1) . chr(13) . chr(10);
 				//echo $rowcontent . "<br>";
@@ -250,7 +256,6 @@ elseif (isset($_POST["SelFrom"])) {
 			// safe file
 			//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			//echo $filecontent;
 			fclose($df);
@@ -281,9 +286,9 @@ elseif (isset($_POST["SelFrom"])) {
 	
 	// Add Icons, Weather, Availability
 	foreach ($data as $Key => $Datum) {
-		$data[$Key]["Wetter_Icon"] = str_replace($WeatherText, $WeatherIcon, $data[$Key]["Wetter"]);
+		$data[$Key]["Wetter_Icon"] = str_replace($WeatherText, $WeatherIcon, $data[$Key]["Wetter"] ?? '');
 		foreach ($PilotList as $Pilot) {
-			$data[$Key]['Plan_'  . $Pilot["Opt"] . '_Icon'] = str_replace($AvailablityText, $AvailablityIcon, $data[$Key]["Plan_"  . $Pilot["Opt"]]);
+			$data[$Key]['Plan_'  . $Pilot["Opt"] . '_Icon'] = str_replace($AvailablityText, $AvailablityIcon, $data[$Key]["Plan_"  . $Pilot["Opt"]] ?? '');
 		}
 	}
 	ksort($data); 
@@ -320,6 +325,8 @@ elseif (isset($_POST["SelFrom"])) {
 	}
 	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 		$FontSize= $_POST["FontSize"];
+	} else {
+		$FontSize= "120%";
 	}
 
 
@@ -329,7 +336,7 @@ elseif (isset($_POST["SelFrom"])) {
 		// ===========================================
 		$i=1;
 		//Write to LOGfile
-		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Planung ",$FeldID, $RKRKMissionSelected,"");
+		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Planung ", $FeldID ?? '', $RKRKMissionSelected,"");
 		foreach ($data as $Key => $Datum) {
 			if (	
 					(
@@ -373,8 +380,6 @@ elseif (isset($_POST["SelFrom"])) {
 // HEADER FORM
 // ===========================================
 
-//removes what does not belong to tick list
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 //form to change setting
 echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">';
@@ -508,7 +513,7 @@ echo "<table width=100%>";
 
 			if (
 				(
-				(date('M',$dataline['Datum'])!=date('M',$PrevDate)) or
+				(date('M', strtotime((string)$dataline['Datum'])) != date('M', strtotime((string)$PrevDate))) or
 				(date('N',strtotime($dataline['Datum']))==1)
 				) and
 				true
@@ -533,17 +538,15 @@ echo "<table width=100%>";
 			echo '</td>' .chr(10);
 			echo '<td>' .chr(10);
 			$Inputfieldname= "Wetter_Icon-" . $i;
-			//echo InputField($Inputfieldname, $dataline['Wetter'], 10);
-			echo SelectFieldMultiOptArr($Inputfieldname, $dataline['Wetter_Icon'] ,$WeatherOptions );
+			echo SelectFieldMultiOptArr($Inputfieldname, $dataline['Wetter_Icon'] ?? '' ,$WeatherOptions );
 			echo "</td>" .chr(10);
 			echo '<td>' .chr(10);
-			echo InputField("Temp-" . $i, $dataline['Temp'], 3);
+			echo InputField("Temp-" . $i, $dataline['Temp'] ?? '', 3);
 			echo "</td>" .chr(10);
 			foreach ($PilotList as $Pilot) {
 				echo '<td>' .chr(10);
-				//echo InputField("Plan_TC-" . $i, $dataline['Plan_TC'], 5);
 				$Inputfieldname= 'Plan_'  . $Pilot['Opt'] . '_Icon-' . $i;
-				echo SelectFieldMultiOptArr($Inputfieldname, $dataline['Plan_'  . $Pilot['Opt'] . '_Icon'] ,$AvailablityOptions );
+				echo SelectFieldMultiOptArr($Inputfieldname, $dataline['Plan_'  . $Pilot['Opt'] . '_Icon'] ?? '' ,$AvailablityOptions );
 				echo "</td>" .chr(10);
 				/*
 				echo '<td>' .chr(10);
@@ -586,6 +589,7 @@ echo "<table width=100%>";
 // ========================================
 
 // Felddaten 
+if (is_array($Feldkatalog ?? null)) {
 foreach ($Feldkatalog as $JGFields) {
 	foreach ($JGFields as $key => $Field)  {
 		$FieldDataArray[$key]["FeldID"] = $Field["FeldID"];
@@ -602,6 +606,7 @@ foreach ($Feldkatalog as $JGFields) {
 		$FieldDataArray[$key]["Jaeger"] = $Field["Jaeger"];
 	} // JG Fields
 } // $Feldkatalog
+}
 //pre_R($FieldDataArray);
 //Adressdaten
 
@@ -617,14 +622,14 @@ foreach ($AvailablityOptions as $Option) {
 <script type='text/javascript'>
 <?php
 //echo json_encode($AdressDataArray);
-echo "var FieldDataArray = ". json_encode($FieldDataArray) . ";\n";
-echo "var AdressDataArray = ". json_encode($AdressDataArray) . ";\n";
-echo "var RegDataArray = ". json_encode($RegDataArray) . ";\n";
+echo "var FieldDataArray = ". json_encode($FieldDataArray ?? new stdClass()) . ";\n";
+echo "var AdressDataArray = ". json_encode($AdressDataArray ?? new stdClass()) . ";\n";
+echo "var RegDataArray = ". json_encode($RegDataArray ?? new stdClass()) . ";\n";
 ?>
 
 // Transfering date from PHP to JSON
-//var FieldDataArray = $.parseJSON(<?php echo json_encode($FieldDataArray); ?>);
-//var AdressDataArray = $.parseJSON(<?php echo json_encode($AdressDataArray); ?>);
+//var FieldDataArray = $.parseJSON(<?php echo json_encode($FieldDataArray ?? new stdClass()); ?>);
+//var AdressDataArray = $.parseJSON(<?php echo json_encode($AdressDataArray ?? new stdClass()); ?>);
 
 //  document.getElementById("debug").innerHTML = FieldDataArray["21-012"]["FeldID"];
 

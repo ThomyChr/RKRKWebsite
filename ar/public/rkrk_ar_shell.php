@@ -7,6 +7,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 	session_start();
 }
 $folderoffset = '../../';
+$MenuDirOffset = $folderoffset;
 include_once $folderoffset . 'scripts/rkrk_gen.php';
 include_once $folderoffset . 'scripts/rkrk_menu.php';
 include_once $folderoffset . 'rkrk_access_control.php';
@@ -18,19 +19,37 @@ function rkrk_ar_boot(): void
 	}
 }
 
+/** Login prüfen, ohne HTML auszugeben — damit POST-Redirects funktionieren. */
+function rkrk_ar_require_login(): void
+{
+	global $LoggedOn;
+	if (function_exists('GrantAccess')) {
+		GrantAccess();
+	}
+	if (!empty($LoggedOn)) {
+		return;
+	}
+	rkrk_ar_emit_chrome('styles.css');
+	if (function_exists('RegisterForm')) {
+		RegisterForm(function_exists('getIPAddress') ? getIPAddress() : '', 'Login', true);
+	}
+	exit;
+}
+
 function rkrk_ar_emit_chrome(string $extraCss = 'styles.css'): void
 {
-	global $folderoffset, $LoggedOn;
+	global $folderoffset, $LoggedOn, $MenuDirOffset;
+	$MenuDirOffset = $folderoffset;
 	headerpage('Drohnenrehkitzrettung.ch', false, $folderoffset);
+	if (function_exists('CreateTopMenu')) {
+		CreateTopMenu($folderoffset);
+	}
 	if (function_exists('GrantAccess')) {
 		GrantAccess();
 	}
 	if (empty($LoggedOn) && function_exists('RegisterForm')) {
 		RegisterForm(getIPAddress(), 'Login', true);
 		exit;
-	}
-	if (function_exists('CreateTopMenu')) {
-		CreateTopMenu($folderoffset);
 	}
 	if ($extraCss !== '') {
 		$href = $extraCss;

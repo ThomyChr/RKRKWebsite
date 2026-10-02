@@ -269,7 +269,7 @@
     if (bits.length) html += '<div class="pop-desc">' + bits.join(' · ') + '</div>';
     if (remark) html += '<div class="pop-desc"><b>Bemerkung</b><br>' + remark + '</div>';
     if (notam) html += '<div class="pop-desc">NOTAM ' + notam + '</div>';
-    html += '<div class="pop-desc"><i>Nur Segment GND–120 m AGL. Quelle: Skyguide DABS, ersetzt keine NOTAMs.</i></div>';
+    html += '<div class="pop-desc"><i>Nur Segment GND–200 m AGL. Quelle: Skyguide DABS, ersetzt keine NOTAMs.</i></div>';
     var verLine = dabsVersionLine(feature, meta);
     if (verLine) html += '<div class="pop-desc">' + escapeHtml(verLine) + '</div>';
     return html;
@@ -282,18 +282,18 @@
     var showLabel = !!name && Number.isFinite(res) && res < 140;
     return new ol.style.Style({
       stroke: new ol.style.Stroke({
-        color: '#cc0000',
-        width: isPoly ? 2.8 : 2.2,
+        color: '#8b0000',
+        width: isPoly ? 3.4 : 2.8,
         lineJoin: 'round',
         lineDash: isPoly ? undefined : [7, 5],
       }),
-      fill: new ol.style.Fill({ color: isPoly ? 'rgba(204,0,0,0.10)' : 'rgba(204,0,0,0.05)' }),
+      fill: new ol.style.Fill({ color: isPoly ? 'rgba(180,0,0,0.36)' : 'rgba(180,0,0,0.26)' }),
       text: showLabel
         ? new ol.style.Text({
             text: name,
-            font: 'bold 12px sans-serif',
-            fill: new ol.style.Fill({ color: '#cc0000' }),
-            stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.95)', width: 3 }),
+            font: 'bold 13px sans-serif',
+            fill: new ol.style.Fill({ color: '#7a0000' }),
+            stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.95)', width: 4 }),
             overflow: true,
           })
         : undefined,
@@ -774,7 +774,7 @@
         var skipped = Number(meta.skipped_high) || 0;
         var polyN = Number(meta.polygons);
         var circN = Number(meta.circles);
-        var shapeBit = features.length + ' Gebiete bis 120 m AGL';
+        var shapeBit = features.length + ' Gebiete bis 200 m AGL';
         if (Number.isFinite(polyN) && Number.isFinite(circN) && (polyN + circN) > 0) {
           shapeBit = polyN + ' Polygone, ' + circN + ' Kreise';
         }
@@ -814,10 +814,227 @@
     };
   }
 
+  var IDENTIFY_SKIP_LAYER_IDS = {
+    'ch.swisstopo.swissalti3d-reliefschattierung': true,
+    'ch.swisstopo.swisssurface3d-reliefschattierung-multidirektional': true,
+  };
+
+  var SWISSTOPO_MAP_IDENTIFY_LAYERS = [
+    'ch.swisstopo.swissnames3d',
+    'ch.swisstopo.amtliches-gebaeudeadressverzeichnis',
+  ];
+
+  var IDENTIFY_LAYER_PRIORITY = [
+    'ch.bazl.luftfahrthindernis',
+    'ch.bazl.uas-aktivitaetszonen',
+    'ch.bazl.einschraenkungen-drohnen',
+    'ch.bfe.elektrische-anlagen_ueber_36',
+    'ch.swisstopo.bahnen-winter',
+    'ch.swisstopo.swisstlm3d-uebrigerverkehr',
+    'ch.swisstopo.swisstlm3d-wanderwege',
+    'ch.astra.hauptstrassennetz',
+    'ch.swisstopo.amtliches-strassenverzeichnis',
+    'ch.pronatura.naturschutzgebiete',
+    'ch.bafu.schutzgebiete-aulav_jagdbanngebiete',
+    'ch.bazl.wohngebiete-aulav',
+    'ch.swisstopo-vd.geometa-grundbuch',
+    'ch.kantone.cadastralwebmap-farbe',
+    'ch.swisstopo.swissnames3d',
+    'ch.swisstopo.amtliches-gebaeudeadressverzeichnis',
+    'ch.swisstopo.swissboundaries3d-gemeinde-flaeche.fill',
+  ];
+
+  var IDENTIFY_SKIP_ATTR = /^(id|fid|oid|objectid|bbox|geometry|geom|the_geom|label|adr_egaid|bdg_egid|adr_edid|str_esid|com_fosnr|adr_status|adr_official|adr_modified)$/i;
+
+  function identifyRowsAtEvent(map, evt, layerIds) {
+    if (!map || !evt) return Promise.resolve([]);
+    var ids = [];
+    (layerIds || []).forEach(function (id) {
+      var s = String(id || '').trim();
+      if (!s || IDENTIFY_SKIP_LAYER_IDS[s] || ids.indexOf(s) >= 0) return;
+      ids.push(s);
+    });
+    if (!ids.length) return Promise.resolve([]);
+    var coord = evt.coordinate;
+    var size = map.getSize() || [800, 600];
+    var extent = map.getView().calculateExtent(size);
+    var url = 'https://api3.geo.admin.ch/rest/services/api/MapServer/identify'
+      + '?geometryType=esriGeometryPoint'
+      + '&geometry=' + encodeURIComponent(Number(coord[0]).toFixed(2) + ',' + Number(coord[1]).toFixed(2))
+      + '&imageDisplay=' + Math.round(size[0]) + ',' + Math.round(size[1]) + ',96'
+      + '&mapExtent=' + encodeURIComponent(extent.map(function (n) { return Math.round(n); }).join(','))
+      + '&tolerance=12'
+      + '&layers=' + encodeURIComponent('all:' + ids.join(','))
+      + '&returnGeometry=false'
+      + '&sr=3857'
+      + '&lang=de'
+      + '&limit=8';
+    return fetch(url, { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (payload) {
+      return Array.isArray(payload && payload.results) ? payload.results : [];
+    }).catch(function () { return []; });
+  }
+
+  function pickBestIdentifyRow(rows) {
+    var list = Array.isArray(rows) ? rows : [];
+    if (!list.length) return null;
+    var i;
+    var p;
+    for (p = 0; p < IDENTIFY_LAYER_PRIORITY.length; p++) {
+      for (i = 0; i < list.length; i++) {
+        if (String(list[i].layerBodId || '') === IDENTIFY_LAYER_PRIORITY[p]) return list[i];
+      }
+    }
+    return list[0];
+  }
+
+  function prettyAttrKey(key) {
+    return String(key || '')
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^\w/, function (c) { return c.toUpperCase(); });
+  }
+
+  function buildingAddressTitle(attrs) {
+    var street = attrText(attrs, ['stn_label']);
+    var num = attrText(attrs, ['adr_number']);
+    var zip = attrText(attrs, ['zip_label']);
+    var title = [street, num].filter(Boolean).join(' ');
+    if (zip) title = title ? (title + ', ' + zip) : zip;
+    if (!title) title = attrText(attrs, ['com_name']);
+    return title;
+  }
+
+  function identifyResultHtml(row) {
+    row = row || {};
+    var layerId = String(row.layerBodId || '');
+    var attrs = row.attributes || row.attrs || {};
+    if (layerId === UAS_LAYER_ID) return uasPopupHtml(attrs);
+    if (layerId === OBSTACLE_LAYER_ID) return obstaclePopupHtml(attrs);
+    var title = '';
+    if (layerId === 'ch.swisstopo.amtliches-gebaeudeadressverzeichnis') {
+      title = buildingAddressTitle(attrs);
+    }
+    if (!title) {
+      title = attrText(attrs, ['label', 'name', 'bezeichnung', 'title', 'stn_label', 'com_name']);
+    }
+    if (!title || /^\d+$/.test(title)) {
+      title = String(row.layerName || 'Objekt');
+    }
+    var html = '<div class="pop-title">' + escapeHtml(title) + '</div>';
+    if (row.layerName && String(row.layerName) !== title) {
+      html += '<div class="pop-desc"><i>' + escapeHtml(row.layerName) + '</i></div>';
+    }
+    var keys = Object.keys(attrs);
+    var rowsHtml = '';
+    var shown = 0;
+    keys.forEach(function (key) {
+      if (shown >= 10) return;
+      if (IDENTIFY_SKIP_ATTR.test(key)) return;
+      var val = attrText(attrs, [key]);
+      if (!val || val === title) return;
+      rowsHtml += '<div class="pop-k">' + escapeHtml(prettyAttrKey(key)) + '</div>'
+        + '<div class="pop-v">' + escapeHtml(val) + '</div>';
+      shown += 1;
+    });
+    if (rowsHtml) html += '<div class="pop-kv">' + rowsHtml + '</div>';
+    return html;
+  }
+
+  function attachMapIdentify(map, options) {
+    options = options || {};
+    var popupEl = options.popupEl || document.getElementById('dabsPopup') || document.getElementById('map27Popup');
+    var popupBody = options.popupBody || document.getElementById('dabsPopupBody') || document.getElementById('map27PopupBody');
+    var popupOverlay = options.popupOverlay || null;
+    var enabled = false;
+    var token = 0;
+
+    function hidePopup() {
+      if (popupEl) popupEl.style.display = 'none';
+      if (popupOverlay) popupOverlay.setPosition(undefined);
+    }
+
+    function ensurePopupOverlay() {
+      if (popupOverlay || !popupEl) return popupOverlay;
+      popupOverlay = findPopupOverlay(map, popupEl);
+      if (popupOverlay) {
+        bindPopupClose(popupEl, popupOverlay, options.closeId);
+        return popupOverlay;
+      }
+      popupOverlay = new ol.Overlay({
+        element: popupEl,
+        autoPan: { animation: { duration: 180 } },
+        positioning: 'bottom-center',
+        offset: [0, -8],
+      });
+      map.addOverlay(popupOverlay);
+      if (typeof map.set === 'function') map.set('rkrkInfoPopupOverlay', popupOverlay);
+      bindPopupClose(popupEl, popupOverlay, options.closeId);
+      return popupOverlay;
+    }
+
+    function layerIdsNow() {
+      var ids = [];
+      if (typeof options.getLayerIds === 'function') {
+        try { ids = options.getLayerIds() || []; } catch (_) { ids = []; }
+      }
+      if (!Array.isArray(ids)) ids = [];
+      if (options.includeMapLayers !== false) {
+        var zoom = (map.getView && map.getView()) ? Number(map.getView().getZoom()) : 0;
+        if (Number.isFinite(zoom) && zoom >= 13) {
+          SWISSTOPO_MAP_IDENTIFY_LAYERS.forEach(function (id) {
+            if (ids.indexOf(id) < 0) ids.push(id);
+          });
+        }
+      }
+      return ids;
+    }
+
+    function enable() {
+      enabled = true;
+      ensurePopupOverlay();
+    }
+
+    function disable() {
+      enabled = false;
+      hidePopup();
+    }
+
+    function showAtEvent(evt) {
+      if (!enabled || !map) return Promise.resolve(false);
+      ensurePopupOverlay();
+      var t = ++token;
+      return identifyRowsAtEvent(map, evt, layerIdsNow()).then(function (rows) {
+        if (t !== token) return false;
+        var row = pickBestIdentifyRow(rows);
+        if (!row) {
+          hidePopup();
+          return false;
+        }
+        if (!popupEl || !popupBody || !popupOverlay) return false;
+        popupBody.innerHTML = identifyResultHtml(row);
+        popupEl.style.display = 'block';
+        popupOverlay.setPosition(evt.coordinate);
+        return true;
+      });
+    }
+
+    return {
+      enable: enable,
+      disable: disable,
+      isEnabled: function () { return enabled; },
+      showAtEvent: showAtEvent,
+      hidePopup: hidePopup,
+    };
+  }
+
   global.RkrkSwissOverlays = {
     OBSTACLE_LAYER_ID: OBSTACLE_LAYER_ID,
     OBSTACLE_WMS_LAYERS: OBSTACLE_WMS_LAYERS,
     UAS_LAYER_ID: UAS_LAYER_ID,
+    SWISSTOPO_MAP_IDENTIFY_LAYERS: SWISSTOPO_MAP_IDENTIFY_LAYERS,
     createWmsLayer: createWmsLayer,
     wmsLayerIds: wmsLayerIds,
     attachObstacleHeights: attachObstacleHeights,
@@ -825,10 +1042,12 @@
     attachUasIdentify: attachUasIdentify,
     attachUasLabels: attachUasLabels,
     attachObstacleIdentify: attachObstacleIdentify,
+    attachMapIdentify: attachMapIdentify,
     runIdentifyChain: runIdentifyChain,
     dabsPopupHtml: dabsPopupHtml,
     uasPopupHtml: uasPopupHtml,
     obstaclePopupHtml: obstaclePopupHtml,
+    identifyResultHtml: identifyResultHtml,
     formatObstacleHeight: formatObstacleHeight,
   };
 })(window);

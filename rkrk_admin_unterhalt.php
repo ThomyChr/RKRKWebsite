@@ -270,7 +270,126 @@ echo "<div class='uh-phase' data-uh-help='unterhalt.overview'><b>Steuerung: test
 if (!$onControl) {
 	echo "<p class='uh-err'>Aktuelle Instanz ist <code>" . $h($siteKey) . "</code>. Unterhalt schreibt nur von test27 oder test aus.</p>\n";
 }
-echo "<p class='uh-muted'>Daten-Snapshots, Website-Snapshots und Code-Sync. Katalog und Website sind getrennte Wiederherstellungen. Nur Stufe <b>test</b>.</p>\n";
+echo "<p class='uh-muted'>Code-Sync, Daten-Snapshots und Website-Snapshots. Katalog und Website sind getrennte Wiederherstellungen. Nur Stufe <b>test</b>.</p>\n";
+
+echo "<div class='uh-card' id='uh-sync' data-uh-help='unterhalt.sync'>\n";
+echo "<h2>Code-Sync</h2>\n";
+echo "<p class='uh-muted'>Neue oder neuere Dateien (mtime + SHA1). Standard ist <b>Mirror</b>: Spiegelkopie der gewählten Ordner, überzählige Dateien im Ziel werden gelöscht (nur Sync-Matrix, nicht Katalog/Missionen). <b>Ergänzen</b> kopiert nur und löscht nichts. Von <b>test27</b> oder <b>test</b> aus. <b>Alle Ebenen |</b> läuft ab der aktuellen Instanz weiter (ohne rkrs, ohne Kopie auf sich selbst). Route nach rkrs nur wenn Site und Ordner aktiviert sind, dann ein Modul wählen. Assess geht nach <code>rkrs/assess/public/</code> (nicht <code>assess/</code>). Die Vorschau der späteren Stufen zeigt den Ist-Stand; Apply spielt die Stufen der Reihe nach. jsonfiles, Missionen-Medien, rkrs <code>data/</code>, <code>results/</code> und Live-Personel-JSON (geführt von rehkitzrettung.ch) werden nicht kopiert. RoboCopy v2 → pub erst abschalten, wenn Mirror auf dieser Route mehrfach geklappt hat.</p>\n";
+echo "<form method='post' action='rkrk_admin_unterhalt.php' class='uh-row' id='uh_sync_form'>";
+echo "<div class='uh-field'><span>Route</span><span class='rkrk-sels rkrk-reg-pills uh-pills'>";
+foreach ($routes as $rid => $route) {
+	if ($rid === 'to_rkrs') {
+		echo "<span class='uh-muted' title='Alle Ebenen enthält test27 → rkrs nicht'>|</span>";
+	}
+	$short = ($rid === 'all_levels')
+		? (isset($routes['to_rkrs']) ? 'Alle Ebenen |' : 'Alle Ebenen')
+		: ((string)($route['from'] ?? '') . ' → ' . (string)($route['to'] ?? $rid));
+	rkrk_unterhalt_echo_pill('radio', 'route', $rid, $syncRouteId === $rid, $short, '', (string)($route['label'] ?? $rid));
+}
+echo "</span></div>";
+$rkrsMods = rkrk_code_sync_rkrs_modules($cfg);
+$rkrsSel = rkrk_code_sync_selected_rkrs_folders($cfg);
+$rkrsOn = function_exists('rkrk_code_sync_rkrs_enabled') && rkrk_code_sync_rkrs_enabled($cfg);
+$rkrsShow = ($rkrsOn && $syncRouteId === 'to_rkrs') ? '' : ' style="display:none"';
+if ($rkrsOn) {
+	echo "<div class='uh-field' id='uh_rkrs_mods'" . $rkrsShow . "><span>rkrs-Modul</span><span class='rkrk-sels rkrk-reg-pills uh-pills'>";
+	foreach ($rkrsMods as $fid => $mod) {
+		$when = rkrk_code_sync_rkrs_last_label($fid, $cfg);
+		$title = (string)$mod['label'] . ' → ' . (string)$mod['dest'] . ' · ' . ($when === 'noch nie' ? 'noch nie' : ('zuletzt ' . $when));
+		echo "<span class='uh-rkrs-mod'>";
+		rkrk_unterhalt_echo_pill('checkbox', 'rkrs_mod[]', $fid, isset($rkrsSel[$fid]), (string)$mod['label'], '', $title);
+		echo "<span class='uh-muted'>" . $h((string)$mod['dest']) . "<br>" . $h($when === 'noch nie' ? 'noch nie' : ('zuletzt ' . $when)) . "</span></span>";
+	}
+	echo "</span><span class='uh-muted'>Nur bei Route test27 → rkrs. Mindestens ein Modul wählen.</span></div>";
+}
+echo "<div class='uh-field'><span>Modus</span><span class='rkrk-sels rkrk-reg-pills uh-pills'>";
+rkrk_unterhalt_echo_pill('radio', 'sync_mode', 'mirror', $syncMode === 'mirror', 'Mirror', '', 'Spiegelkopie, Extra-Dateien löschen');
+rkrk_unterhalt_echo_pill('radio', 'sync_mode', 'copy', $syncMode === 'copy', 'Ergänzen', '', 'Nur kopieren, nichts löschen');
+echo "</span></div>";
+echo "<button type='submit' name='uh_action' value='sync_preview'>Vorschau</button>";
+if ($syncApplyOk) {
+	echo "<button type='submit' name='uh_action' value='sync_apply' onclick=\"var f=this.form; function uhR(n){var m=f[n]; if(!m) return ''; if(!m.length) return m.value; for(var i=0;i<m.length;i++) if(m[i].checked) return m[i].value; return '';} function uhMods(){var out=[], els=f.querySelectorAll('input[name=\\'rkrs_mod[]\\']'); for(var i=0;i<els.length;i++) if(els[i].checked) out.push(els[i].value); return out;} var r=uhR('route'); var m=uhR('sync_mode'); if(r==='to_rkrs'){ var mods=uhMods(); if(!mods.length){ alert('Bitte ein rkrs-Modul wählen.'); return false; } return confirm((m==='mirror' ? 'Mirror auf rkrs-Modul ' : 'rkrs-Modul ') + mods.join(', ') + (m==='mirror' ? '. Extra-Dateien in diesen Ordnern werden gelöscht. Weiter?' : ' jetzt kopieren (nichts löschen). Weiter?')); } if(r==='all_levels'){ return confirm(m==='mirror' ? 'Alle Ebenen | ohne rkrs (Mirror). Extra-Dateien auf jeder Stufe werden gelöscht. Weiter?' : 'Alle Ebenen | ohne rkrs kopieren (nichts löschen). Weiter?'); } if(m==='mirror'){ return confirm('MIRROR: Überzählige Dateien auf dem Ziel werden gelöscht. Zuerst Vorschau prüfen. Weiter?'); } return confirm('Diese Route jetzt kopieren? Auf dem Ziel wird nichts gelöscht.');\">Synchronisieren</button>";
+} else {
+	echo "<button type='button' disabled>Synchronisieren (aus)</button>";
+}
+echo "</form>\n";
+if (!$syncApplyOk) {
+	echo "<p class='uh-muted'>Synchronisieren nur von test27 oder test, wenn Apply freigegeben ist. Vorschau zeigt, was kopiert würde.</p>\n";
+}
+
+if (is_array($syncPlan)) {
+	if (empty($syncPlan['ok'])) {
+		echo "<p class='uh-err'>" . $h((string)($syncPlan['error'] ?? 'Vorschau fehlgeschlagen.')) . "</p>\n";
+	} else {
+		$items = $syncPlan['items'] ?? array();
+		$destOnly = $syncPlan['dest_only'] ?? array();
+		$showHop = false;
+		foreach ($items as $item) {
+			if (!empty($item['hop'])) {
+				$showHop = true;
+				break;
+			}
+		}
+		if (!$showHop) {
+			foreach ($destOnly as $drow) {
+				if (!empty($drow['hop'])) {
+					$showHop = true;
+					break;
+				}
+			}
+		}
+		echo "<p class='uh-muted'>" . count($items) . " Dateien zum Kopieren · Modus " . $h($syncMode === 'mirror' ? 'Mirror' : 'Ergänzen') . " · " . $h((string)($syncPlan['route']['label'] ?? '')) . "</p>\n";
+		$colspan = $showHop ? 7 : 6;
+		echo "<div class='uh-scroll'><table class='big'><tr>";
+		if ($showHop) {
+			echo "<th>Stufe</th>";
+		}
+		echo "<th>Datei</th><th>Art</th><th>Quelle</th><th>Quelle-Zeit</th><th>Ziel-Zeit</th><th>Grösse</th></tr>\n";
+		if ($items === array()) {
+			echo "<tr><td colspan='" . (int)$colspan . "' class='uh-muted'>Nichts zu kopieren — Quelle und Ziel sind gleich (oder Ordner nicht aktiv).</td></tr>\n";
+		}
+		foreach ($items as $item) {
+			echo "<tr>";
+			if ($showHop) {
+				echo "<td>" . $h((string)($item['hop'] ?? '')) . "</td>";
+			}
+			echo "<td><code>" . $h((string)$item['rel']) . "</code></td><td>" . $h((string)$item['kind']) . "</td>";
+			echo "<td>" . $h((string)($item['source'] ?? '')) . "</td>";
+			echo "<td>" . ($item['from_mtime'] ? $h(date('d.m.Y H:i', (int)$item['from_mtime'])) : '') . "</td>";
+			echo "<td>" . ($item['to_mtime'] ? $h(date('d.m.Y H:i', (int)$item['to_mtime'])) : '—') . "</td>";
+			echo "<td>" . $h(rkrk_unterhalt_format_bytes((int)($item['bytes'] ?? 0))) . "</td></tr>\n";
+		}
+		echo "</table></div>\n";
+		if ($destOnly !== array()) {
+			if ($syncMode === 'mirror') {
+				echo "<div class='uh-warn'><b>Mirror: nur im Ziel</b> (" . count($destOnly) . ") — diese Dateien werden beim Synchronisieren <b>gelöscht</b>:</div>\n";
+			} else {
+				echo "<div class='uh-warn'><b>Nur im Ziel vorhanden</b> (" . count($destOnly) . ") — bleiben liegen (Ergänzen). Mit Mirror würden sie gelöscht:</div>\n";
+			}
+			echo "<div class='uh-scroll'><table class='big'><tr>";
+			if ($showHop) {
+				echo "<th>Stufe</th>";
+			}
+			echo "<th>Datei</th><th>Zeit</th><th>Grösse</th></tr>\n";
+			$shown = 0;
+			foreach ($destOnly as $drow) {
+				if ($shown >= 80) {
+					echo "<tr><td colspan='" . ($showHop ? 4 : 3) . "' class='uh-muted'>… " . (count($destOnly) - 80) . " weitere</td></tr>\n";
+					break;
+				}
+				echo "<tr>";
+				if ($showHop) {
+					echo "<td>" . $h((string)($drow['hop'] ?? '')) . "</td>";
+				}
+				echo "<td><code>" . $h((string)$drow['rel']) . "</code></td><td>" . ($drow['mtime'] ? $h(date('d.m.Y H:i', (int)$drow['mtime'])) : '') . "</td>";
+				echo "<td>" . $h(rkrk_unterhalt_format_bytes((int)($drow['bytes'] ?? 0))) . "</td></tr>\n";
+				$shown++;
+			}
+			echo "</table></div>\n";
+		}
+	}
+}
+echo "</div>\n";
 
 echo "<div class='uh-card' data-uh-help='unterhalt.dirs'>\n";
 echo "<h2>Verzeichnisse und Ordner</h2>\n";
@@ -449,125 +568,6 @@ if ($hasZip) {
 	echo "<form method='post' enctype='multipart/form-data' class='uh-row'><input type='hidden' name='uh_action' value='site_upload'>";
 	echo "<label>ZIP einspielen <input type='file' name='site_backup_zip' accept='.zip' required></label>";
 	echo "<button type='submit'>Hochladen und wiederherstellen</button></form>\n";
-}
-echo "</div>\n";
-
-echo "<div class='uh-card' id='uh-sync' data-uh-help='unterhalt.sync'>\n";
-echo "<h2>Code-Sync</h2>\n";
-echo "<p class='uh-muted'>Neue oder neuere Dateien (mtime + SHA1). Standard ist <b>Mirror</b>: Spiegelkopie der gewählten Ordner, überzählige Dateien im Ziel werden gelöscht (nur Sync-Matrix, nicht Katalog/Missionen). <b>Ergänzen</b> kopiert nur und löscht nichts. Von <b>test27</b> oder <b>test</b> aus. <b>Alle Ebenen |</b> läuft ab der aktuellen Instanz weiter (ohne rkrs, ohne Kopie auf sich selbst). Route nach rkrs nur wenn Site und Ordner aktiviert sind, dann ein Modul wählen. Assess geht nach <code>rkrs/assess/public/</code> (nicht <code>assess/</code>). Die Vorschau der späteren Stufen zeigt den Ist-Stand; Apply spielt die Stufen der Reihe nach. jsonfiles, Missionen-Medien und rkrs <code>data/</code> werden nicht kopiert. RoboCopy v2 → pub erst abschalten, wenn Mirror auf dieser Route mehrfach geklappt hat.</p>\n";
-echo "<form method='post' action='rkrk_admin_unterhalt.php' class='uh-row' id='uh_sync_form'>";
-echo "<div class='uh-field'><span>Route</span><span class='rkrk-sels rkrk-reg-pills uh-pills'>";
-foreach ($routes as $rid => $route) {
-	if ($rid === 'to_rkrs') {
-		echo "<span class='uh-muted' title='Alle Ebenen enthält test27 → rkrs nicht'>|</span>";
-	}
-	$short = ($rid === 'all_levels')
-		? (isset($routes['to_rkrs']) ? 'Alle Ebenen |' : 'Alle Ebenen')
-		: ((string)($route['from'] ?? '') . ' → ' . (string)($route['to'] ?? $rid));
-	rkrk_unterhalt_echo_pill('radio', 'route', $rid, $syncRouteId === $rid, $short, '', (string)($route['label'] ?? $rid));
-}
-echo "</span></div>";
-$rkrsMods = rkrk_code_sync_rkrs_modules($cfg);
-$rkrsSel = rkrk_code_sync_selected_rkrs_folders($cfg);
-$rkrsOn = function_exists('rkrk_code_sync_rkrs_enabled') && rkrk_code_sync_rkrs_enabled($cfg);
-$rkrsShow = ($rkrsOn && $syncRouteId === 'to_rkrs') ? '' : ' style="display:none"';
-if ($rkrsOn) {
-	echo "<div class='uh-field' id='uh_rkrs_mods'" . $rkrsShow . "><span>rkrs-Modul</span><span class='rkrk-sels rkrk-reg-pills uh-pills'>";
-	foreach ($rkrsMods as $fid => $mod) {
-		$when = rkrk_code_sync_rkrs_last_label($fid, $cfg);
-		$title = (string)$mod['label'] . ' → ' . (string)$mod['dest'] . ' · ' . ($when === 'noch nie' ? 'noch nie' : ('zuletzt ' . $when));
-		echo "<span class='uh-rkrs-mod'>";
-		rkrk_unterhalt_echo_pill('checkbox', 'rkrs_mod[]', $fid, isset($rkrsSel[$fid]), (string)$mod['label'], '', $title);
-		echo "<span class='uh-muted'>" . $h((string)$mod['dest']) . "<br>" . $h($when === 'noch nie' ? 'noch nie' : ('zuletzt ' . $when)) . "</span></span>";
-	}
-	echo "</span><span class='uh-muted'>Nur bei Route test27 → rkrs. Mindestens ein Modul wählen.</span></div>";
-}
-echo "<div class='uh-field'><span>Modus</span><span class='rkrk-sels rkrk-reg-pills uh-pills'>";
-rkrk_unterhalt_echo_pill('radio', 'sync_mode', 'mirror', $syncMode === 'mirror', 'Mirror', '', 'Spiegelkopie, Extra-Dateien löschen');
-rkrk_unterhalt_echo_pill('radio', 'sync_mode', 'copy', $syncMode === 'copy', 'Ergänzen', '', 'Nur kopieren, nichts löschen');
-echo "</span></div>";
-echo "<button type='submit' name='uh_action' value='sync_preview'>Vorschau</button>";
-if ($syncApplyOk) {
-	echo "<button type='submit' name='uh_action' value='sync_apply' onclick=\"var f=this.form; function uhR(n){var m=f[n]; if(!m) return ''; if(!m.length) return m.value; for(var i=0;i<m.length;i++) if(m[i].checked) return m[i].value; return '';} function uhMods(){var out=[], els=f.querySelectorAll('input[name=\\'rkrs_mod[]\\']'); for(var i=0;i<els.length;i++) if(els[i].checked) out.push(els[i].value); return out;} var r=uhR('route'); var m=uhR('sync_mode'); if(r==='to_rkrs'){ var mods=uhMods(); if(!mods.length){ alert('Bitte ein rkrs-Modul wählen.'); return false; } return confirm((m==='mirror' ? 'Mirror auf rkrs-Modul ' : 'rkrs-Modul ') + mods.join(', ') + (m==='mirror' ? '. Extra-Dateien in diesen Ordnern werden gelöscht. Weiter?' : ' jetzt kopieren (nichts löschen). Weiter?')); } if(r==='all_levels'){ return confirm(m==='mirror' ? 'Alle Ebenen | ohne rkrs (Mirror). Extra-Dateien auf jeder Stufe werden gelöscht. Weiter?' : 'Alle Ebenen | ohne rkrs kopieren (nichts löschen). Weiter?'); } if(m==='mirror'){ return confirm('MIRROR: Überzählige Dateien auf dem Ziel werden gelöscht. Zuerst Vorschau prüfen. Weiter?'); } return confirm('Diese Route jetzt kopieren? Auf dem Ziel wird nichts gelöscht.');\">Synchronisieren</button>";
-} else {
-	echo "<button type='button' disabled>Synchronisieren (aus)</button>";
-}
-echo "</form>\n";
-if (!$syncApplyOk) {
-	echo "<p class='uh-muted'>Synchronisieren nur von test27 oder test, wenn Apply freigegeben ist. Vorschau zeigt, was kopiert würde.</p>\n";
-}
-
-if (is_array($syncPlan)) {
-	if (empty($syncPlan['ok'])) {
-		echo "<p class='uh-err'>" . $h((string)($syncPlan['error'] ?? 'Vorschau fehlgeschlagen.')) . "</p>\n";
-	} else {
-		$items = $syncPlan['items'] ?? array();
-		$destOnly = $syncPlan['dest_only'] ?? array();
-		$showHop = false;
-		foreach ($items as $item) {
-			if (!empty($item['hop'])) {
-				$showHop = true;
-				break;
-			}
-		}
-		if (!$showHop) {
-			foreach ($destOnly as $drow) {
-				if (!empty($drow['hop'])) {
-					$showHop = true;
-					break;
-				}
-			}
-		}
-		echo "<p class='uh-muted'>" . count($items) . " Dateien zum Kopieren · Modus " . $h($syncMode === 'mirror' ? 'Mirror' : 'Ergänzen') . " · " . $h((string)($syncPlan['route']['label'] ?? '')) . "</p>\n";
-		$colspan = $showHop ? 7 : 6;
-		echo "<div class='uh-scroll'><table class='big'><tr>";
-		if ($showHop) {
-			echo "<th>Stufe</th>";
-		}
-		echo "<th>Datei</th><th>Art</th><th>Quelle</th><th>Quelle-Zeit</th><th>Ziel-Zeit</th><th>Grösse</th></tr>\n";
-		if ($items === array()) {
-			echo "<tr><td colspan='" . (int)$colspan . "' class='uh-muted'>Nichts zu kopieren — Quelle und Ziel sind gleich (oder Ordner nicht aktiv).</td></tr>\n";
-		}
-		foreach ($items as $item) {
-			echo "<tr>";
-			if ($showHop) {
-				echo "<td>" . $h((string)($item['hop'] ?? '')) . "</td>";
-			}
-			echo "<td><code>" . $h((string)$item['rel']) . "</code></td><td>" . $h((string)$item['kind']) . "</td>";
-			echo "<td>" . $h((string)($item['source'] ?? '')) . "</td>";
-			echo "<td>" . ($item['from_mtime'] ? $h(date('d.m.Y H:i', (int)$item['from_mtime'])) : '') . "</td>";
-			echo "<td>" . ($item['to_mtime'] ? $h(date('d.m.Y H:i', (int)$item['to_mtime'])) : '—') . "</td>";
-			echo "<td>" . $h(rkrk_unterhalt_format_bytes((int)($item['bytes'] ?? 0))) . "</td></tr>\n";
-		}
-		echo "</table></div>\n";
-		if ($destOnly !== array()) {
-			if ($syncMode === 'mirror') {
-				echo "<div class='uh-warn'><b>Mirror: nur im Ziel</b> (" . count($destOnly) . ") — diese Dateien werden beim Synchronisieren <b>gelöscht</b>:</div>\n";
-			} else {
-				echo "<div class='uh-warn'><b>Nur im Ziel vorhanden</b> (" . count($destOnly) . ") — bleiben liegen (Ergänzen). Mit Mirror würden sie gelöscht:</div>\n";
-			}
-			echo "<div class='uh-scroll'><table class='big'><tr>";
-			if ($showHop) {
-				echo "<th>Stufe</th>";
-			}
-			echo "<th>Datei</th><th>Zeit</th><th>Grösse</th></tr>\n";
-			$shown = 0;
-			foreach ($destOnly as $drow) {
-				if ($shown >= 80) {
-					echo "<tr><td colspan='" . ($showHop ? 4 : 3) . "' class='uh-muted'>… " . (count($destOnly) - 80) . " weitere</td></tr>\n";
-					break;
-				}
-				echo "<tr>";
-				if ($showHop) {
-					echo "<td>" . $h((string)($drow['hop'] ?? '')) . "</td>";
-				}
-				echo "<td><code>" . $h((string)$drow['rel']) . "</code></td><td>" . ($drow['mtime'] ? $h(date('d.m.Y H:i', (int)$drow['mtime'])) : '') . "</td>";
-				echo "<td>" . $h(rkrk_unterhalt_format_bytes((int)($drow['bytes'] ?? 0))) . "</td></tr>\n";
-				$shown++;
-			}
-			echo "</table></div>\n";
-		}
-	}
 }
 echo "</div>\n";
 

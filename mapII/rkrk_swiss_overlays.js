@@ -269,7 +269,7 @@
     if (bits.length) html += '<div class="pop-desc">' + bits.join(' · ') + '</div>';
     if (remark) html += '<div class="pop-desc"><b>Bemerkung</b><br>' + remark + '</div>';
     if (notam) html += '<div class="pop-desc">NOTAM ' + notam + '</div>';
-    html += '<div class="pop-desc"><i>Nur Segment GND–120 m AGL. Quelle: Skyguide DABS, ersetzt keine NOTAMs.</i></div>';
+    html += '<div class="pop-desc"><i>Nur Segment GND–200 m AGL. Quelle: Skyguide DABS, ersetzt keine NOTAMs.</i></div>';
     var verLine = dabsVersionLine(feature, meta);
     if (verLine) html += '<div class="pop-desc">' + escapeHtml(verLine) + '</div>';
     return html;
@@ -282,18 +282,18 @@
     var showLabel = !!name && Number.isFinite(res) && res < 140;
     return new ol.style.Style({
       stroke: new ol.style.Stroke({
-        color: '#cc0000',
-        width: isPoly ? 2.8 : 2.2,
+        color: '#8b0000',
+        width: isPoly ? 3.4 : 2.8,
         lineJoin: 'round',
         lineDash: isPoly ? undefined : [7, 5],
       }),
-      fill: new ol.style.Fill({ color: isPoly ? 'rgba(204,0,0,0.10)' : 'rgba(204,0,0,0.05)' }),
+      fill: new ol.style.Fill({ color: isPoly ? 'rgba(180,0,0,0.36)' : 'rgba(180,0,0,0.26)' }),
       text: showLabel
         ? new ol.style.Text({
             text: name,
-            font: 'bold 12px sans-serif',
-            fill: new ol.style.Fill({ color: '#cc0000' }),
-            stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.95)', width: 3 }),
+            font: 'bold 13px sans-serif',
+            fill: new ol.style.Fill({ color: '#7a0000' }),
+            stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.95)', width: 4 }),
             overflow: true,
           })
         : undefined,
@@ -774,7 +774,7 @@
         var skipped = Number(meta.skipped_high) || 0;
         var polyN = Number(meta.polygons);
         var circN = Number(meta.circles);
-        var shapeBit = features.length + ' Gebiete bis 120 m AGL';
+        var shapeBit = features.length + ' Gebiete bis 200 m AGL';
         if (Number.isFinite(polyN) && Number.isFinite(circN) && (polyN + circN) > 0) {
           shapeBit = polyN + ' Polygone, ' + circN + ' Kreise';
         }

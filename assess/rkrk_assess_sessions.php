@@ -3,14 +3,21 @@
  * INSTR/ADMIN: laufende und abgeschlossene Prüfungen, Assessments und Schulungen
  * mit Recovery-Link (Fenster geschlossen / unterbrochen).
  */
+if (isset($_GET["rkrkdiag"]) && (string) $_GET["rkrkdiag"] === "path") {
+	header("Content-Type: text/plain; charset=utf-8");
+	$f = __DIR__ . "/rkrk_assess_common.php";
+	$src = is_file($f) ? (string) file_get_contents($f) : "";
+	echo "dir=" . __DIR__ . "\n";
+	echo "mtime=" . (is_file($f) ? date("c", (int) filemtime($f)) : "missing") . "\n";
+	echo "hasUnset=" . (strpos($src, "unset(\$_SESSION)") !== false ? "yes" : "no") . "\n";
+	echo "hasMoodleDiag=" . (strpos($src, "Moodle \" . (\$moodleUp") !== false ? "yes" : "no") . "\n";
+	exit;
+}
 if (function_exists("ob_get_level") && ob_get_level() === 0) {
 	ob_start();
 }
 error_reporting(E_ALL);
 ini_set("display_errors", "1");
-if (session_status() !== PHP_SESSION_ACTIVE) {
-	session_start();
-}
 $folderoffset = "../";
 include_once $folderoffset . "scripts/rkrk_csvfiles.php";
 include_once __DIR__ . "/rkrk_assess_common.php";
@@ -18,6 +25,13 @@ include_once __DIR__ . "/rkrk_assess_exam_session.inc.php";
 include_once __DIR__ . "/rkrk_checklist_toolbar_inc.php";
 include_once __DIR__ . "/rkrk_assess_checklist_progress.inc.php";
 include_once __DIR__ . "/rkrk_assess_quiz_progress.inc.php";
+
+if (function_exists("rkrk_assess_portal_sessions_enforce_access")) {
+	rkrk_assess_portal_sessions_enforce_access();
+}
+if (session_status() !== PHP_SESSION_ACTIVE) {
+	session_start();
+}
 
 if (function_exists("ProtectFromAccess")) {
 	CheckIPandExit($folderoffset);
@@ -270,6 +284,9 @@ function rkrk_sessions_mode_params(array $extra = array()): array {
 	if (!empty($GLOBALS["isInstrMode"]) && empty($params["ADMIN"])) {
 		$params["INSTR"] = "1";
 	}
+	if (function_exists("rkrk_assess_sessions_merge_cs_query")) {
+		$params = rkrk_assess_sessions_merge_cs_query($params);
+	}
 	return $params;
 }
 
@@ -335,6 +352,9 @@ function rkrk_sessions_delete_theory_quizlog(array $match): bool {
 }
 
 function rkrk_sessions_admin_can_delete(): bool {
+	if (function_exists("rkrk_assess_rkrs_access_via") && rkrk_assess_rkrs_access_via("sessions") === "cs") {
+		return false;
+	}
 	return !empty($GLOBALS["canUseExtendedAdmin"]) && !empty($GLOBALS["isAdminMode"]);
 }
 
@@ -1041,6 +1061,7 @@ $selfHref = rkrk_sessions_href("rkrk_assess_sessions.php", rkrk_sessions_mode_pa
   <div class="card rkrk-card">
     <form class="rkrk-sess-filters" method="get" action="rkrk_assess_sessions.php">
       <?php if (function_exists("rkrk_assess_echo_setting_hidden_input")) { rkrk_assess_echo_setting_hidden_input(); } ?>
+      <?php if (function_exists("rkrk_assess_rkrs_echo_cs_hidden_inputs")) { rkrk_assess_rkrs_echo_cs_hidden_inputs(array("cs")); } ?>
       <?php if (!empty($isAdminMode)): ?><input type="hidden" name="ADMIN" value="1"><?php endif; ?>
       <?php if (!empty($isInstrMode) && empty($isAdminMode)): ?><input type="hidden" name="INSTR" value="1"><?php endif; ?>
       <div>

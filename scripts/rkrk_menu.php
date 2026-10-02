@@ -757,21 +757,6 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"activ" => true,
 						"securl" => false,
 						),
-			"SiteStatistics" => Array (
-						"title" => "Seiten Statisik",
-						"site" => "rkrk_seitenstatistik.php",
-						"parameter" => "",
-						"target" => "_sitestat",
-						"image" => "/sitestat.png",
-						"image_small" => "/sitestat_small.png",
-						"desc_short" => "Seiten Statisik",
-						"desc_long" => "Seiten Statisik",
-						"main_menu" => "Unterhalt",
-						"release" => "test",
-						"sort" => $menuid++,
-						"activ" => true,
-						"securl" => false,
-						),
 			"Recovery" => Array (
 						"title" => "Flugkatalog wiederherstellen",
 						"site" => "rkrk_history_recovery.php",
@@ -796,21 +781,6 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"image_small" => "/settings.png",
 						"desc_short" => "Backup, Recover, Code-Sync",
 						"desc_long" => "<b>Unterhalt</b></br>Katalog-Sicherungen, Website-Sicherung und Code-Sync (Steuerung: test27).",
-						"main_menu" => "Unterhalt",
-						"release" => "test",
-						"sort" => $menuid++,
-						"activ" => true,
-						"securl" => false,
-						),
-			"Logfiles" => Array (
-						"title" => "Logfiles",
-						"site" => "rkrk_log.php",
-						"parameter" => "",
-						"target" => "_logfiles",
-						"image" => "/logfiles.png",
-						"image_small" => "/logfiles_small.png",
-						"desc_short" => "Logfiles",
-						"desc_long" => "Logfiles",
 						"main_menu" => "Unterhalt",
 						"release" => "test",
 						"sort" => $menuid++,
@@ -1069,7 +1039,7 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 			"map_obj" => Array (
 						"title" => "Overlay Editor",
 						"site" => "map/rkrk_map_overlay.php", // Objekte auf Map kreieren
-						"parameter" => "",
+						"parameter" => "ADMIN",
 						"target" => "_mapobj",
 						"image" => "/map.png",
 						"image_small" => "/map_small.png",
@@ -1160,6 +1130,51 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"activ" => true,
 						"securl" => false,
 						),
+			"SiteStatistics" => Array (
+						"title" => "Seitenstatistik",
+						"site" => "rkrk_seitenstatistik.php",
+						"parameter" => "",
+						"target" => "_sitestat",
+						"image" => "/sitestat.png",
+						"image_small" => "/sitestat_small.png",
+						"desc_short" => "Seitenstatistik",
+						"desc_long" => "Zugriffe nach Jahr und Quartal",
+						"main_menu" => "Intern",
+						"release" => "test",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
+			"Logfiles" => Array (
+						"title" => "Logfiles",
+						"site" => "rkrk_log.php",
+						"parameter" => "",
+						"target" => "_logfiles",
+						"image" => "/logfiles.png",
+						"image_small" => "/logfiles_small.png",
+						"desc_short" => "Logfiles",
+						"desc_long" => "Logfiles",
+						"main_menu" => "Intern",
+						"release" => "test",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
+			"UnterhaltIntern" => Array (
+						"title" => "Unterhalt",
+						"site" => "rkrk_admin_unterhalt.php",
+						"parameter" => "",
+						"target" => "_admin",
+						"image" => "/settings.png",
+						"image_small" => "/settings.png",
+						"desc_short" => "Backup, Recover, Code-Sync",
+						"desc_long" => "<b>Unterhalt</b></br>Katalog-Sicherungen, Website-Sicherung und Code-Sync (Steuerung: test27).",
+						"main_menu" => "Intern",
+						"release" => "test",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
 			"AdminConfig" => Array (
 						"title" => "Konfiguration",
 						"site" => "rkrk_admin.php",
@@ -1168,9 +1183,41 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"image" => "/settings.png",
 						"image_small" => "/settings.png",
 						"desc_short" => "Admin: Konfiguration",
-						"desc_long" => "<b>Konfiguration</b></br>Missionsbibliotheken, Regionen, Piloten, Menü und Branding (nur test).",
+						"desc_long" => "<b>Konfiguration</b></br>Missionsbibliotheken, Regionen, Piloten, Menü, Branding und Nachrichten (Mail, Telegram, WhatsApp).",
 						"main_menu" => "Intern",
 						"release" => "test",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
+			"Newsletter" => Array (
+						"title" => "Newsletter",
+						"site" => "newsletter/rkrk_newsletter.php",
+						"parameter" => "",
+						"target" => "_newsletter",
+						"image" => "/logfiles.png",
+						"image_small" => "/logfiles_small.png",
+						"desc_short" => "Newsletter",
+						"desc_long" => "<b>Newsletter</b></br>Eine Fassung, Du und Sie automatisch, Versand und öffentliche Embed-Seite.",
+						"main_menu" => "Intern",
+						"release" => "test",
+						"users" => "Thomas Christen,Chris,Vesa",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
+			"Gemeindebrief" => Array (
+						"title" => "Gemeindebriefe",
+						"site" => "newsletter/rkrk_gemeindebrief.php",
+						"parameter" => "",
+						"target" => "_gemeindebrief",
+						"image" => "/logfiles.png",
+						"image_small" => "/logfiles_small.png",
+						"desc_short" => "Gemeindebriefe",
+						"desc_long" => "<b>Gemeindebriefe</b></br>Halbjahresbrief mit Flugstatistik, Druck und Mail an die Gemeinden.",
+						"main_menu" => "Intern",
+						"release" => "test",
+						"users" => "Thomas Christen,Chris,Vesa",
 						"sort" => $menuid++,
 						"activ" => true,
 						"securl" => false,
@@ -1301,12 +1348,15 @@ function rkrk_menu_icon_src($SiteKey, $preferSmall = true){
 }
 
 function rkrk_menu_apply_diroffset($path) {
-	global $MenuDirOffset;
+	global $MenuDirOffset, $folderoffset;
 	$path = strval($path);
 	if ($path === "") {
 		return $path;
 	}
 	$offset = trim(strval($MenuDirOffset ?? ""));
+	if ($offset === "") {
+		$offset = trim(strval($folderoffset ?? ""));
+	}
 	if ($offset === "" || $offset === "./") {
 		return $path;
 	}
@@ -1399,6 +1449,7 @@ function MenuEntryAccessGranted($SiteKey) {
 
 Function CreateSiteLink ($SiteKey, $Parameters, $ShowSmall=false, $QM = true) {
 	global $MainMenu, $WebFreigabe, $IconLoc, $ButtonHeight, $GuestAccess, $UseSecUrl, $Layout;
+	$menuoutput = "";
 	//$ButtonHeight= 38;
     //echo $WebFreigabe . "<br>";
 	if (MenuEntryAccessGranted($SiteKey)) {

@@ -237,7 +237,7 @@
 */
 		),
 		
-//ID;Initialen;Betrieb;Jagdgebiet;Name;Kontaktnummer;P Telefon;Mail;Adresse;Typ;Bemerkung;Felder
+//ID;Initialen;Betrieb;Jagdgebiet;Name;Kontaktnummer;P Telefon;Mail;Adresse;GeoMapLoc;Typ;Bemerkung;Felder
 		"Bauern" => Array(
 				"löschen" => 
 									"DROP TABLE IF EXISTS `Bauern`",
@@ -253,6 +253,7 @@
 									  `P Telefon` varchar(50) DEFAULT NULL,
 									  `Mail` varchar(150) DEFAULT NULL,
 									  `Adresse` text DEFAULT NULL,
+									  `GeoMapLoc` varchar(250) DEFAULT NULL,
 									  `Typ` enum('Bauer','-') DEFAULT '-',
 									  `Bemerkung` longtext DEFAULT NULL,
 									  `Felder` longtext DEFAULT NULL
@@ -260,7 +261,7 @@
 									",
 /*
 				"einfügen" => 
-									"INSERT INTO `Bauern`(`ID`, `BauerID`, `Initialen`, `Betrieb`, `Jagdgebiet`, `Name`, `Kontaktnummer`, `P Telefon`, `Mail`, `Adresse`, `Typ`, `Bemerkung`, `Felder`) VALUES ('[value-1]','[value-2]','[value-3]','[value-4]','[value-5]','[value-6]','[value-7]','[value-8]','[value-9]','[value-10]','[value-11]','[value-12]','[value-13]')",
+									"INSERT INTO `Bauern`(`ID`, `BauerID`, `Initialen`, `Betrieb`, `Jagdgebiet`, `Name`, `Kontaktnummer`, `P Telefon`, `Mail`, `Adresse`, `GeoMapLoc`, `Typ`, `Bemerkung`, `Felder`) VALUES ('[value-1]','[value-2]','[value-3]','[value-4]','[value-5]','[value-6]','[value-7]','[value-8]','[value-9]','[value-10]','[value-11]','[value-12]','[value-13]','[value-14]')",
 */
 		),
 		
@@ -764,7 +765,7 @@ function Add_Bauern() {
 	$Daten = csv_to_array($csvDocLocation.$csv_file, $csv_deliminator );
 	//pre_R($Daten);
 	//ExecuteQueries($SQLQuery);
-	$SQLQueryHeader = "INSERT INTO `Bauern`(`ID`, `BauerID`, `Initialen`, `Betrieb`, `Jagdgebiet`, `Name`, `Kontaktnummer`, `P Telefon`, `Mail`, `Adresse`, `Typ`, `Bemerkung`, `Felder`) VALUES  ";
+	$SQLQueryHeader = "INSERT INTO `Bauern`(`ID`, `BauerID`, `Initialen`, `Betrieb`, `Jagdgebiet`, `Name`, `Kontaktnummer`, `P Telefon`, `Mail`, `Adresse`, `GeoMapLoc`, `Typ`, `Bemerkung`, `Felder`) VALUES  ";
 
 	//('[value-1]','[value-2]','[value-3]','[value-4]','[value-5]','[value-6]','[value-7]','[value-8]','[value-9]','[value-10]','[value-11]','[value-12]','[value-13]')
 
@@ -782,6 +783,7 @@ function Add_Bauern() {
 			$SQLCommand .= "'" . $DataLine["P Telefon"] . "'" . ", ";
 			$SQLCommand .= "'" . $DataLine["Mail"] . "'" . ", ";
 			$SQLCommand .= "'" . $DataLine["Adresse"] . "'" . ", ";
+			$SQLCommand .= "'" . (isset($DataLine["GeoMapLoc"]) ? $DataLine["GeoMapLoc"] : "") . "'" . ", ";
 			$SQLCommand .= "'" . $DataLine["Typ"]. "'" . ", ";
 			$SQLCommand .= "'" . $DataLine["Bemerkung"]. "'" . ", ";
 			$SQLCommand .= "'" . $DataLine["Felder"]. "'";
@@ -807,7 +809,7 @@ function Add_Bauern() {
 
 
 function Unzip_Swiss3DFiles($Daten, $ZipDirectory, $UnzipDirectory, $csv_deliminator ) {
-	global $csvFileLocation, 
+	global $csvFileLocation;
 	//unzip all files
 	$f=1;
 	foreach ($Daten as $Datenfile) {

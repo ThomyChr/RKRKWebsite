@@ -300,7 +300,74 @@ if (!function_exists('rkrk_dga_rh_normalize_learn_inner_html')) {
 		if (function_exists("rkrk_dga_rh_rewrite_assess_images_to_proxy")) {
 			$inner = rkrk_dga_rh_rewrite_assess_images_to_proxy($inner);
 		}
+		if (function_exists("rkrk_dga_rh_rewrite_sheet_logos")) {
+			$inner = rkrk_dga_rh_rewrite_sheet_logos($inner);
+		}
 		return $inner;
+	}
+}
+
+if (!function_exists("rkrk_dga_rh_sheet_logo_use_rkrs")) {
+	/** RKRS-Pfad, Portal rehkitzrettung.ch oder CI-Flag → RKRS+-Logo, sonst RKRK. */
+	function rkrk_dga_rh_sheet_logo_use_rkrs(): bool {
+		if (function_exists("rkrk_assess_ci_rkrs_mode") && rkrk_assess_ci_rkrs_mode()) {
+			return true;
+		}
+		if (function_exists("rkrk_assess_is_portal_rkrs_host") && rkrk_assess_is_portal_rkrs_host()) {
+			return true;
+		}
+		if (function_exists("rkrk_assess_is_rkrs_copyright_path") && rkrk_assess_is_rkrs_copyright_path()) {
+			return true;
+		}
+		return false;
+	}
+}
+
+if (!function_exists("rkrk_dga_rh_rewrite_sheet_logos")) {
+	function rkrk_dga_rh_rewrite_sheet_logos($html) {
+		$useRkrs = function_exists("rkrk_dga_rh_sheet_logo_use_rkrs") && rkrk_dga_rh_sheet_logo_use_rkrs();
+		$file = $useRkrs ? "rkrsplus_logo.png" : "rkrk_logo.png";
+		$alt = $useRkrs ? "RKRS+" : "RKRK";
+		$src = "";
+		$prevLogo = isset($GLOBALS["logopic"]) ? $GLOBALS["logopic"] : null;
+		$GLOBALS["logopic"] = $file;
+		if (function_exists("rkrk_assess_report_logo_src_html")) {
+			$src = trim((string) rkrk_assess_report_logo_src_html());
+		}
+		if ($prevLogo === null) {
+			unset($GLOBALS["logopic"]);
+		} else {
+			$GLOBALS["logopic"] = $prevLogo;
+		}
+		if ($src === "" && function_exists("rkrk_assess_quiz_data_assess_web_prefix")) {
+			$src = rtrim((string) rkrk_assess_quiz_data_assess_web_prefix(), "/") . "/images/" . $file;
+		}
+		if ($src === "" && function_exists("rkrk_dga_rh_assess_image_proxy_url")) {
+			$src = rkrk_dga_rh_assess_image_proxy_url($file);
+		}
+		if ($src === "") {
+			return (string) $html;
+		}
+		$srcH = htmlspecialchars($src, ENT_QUOTES, "UTF-8");
+		$altH = htmlspecialchars($alt, ENT_QUOTES, "UTF-8");
+		return preg_replace_callback(
+			'/<img\b([^>]*\bclass\s*=\s*([\'"])[^\'"]*\bcl-sheet-logo\b[^\'"]*\2[^>]*)>/i',
+			static function ($m) use ($srcH, $altH) {
+				$attrs = $m[1];
+				if (preg_match('/\bsrc\s*=/i', $attrs) === 1) {
+					$attrs = preg_replace('/\bsrc\s*=\s*([\'"])[^\'"]*\1/i', 'src="' . $srcH . '"', $attrs, 1);
+				} else {
+					$attrs .= ' src="' . $srcH . '"';
+				}
+				if (preg_match('/\balt\s*=/i', $attrs) === 1) {
+					$attrs = preg_replace('/\balt\s*=\s*([\'"])[^\'"]*\1/i', 'alt="' . $altH . '"', $attrs, 1);
+				} else {
+					$attrs .= ' alt="' . $altH . '"';
+				}
+				return "<img" . $attrs . ">";
+			},
+			(string) $html
+		);
 	}
 }
 
@@ -332,12 +399,84 @@ if (!function_exists("rkrk_dga_rh_assess_image_proxy_url")) {
 	}
 }
 
+if (!function_exists("rkrk_dga_rh_decode_attr_url")) {
+	function rkrk_dga_rh_decode_attr_url($url) {
+		if (function_exists("rkrk_assess_decode_html_attr_url")) {
+			return rkrk_assess_decode_html_attr_url((string) $url);
+		}
+		$u = (string) $url;
+		for ($i = 0; $i < 12; $i++) {
+			$d = html_entity_decode($u, ENT_QUOTES | ENT_HTML5, "UTF-8");
+			if ($d === $u) {
+				break;
+			}
+			$u = $d;
+		}
+		return $u;
+	}
+}
+
+if (!function_exists("rkrk_dga_rh_fully_decode_filename")) {
+	function rkrk_dga_rh_fully_decode_filename($name) {
+		$u = (string) $name;
+		for ($i = 0; $i < 6; $i++) {
+			$d = rawurldecode($u);
+			if ($d === $u) {
+				break;
+			}
+			$u = $d;
+		}
+		return $u;
+	}
+}
+
+if (!function_exists("rkrk_dga_rh_src_to_image_proxy")) {
+	/**
+	 * Statische Assess-Bilder und bereits vorhandene Proxy-URLs auf den aktuellen Host-Proxy legen.
+	 */
+	function rkrk_dga_rh_src_to_image_proxy($raw) {
+		$u = rkrk_dga_rh_decode_attr_url($raw);
+		$u = trim(str_replace("\\", "/", $u));
+		if ($u === "" || $u[0] === "#" || preg_match("#^(mailto:|tel:|data:)#i", $u) === 1) {
+			return "";
+		}
+		if (preg_match("#rkrk_assess_image\\.php\\?(.+)$#i", $u, $qm) === 1) {
+			$qs = html_entity_decode((string) $qm[1], ENT_QUOTES | ENT_HTML5, "UTF-8");
+			$params = array();
+			parse_str(str_replace("&amp;", "&", $qs), $params);
+			$f = rkrk_dga_rh_fully_decode_filename((string) ($params["f"] ?? ""));
+			$d = rkrk_dga_rh_fully_decode_filename((string) ($params["d"] ?? ""));
+			if ($f === "") {
+				foreach ($params as $pk => $pv) {
+					if (preg_match("/(?:^|;)d$/i", (string) $pk) === 1 && $d === "") {
+						$d = rkrk_dga_rh_fully_decode_filename((string) $pv);
+					}
+				}
+			}
+			if ($f === "") {
+				return "";
+			}
+			$rel = ($d !== "" ? trim($d, "/") . "/" : "") . $f;
+			$url = rkrk_dga_rh_assess_image_proxy_url($rel);
+			$root = isset($params["root"]) ? trim((string) $params["root"]) : "";
+			if ($url !== "" && $root !== "" && stripos($url, "root=") === false) {
+				$url .= (strpos($url, "?") !== false ? "&" : "?") . "root=" . rawurlencode($root);
+			}
+			return $url;
+		}
+		if (preg_match("#/(?:quiz/)?images/(.+)$#i", $u, $im) === 1) {
+			return rkrk_dga_rh_assess_image_proxy_url($im[1]);
+		}
+		return "";
+	}
+}
+
 if (!function_exists("rkrk_dga_rh_rewrite_assess_images_to_proxy")) {
 	function rkrk_dga_rh_rewrite_assess_images_to_proxy($html) {
 		return preg_replace_callback(
-			'/\b(src|data-src|poster)\s*=\s*(["\'])([^"\']*?\/data\/assess\/(?:quiz\/)?images\/)([^"\']+)\2/i',
+			'/\b(src|data-src|poster)\s*=\s*(["\'])([^"\']+)\2/i',
 			static function ($m) {
-				$proxy = rkrk_dga_rh_assess_image_proxy_url($m[4]);
+				$proxy = rkrk_dga_rh_src_to_image_proxy($m[3]);
 				if ($proxy === "") {
 					return $m[0];
 				}
@@ -357,6 +496,17 @@ if (!function_exists('rkrk_dga_rh_resolve_relative_urls_in_fragment')) {
 		$b = rtrim(str_replace("\\", "/", (string)$baseDirUrl), "/") . "/";
 		$absOne = static function ($u) use ($b) {
 			$u = trim((string)$u);
+			if (function_exists("rkrk_assess_decode_html_attr_url")) {
+				$u = rkrk_assess_decode_html_attr_url($u);
+			} else {
+				for ($i = 0; $i < 12; $i++) {
+					$d = html_entity_decode($u, ENT_QUOTES | ENT_HTML5, "UTF-8");
+					if ($d === $u) {
+						break;
+					}
+					$u = $d;
+				}
+			}
 			if ($u === "") {
 				return "";
 			}
@@ -428,7 +578,7 @@ if (!function_exists('rkrk_dga_rh_prepare_learn_inner_embed')) {
 	/**
 	 * Schulungs-HTML direkt einbetten (ohne iframe): voller Text auf der Seite, gleiche Pfad-Logik wie rkrk_digitalassess_learn.php.
 	 */
-	function rkrk_dga_rh_prepare_learn_inner_embed($learnFsPath, $lernRel) {
+	function rkrk_dga_rh_prepare_learn_inner_embed($learnFsPath, $lernRel, $driveLocation = "") {
 		$html = @file_get_contents((string)$learnFsPath);
 		if ($html === false || $html === "") {
 			return "";
@@ -438,7 +588,7 @@ if (!function_exists('rkrk_dga_rh_prepare_learn_inner_embed')) {
 			$inner = $m[1];
 		}
 		return function_exists('rkrk_dga_rh_normalize_learn_inner_html')
-			? rkrk_dga_rh_normalize_learn_inner_html($inner, $lernRel)
+			? rkrk_dga_rh_normalize_learn_inner_html($inner, $lernRel, $driveLocation)
 			: $inner;
 	}
 }
@@ -456,45 +606,82 @@ if (!function_exists('rkrk_dga_rh_echo_learn_theme_links')) {
 		if (function_exists("rkrk_assess_ci_rkrs_mode") && rkrk_assess_ci_rkrs_mode()) {
 			echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . rkrk_dga_rh($themeRkrsCssHref) . "\">\n";
 		}
+		$schulungCss = ($assessScriptDir !== "" ? $assessScriptDir : "") . "/rkrk_schulung_lern.css?v=20260923readstyle";
+		echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . rkrk_dga_rh($schulungCss) . "\">\n";
+		$learnCss = "";
+		if (function_exists("rkrk_assess_quiz_data_assess_web_prefix")) {
+			$learnCss = rtrim((string) rkrk_assess_quiz_data_assess_web_prefix(), "/") . "/lernunterlagen.css?v=20260923readstyle";
+		} elseif (function_exists("rkrk_dga_rh_web_assess_root")) {
+			$learnCss = rtrim((string) rkrk_dga_rh_web_assess_root(), "/") . "/lernunterlagen.css?v=20260923readstyle";
+		}
+		if ($learnCss !== "") {
+			echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . rkrk_dga_rh($learnCss) . "\">\n";
+		}
 	}
 }
 
 if (!function_exists('rkrk_dga_rh_echo_styles')) {
-	function rkrk_dga_rh_echo_styles($printView) {
+	function rkrk_dga_rh_echo_styles($printView, $schulungsMode = false) {
 		?>
 <style>
-.dr-wrap{max-width:1200px;margin:0 auto;padding:12px;}
-.dr-card{background:var(--card, #fff);border:1px solid var(--border, #d9e0d7);border-radius:10px;padding:12px;margin-bottom:10px;}
+body:has(.dr-schulung-read){background:#f9f9f9!important;}
+.dr-wrap{max-width:1100px;margin:0 auto;padding:12px 14px;font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#333;box-sizing:border-box;}
+.dr-schulung-read h2,.dr-schulung-read h3,.dr-schulung-read h4,.dr-wrap h2,.dr-wrap h3,.dr-wrap h4{color:#003366;}
+.dr-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.75rem;box-shadow:0 2px 4px rgba(0,0,0,.08);box-sizing:border-box;}
 .dr-inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-.dr-select{padding:8px;min-width:280px;}
-.dr-btn{display:inline-block;padding:8px 12px;border-radius:6px;background:#2f6f2f;color:#fff;text-decoration:none;border:0;cursor:pointer;}
-.dr-list{display:grid;gap:10px;}
-.dr-item{border:1px solid #d8dfd6;border-radius:8px;background:#fbfdfb;padding:10px;}
-.dr-item-inactive{color:#6b7280;background:#f3f4f6;border-color:#d1d5db;}
+.dr-select{padding:8px 10px;min-width:280px;border:1px solid #d8dfd6;border-radius:8px;font-family:inherit;font-size:14px;}
+.dr-btn{display:inline-block;padding:8px 14px;border-radius:8px;background:#003366;color:#fff;text-decoration:none;border:0;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;}
+.dr-btn:hover{background:#1a5a8a;color:#fff;}
+.dr-list{display:grid;gap:12px;}
+.dr-item{border:1px solid #e0e0e0;border-radius:10px;background:#fff;padding:1.25rem 1.5rem;box-shadow:0 2px 4px rgba(0,0,0,.08);}
+.dr-item-inactive{color:#6b7280;background:#f3f4f6;border-color:#d1d5db;box-shadow:none;}
 .dr-meta-status{font-size:12px;margin:0 0 6px;opacity:.75;}
-.dr-q{margin:0 0 8px;font-weight:700;}
-.dr-group-title{margin:0 0 8px;padding:6px 8px;border-radius:6px;background:#eef5ff;color:#1e3a8a;font-weight:700;}
-.dr-drone-badge{display:inline-block;margin:0 0 8px;padding:2px 8px;border-radius:999px;background:#e5f3e8;color:#166534;font-size:12px;font-weight:700;}
+.dr-q{margin:0 0 8px;font-weight:700;color:#003366;}
+.dr-group-title{margin:0 0 8px;padding:.5rem 1rem;border-radius:8px;background:#e6f7ff;border-left:4px solid #1890ff;color:#003366;font-weight:700;}
+.dr-drone-badge{display:inline-block;margin:0 0 8px;padding:2px 8px;border-radius:999px;background:#e6f7ff;color:#003366;font-size:12px;font-weight:700;}
 .dr-options{margin:4px 0 0 20px;padding:0;}
 .dr-options li{margin:2px 0;}
-.dr-correct{font-weight:700;background:#d8f5de;padding:1px 4px;border-radius:4px;}
-.dr-solution{margin-top:8px;padding:8px;border:1px solid #dfe7df;border-radius:6px;white-space:pre-wrap;background:#fff;}
+.dr-correct{font-weight:700;background:#f6ffed;padding:1px 4px;border-radius:4px;}
+.dr-solution{margin-top:8px;padding:.5rem 1rem;border-left:4px solid #faad14;background:#fffbe6;border-radius:0 8px 8px 0;white-space:pre-wrap;}
 .dr-images{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
 .dr-img{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#334155;font-size:12px;}
 .dr-img img{width:48px;height:48px;object-fit:cover;border:1px solid #d1d5db;border-radius:6px;background:#fff;}
 .dr-check{display:inline-flex;align-items:center;gap:6px;font-size:13px;}
-.dr-learn-content{font-size:15px;line-height:1.5;}
-.dr-learn{border-top:1px dashed var(--border, #cfd9cc);}
-.dr-learn-inline{max-width:100%;overflow-x:auto;min-height:0;}
-.dr-learn-inline figure{max-width:min(100%,400px);margin:14px 0;padding:10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.06);}
-.dr-learn-inline figure img,.dr-learn-inline figure picture img{max-width:100%;width:auto!important;height:auto!important;display:block;border:0;border-radius:8px;box-shadow:none;background:transparent;}
-.dr-learn-inline img,.dr-learn-inline svg,.dr-learn-inline video{max-width:min(100%,380px);width:auto!important;height:auto;display:block;border-radius:10px;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(15,23,42,.08);background:#fff;box-sizing:border-box;}
+.dr-learn{background:transparent;border:none;box-shadow:none;padding:0;margin:0 0 1.75rem;}
+.dr-learn-content{font-size:inherit;line-height:1.6;}
+.dr-learn-inline{max-width:100%;overflow-x:visible;min-height:0;}
+.dr-learn-inline > section,
+.dr-learn-inline section.lern-sektion > section{
+	display:block;margin-bottom:1.75rem;background:#fff;padding:1.25rem 1.5rem;border-radius:10px;border:1px solid #e0e0e0;box-shadow:0 2px 4px rgba(0,0,0,.08);box-sizing:border-box;
+}
+.dr-learn-inline section.lern-sektion{margin-bottom:2rem;padding:0;background:transparent;border:none;border-radius:0;box-shadow:none;}
+.dr-learn-inline h1,.dr-learn-inline h2,.dr-learn-inline h3{color:#003366;}
+.dr-learn-inline .keywords{font-style:italic;color:#666;margin-bottom:1rem;}
+.dr-learn-inline .highlight{background:#e6f7ff;border-left:4px solid #1890ff;padding:.5rem 1rem;margin:1rem 0;}
+.dr-learn-inline .pruefungstipp{background:#fffbe6;border-left:4px solid #faad14;padding:.5rem 1rem;margin:1rem 0;}
+.dr-learn-inline .hinweis{background:#f6ffed;border-left:4px solid #52c41a;padding:.5rem 1rem;margin:1rem 0;}
+.dr-learn-inline ul.checklist{list-style:none;padding:0;}
+.dr-learn-inline ul.checklist li::before{content:"\2705 ";color:green;}
+.dr-learn-inline figure{margin:1rem 0;padding:0;max-width:100%;background:transparent;border:none;border-radius:0;box-shadow:none;}
+.dr-learn-inline figure img,.dr-learn-inline figure picture img{display:inline-block;vertical-align:top;margin:0 .75rem .75rem 0;border:0;box-shadow:none;background:transparent;}
+.dr-learn-inline figure img:only-of-type,.dr-learn-inline figure picture img:only-of-type{display:block;margin:0 0 .5rem 0;}
+.dr-learn-inline img{max-width:100%;box-sizing:border-box;border-radius:5px 15% 10px;}
+.dr-learn-inline .lernimagelarge{height:500px;max-width:100%;}
+.dr-learn-inline .lernimage{height:300px;max-width:100%;}
+.dr-learn-inline .lernimagesmall{height:200px;max-width:100%;}
+.dr-learn-inline .lernimageverysmall{height:100px;max-width:100%;}
+.dr-learn-inline .lernimagefixwidth{width:600px;max-width:100%;height:auto;}
+.dr-learn-inline .lernimagefixheight{height:200px;max-width:100%;}
+.dr-learn-inline .lernimagefixlargeheight{height:500px;max-width:100%;}
+.dr-learn-inline .lernimagesmallfixwidth{width:450px;max-width:100%;height:auto;}
+.dr-learn-inline .lerncaption{font-style:italic;font-size:.9em;color:#555;margin-top:.35rem;}
+.dr-fragen-title{margin:16px 0 8px;color:#003366;}
 </style>
 		<?php
 		if ($printView) {
 			echo "<style>.dr-wrap{max-width:100%;padding:4px;} .dr-card{box-shadow:none;} .dr-print-hide{display:none;}";
 			echo " @media print{";
-			echo " .dr-learn-inline img,.dr-learn-inline figure{page-break-inside:avoid;max-width:100%!important;height:auto!important;}";
+			echo " .dr-learn-inline > section,section,figure{page-break-inside:avoid;}";
 			echo " .dr-learn-inline h1,.dr-learn-inline h2,.dr-learn-inline h3{page-break-after:avoid;}";
 			echo "}";
 			echo "</style>";
@@ -584,8 +771,11 @@ if (!function_exists('rkrk_dga_rh_render_hub')) {
 			}
 		}
 
-		rkrk_dga_rh_echo_styles($printView);
-		echo "<div class='dr-wrap'>";
+		rkrk_dga_rh_echo_styles($printView, $schulungsMode);
+		if ($schulungsMode) {
+			rkrk_dga_rh_echo_learn_theme_links();
+		}
+		echo "<div class='dr-wrap" . ($schulungsMode ? " dr-schulung-read" : "") . "'>";
 		$_rkrkAdminNav = isset($_GET["ADMIN"]) || (isset($onAdmin) && (bool)$onAdmin);
 		$_rkrkInstrNav = !empty($onInstr);
 		if (function_exists("rkrk_assess_portal_nav_echo")) {
@@ -713,23 +903,24 @@ if (!function_exists('rkrk_dga_rh_render_detail')) {
 				echo "<a class='dr-btn' style='background:#475569;' href='" . rkrk_dga_rh(rkrk_assess_append_setting_href("rkrk_digitalassess.php?" . $qs)) . "'>Nur Fragen (ohne Lerntext)</a>";
 			}
 		}
-		echo "</div>";
+		echo "</div></div>";
 
 		if ($showLearnBlock && $learnReadable) {
-			echo "<div class='dr-card dr-learn' style='margin-bottom:12px;'>";
-			echo "<h4 style='margin:0 0 8px;'>Schulungstext</h4>";
-			echo "<div class='dr-learn-content'>";
+			echo "<div class='dr-learn'>";
 			$lfRel = rkrk_dga_rh_clean_rel_file((string)$selectedAssessment["LernDatei"], "html");
 			if ($lfRel !== "") {
 				rkrk_dga_rh_echo_learn_theme_links();
-				$innerEmbed = rkrk_dga_rh_prepare_learn_inner_embed($learnFsPath, $lfRel);
+				$driveLearn = function_exists("rkrk_assess_effective_drive_location")
+					? rkrk_assess_effective_drive_location($selectedAssessment, $questions)
+					: (string) ($selectedAssessment["DriveLocation"] ?? "");
+				$innerEmbed = rkrk_dga_rh_prepare_learn_inner_embed($learnFsPath, $lfRel, $driveLearn);
 				echo "<div class=\"dr-learn-inline\">";
 				echo $innerEmbed !== "" ? $innerEmbed : "<p><em>Schulungstext konnte nicht geladen werden.</em></p>";
 				echo "</div>";
 			} else {
 				include $learnFsPath;
 			}
-			echo "</div></div>";
+			echo "</div>";
 		}
 
 		$rows = array_values(array_filter($questions, function ($qRow) use ($onlyActive) {
@@ -748,11 +939,11 @@ if (!function_exists('rkrk_dga_rh_render_detail')) {
 		}));
 
 		if (count($rows) === 0) {
-			echo "<p>Keine Fragen gefunden.</p></div>";
+			echo "<p>Keine Fragen gefunden.</p>";
 			return;
 		}
 
-		echo "<h4 style='margin:16px 0 8px;'>Fragen &amp; Musterlösung (Lesemodus)</h4>";
+		echo "<h4 class='dr-fragen-title'>Fragen &amp; Musterlösung (Lesemodus)</h4>";
 		echo "<div class='dr-list'>";
 		$lastDroneGroup = null;
 		foreach ($rows as $idx => $qRow) {
@@ -836,6 +1027,6 @@ if (!function_exists('rkrk_dga_rh_render_detail')) {
 			}
 			echo "</div>";
 		}
-		echo "</div></div>";
+		echo "</div>";
 	}
 }

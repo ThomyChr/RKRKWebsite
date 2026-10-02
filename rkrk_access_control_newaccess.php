@@ -845,7 +845,6 @@ function SaveSessionVarToCSV ($SessionVarName, $TableSetup, $csv_file) {
 		if (true) {
 		//echo "FilePath: " . $filepath . " - NumEntries:" . count($data) . "<br>";
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			fclose($df);
 		}

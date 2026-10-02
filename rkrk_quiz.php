@@ -401,6 +401,8 @@
 	}	
 	elseif (isset($_POST["Status"])) {
 		$Status = $_POST["Status"];
+	} else {
+		$Status = "";
 	}	
 
 	if (isset($_GET["Schulung"])) {
@@ -532,19 +534,27 @@
 	//pre_R($QuizSelection);
 	$csv_desc= ";";
 	$QuizList = csv_to_array_ascII($QuizLoc."QuizListe.csv",$csv_desc);
+	if (!is_array($QuizList)) {
+		$QuizList = array();
+	}
 
 	//pre_R($QuizList);
 
 	//-----------------------------------------
 	//Fragenauswahl
 	//-----------------------------------------
-	if ($QuizList[$set_quiz]["Locked"]=="Ja") {
-		//quiz nicht zugreifbar
-		$set_quiz="";
+	if ($set_quiz !== "") {
+		foreach ($QuizList as $qlLock) {
+			if (is_array($qlLock) && ($qlLock["Key"] ?? '') === $set_quiz && ($qlLock["Locked"] ?? '') === "Ja") {
+				$set_quiz = "";
+				break;
+			}
+		}
 	}	
 	//echo "QuizSet: " . $set_quiz . "<br>";
 
 	$i=0;
+	$QSelection = array();
 	//$QuizSelection = Array();
 	//pre_R($QuizList);
 	foreach($QuizList as $key => $ql) {
@@ -563,12 +573,15 @@
 			{
 			if (($set_quiz==$ql["Key"]) or (($set_quiz=="") and ($ql["Key"]="RKR"))) {
 				$Questionair = $QuizList[$key];
-				$QSelection = csv_to_array_ascII($QuizLoc.$ql["FragenDatei"],$csv_desc);
-				//pre_r($QSelection);
-				foreach ($QSelection as $key => $Q) {
-					$QSelection [$key]["Loesungsauswahl"] = explode("|", $Q["Loesungsauswahl"]);
-					foreach ($QSelection [$key]["Loesungsauswahl"] as $kkey => $s) {
-						$QSelection [$key]["Loesungsauswahl"][$kkey] = $s;
+				$loadedQuestions = csv_to_array_ascII($QuizLoc.$ql["FragenDatei"],$csv_desc);
+				$QSelection = is_array($loadedQuestions) ? $loadedQuestions : array();
+				foreach ($QSelection as $qkey => $Q) {
+					if (!is_array($Q)) {
+						continue;
+					}
+					$QSelection[$qkey]["Loesungsauswahl"] = explode("|", (string)($Q["Loesungsauswahl"] ?? ''));
+					foreach ($QSelection[$qkey]["Loesungsauswahl"] as $kkey => $s) {
+						$QSelection[$qkey]["Loesungsauswahl"][$kkey] = $s;
 					}
 					
 				if (file_exists($QuizLoc.$ql["LernDatei"]) and ($ql["LernDatei"]!="")) {
@@ -593,7 +606,10 @@
 	$DroneTypes = [];
 
 	foreach ($QSelection as $q) {
-		$d = trim($q["Drone"]);
+		if (!is_array($q)) {
+			continue;
+		}
+		$d = trim((string)($q["Drone"] ?? ''));
 		if ($d !== "" && $d !== "Alle" && $q["Aktiv"]=="Ja") {
 			$DroneTypes[$d] = true;
 		}
@@ -657,7 +673,7 @@
 	foreach ($Order as $key => $Q) {
 
 		// Drone aus CSV normalisieren
-		$drone = normalizeDrone($QSelection[$Q["key"]]["Drone"]);
+		$drone = normalizeDrone($QSelection[$Q["key"]]["Drone"] ?? '');
 		// echo "Frage " . $Q["key"] . " Drone=[" . $drone . "]<br>";
 
 		// Drohnen-Matching-Regeln

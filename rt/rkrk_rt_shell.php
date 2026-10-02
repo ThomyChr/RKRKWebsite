@@ -7,6 +7,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 	session_start();
 }
 $folderoffset = '../';
+$MenuDirOffset = $folderoffset;
 include_once $folderoffset . 'scripts/rkrk_gen.php';
 include_once $folderoffset . 'scripts/rkrk_menu.php';
 include_once $folderoffset . 'rkrk_access_control.php';
@@ -20,17 +21,18 @@ function rkrk_rt_boot(): void
 
 function rkrk_rt_emit_chrome(string $extraCss = 'rkrk_rt.css'): void
 {
-	global $folderoffset, $LoggedOn;
+	global $folderoffset, $LoggedOn, $MenuDirOffset;
+	$MenuDirOffset = $folderoffset;
 	headerpage('Drohnenrehkitzrettung.ch', false, $folderoffset);
+	if (function_exists('CreateTopMenu')) {
+		CreateTopMenu($folderoffset);
+	}
 	if (function_exists('GrantAccess')) {
 		GrantAccess();
 	}
 	if (empty($LoggedOn) && function_exists('RegisterForm')) {
 		RegisterForm(getIPAddress(), 'Login', true);
 		exit;
-	}
-	if (function_exists('CreateTopMenu')) {
-		CreateTopMenu($folderoffset);
 	}
 	if ($extraCss !== '') {
 		$href = $extraCss;

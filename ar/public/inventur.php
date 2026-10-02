@@ -7,7 +7,7 @@ require_once __DIR__ . '/../src/JsonStore.php';
 require_once __DIR__ . '/../src/InventoryDepreciation.php';
 require_once __DIR__ . '/rkrk_ar_shell.php';
 rkrk_ar_boot();
-rkrk_ar_emit_chrome('styles.css');
+rkrk_ar_require_login();
 
 $dataDir = realpath(__DIR__ . '/../../../rkrk/data/ar') ?: (__DIR__ . '/../../../rkrk/data/ar');
 $repo = new DataRepository($dataDir);
@@ -76,7 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stichtagRaw = trim((string)($_POST['stichtag'] ?? ''));
 
             if ($inventoryNo === '' || $itemName === '' || $quantity <= 0) {
-                redirect_inv(['error' => 'INV#, Artikel und Anzahl > 0 sind Pflichtfelder.']);
+                $err = ['error' => 'INV#, Artikel und Anzahl > 0 sind Pflichtfelder.'];
+                if ($id !== '') {
+                    $err['edit'] = $id;
+                }
+                redirect_inv($err);
             }
 
             $stichtag = $stichtagRaw !== ''
@@ -129,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     redirect_inv(['error' => 'Position nicht gefunden.']);
                 }
                 $store->writeList('inventory_items.json', $rows);
-                redirect_inv(['ok' => 'Inventar gespeichert.', 'edit' => $id]);
+                redirect_inv(['ok' => 'Inventar gespeichert.']);
             }
 
             $payload['id'] = bin2hex(random_bytes(16));
@@ -145,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $payload['sort_order'] = $maxSort + 10;
             $rows[] = $payload;
             $store->writeList('inventory_items.json', $rows);
-            redirect_inv(['ok' => 'Inventar angelegt.', 'edit' => $payload['id']]);
+            redirect_inv(['ok' => 'Inventar angelegt.']);
         }
 
         if ($action === 'reorder_items') {
@@ -195,6 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect_inv(['error' => 'Fehler: ' . $e->getMessage()]);
     }
 }
+
+rkrk_ar_emit_chrome('styles.css');
 
 $items = $repo->getInventoryItems();
 usort($items, static function (array $a, array $b): int {
@@ -360,7 +366,7 @@ if ($editRow) {
             <div class="full-width form-actions">
                 <button type="submit"><?= $editRow ? 'Speichern' : 'Anlegen' ?></button>
                 <?php if ($editRow): ?>
-                    <a class="button-link secondary" href="inventur.php">Neue Position</a>
+                    <a class="button-link secondary" href="inventur.php">Zurück</a>
                 <?php endif; ?>
             </div>
         </form>

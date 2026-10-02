@@ -351,7 +351,14 @@ function rkrk_auth_is_public_page($script = null) {
 		'rkrk_calc.php',
 		'rkrk_calc_flightparameter.php',
 		'rkrk_conversion.php',
+		'rkrk_newsletter_public.php',
 	);
+	if ($script === 'rkrk_newsletter_review.php') {
+		$token = isset($_GET['t']) ? trim((string)$_GET['t']) : '';
+		if ($token !== '') {
+			return true;
+		}
+	}
 	return in_array($script, $public, true);
 }
 
@@ -901,9 +908,21 @@ Function ReadUserList() {
 			
 	$predata = csv_to_array($csvMissionLocation.$RKRUsersFilename,$csv_desc);
 	//pre_r($predata);
+	$data = array();
+	if (!is_array($predata)) {
+		return $data;
+	}
 	foreach ($predata as $entry) {
-		$data[$entry['Benutzername']]=$entry;
-		$data[$entry['Benutzername']]["Passwort_hashed"] = password_hash($data[$entry['Benutzername']]["Passwort"], PASSWORD_DEFAULT);
+		if (!is_array($entry)) {
+			continue;
+		}
+		$userName = trim((string)($entry['Benutzername'] ?? ''));
+		if ($userName === '') {
+			continue;
+		}
+		$data[$userName] = $entry;
+		$data[$userName]['Benutzername'] = $userName;
+		$data[$userName]["Passwort_hashed"] = password_hash((string)($entry["Passwort"] ?? ''), PASSWORD_DEFAULT);
 	}
 	//pre_R($data);
 	return $data;
@@ -1042,7 +1061,6 @@ function SaveSessionVarToCSV ($SessionVarName, $TableSetup, $csv_file) {
 		if (true) {
 		//echo "FilePath: " . $filepath . " - NumEntries:" . count($data) . "<br>";
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			fclose($df);
 		}
@@ -1438,6 +1456,9 @@ function rkrk_access_emit_login_scripts(): void {
 	$done = true;
 	global $IconLoc, $Password_Pattern, $FormatMessage;
 	$icon = isset($IconLoc) ? (string)$IconLoc : 'images/23color';
+	if (function_exists('rkrk_menu_apply_diroffset')) {
+		$icon = rkrk_menu_apply_diroffset($icon);
+	}
 	$pattern = isset($Password_Pattern) ? (string)$Password_Pattern : '(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}';
 	$fmt = isset($FormatMessage) ? (string)$FormatMessage : '';
 	echo "<script>\n";

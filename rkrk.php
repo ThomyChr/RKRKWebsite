@@ -134,7 +134,7 @@ $ShowButton = false;
 	}	
 
 	if (($EnableAccessControl) and ($LoggedOn)) {
-		echo "<font size='2px'>Willkommen! " . $_SESSION[$SessNme_RegisteredUser]. " " .$_SESSION[$SessNme_RegisteredInitialen]. "</font>";
+		echo "<font size='2px'>Willkommen! " . ($_SESSION[$SessNme_RegisteredUser] ?? '') . " " . ($_SESSION[$SessNme_RegisteredInitialen] ?? '') . "</font>";
 		
 	} else {
 		echo "<font size='2px'>" . GetNameUser() . "</font>";
@@ -403,7 +403,7 @@ echo "<p class='rkrk-iframe-scroll'><iframe width='100%' height='".$FrameHeight.
 if ($LoggedOn) {
 
 	echo "<H2>Flugstatisik ".date("Y")."<H2>". chr(10);
-	echo "<p><iframe width='700' height='2100' seamless frameborder='0' scrolling='no' src='rkrk_flugstatistik.php?ALL&Charts=FelderProRegion,Entwicklung1,Entwicklung2,EinsaetzeProTag&MenuOn=off'></iframe></p>" . chr(10);
+	echo "<p><iframe width='700' height='2500' seamless frameborder='0' scrolling='no' src='rkrk_flugstatistik.php?ALL&Charts=FelderProRegion,Entwicklung1,Entwicklung2,Kumulativ,EinsaetzeProTag&MenuOn=off'></iframe></p>" . chr(10);
 
 
 	echo "</body>" . chr(10);

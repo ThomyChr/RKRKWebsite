@@ -347,7 +347,8 @@
 	if ($showTopMenu) {
 		CreateTopMenu($folderoffset);
 		echo "<br><br>";
-	
+	}
+
 	echo "<link href='../template/nmenu_style.css' rel='stylesheet' type='text/css'>" . chr(10);
 
 	if (isset($_GET["quiz"])) {

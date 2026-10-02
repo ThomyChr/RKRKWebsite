@@ -389,6 +389,9 @@ function rkrk_felddaten_json_import_apply_metrics($jsonFilePath, &$JsonData) {
 
 function GetFeldkatalog($catalogPath) {
 	global $EnabledRegion, $OptionJaeger, $MaxSelectedEntries;
+	if (function_exists('rkrk_log_data_access')) {
+		rkrk_log_data_access('Missionenkatalog', basename((string)$catalogPath));
+	}
 	if (!is_array($EnabledRegion)) {
 		$EnabledRegion = array();
 	}
@@ -591,7 +594,6 @@ function ReadMissionFiles ($RegionSettings, $EnabledRegion) {
 			}
 			//pre_r(clean_readdir($local_dir));
 		}
-		$i++;
 	}
 	//pre_r($KatFileList);
 	return $KatFileList;

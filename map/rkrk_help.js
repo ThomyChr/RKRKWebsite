@@ -134,10 +134,10 @@
       const kos = u.searchParams.has("KOS")
         || String(u.searchParams.get("code") || "").trim().toUpperCase() === "KOS";
       return kos
-        ? "help/202608%20RKRSplus%20Overlay%20Editor%20-%20KOS.pdf"
-        : "help/202608%20RKRSplus%20Overlay%20Editor.pdf";
+        ? "help/202609%20RKRSplus%20Overlay%20Editor%20-%20KOS.pdf"
+        : "help/202609%20RKRSplus%20Overlay%20Editor.pdf";
     } catch (_) {
-      return "help/202608%20RKRSplus%20Overlay%20Editor.pdf";
+      return "help/202609%20RKRSplus%20Overlay%20Editor.pdf";
     }
   }
 

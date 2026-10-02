@@ -591,7 +591,7 @@ function ConvertToNewPlatform($Directory, $Filename, $ToDrone, $FromDrone="") {
 echo "var DroneData = ". json_encode($DroneData) . ";\n"; 
 echo "var Drones = ". json_encode($Drones) . ";\n"; 
 
-echo "var DefaultSettings = ". json_encode($DefaultSettings) . ";\n"; 
+echo "var DefaultSettings = ". json_encode($DefaultSettings ?? new stdClass()) . ";\n"; 
 echo "var ToDrone = '".$ToDrone."';\n";
 ?>
 var legend="";

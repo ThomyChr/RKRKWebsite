@@ -488,6 +488,9 @@ function SetGroupPicOn(Grp) {
 		//skallieren
 		$JGs = explode(",", $Reg["JG"]);
 		foreach ($JGs as  $JG) {
+			if (!isset($JGButton2023[$JG]["image_on"])) {
+				continue;
+			}
 			echo "SetPicture2('".$JG."','".$JGButton2023[$JG]["image_on"]."');\n";	
 		}
 		echo "}\n";	
@@ -503,6 +506,9 @@ function SetGroupPicOff(Grp) {
 		//skallieren
 		$JGs = explode(",", $Reg["JG"]);
 		foreach ($JGs as  $JG) {
+			if (!isset($JGButton2023[$JG]["image_off"])) {
+				continue;
+			}
 			echo "SetPicture2('".$JG."','".$JGButton2023[$JG]["image_off"]."');\n";	
 		}
 		echo "}\n";	

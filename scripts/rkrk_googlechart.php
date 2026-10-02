@@ -54,7 +54,7 @@ function GetDataFromStrArrayField($data, $Type, $title="") {
 	$output = array();
 	if ($title!="") $output[]="'" . $title . "'";
     foreach($data as $key => $v){
-        $output[] = $v[$Type];
+        $output[] = (is_array($v) ? ($v[$Type] ?? 0) : 0);
     }
     return $output;
 }
@@ -86,7 +86,7 @@ function FillEmptyEntries($data) {
 	}
 	for ($x = 0; $x <= $xmax ; $x++) {
 		for ($y = 0; $y <= $ymax ; $y++) {
-			if ($data[$x][$y]=="") {
+			if (($data[$x][$y] ?? '')=="") {
 				if ($x==0) {
 					$data[$x][$y]="'" .$unknowntitle ."'";
 					$unknowntitle .= $unknowntitle;
@@ -475,6 +475,17 @@ table.rkrk-chart-table tr:first-child th:first-child {
 	}
 	function splitMagnitude(series, kind) {
 		if (!series || series.length < 2) return null;
+		if (kind === 'line' && series.length >= 2) {
+			var areaIdx = [];
+			var otherIdx = [];
+			for (var si = 0; si < series.length; si++) {
+				if (seriesKind(series[si] && series[si].label) === 'area') areaIdx.push(si);
+				else otherIdx.push(si);
+			}
+			if (areaIdx.length && otherIdx.length) {
+				return { large: areaIdx, small: otherIdx };
+			}
+		}
 		var maxima = series.map(seriesMax);
 		var gmax = Math.max.apply(null, maxima.concat([0]));
 		if (gmax <= 0) return null;
@@ -525,19 +536,19 @@ table.rkrk-chart-table tr:first-child th:first-child {
 		keepV.push(Math.round(other * 100) / 100);
 		return { labels: keepL, values: keepV, otherParts: parts };
 	}
+	function seriesKind(label) {
+		var l = String(label || '').toLowerCase();
+		if (l.indexOf('fläche') >= 0 || l.indexOf('flaeche') >= 0 || /\bha\b/.test(l)) return 'area';
+		if (l.indexOf('flugzeit') >= 0 || /\bmin\b/.test(l)) return 'time';
+		if (l.indexOf('fund') >= 0 || l.indexOf('kitz') >= 0) return 'find';
+		if (l.indexOf('felder') >= 0) return 'fields';
+		if (l.indexOf('einsatz') >= 0) return 'ops';
+		return '';
+	}
 	function mixedMetricLabels(labels) {
-		function kindOf(l) {
-			l = String(l || '').toLowerCase();
-			if (l.indexOf('fläche') >= 0 || l.indexOf('flaeche') >= 0 || /\bha\b/.test(l)) return 'area';
-			if (l.indexOf('flugzeit') >= 0 || /\bmin\b/.test(l)) return 'time';
-			if (l.indexOf('fund') >= 0 || l.indexOf('kitz') >= 0) return 'find';
-			if (l.indexOf('felder') >= 0) return 'fields';
-			if (l.indexOf('einsatz') >= 0) return 'ops';
-			return '';
-		}
 		var kinds = {};
 		for (var i = 0; i < (labels || []).length; i++) {
-			var k = kindOf(labels[i]);
+			var k = seriesKind(labels[i]);
 			if (k) kinds[k] = 1;
 		}
 		return Object.keys(kinds).length >= 2;
@@ -759,7 +770,11 @@ table.rkrk-chart-table tr:first-child th:first-child {
 			if (kind === 'bar') options.indexAxis = 'y';
 			var horiz = (kind === 'bar');
 			var valueAxis = horiz ? 'x' : 'y';
-			var mixedCats = (kind === 'column' || kind === 'bar') && !cfg.stacked && mixedMetricLabels(parsed.labels);
+			var mixedCats = !cfg.absolute
+				&& (kind === 'column' || kind === 'bar')
+				&& !cfg.stacked
+				&& parsed.series.length > 1
+				&& mixedMetricLabels(parsed.labels);
 			if (mixedCats) {
 				var catMax = categoryMaxima(parsed.series, parsed.labels.length);
 				datasets.forEach(function (ds, i) {
@@ -787,7 +802,7 @@ table.rkrk-chart-table tr:first-child th:first-child {
 					}
 				};
 			}
-			var split = (!mixedCats && kind !== 'pie' && !cfg.stacked) ? splitMagnitude(parsed.series, kind) : null;
+			var split = (!cfg.absolute && !mixedCats && kind !== 'pie' && !cfg.stacked) ? splitMagnitude(parsed.series, kind) : null;
 			if (split) {
 				var mainId = horiz ? 'x' : 'y';
 				var sideId = horiz ? 'x1' : 'y1';
@@ -834,7 +849,7 @@ table.rkrk-chart-table tr:first-child th:first-child {
 				options.plugins.subtitle.text = horiz
 					? 'Kleine Reihen oben, eigene Skala'
 					: 'Kleine Werte auf der rechten Achse';
-			} else if (!mixedCats && (kind === 'column' || kind === 'bar') && !cfg.stacked) {
+			} else if (!cfg.absolute && !mixedCats && (kind === 'column' || kind === 'bar') && !cfg.stacked) {
 				var tinyCats = tinyCategoryIndexes(parsed.series, parsed.labels, 0.05);
 				if (tinyCats.length) {
 					datasets.forEach(function (ds) {
@@ -867,7 +882,7 @@ table.rkrk-chart-table tr:first-child th:first-child {
 HTML;
 }
 
-function rkrk_create_chartjs($kind, $vBox, $Titel, $data, $Colors, $hTitle = '', $vTitle = '', $height = 400, $witdh = 600, $Stacked = false) {
+function rkrk_create_chartjs($kind, $vBox, $Titel, $data, $Colors, $hTitle = '', $vTitle = '', $height = 400, $witdh = 600, $Stacked = false, $absolute = false) {
 	if (!is_numeric($height) && is_numeric($witdh) && func_num_args() >= 7) {
 		// createPieChart was often called with dummy axis titles: Colors, "", "", height, width
 	}
@@ -884,6 +899,7 @@ function rkrk_create_chartjs($kind, $vBox, $Titel, $data, $Colors, $hTitle = '',
 	$out .= ',hTitle:' . json_encode((string)$hTitle, JSON_UNESCAPED_UNICODE);
 	$out .= ',vTitle:' . json_encode((string)$vTitle, JSON_UNESCAPED_UNICODE);
 	$out .= ',stacked:' . ($Stacked ? 'true' : 'false');
+	$out .= ',absolute:' . ($absolute ? 'true' : 'false');
 	$out .= ',height:' . $height;
 	$out .= ',width:' . $witdh;
 	$out .= ',rows:' . $data;
@@ -900,12 +916,12 @@ function createPieChart($vBox, $Titel, $data, $Colors, $height = 400, $witdh = 6
 	return rkrk_create_chartjs('pie', $vBox, $Titel, $data, $Colors, '', '', $height, $witdh, false);
 }
 
-function createBarChart($vBox, $Titel, $data, $Colors, $hTitle = "", $vTitle = "", $height = 400, $witdh = 600, $Stacked = false) {
-	return rkrk_create_chartjs('bar', $vBox, $Titel, $data, $Colors, $hTitle, $vTitle, $height, $witdh, $Stacked);
+function createBarChart($vBox, $Titel, $data, $Colors, $hTitle = "", $vTitle = "", $height = 400, $witdh = 600, $Stacked = false, $absolute = false) {
+	return rkrk_create_chartjs('bar', $vBox, $Titel, $data, $Colors, $hTitle, $vTitle, $height, $witdh, $Stacked, $absolute);
 }
 
-function createColumnChart($vBox, $Titel, $data, $Colors, $hTitle = "", $vTitle = "", $height = "400", $witdh = "600", $Stacked = false) {
-	return rkrk_create_chartjs('column', $vBox, $Titel, $data, $Colors, $hTitle, $vTitle, $height, $witdh, $Stacked);
+function createColumnChart($vBox, $Titel, $data, $Colors, $hTitle = "", $vTitle = "", $height = "400", $witdh = "600", $Stacked = false, $absolute = false) {
+	return rkrk_create_chartjs('column', $vBox, $Titel, $data, $Colors, $hTitle, $vTitle, $height, $witdh, $Stacked, $absolute);
 }
 
 function createLineChart($vBox, $Titel, $data, $Colors, $hTitle = "", $vTitle = "", $height = 400, $witdh = 600, $Stacked = false) {

@@ -4,6 +4,10 @@
   const MBTILES_EXPORT_API = "export_mbtiles.php";
   const FLIGHTHUB_EXPORT_API = "export_flighthub.php";
   const DEFAULT_GRID_ROTATION = 0;
+  /** Object layers must stay above SwissTopo/DABS/KML overlays (those use ~40–97). */
+  const EDITOR_OBJECT_LAYER_ZINDEX = 200;
+  const EDITOR_DRAFT_LAYER_ZINDEX = 205;
+  const EDITOR_HELPER_LAYER_ZINDEX = 210;
   let gridRulerActive = false;
   let managedObjectSource = null;
   let managedObjectLayer = null;
@@ -20,6 +24,8 @@
   let contextMenuFillTarget = null;
   let deactivateGridRuler = null;
   let refreshManagedObjectList = () => {};
+  let objectListRenameActive = false;
+  let objectListRefreshPending = false;
   let beginEditManagedObject = () => {};
   let syncEditingObjectFromUi = () => {};
   let deleteManagedObjectById = () => {};
@@ -38,6 +44,8 @@
   let finalizeCurrentObjectAsFixedRef = () => {};
   let moveManagedObjectZOrder = () => {};
   let refreshObjectActionButtons = () => {};
+  let pdfOverlayStrokeScale_ = 1;
+  let pdfOverlayFontScale_ = 1;
   const OBJ_TOOL_ICONS = {
     draw: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
     edit: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
@@ -63,7 +71,8 @@
     polygon: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 3l8 5.5v7L12 21l-8-5.5v-7L12 3zm0 2.4L6.5 9.2v5.6L12 18.6l5.5-3.8V9.2L12 5.4z"/></svg>',
     line: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M3.5 18.5 18.5 3.5l2 2L5.5 20.5l-2-2z"/></svg>',
     show: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 5c-5 0-9.27 3.11-11 7 1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>',
-    hide: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M2.1 3.51 3.51 2.1l18.39 18.39-1.41 1.41-3.13-3.13A12.3 12.3 0 0 1 12 19c-5 0-9.27-3.11-11-7a13.4 13.4 0 0 1 4.35-5.13L2.1 3.51zM12 7a5 5 0 0 1 4.9 6.07l-1.52-1.52A3 3 0 0 0 12.45 8.6L12 7zm0 10c1.4 0 2.72-.3 3.92-.84l-1.56-1.56A5 5 0 0 1 8.4 9.64L6.84 8.08A11.4 11.4 0 0 0 1 12c1.73 3.89 6 7 11 7z"/></svg>'
+    hide: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M2.1 3.51 3.51 2.1l18.39 18.39-1.41 1.41-3.13-3.13A12.3 12.3 0 0 1 12 19c-5 0-9.27-3.11-11-7a13.4 13.4 0 0 1 4.35-5.13L2.1 3.51zM12 7a5 5 0 0 1 4.9 6.07l-1.52-1.52A3 3 0 0 0 12.45 8.6L12 7zm0 10c1.4 0 2.72-.3 3.92-.84l-1.56-1.56A5 5 0 0 1 8.4 9.64L6.84 8.08A11.4 11.4 0 0 0 1 12c1.73 3.89 6 7 11 7z"/></svg>',
+    fills: '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#00aa00" d="M3 3h8v8H3z"/><path fill="#ff2222" d="M13 3h8v8h-8z"/><path fill="#ffd400" d="M3 13h8v8H3z"/><path fill="#888888" d="M13 13h8v8h-8z"/></svg>'
   };
   function setObjToolButton(btn, iconKey, title) {
     if (!btn) return;
@@ -206,6 +215,23 @@
         overflow: hidden !important;
       }
       aside.panel .small { margin: 4px 0 !important; font-size: 11px !important; }
+      aside.panel #objectParamsGrid .obj-grid-fills-toggle,
+      aside.panel #objectParamsPolygon .obj-grid-fills-toggle {
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0 4px !important;
+        font-size: 12px !important;
+        font-weight: 650;
+        cursor: pointer;
+        user-select: none;
+      }
+      aside.panel #objectParamsGrid .obj-grid-fills-toggle input,
+      aside.panel #objectParamsPolygon .obj-grid-fills-toggle input {
+        width: auto !important;
+        margin: 0 !important;
+        flex: 0 0 auto;
+      }
       aside.panel #objectParamsCircle > p.small:first-child,
       aside.panel #objectParamsCircles > p.small:first-child,
       aside.panel #objectParamsGrid > p.small:first-child,
@@ -305,7 +331,8 @@
       #drawingsPanelDetails .panel-details-content > label,
       #drawingsPanelDetails .panel-details-content > input,
       #drawingsPanelDetails .panel-details-content > select,
-      #drawingsPanelDetails .panel-details-content > p {
+      #drawingsPanelDetails .panel-details-content > p,
+      #drawingsPanelDetails .panel-details-content > input[type="file"] {
         grid-column: 1 / -1 !important;
       }
       #drawingsPanelDetails .panel-details-content > button {
@@ -332,7 +359,34 @@
         padding: 5px 6px !important;
       }
       .overlay-box { background: rgba(255,255,255,0.95) !important; border: 1px solid #d8dde3 !important; border-radius: 8px !important; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-      .overlay-box > summary { font-size: 13px !important; font-weight: 700 !important; }
+      .overlay-box > summary { font-size: 13px !important; font-weight: 700 !important; cursor: move !important; touch-action: none !important; -webkit-user-select: none !important; }
+      .overlay-box.overlay-box-docked {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        overflow: hidden !important;
+        border-radius: 999px !important;
+        padding: 0 !important;
+        left: auto !important;
+        bottom: auto !important;
+        z-index: 145 !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,.18) !important;
+      }
+      .overlay-box.overlay-box-docked > summary {
+        width: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        list-style: none !important;
+      }
+      .overlay-box.overlay-box-docked > summary::-webkit-details-marker { display: none !important; }
+      .overlay-box.overlay-box-docked > .overlay-box-content { display: none !important; }
       .overlay-box .overlay-box-content { max-height: 250px !important; overflow-y: auto !important; padding-right: 4px !important; }
       .overlay-box .overlay-option { display: flex !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important; gap: 6px 8px !important; margin: 5px 0 !important; }
       .overlay-box .overlay-option > label.rkrk-sel { flex: 1 1 0 !important; min-width: 0 !important; justify-content: flex-start !important; overflow: hidden !important; text-overflow: ellipsis !important; }
@@ -584,6 +638,13 @@
         background: #f8fafc;
         line-height: 1.35;
         white-space: nowrap;
+        cursor: default;
+        pointer-events: none;
+      }
+      #objManagedList:has(.obj-list-name-input) .obj-list-actions button {
+        cursor: default !important;
+        pointer-events: none;
+        opacity: 0.45;
       }
       #objManagedList .obj-list-badge.is-editing {
         border-color: #b45309;
@@ -1783,11 +1844,139 @@
     } catch (_) { /* noop */ }
   }
 
+  const OVERLAY_DOCK_KEY = "obj_float_overlay_docked_v1";
+  const OVERLAY_DOCK_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2 2 7l10 5 10-5-10-5zm-8 9.5 8 4 8-4V14l-8 4-8-4v-2.5zm0 5 8 4 8-4V19l-8 4-8-4v-2.5z"/></svg>';
+
+  function overlayTopRightClusterEls() {
+    const out = [];
+    const ids = [
+      "mapHelpBtn",
+      "liveBroadcastBtn",
+      "liveShareCopyLinkBtn",
+      "liveQrShowBtn",
+      "liveShareViewFollowBtn",
+      "liveShareAnnounceOpenBtn"
+    ];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) out.push(el);
+    });
+    document.querySelectorAll(".rkrk-help-fab, [data-rkrk-help]").forEach((el) => {
+      if (out.indexOf(el) < 0) out.push(el);
+    });
+    return out;
+  }
+
+  function isTopRightRoundChip(el) {
+    if (!el || el.id === "overlayBox") return false;
+    if (el.hidden) return false;
+    let st = null;
+    try { st = window.getComputedStyle(el); } catch (_) { return false; }
+    if (!st || st.display === "none" || st.visibility === "hidden" || Number(st.opacity) === 0) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 16 || r.height < 16 || r.width > 96 || r.height > 64) return false;
+    if (r.top > 72) return false;
+    if (r.right < window.innerWidth - 420) return false;
+    return true;
+  }
+
+  function getOverlayDockSlot() {
+    let left = window.innerWidth - 12;
+    let top = 12;
+    overlayTopRightClusterEls().forEach((el) => {
+      if (!isTopRightRoundChip(el)) return;
+      const r = el.getBoundingClientRect();
+      if (r.left < left) left = r.left;
+      top = Math.min(top, Math.max(8, Math.round(r.top)));
+    });
+    return {
+      top: top,
+      right: Math.max(8, Math.round(window.innerWidth - left + 8)),
+      size: 40
+    };
+  }
+
+  function isOverlayBoxDocked(box) {
+    return !!(box && box.classList.contains("overlay-box-docked"));
+  }
+
+  function applyOverlayBoxDockedLayout(box) {
+    if (!box) return;
+    const slot = getOverlayDockSlot();
+    box.style.left = "auto";
+    box.style.right = `${slot.right}px`;
+    box.style.top = `${slot.top}px`;
+    box.style.bottom = "auto";
+    box.style.width = `${slot.size}px`;
+  }
+
+  function setOverlayBoxDocked(box, docked) {
+    if (!box) return;
+    const summary = box.querySelector("summary");
+    if (docked) {
+      if (!isOverlayBoxDocked(box)) {
+        box.dataset.overlayWasOpen = box.open ? "1" : "0";
+        if (summary && !summary.dataset.fullLabel) {
+          summary.dataset.fullLabel = String(summary.textContent || "SwissTopo-Overlays").trim();
+        }
+      }
+      box.classList.add("overlay-box-docked");
+      box.open = false;
+      if (summary) {
+        summary.innerHTML = OVERLAY_DOCK_ICON;
+        summary.title = "SwissTopo-Overlays — Doppelklick zeigt das Fenster wieder";
+      }
+      applyOverlayBoxDockedLayout(box);
+      try { localStorage.setItem(OVERLAY_DOCK_KEY, "1"); } catch (_) { /* noop */ }
+    } else {
+      box.classList.remove("overlay-box-docked");
+      box.style.right = "";
+      box.style.width = "";
+      if (summary) {
+        summary.textContent = summary.dataset.fullLabel || "SwissTopo-Overlays";
+        summary.title = "Titelzeile ziehen zum Verschieben. Doppelklick dockt oben rechts. Tippen öffnet oder schliesst.";
+      }
+      try {
+        const saved = JSON.parse(localStorage.getItem("obj_float_overlay_pos_v1") || "{}");
+        if (Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+          box.style.left = `${saved.x}px`;
+          box.style.top = `${saved.y}px`;
+          box.style.bottom = "auto";
+        } else {
+          box.style.left = "";
+          box.style.top = "";
+          box.style.bottom = "";
+        }
+      } catch (_) {
+        box.style.left = "";
+        box.style.top = "";
+        box.style.bottom = "";
+      }
+      if (box.dataset.overlayWasOpen === "1") {
+        try { box.open = true; } catch (_) { /* noop */ }
+      }
+      try { localStorage.setItem(OVERLAY_DOCK_KEY, "0"); } catch (_) { /* noop */ }
+    }
+  }
+
+  function toggleOverlayBoxDocked(box) {
+    setOverlayBoxDocked(box, !isOverlayBoxDocked(box));
+  }
+
   function installMovableFloatingBoxes() {
     const boxes = [
       { id: "overlayBox", key: "obj_float_overlay_pos_v1" },
       { id: "styleBox", key: "obj_float_style_pos_v1" }
     ];
+    const pointFromEvent = (evt) => {
+      if (evt && evt.touches && evt.touches[0]) {
+        return { x: Number(evt.touches[0].clientX), y: Number(evt.touches[0].clientY) };
+      }
+      if (evt && evt.changedTouches && evt.changedTouches[0]) {
+        return { x: Number(evt.changedTouches[0].clientX), y: Number(evt.changedTouches[0].clientY) };
+      }
+      return { x: Number(evt && evt.clientX), y: Number(evt && evt.clientY) };
+    };
     boxes.forEach(({ id, key }) => {
       const box = document.getElementById(id);
       if (!box || box.dataset.objMovableInstalled === "1") return;
@@ -1795,6 +1984,15 @@
       if (!summary) return;
       box.dataset.objMovableInstalled = "1";
       summary.style.cursor = "move";
+      summary.style.touchAction = "none";
+      summary.style.webkitUserSelect = "none";
+      summary.style.userSelect = "none";
+      const canDock = (id === "overlayBox");
+      const dragTitle = canDock
+        ? "Titelzeile ziehen zum Verschieben. Doppelklick dockt oben rechts. Tippen öffnet oder schliesst."
+        : "Titelzeile ziehen zum Verschieben. Tippen öffnet oder schliesst.";
+      if (!summary.title) summary.title = dragTitle;
+      else if (summary.title.indexOf("ziehen") < 0) summary.title = `${summary.title} — ${dragTitle}`;
       const clampPos = (x, y) => {
         const margin = 6;
         const rect = box.getBoundingClientRect();
@@ -1825,46 +2023,168 @@
       let suppressClick = false;
       const onMove = (evt) => {
         if (!drag) return;
-        const x = evt.clientX - drag.dx;
-        const y = evt.clientY - drag.dy;
-        if (Math.abs(x - drag.startX) > 2 || Math.abs(y - drag.startY) > 2) moved = true;
+        const pt = pointFromEvent(evt);
+        if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
+        const x = pt.x - drag.dx;
+        const y = pt.y - drag.dy;
+        if (Math.abs(x - drag.startX) > 4 || Math.abs(y - drag.startY) > 4) {
+          moved = true;
+          if (evt && evt.cancelable) evt.preventDefault();
+        }
         applyPos(x, y);
       };
-      const onUp = () => {
-        if (!drag) return;
+      const stopListeners = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
         window.removeEventListener("mousemove", onMove);
         window.removeEventListener("mouseup", onUp);
+        window.removeEventListener("touchmove", onMove);
+        window.removeEventListener("touchend", onUp);
+        window.removeEventListener("touchcancel", onUp);
+      };
+      const onUp = (evt) => {
+        if (!drag) return;
+        try {
+          if (drag.pointerId != null && summary.releasePointerCapture) {
+            summary.releasePointerCapture(drag.pointerId);
+          }
+        } catch (_) { /* noop */ }
+        stopListeners();
         if (moved) {
           suppressClick = true;
-          setTimeout(() => { suppressClick = false; }, 0);
+          setTimeout(() => { suppressClick = false; }, 80);
           const left = parseInt(box.style.left || "0", 10);
           const top = parseInt(box.style.top || "0", 10);
           localStorage.setItem(key, JSON.stringify({ x: left, y: top }));
+          if (evt && evt.cancelable) evt.preventDefault();
         }
         drag = null;
         moved = false;
         document.body.style.userSelect = "";
+        document.body.style.webkitUserSelect = "";
       };
-      summary.addEventListener("mousedown", (evt) => {
-        if (evt.button !== 0) return;
+      const startDrag = (evt) => {
+        if (canDock && isOverlayBoxDocked(box)) return;
+        if (evt && evt.pointerType === "mouse" && evt.button != null && evt.button !== 0) return;
+        if (evt && evt.touches && evt.touches.length > 1) return;
+        const pt = pointFromEvent(evt);
+        if (!Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
         const rect = box.getBoundingClientRect();
         drag = {
-          dx: evt.clientX - rect.left,
-          dy: evt.clientY - rect.top,
+          dx: pt.x - rect.left,
+          dy: pt.y - rect.top,
           startX: rect.left,
-          startY: rect.top
+          startY: rect.top,
+          pointerId: evt && evt.pointerId
         };
         moved = false;
         document.body.style.userSelect = "none";
-        window.addEventListener("mousemove", onMove);
-        window.addEventListener("mouseup", onUp);
-      });
+        document.body.style.webkitUserSelect = "none";
+        try {
+          if (evt && evt.pointerId != null && summary.setPointerCapture) {
+            summary.setPointerCapture(evt.pointerId);
+          }
+        } catch (_) { /* noop */ }
+        if (window.PointerEvent) {
+          window.addEventListener("pointermove", onMove, { passive: false });
+          window.addEventListener("pointerup", onUp);
+          window.addEventListener("pointercancel", onUp);
+        } else {
+          window.addEventListener("mousemove", onMove);
+          window.addEventListener("mouseup", onUp);
+          window.addEventListener("touchmove", onMove, { passive: false });
+          window.addEventListener("touchend", onUp);
+          window.addEventListener("touchcancel", onUp);
+        }
+      };
+      if (window.PointerEvent) {
+        summary.addEventListener("pointerdown", startDrag);
+      } else {
+        summary.addEventListener("mousedown", startDrag);
+        summary.addEventListener("touchstart", startDrag, { passive: false });
+      }
+      let clickTimer = null;
+      let lastDockToggle = 0;
+      const toggleDock = () => {
+        const now = Date.now();
+        if (now - lastDockToggle < 400) return;
+        lastDockToggle = now;
+        if (clickTimer) {
+          clearTimeout(clickTimer);
+          clickTimer = null;
+        }
+        toggleOverlayBoxDocked(box);
+      };
       summary.addEventListener("click", (evt) => {
-        if (!suppressClick) return;
+        if (suppressClick) {
+          evt.preventDefault();
+          evt.stopPropagation();
+          return;
+        }
+        if (!canDock) return;
         evt.preventDefault();
         evt.stopPropagation();
+        if (isOverlayBoxDocked(box)) return;
+        if (clickTimer) {
+          clearTimeout(clickTimer);
+          clickTimer = null;
+          return;
+        }
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          try { box.open = !box.open; } catch (_) { /* noop */ }
+        }, 280);
       }, true);
+      if (canDock) {
+        summary.addEventListener("dblclick", (evt) => {
+          evt.preventDefault();
+          evt.stopPropagation();
+          toggleDock();
+        });
+        let lastTap = 0;
+        summary.addEventListener("pointerup", (evt) => {
+          if (!evt || evt.pointerType !== "touch") return;
+          const now = Date.now();
+          if (now - lastTap < 350) {
+            evt.preventDefault();
+            toggleDock();
+            lastTap = 0;
+          } else {
+            lastTap = now;
+          }
+        });
+        window.addEventListener("resize", () => {
+          if (isOverlayBoxDocked(box)) applyOverlayBoxDockedLayout(box);
+        });
+        try {
+          if (localStorage.getItem(OVERLAY_DOCK_KEY) === "1") {
+            setOverlayBoxDocked(box, true);
+          }
+        } catch (_) { /* noop */ }
+        if (!window.__rkrkOverlayDockWatch) {
+          window.__rkrkOverlayDockWatch = true;
+          const relayout = () => {
+            const el = document.getElementById("overlayBox");
+            if (isOverlayBoxDocked(el)) applyOverlayBoxDockedLayout(el);
+          };
+          ["liveBroadcastBtn", "liveShareCopyLinkBtn", "liveQrShowBtn", "liveShareViewFollowBtn", "liveShareAnnounceOpenBtn", "mapHelpBtn"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el || el.__rkrkDockWatch) return;
+            el.__rkrkDockWatch = true;
+            try {
+              const mo = new MutationObserver(relayout);
+              mo.observe(el, { attributes: true, attributeFilter: ["style", "class", "hidden"] });
+            } catch (_) { /* noop */ }
+          });
+          setInterval(relayout, 1200);
+        }
+      }
       window.addEventListener("resize", () => {
+        if (canDock && isOverlayBoxDocked(box)) {
+          applyOverlayBoxDockedLayout(box);
+          return;
+        }
         const rect = box.getBoundingClientRect();
         applyPos(rect.left, rect.top);
       });
@@ -2178,9 +2498,9 @@
     if (typeof drawGridPreview === "function") {
       drawGridPreview = function (lat, lon) {
         const style = getEditorStyles().grid;
-        const spacing = readNumberInput(["spacing", "objGridSize"], 333);
-        const northCount = Math.min(200, Math.max(1, Math.round(readNumberInput(["northCount", "objNorthCount"], 8))));
-        const eastCount = Math.min(26, Math.max(1, Math.round(readNumberInput(["eastCount", "objEastCount"], 8))));
+        const spacing = readNumberInput(["objGridSize", "spacing"], 333);
+        const northCount = Math.min(200, Math.max(1, Math.round(readNumberInput(["objNorthCount", "northCount"], 8))));
+        const eastCount = Math.min(26, Math.max(1, Math.round(readNumberInput(["objEastCount", "eastCount"], 8))));
         if (typeof pruneGridCellFillCycleForCounts === "function") {
           pruneGridCellFillCycleForCounts(northCount, eastCount);
         }
@@ -2202,7 +2522,7 @@
             polygonFeature.set("gridCellE", e);
             polygonFeature.setStyle(new ol.style.Style({
               zIndex: 1,
-              stroke: new ol.style.Stroke({ color: style.lineColor, width: style.lineWidth, lineDash: [8, 6] }),
+              stroke: new ol.style.Stroke({ color: style.lineColor, width: scaleOverlayStrokeWidth(style.lineWidth, 2), lineDash: [8, 6] }),
               fill: new ol.style.Fill({ color: fillRgba })
             }));
             previewSource.addFeature(polygonFeature);
@@ -2214,24 +2534,91 @@
               zIndex: 2,
               text: new ol.style.Text({
                 text: cellName,
-                font: `${style.fontSize}px Arial`,
+                font: `${scaleOverlayFontPx(style.fontSize, 11)}px Arial`,
                 fill: new ol.style.Fill({ color: style.labelColor }),
-                stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+                stroke: new ol.style.Stroke({ color: "#ffffff", width: scaleOverlayStrokeWidth(3) })
               })
             }));
             previewSource.addFeature(textFeature);
           }
         }
+        try {
+          const sel = (selectedManagedObjectId != null)
+            ? managedObjects.find((o) => o && Number(o.id) === Number(selectedManagedObjectId))
+            : null;
+          const title = (sel && sel.type === "grid") ? customManagedObjectMapLabel(sel) : "";
+          if (title) {
+            addGridNameLabelFeature(previewSource, {
+              title: title,
+              lat: lat,
+              lon: lon,
+              spacing: spacing,
+              northCount: northCount,
+              eastCount: eastCount,
+              rotation: getGridRotationAngle(),
+              fontSize: (Number(style.fontSize) || 11) + 3,
+              color: style.labelColor || "#111827",
+              zIndex: 4
+            });
+          }
+        } catch (_) { /* noop */ }
       };
     }
   }
 
+  function raiseEditorObjectLayersAboveOverlays() {
+    if (typeof map === "undefined" || !map || typeof map.getLayers !== "function") return;
+    const draftSources = [];
+    const objectSources = [];
+    try {
+      if (typeof previewSource !== "undefined" && previewSource) draftSources.push(previewSource);
+      if (typeof polygonSource !== "undefined" && polygonSource) draftSources.push(polygonSource);
+      if (typeof markerSource !== "undefined" && markerSource) draftSources.push(markerSource);
+      if (typeof labelPointsSource !== "undefined" && labelPointsSource) draftSources.push(labelPointsSource);
+      if (typeof flightCoverageSource !== "undefined" && flightCoverageSource) objectSources.push(flightCoverageSource);
+      if (typeof flightPathSource !== "undefined" && flightPathSource) objectSources.push(flightPathSource);
+      if (managedObjectSource) objectSources.push(managedObjectSource);
+    } catch (_) { /* noop */ }
+    map.getLayers().forEach((ly) => {
+      if (!ly || typeof ly.setZIndex !== "function") return;
+      if (typeof ly.get === "function" && ly.get("rkrkEditorHelper")) {
+        ly.setZIndex(EDITOR_HELPER_LAYER_ZINDEX);
+        return;
+      }
+      const src = (typeof ly.getSource === "function") ? ly.getSource() : null;
+      if (managedObjectLayer && ly === managedObjectLayer) {
+        ly.setZIndex(EDITOR_OBJECT_LAYER_ZINDEX);
+        if (typeof ly.set === "function") ly.set("rkrkEditorObject", true);
+        return;
+      }
+      if (src && draftSources.indexOf(src) >= 0) {
+        ly.setZIndex(EDITOR_DRAFT_LAYER_ZINDEX);
+        if (typeof ly.set === "function") ly.set("rkrkEditorObject", true);
+        return;
+      }
+      if (src && objectSources.indexOf(src) >= 0) {
+        ly.setZIndex(EDITOR_OBJECT_LAYER_ZINDEX);
+        if (typeof ly.set === "function") ly.set("rkrkEditorObject", true);
+      }
+    });
+  }
+  try { window.__rkrkRaiseEditorObjectLayers = raiseEditorObjectLayersAboveOverlays; } catch (_) { /* noop */ }
+
   function ensureManagedObjectLayer() {
-    if (managedObjectSource && managedObjectLayer) return;
     if (typeof ol === "undefined" || typeof map === "undefined" || !map) return;
+    if (managedObjectSource && managedObjectLayer) {
+      try { managedObjectLayer.setZIndex(EDITOR_OBJECT_LAYER_ZINDEX); } catch (_) { /* noop */ }
+      raiseEditorObjectLayersAboveOverlays();
+      return;
+    }
     managedObjectSource = new ol.source.Vector();
-    managedObjectLayer = new ol.layer.Vector({ source: managedObjectSource, zIndex: 18 });
+    managedObjectLayer = new ol.layer.Vector({
+      source: managedObjectSource,
+      zIndex: EDITOR_OBJECT_LAYER_ZINDEX,
+      properties: { rkrkEditorObject: true }
+    });
     map.addLayer(managedObjectLayer);
+    raiseEditorObjectLayersAboveOverlays();
   }
 
   function cloneLonLat(p) {
@@ -2266,6 +2653,51 @@
   function managedObjectDisplayName(obj) {
     const custom = obj && typeof obj.name === "string" ? obj.name.trim() : "";
     return custom || defaultManagedObjectName(obj);
+  }
+
+  function isDefaultManagedObjectName(obj) {
+    const custom = obj && typeof obj.name === "string" ? obj.name.trim() : "";
+    if (!custom) return true;
+    if (custom === defaultManagedObjectName(obj)) return true;
+    const typeLabel = objectTypeLabel(obj && obj.type);
+    const escaped = String(typeLabel || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp("^" + escaped + "\\s*#\\s*\\d+$", "i").test(custom);
+  }
+
+  function customManagedObjectMapLabel(obj) {
+    if (!obj || isDefaultManagedObjectName(obj)) return "";
+    return String(obj.name).trim();
+  }
+
+  function addGridNameLabelFeature(source, opts) {
+    const title = String((opts && opts.title) || "").trim();
+    if (!title || !source || typeof lonLatToMapCoord !== "function") return;
+    const lat = Number(opts.lat);
+    const lon = Number(opts.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const spacing = Math.max(1, Number(opts.spacing) || 333);
+    const northCount = Math.max(1, Number(opts.northCount) || 1);
+    const eastCount = Math.max(1, Number(opts.eastCount) || 1);
+    const rot = Number(opts.rotation) || 0;
+    const extra = Math.max(8, spacing * 0.12);
+    const pos = rotatedOffsetLatLon(lat, lon, northCount * spacing + extra, (eastCount * spacing) / 2, rot);
+    const f = new ol.Feature({ geometry: new ol.geom.Point(lonLatToMapCoord(pos[1], pos[0])) });
+    f.set("previewType", "grid-title");
+    if (opts.objectId != null) tagManagedFeature(f, opts.objectId, opts.zIndex || 3);
+    const fontSize = scaleOverlayFontPx(Math.max(13, Number(opts.fontSize) || 14), 14);
+    f.setStyle(new ol.style.Style({
+      zIndex: opts.zIndex || 3,
+      text: new ol.style.Text({
+        text: title.slice(0, 80),
+        font: "bold " + fontSize + "px Arial",
+        fill: new ol.style.Fill({ color: opts.color || "#111827" }),
+        stroke: new ol.style.Stroke({ color: "#ffffff", width: scaleOverlayStrokeWidth(4) }),
+        textAlign: "center",
+        textBaseline: "bottom",
+        offsetY: -2
+      })
+    }));
+    source.addFeature(f);
   }
 
 
@@ -2399,19 +2831,41 @@
     return pts;
   }
 
+  function overlayPrintStrokeScale() {
+    const n = Number(pdfOverlayStrokeScale_);
+    return (Number.isFinite(n) && n > 1) ? n : 1;
+  }
+
+  function overlayPrintFontScale() {
+    const n = Number(pdfOverlayFontScale_);
+    return (Number.isFinite(n) && n > 1) ? n : 1;
+  }
+
+  function scaleOverlayStrokeWidth(width, fallback) {
+    const base = Number(width);
+    const w = (Number.isFinite(base) && base > 0) ? base : (Number(fallback) || 2);
+    return Math.max(1, w * overlayPrintStrokeScale());
+  }
+
+  function scaleOverlayFontPx(size, fallback) {
+    const base = Number(size);
+    const s = (Number.isFinite(base) && base > 0) ? base : (Number(fallback) || 11);
+    return Math.max(8, Math.round(s * overlayPrintFontScale()));
+  }
+
   function strokeForManagedObject(obj, baseColor, baseWidth) {
     // Vorschau / in Bearbeitung = gestrichelt; fixiert = durchgehende Linie.
     const unfixed = obj && !obj.fixed;
     if (unfixed) {
       return new ol.style.Stroke({
         color: "#f59e0b",
-        width: Math.max(3, Number(baseWidth) || 2),
+        width: scaleOverlayStrokeWidth(Math.max(3, Number(baseWidth) || 2)),
         lineDash: [8, 6]
       });
     }
     return new ol.style.Stroke({
       color: baseColor,
-      width: Number(baseWidth) || 2
+      width: scaleOverlayStrokeWidth(Number(baseWidth) || 2)
       // no lineDash = durchgehende Linie
     });
   }
@@ -2938,6 +3392,213 @@
     el.value = String(value);
   }
 
+  function copyInputValue(fromId, toId) {
+    const from = document.getElementById(fromId);
+    const to = document.getElementById(toId);
+    if (!from || !to || from.value === "" || from.value == null) return;
+    to.value = String(from.value);
+  }
+
+  function finiteNumberOr(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function readGridParamsFromObject(obj) {
+    const raw = obj && typeof obj === "object" ? obj : {};
+    const spacing = Math.max(1, Math.round(finiteNumberOr(
+      raw.spacing != null ? raw.spacing : raw.gridSize,
+      333
+    )));
+    const northCount = Math.max(1, Math.min(200, Math.round(finiteNumberOr(raw.northCount, 8))));
+    const eastCount = Math.max(1, Math.min(26, Math.round(finiteNumberOr(raw.eastCount, 8))));
+    const rotSrc = raw.rotation != null ? raw.rotation : raw.rotationAngle;
+    const rotation = Number.isFinite(Number(rotSrc)) ? Number(rotSrc) : 0;
+    return { spacing, northCount, eastCount, rotation };
+  }
+
+  function writeGridParamsToForm(params, options) {
+    const p = params || {};
+    const spacing = Math.max(1, Math.round(finiteNumberOr(p.spacing, 333)));
+    const northCount = Math.max(1, Math.min(200, Math.round(finiteNumberOr(p.northCount, 8))));
+    const eastCount = Math.max(1, Math.min(26, Math.round(finiteNumberOr(p.eastCount, 8))));
+    const rotation = Number.isFinite(Number(p.rotation)) ? Number(p.rotation) : 0;
+    const sp = document.getElementById("spacing");
+    const nc = document.getElementById("northCount");
+    const ec = document.getElementById("eastCount");
+    if (sp) sp.value = String(spacing);
+    if (nc) nc.value = String(northCount);
+    if (ec) ec.value = String(eastCount);
+    setInputValueIfPresent("objGridSize", spacing);
+    setInputValueIfPresent("objNorthCount", northCount);
+    setInputValueIfPresent("objEastCount", eastCount);
+    const rotOpts = Object.assign({ immediate: true, force: true, skipRedraw: true }, options || {});
+    if (typeof applyGridRotation === "function") {
+      applyGridRotation(rotation, rotOpts);
+    } else if (typeof setGridRotationAngle === "function") {
+      setGridRotationAngle(rotation);
+    }
+    return { spacing, northCount, eastCount, rotation };
+  }
+
+  /** Hidden map_editor fields (spacing/radius*) and visible Objekt-Formular (obj*) stay in sync. */
+  function syncMirroredObjectFormFields() {
+    copyInputValue("spacing", "objGridSize");
+    copyInputValue("northCount", "objNorthCount");
+    copyInputValue("eastCount", "objEastCount");
+    copyInputValue("radius1", "objRadius1");
+    copyInputValue("radius2", "objRadius2");
+    copyInputValue("radius3", "objRadius3");
+    copyInputValue("radius1", "objSingleRadius");
+    const r1 = document.getElementById("radius1");
+    const singleD = document.getElementById("objSingleDiameter");
+    const d1 = document.getElementById("objDiameter1");
+    const d2 = document.getElementById("objDiameter2");
+    const d3 = document.getElementById("objDiameter3");
+    const r2 = document.getElementById("radius2");
+    const r3 = document.getElementById("radius3");
+    if (r1 && singleD) singleD.value = String(Math.max(2, Math.round(Number(r1.value || 100) * 2)));
+    if (r1 && d1) d1.value = String(Math.max(2, Math.round(Number(r1.value || 100) * 2)));
+    if (r2 && d2) d2.value = String(Math.max(2, Math.round(Number(r2.value || 200) * 2)));
+    if (r3 && d3) d3.value = String(Math.max(2, Math.round(Number(r3.value || 300) * 2)));
+  }
+
+  function pickObjectFromList(list, wantId) {
+    const arr = Array.isArray(list) ? list.filter((o) => o) : [];
+    if (!arr.length) return null;
+    const id = Number(wantId);
+    if (Number.isFinite(id)) {
+      const found = arr.find((o) => Number(o.id) === id);
+      if (found) return found;
+    }
+    const unfixed = arr.find((o) => o && o.fixed === false);
+    if (unfixed) return unfixed;
+    const grid = arr.find((o) => o && normalizeObjectType(o.type) === "grid");
+    if (grid) return grid;
+    return arr[0];
+  }
+
+  function pickObjectForFormSync(state) {
+    const list = Array.isArray(managedObjects)
+      ? managedObjects.filter((o) => o && isManagedObjectVisibleToMe(o))
+      : [];
+    const wantId = state && state.selectedManagedObjectId != null
+      ? state.selectedManagedObjectId
+      : selectedManagedObjectId;
+    return pickObjectFromList(list, wantId);
+  }
+
+  function seedDrawingStateFormFromObjects(state) {
+    if (!state || typeof state !== "object") return;
+    const hint = pickObjectFromList(state.managedObjects, state.selectedManagedObjectId);
+    if (!hint) return;
+    const type = normalizeObjectType(hint.type);
+    state.exportType = type;
+    if (type === "grid") {
+      const p = readGridParamsFromObject(hint);
+      state.grid = state.grid && typeof state.grid === "object" ? state.grid : {};
+      state.grid.spacing = String(p.spacing);
+      state.grid.northCount = String(p.northCount);
+      state.grid.eastCount = String(p.eastCount);
+      state.grid.rotation = p.rotation;
+      state.grid.rotationAngle = p.rotation;
+      if (hint.cellFills && typeof hint.cellFills === "object") {
+        state.grid.cellFills = cloneCellFillsMap(hint.cellFills);
+      }
+    } else if (type === "circles") {
+      state.circles = state.circles && typeof state.circles === "object" ? state.circles : {};
+      state.circles.radius1 = String(Math.max(1, finiteNumberOr(hint.r1, 100)));
+      state.circles.radius2 = String(Math.max(1, finiteNumberOr(hint.r2, 200)));
+      state.circles.radius3 = String(Math.max(1, finiteNumberOr(hint.r3, 300)));
+    } else if (type === "circle") {
+      const radius = Math.max(1, finiteNumberOr(hint.r, finiteNumberOr(hint.diameter, 200) / 2));
+      state.circles = state.circles && typeof state.circles === "object" ? state.circles : {};
+      state.circles.radius1 = String(radius);
+    }
+  }
+
+  function fillObjectFormFromDrawing(state) {
+    const hint = pickObjectForFormSync(state);
+    if (!hint) {
+      const grid = state && state.grid && typeof state.grid === "object" ? state.grid : null;
+      if (grid) {
+        writeGridParamsToForm({
+          spacing: grid.spacing,
+          northCount: grid.northCount,
+          eastCount: grid.eastCount,
+          rotation: grid.rotation != null ? grid.rotation : grid.rotationAngle
+        });
+      } else {
+        syncMirroredObjectFormFields();
+      }
+      return null;
+    }
+    applyManagedObjectToUi(hint);
+    return hint;
+  }
+
+  function scheduleFormSyncFromDrawing(state) {
+    const run = () => {
+      try { fillObjectFormFromDrawing(state); } catch (_) { /* noop */ }
+    };
+    run();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(run);
+    }
+    setTimeout(run, 0);
+    setTimeout(run, 80);
+  }
+
+  function formLooksLikeGridDefaults() {
+    const size = Number((document.getElementById("objGridSize") || {}).value);
+    const north = Number((document.getElementById("objNorthCount") || {}).value);
+    const east = Number((document.getElementById("objEastCount") || {}).value);
+    const rot = Number((document.getElementById("gridRotationAngle") || {}).value);
+    return size === 333 && north === 8 && east === 8 && (!Number.isFinite(rot) || rot === 0);
+  }
+
+  function syncGridFormFromDrawingIfStale() {
+    if (window.__applyingManagedObjectToUi || window.__applyingDrawingState) return;
+    if (typeof isEditingUnfixedGrid === "function" && isEditingUnfixedGrid()) return;
+    const hint = pickObjectForFormSync({ selectedManagedObjectId });
+    if (!hint || normalizeObjectType(hint.type) !== "grid") return;
+    const p = readGridParamsFromObject(hint);
+    const same = p.spacing === 333 && p.northCount === 8 && p.eastCount === 8 && p.rotation === 0;
+    if (formLooksLikeGridDefaults() && !same) {
+      writeGridParamsToForm(p);
+    }
+  }
+
+  function installObjectFormDrawingSync() {
+    if (window.__objFormDrawingSyncInstalled) return;
+    window.__objFormDrawingSyncInstalled = true;
+    const panel = document.getElementById("objectPanelDetails")
+      || ((typeof exportTypeEl !== "undefined" && exportTypeEl) ? exportTypeEl.closest("details") : null);
+    if (panel) {
+      panel.addEventListener("toggle", () => {
+        if (!panel.open) return;
+        if (selectedManagedObjectId) {
+          const sel = managedObjects.find((o) => o && Number(o.id) === Number(selectedManagedObjectId));
+          if (sel) {
+            try { applyManagedObjectToUi(sel); } catch (_) { /* noop */ }
+            return;
+          }
+        }
+        try { syncGridFormFromDrawingIfStale(); } catch (_) { /* noop */ }
+      });
+    }
+    const drawBtn = document.getElementById("drawBtn");
+    if (drawBtn) {
+      drawBtn.addEventListener("click", () => {
+        const mode = (typeof exportTypeEl !== "undefined" && exportTypeEl)
+          ? normalizeObjectType(exportTypeEl.value)
+          : "";
+        if (mode !== "grid" && mode !== "circle" && mode !== "circles") return;
+        try { syncGridFormFromDrawingIfStale(); } catch (_) { /* noop */ }
+      }, true);
+    }
+  }
+
   function readNumberInput(ids, fallback) {
     const list = Array.isArray(ids) ? ids : [ids];
     for (let i = 0; i < list.length; i += 1) {
@@ -3012,6 +3673,78 @@
     gridCellFillCycleMap = {};
   }
 
+  function gridResultFillsVisibleFromUi() {
+    const el = document.getElementById("objGridShowResultFills");
+    return el ? !!el.checked : true;
+  }
+
+  function gridResultFillsVisible(obj) {
+    if (obj && obj.type === "grid") return obj.showResultFills !== false;
+    return gridResultFillsVisibleFromUi();
+  }
+
+  function setGridResultFillsVisible(visible, opts) {
+    const show = visible !== false;
+    const el = document.getElementById("objGridShowResultFills");
+    if (el) el.checked = show;
+    const obj = selectedManagedObjectId
+      ? managedObjects.find((o) => o && Number(o.id) === Number(selectedManagedObjectId))
+      : null;
+    if (obj && obj.type === "grid") {
+      obj.showResultFills = show;
+      try { touchManagedObjectSyncMeta(obj); } catch (_) { /* noop */ }
+    }
+    if (opts && opts.skipRedraw) return;
+    try { renderManagedObjects(); } catch (_) { /* noop */ }
+    try { if (typeof drawPreview === "function") drawPreview(); } catch (_) { /* noop */ }
+    if (!(opts && opts.skipList)) {
+      try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+    }
+  }
+
+  function ensureGridResultFillsVisible(obj) {
+    if (!obj || obj.type !== "grid" || obj.showResultFills !== false) return;
+    setGridResultFillsVisible(true, { skipList: false });
+  }
+
+  function polygonFillVisibleFromUi() {
+    const el = document.getElementById("objPolyShowFill");
+    return el ? !!el.checked : true;
+  }
+
+  function setPolygonFillVisible(visible, opts) {
+    const show = visible !== false;
+    const el = document.getElementById("objPolyShowFill");
+    if (el) el.checked = show;
+    const obj = selectedManagedObjectId
+      ? managedObjects.find((o) => o && Number(o.id) === Number(selectedManagedObjectId))
+      : null;
+    if (obj && obj.type === "polygon") {
+      obj.showFill = show;
+      try { touchManagedObjectSyncMeta(obj); } catch (_) { /* noop */ }
+    }
+    if (opts && opts.skipRedraw) return;
+    try { renderManagedObjects(); } catch (_) { /* noop */ }
+    try { if (typeof renderPolygonEditor === "function") renderPolygonEditor(); } catch (_) { /* noop */ }
+    if (!(opts && opts.skipList)) {
+      try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+    }
+  }
+
+  function ensurePolygonFillVisible(obj) {
+    if (!obj || obj.type !== "polygon" || obj.showFill !== false) return;
+    setPolygonFillVisible(true, { skipList: false });
+  }
+
+  function polygonFillOpacity(obj, style, editing) {
+    if (obj && obj.showFill === false) {
+      return (typeof GRID_NEUTRAL_FILL_PICK_ALPHA === "number") ? GRID_NEUTRAL_FILL_PICK_ALPHA : 0.012;
+    }
+    const op = Number(style && style.fillOpacity);
+    const base = Number.isFinite(op) ? op : 0.1;
+    return editing ? Math.max(0.12, base) : base;
+  }
+
   function hexToKmlColorLocal(hexColor, alpha) {
     if (typeof hexToKmlColor === "function") {
       try { return hexToKmlColor(hexColor, alpha); } catch (_) { /* fall through */ }
@@ -3056,7 +3789,11 @@
     ];
   }
 
-  function gridCellFillRgba(style, cellFills, n, e, editing) {
+  function gridCellFillRgba(style, cellFills, n, e, editing, visible) {
+    if (visible === false) {
+      const pickA = (typeof GRID_NEUTRAL_FILL_PICK_ALPHA === "number") ? GRID_NEUTRAL_FILL_PICK_ALPHA : 0.012;
+      return hexToRgba("#ffffff", pickA);
+    }
     const key = `${n},${e}`;
     const fills = (cellFills && typeof cellFills === "object") ? cellFills : null;
     const idx = fills && Object.prototype.hasOwnProperty.call(fills, key) ? Number(fills[key]) : undefined;
@@ -3089,6 +3826,7 @@
       return {
         type,
         polygonVertices: Array.isArray(polygonVertices) ? polygonVertices.map(cloneLonLat) : [],
+        showFill: polygonFillVisibleFromUi(),
         polygonStyle: {
           lineColor: String(polygonStyle.lineColor || "#ff8c00"),
           lineWidth: Number(polygonStyle.lineWidth) || 2,
@@ -3205,11 +3943,12 @@
       return {
         type,
         anchor: refLonLat,
-        spacing: Math.max(1, readNumberInput(["spacing", "objGridSize"], 333)),
-        northCount: Math.max(1, Math.min(200, Math.round(readNumberInput(["northCount", "objNorthCount"], 8)))),
-        eastCount: Math.max(1, Math.min(26, Math.round(readNumberInput(["eastCount", "objEastCount"], 8)))),
+        spacing: Math.max(1, readNumberInput(["objGridSize", "spacing"], 333)),
+        northCount: Math.max(1, Math.min(200, Math.round(readNumberInput(["objNorthCount", "northCount"], 8)))),
+        eastCount: Math.max(1, Math.min(26, Math.round(readNumberInput(["objEastCount", "eastCount"], 8)))),
         rotation: getGridRotationAngle(),
         cellFills: currentCellFillsFromUi(),
+        showResultFills: gridResultFillsVisibleFromUi(),
         gridStyle: {
           lineColor: String(gridStyle.lineColor || "#ffd400"),
           lineWidth: Number(gridStyle.lineWidth) || 2,
@@ -3969,9 +4708,9 @@
           zIndex: zLabel,
           text: new ol.style.Text({
             text: String((s && s.labelText) || obj.labelText || "Kreis").slice(0, 80),
-            font: `${Number(s.fontSize) || 12}px Arial`,
+            font: `${scaleOverlayFontPx(s.fontSize, 12)}px Arial`,
             fill: new ol.style.Fill({ color: editing ? "#f59e0b" : (s.labelColor || "#0000ff") }),
-            stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+            stroke: new ol.style.Stroke({ color: "#ffffff", width: scaleOverlayStrokeWidth(3) })
           })
         }));
         managedObjectSource.addFeature(lf);
@@ -4014,9 +4753,9 @@
             zIndex: zLabel,
             text: new ol.style.Text({
               text: `C${idx + 1}`,
-              font: `${Number(s.fontSize) || 12}px Arial`,
+              font: `${scaleOverlayFontPx(s.fontSize, 12)}px Arial`,
               fill: new ol.style.Fill({ color: editing ? "#f59e0b" : (s.labelColor || "#0000ff") }),
-              stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+              stroke: new ol.style.Stroke({ color: "#ffffff", width: scaleOverlayStrokeWidth(3) })
             })
           }));
           managedObjectSource.addFeature(lf);
@@ -4045,7 +4784,7 @@
               zIndex: zBase,
               stroke: strokeForManagedObject(obj, style.lineColor, Number(style.lineWidth) || 2),
               fill: new ol.style.Fill({
-                color: gridCellFillRgba(style, obj.cellFills, n, e, editing)
+                color: gridCellFillRgba(style, obj.cellFills, n, e, editing, obj.showResultFills !== false)
               })
             }));
             managedObjectSource.addFeature(cell);
@@ -4059,13 +4798,29 @@
               zIndex: zLabel,
               text: new ol.style.Text({
                 text: cellName,
-                font: `${Number(style.fontSize) || 11}px Arial`,
+                font: `${scaleOverlayFontPx(style.fontSize, 11)}px Arial`,
                 fill: new ol.style.Fill({ color: editing ? "#f59e0b" : (style.labelColor || "#0000ff") }),
-                stroke: new ol.style.Stroke({ color: "#ffffff", width: 3 })
+                stroke: new ol.style.Stroke({ color: "#ffffff", width: scaleOverlayStrokeWidth(3) })
               })
             }));
             managedObjectSource.addFeature(labelFeature);
           }
+        }
+        const gridTitle = customManagedObjectMapLabel(obj);
+        if (gridTitle) {
+          addGridNameLabelFeature(managedObjectSource, {
+            title: gridTitle,
+            lat: obj.anchor[1],
+            lon: obj.anchor[0],
+            spacing: obj.spacing,
+            northCount: obj.northCount,
+            eastCount: obj.eastCount,
+            rotation: Number(obj.rotation) || 0,
+            objectId: obj.id,
+            fontSize: (Number(style.fontSize) || 11) + 3,
+            color: editing ? "#f59e0b" : (style.labelColor || "#111827"),
+            zIndex: zLabel + 1
+          });
         }
       } else if (obj.type === "polygon" && Array.isArray(obj.polygonVertices) && obj.polygonVertices.length >= 3) {
         const polyStyle = (obj.polygonStyle && typeof obj.polygonStyle === "object")
@@ -4081,7 +4836,7 @@
           zIndex: zBase,
           stroke: strokeForManagedObject(obj, polyStyle.lineColor || "#ff8c00", Number(polyStyle.lineWidth) || 2),
           fill: new ol.style.Fill({
-            color: hexToRgba(polyStyle.fillColor || "#ff8c00", editing ? Math.max(0.12, Number(polyStyle.fillOpacity) || 0.1) : (Number(polyStyle.fillOpacity) || 0.1))
+            color: hexToRgba(polyStyle.fillColor || "#ff8c00", polygonFillOpacity(obj, polyStyle, editing))
           })
         }));
         managedObjectSource.addFeature(f);
@@ -4114,7 +4869,10 @@
           const pointRadius = Math.max(0, Number.isFinite(Number(lp.pointRadius)) ? Number(lp.pointRadius) : Number(defaults.pointRadius ?? 7));
           const pointColor = lp.color || defaults.color || "#ff8c00";
           const textColor = lp.textColor || defaults.textColor || defaults.color || "#111111";
-          const fontSize = Math.max(8, Math.min(72, Number.isFinite(Number(lp.fontSize)) ? Number(lp.fontSize) : getObjectLabelFontSize()));
+          const fontSize = scaleOverlayFontPx(
+            Math.max(8, Math.min(72, Number.isFinite(Number(lp.fontSize)) ? Number(lp.fontSize) : getObjectLabelFontSize())),
+            12
+          );
           f.setStyle(new ol.style.Style({
             zIndex: zBase,
             image: pointRadius > 0 ? new ol.style.Circle({
@@ -4135,7 +4893,7 @@
                 color: (typeof contrastStrokeForPointFill === "function")
                   ? contrastStrokeForPointFill(textColor)
                   : "#ffffff",
-                width: 3
+                width: scaleOverlayStrokeWidth(3)
               })
             })
           }));
@@ -4149,6 +4907,7 @@
       refreshManagedObjectList();
     }
     try { refreshObjectActionButtons(); } catch (_) { /* noop */ }
+    try { syncGridRotationOverlayForSelection(); } catch (_) { /* noop */ }
   }
 
   function isPolygonDrawBlockingPick() {
@@ -4277,19 +5036,16 @@
         }
         if (typeof setMarker === "function") setMarker(lonLatToMapCoord(obj.anchor[0], obj.anchor[1]));
         if (typeof renderCoord === "function") renderCoord();
-      } else if (obj.type === "grid" && obj.anchor) {
-        selectedLonLat = cloneLonLat(obj.anchor);
-        const sp = document.getElementById("spacing");
-        const nc = document.getElementById("northCount");
-        const ec = document.getElementById("eastCount");
-        if (sp) sp.value = String(obj.spacing);
-        if (nc) nc.value = String(obj.northCount);
-        if (ec) ec.value = String(obj.eastCount);
-        setInputValueIfPresent("objGridSize", obj.spacing);
-        setInputValueIfPresent("objNorthCount", obj.northCount);
-        setInputValueIfPresent("objEastCount", obj.eastCount);
+      } else if (obj.type === "grid") {
+        if (obj.anchor) {
+          selectedLonLat = cloneLonLat(obj.anchor);
+          if (typeof setMarker === "function") setMarker(lonLatToMapCoord(obj.anchor[0], obj.anchor[1]));
+          if (typeof renderCoord === "function") renderCoord();
+        }
+        writeGridParamsToForm(readGridParamsFromObject(obj));
         applyCellFillsToUi(obj.cellFills);
-        applyGridRotation(obj.rotation || 0, { immediate: true, force: true });
+        const fillsEl = document.getElementById("objGridShowResultFills");
+        if (fillsEl) fillsEl.checked = obj.showResultFills !== false;
         if (obj.gridStyle && typeof obj.gridStyle === "object") {
           setInputValueIfPresent("gridLineColor", obj.gridStyle.lineColor);
           setInputValueIfPresent("gridLineWidth", obj.gridStyle.lineWidth);
@@ -4298,10 +5054,11 @@
           setInputValueIfPresent("gridLabelColor", obj.gridStyle.labelColor);
           setInputValueIfPresent("gridFontSize", obj.gridStyle.fontSize);
         }
-        if (typeof setMarker === "function") setMarker(lonLatToMapCoord(obj.anchor[0], obj.anchor[1]));
-        if (typeof renderCoord === "function") renderCoord();
+        try { syncGridRotationOverlayForSelection(); } catch (_) { /* noop */ }
       } else if (obj.type === "polygon") {
         polygonVertices = Array.isArray(obj.polygonVertices) ? obj.polygonVertices.map(cloneLonLat) : [];
+        const polyFillEl = document.getElementById("objPolyShowFill");
+        if (polyFillEl) polyFillEl.checked = obj.showFill !== false;
         if (obj.polygonStyle && typeof obj.polygonStyle === "object") {
           setInputValueIfPresent("polyLineColor", obj.polygonStyle.lineColor);
           setInputValueIfPresent("polyLineWidth", obj.polygonStyle.lineWidth);
@@ -4898,6 +5655,7 @@
               else if (cur >= cycleLen - 1) delete mObj.cellFills[key];
               else mObj.cellFills[key] = cur + 1;
               try { touchManagedObjectSyncMeta(mObj); } catch (_) { /* noop */ }
+              ensureGridResultFillsVisible(mObj);
               renderManagedObjects();
               markFixedHistoryCursor();
               try { if (typeof window.notifyLiveShareChange === "function") window.notifyLiveShareChange(); } catch (_) { /* noop */ }
@@ -4972,6 +5730,7 @@
   window.__rkrkApplyManagedGridCellFill = function (objectId, n, e, value) {
     const mObj = managedObjects.find((o) => o.id === objectId);
     if (!mObj || mObj.type !== "grid") return;
+    ensureGridResultFillsVisible(mObj);
     if (typeof rememberFixedHistory === "function") {
       try { rememberFixedHistory(); } catch (_) { /* noop */ }
     }
@@ -5002,6 +5761,7 @@
       mObj.polygonStyle = applyPaletteFillToPolygonStyle(mObj.polygonStyle, idx);
       mObj._fillCycleIdx = idx;
     }
+    ensurePolygonFillVisible(mObj);
     notifyAfterManagedColorChange();
     managedStatusText("Polygon-Füllfarbe gesetzt.");
   };
@@ -5236,6 +5996,10 @@
       + "  <label for='gridRotationAngle'>Rasterrotation (Grad)</label><input id='gridRotationAngle' type='number' min='0' max='359' step='1' value='0'/>"
       + "  <input id='gridRotationWheel' type='range' min='0' max='359' step='1' value='0'/>"
       + "  <p class='small' id='gridRotationLiveLabel' style='font-weight:700;'>Rotation: 0°</p>"
+      + "  <label class='obj-grid-fills-toggle' for='objGridShowResultFills'>"
+      + "    <input id='objGridShowResultFills' type='checkbox' checked />"
+      + "    Resultatflächen anzeigen"
+      + "  </label>"
       + "  <button id='gridRulerBtn' type='button' style='display:none;'>Lineal</button>"
       + "  <p class='small' id='gridRulerStatus'>Lineal aus.</p>"
       + "</div>"
@@ -5244,6 +6008,10 @@
       + "  <button id='objStartPolyBtn' type='button' title='Zeichnen starten'>Zeichnen</button>"
       + "  <button id='objFinishPolyBtn' type='button' style='display:none'>Polygon abschliessen</button>"
       + "  <button id='objClearPolyBtn' type='button' style='display:none' title='Polygon löschen'>Löschen</button>"
+      + "  <label class='obj-grid-fills-toggle' for='objPolyShowFill'>"
+      + "    <input id='objPolyShowFill' type='checkbox' checked />"
+      + "    Flächenfärbung anzeigen"
+      + "  </label>"
       + "  <p class='small' id='objPolygonStatusMirror'>Noch nicht gestartet.</p>"
       + "</div>"
       + "<div id='objectParamsFreehand' style='display:none;'>"
@@ -5612,13 +6380,24 @@
       const src = document.getElementById(srcId);
       const dst = document.getElementById(dstId);
       if (!src || !dst) return;
-      src.value = String(fn(Number(dst.value || src.value)));
-      src.addEventListener("input", () => {
-        const v = fn(Number(src.value));
-        src.value = String(v);
-        dst.value = String(v);
+      const applyPair = (from, to) => {
+        const v = fn(Number(from.value));
+        from.value = String(v);
+        to.value = String(v);
         if (typeof drawPreview === "function" && typeof previewActive !== "undefined" && previewActive) drawPreview();
-      });
+      };
+      if (!src.__objBound) {
+        src.__objBound = true;
+        src.addEventListener("input", () => applyPair(src, dst));
+      }
+      if (!dst.__objBoundFromHidden) {
+        dst.__objBoundFromHidden = true;
+        dst.addEventListener("input", () => applyPair(dst, src));
+      }
+      if (!src.__objBindSeeded) {
+        src.__objBindSeeded = true;
+        src.value = String(fn(Number(dst.value || src.value)));
+      }
     };
     const singleR = document.getElementById("objSingleRadius");
     const singleD = document.getElementById("objSingleDiameter");
@@ -5680,6 +6459,44 @@
     bind("objGridSize", "spacing", (v) => Math.max(1, Math.round(v)));
     bind("objNorthCount", "northCount", (v) => Math.max(1, Math.min(200, Math.round(v))));
     bind("objEastCount", "eastCount", (v) => Math.max(1, Math.min(26, Math.round(v))));
+    const gridParams = document.getElementById("objectParamsGrid");
+    if (gridParams && !document.getElementById("objGridShowResultFills")) {
+      const fillLabel = document.createElement("label");
+      fillLabel.className = "obj-grid-fills-toggle";
+      fillLabel.setAttribute("for", "objGridShowResultFills");
+      fillLabel.innerHTML = "<input id='objGridShowResultFills' type='checkbox' checked /> Resultatflächen anzeigen";
+      const ruler = document.getElementById("gridRulerBtn");
+      if (ruler && ruler.parentNode === gridParams) gridParams.insertBefore(fillLabel, ruler);
+      else gridParams.appendChild(fillLabel);
+    }
+    const fillsCb = document.getElementById("objGridShowResultFills");
+    if (fillsCb && !fillsCb.__objFillsBound) {
+      fillsCb.__objFillsBound = true;
+      fillsCb.addEventListener("change", () => {
+        setGridResultFillsVisible(fillsCb.checked);
+        try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+        managedStatusText(fillsCb.checked ? "Resultatflächen eingeblendet." : "Resultatflächen ausgeblendet.");
+      });
+    }
+    const polyParams = document.getElementById("objectParamsPolygon");
+    if (polyParams && !document.getElementById("objPolyShowFill")) {
+      const polyFillLabel = document.createElement("label");
+      polyFillLabel.className = "obj-grid-fills-toggle";
+      polyFillLabel.setAttribute("for", "objPolyShowFill");
+      polyFillLabel.innerHTML = "<input id='objPolyShowFill' type='checkbox' checked /> Flächenfärbung anzeigen";
+      const polyStatus = document.getElementById("objPolygonStatusMirror");
+      if (polyStatus && polyStatus.parentNode === polyParams) polyParams.insertBefore(polyFillLabel, polyStatus);
+      else polyParams.appendChild(polyFillLabel);
+    }
+    const polyFillCb = document.getElementById("objPolyShowFill");
+    if (polyFillCb && !polyFillCb.__objFillsBound) {
+      polyFillCb.__objFillsBound = true;
+      polyFillCb.addEventListener("change", () => {
+        setPolygonFillVisible(polyFillCb.checked);
+        try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+        managedStatusText(polyFillCb.checked ? "Flächenfärbung eingeblendet." : "Flächenfärbung ausgeblendet.");
+      });
+    }
     const objStart = document.getElementById("objStartPolyBtn");
     const objFinish = document.getElementById("objFinishPolyBtn");
     const objClear = document.getElementById("objClearPolyBtn");
@@ -6249,7 +7066,8 @@
     gridRotationOverlaySource = new ol.source.Vector();
     gridRotationOverlayLayer = new ol.layer.Vector({
       source: gridRotationOverlaySource,
-      zIndex: 25
+      zIndex: EDITOR_HELPER_LAYER_ZINDEX,
+      properties: { rkrkEditorHelper: true }
     });
     map.addLayer(gridRotationOverlayLayer);
   }
@@ -6261,16 +7079,61 @@
     el.textContent = `Rotation: ${a}°`;
   }
 
-  function renderGridRotationOverlay(angleDeg) {
+  function getSelectedGridForRotationOverlay() {
+    if (!selectedManagedObjectId) return null;
+    const obj = managedObjects.find((o) => Number(o.id) === Number(selectedManagedObjectId));
+    if (!obj || obj.type !== "grid" || obj.fixed) return null;
+    if (!Array.isArray(obj.anchor) || obj.anchor.length !== 2) return null;
+    return obj;
+  }
+
+  function gridRotationOverlayAllowed() {
+    if (selectedManagedObjectId) {
+      const sel = managedObjects.find((o) => Number(o.id) === Number(selectedManagedObjectId));
+      if (sel && sel.type === "grid") return !sel.fixed;
+      return false;
+    }
+    return !!(exportTypeEl && exportTypeEl.value === "grid"
+      && typeof previewActive !== "undefined" && previewActive
+      && Array.isArray(selectedLonLat) && selectedLonLat.length === 2);
+  }
+
+  function syncGridRotationOverlayForSelection() {
+    const obj = getSelectedGridForRotationOverlay();
+    if (obj) {
+      const angle = Number.isFinite(Number(obj.rotation)) ? Number(obj.rotation) : getGridRotationAngle();
+      renderGridRotationOverlay(angle, { lonLat: obj.anchor, spacing: obj.spacing });
+      return;
+    }
+    if (exportTypeEl && exportTypeEl.value === "grid"
+        && Array.isArray(selectedLonLat) && selectedLonLat.length === 2
+        && typeof previewActive !== "undefined" && previewActive
+        && (!selectedManagedObjectId || getSelectedGridForRotationOverlay())) {
+      renderGridRotationOverlay(getGridRotationAngle());
+      return;
+    }
+    if (gridRotationOverlaySource) gridRotationOverlaySource.clear();
+  }
+  try { window.__rkrkSyncGridRotationOverlayForSelection = syncGridRotationOverlayForSelection; } catch (_) {}
+
+  function renderGridRotationOverlay(angleDeg, options) {
     ensureGridRotationOverlay();
     if (!gridRotationOverlaySource) return;
     gridRotationOverlaySource.clear();
-    if (!exportTypeEl || exportTypeEl.value !== "grid") return;
-    if (!Array.isArray(selectedLonLat) || selectedLonLat.length !== 2) return;
+    if (!gridRotationOverlayAllowed()) return;
+    const opts = options || {};
+    const lonLat = (Array.isArray(opts.lonLat) && opts.lonLat.length === 2)
+      ? opts.lonLat
+      : selectedLonLat;
+    if (!Array.isArray(lonLat) || lonLat.length !== 2) return;
+    if (!opts.lonLat && exportTypeEl && exportTypeEl.value !== "grid") return;
     const angle = normalizeAngle(angleDeg);
     updateGridRotationLiveLabel(angle);
-    const origin = lonLatToMapCoord(selectedLonLat[0], selectedLonLat[1]);
-    const axisLen = Math.max(80, Number(sanitizeNumber(document.getElementById("spacing") ? document.getElementById("spacing").value : 333, 333)) * 1.2);
+    const origin = lonLatToMapCoord(lonLat[0], lonLat[1]);
+    const spacingSrc = Number(opts.spacing);
+    const axisLen = Math.max(80, (Number.isFinite(spacingSrc) && spacingSrc > 0
+      ? spacingSrc
+      : Number(sanitizeNumber(document.getElementById("spacing") ? document.getElementById("spacing").value : 333, 333))) * 1.2);
     const aRad = (typeof degToRad === "function" ? degToRad(angle) : angle * Math.PI / 180);
     // East axis of rotated grid
     const eastEnd = [
@@ -6334,7 +7197,9 @@
 
   function clearGridRotationOverlay() {
     if (gridRotationOverlaySource) gridRotationOverlaySource.clear();
-    updateGridRotationLiveLabel(0);
+    if (!getSelectedGridForRotationOverlay()) {
+      updateGridRotationLiveLabel(getGridRotationAngle());
+    }
   }
 
   function redrawGridPreviewFromRotation(immediate) {
@@ -6486,11 +7351,12 @@
     const original = drawPreview;
     drawPreview = function () {
       const result = original.apply(this, arguments);
-      if (exportTypeEl && exportTypeEl.value === "grid"
+      if (gridRotationOverlayAllowed()
+        && exportTypeEl && exportTypeEl.value === "grid"
         && Array.isArray(selectedLonLat) && selectedLonLat.length === 2) {
         renderGridRotationOverlay(getGridRotationAngle());
       } else {
-        clearGridRotationOverlay();
+        syncGridRotationOverlayForSelection();
       }
       return result;
     };
@@ -6538,7 +7404,8 @@
     const source = new ol.source.Vector();
     const layer = new ol.layer.Vector({
       source,
-      zIndex: 26,
+      zIndex: EDITOR_HELPER_LAYER_ZINDEX,
+      properties: { rkrkEditorHelper: true },
       style: new ol.style.Style({
         stroke: new ol.style.Stroke({ color: "#00d4ff", width: 3, lineDash: [8, 6] }),
         image: new ol.style.Circle({
@@ -6560,7 +7427,7 @@
     const axisLenForAngle = () => Math.max(120, Number(sanitizeNumber(document.getElementById("spacing") ? document.getElementById("spacing").value : 333, 333)) * 1.5);
     updateRulerLineVisual = function (angleDeg) {
       source.clear();
-      if (!hasGrid()) return;
+      if (!hasGrid() || !canEditRotation()) return;
       const angle = normalizeAngle(angleDeg === undefined ? getGridRotationAngle() : angleDeg);
       const origin = lonLatToMapCoord(selectedLonLat[0], selectedLonLat[1]);
       const len = axisLenForAngle();
@@ -6881,6 +7748,21 @@
       <Point><coordinates>${center[1]},${center[0]},0</coordinates></Point>
     </Placemark>`;
           }
+        }
+        const gridMapTitle = customManagedObjectMapLabel(obj);
+        if (gridMapTitle) {
+          const titlePos = rotatedOffsetLatLon(lat, lon, northCount * spacing + Math.max(8, spacing * 0.12), (eastCount * spacing) / 2, rot);
+          const gridTitleStyleId = `managed-grid-title-style-${objIdx + 1}`;
+          kml += `
+    <Style id="${gridTitleStyleId}">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><scale>${(((Number(gridStyle.fontSize) || 11) + 3) / 12).toFixed(2)}</scale><color>${hexToKmlColor(gridStyle.labelColor || "#111827", "ff")}</color></LabelStyle>
+    </Style>
+    <Placemark>
+      <name>${(typeof escapeXml === "function") ? escapeXml(gridMapTitle) : gridMapTitle}</name>
+      <styleUrl>#${gridTitleStyleId}</styleUrl>
+      <Point><coordinates>${titlePos[1]},${titlePos[0]},0</coordinates></Point>
+    </Placemark>`;
         }
       } else if (obj.type === "polygon" && Array.isArray(obj.polygonVertices) && obj.polygonVertices.length >= 3) {
         const polyStyle = (obj.polygonStyle && typeof obj.polygonStyle === "object")
@@ -7473,11 +8355,12 @@ ${kmlFooter()}`;
       const ps = (obj.polygonStyle && typeof obj.polygonStyle === "object") ? obj.polygonStyle : {};
       const fh = (obj.freehandStyle && typeof obj.freehandStyle === "object") ? obj.freehandStyle : {};
       if (obj.type === "polygon" && Array.isArray(obj.polygonVertices)) {
+        const polyFillOn = obj.showFill !== false;
         addRing(obj.polygonVertices, {
           stroke: ps.lineColor || "#ff8c00",
           width: Number(ps.lineWidth) || 2,
           fill: ps.fillColor || "#ff8c00",
-          fillA: Math.max(0.15, Number(ps.fillOpacity) || 0.25)
+          fillA: polyFillOn ? Math.max(0.15, Number(ps.fillOpacity) || 0.25) : 0
         });
       } else if (obj.type === "circle" && obj.anchor && typeof createCircleCoordinates === "function") {
         const coords = createCircleCoordinates(Number(obj.anchor[1]), Number(obj.anchor[0]), Math.max(1, Number(obj.r) || 1), 64);
@@ -7511,6 +8394,7 @@ ${kmlFooter()}`;
         const rot = Number(obj.rotation) || 0;
         const fills = (obj.cellFills && typeof obj.cellFills === "object") ? obj.cellFills : {};
         const pal = (typeof getGridCellFillPaletteForKml === "function") ? getGridCellFillPaletteForKml() : [];
+        const fillsOn = obj.showResultFills !== false;
         for (let n = 0; n < nc; n += 1) {
           for (let e = 0; e < ec; e += 1) {
             const sw = rotatedOffsetLatLon(lat, lon, n * sp, e * sp, rot);
@@ -7521,13 +8405,15 @@ ${kmlFooter()}`;
             const ring = [[sw[1], sw[0]], [se[1], se[0]], [ne[1], ne[0]], [nw[1], nw[0]], [sw[1], sw[0]]];
             const key = n + "," + e;
             const idx = fills[key];
-            let fillA = 0.05;
+            let fillA = 0;
             let fill = gs.fillColor || "#ffd400";
-            if (Number.isInteger(Number(idx)) && pal[Number(idx)]) {
-              fill = pal[Number(idx)].hex || fill;
-              fillA = Number(pal[Number(idx)].fillAlpha) || 0.45;
-            } else if (Number(gs.fillOpacity) > 0) {
-              fillA = Number(gs.fillOpacity) || 0.1;
+            if (fillsOn) {
+              if (Number.isInteger(Number(idx)) && pal[Number(idx)]) {
+                fill = pal[Number(idx)].hex || fill;
+                fillA = Number(pal[Number(idx)].fillAlpha) || 0.45;
+              } else if (Number(gs.fillOpacity) > 0) {
+                fillA = Number(gs.fillOpacity) || 0.1;
+              }
             }
             addRing(ring, {
               stroke: gs.lineColor || "#ffd400",
@@ -7540,6 +8426,20 @@ ${kmlFooter()}`;
               : (String.fromCharCode(65 + (e % 26)) + String(n + 1));
             addPoint(center[1], center[0], { color: gs.labelColor || "#0000ff", font: Number(gs.fontSize) || 11 }, cellName);
           }
+        }
+        const gridMapTitle = customManagedObjectMapLabel(obj);
+        if (gridMapTitle) {
+          const titlePos = rotatedOffsetLatLon(
+            lat,
+            lon,
+            nc * sp + Math.max(8, sp * 0.12),
+            (ec * sp) / 2,
+            rot
+          );
+          addPoint(titlePos[1], titlePos[0], {
+            color: gs.labelColor || "#111827",
+            font: Math.max(13, (Number(gs.fontSize) || 11) + 3)
+          }, gridMapTitle);
         }
       } else if ((obj.type === "freehand" || obj.type === "pfeil") && Array.isArray(obj.freehandCoords)) {
         addLine(obj.freehandCoords, {
@@ -7586,12 +8486,112 @@ ${kmlFooter()}`;
       }
     } catch (_) { /* noop */ }
     const span = Math.max(bounds.e - bounds.w, bounds.n - bounds.s);
-    let minZ = Math.max(10, viewZ - 2);
-    let maxZ = Math.min(19, Math.max(minZ + 1, viewZ + 2));
-    if (span > 0.05) { minZ = Math.min(minZ, 12); maxZ = Math.min(maxZ, 16); }
-    if (span < 0.005) { maxZ = Math.min(20, Math.max(maxZ, 18)); }
+    let overviewZ = 11;
+    if (span > 0) {
+      overviewZ = Math.floor(Math.log2(360 / Math.max(span * 2.6, 1e-6)));
+      overviewZ = Math.max(10, Math.min(12, overviewZ));
+    }
+    let minZ = Math.max(10, Math.min(viewZ - 4, overviewZ));
+    let maxZ = Math.min(20, Math.max(minZ + 2, viewZ + 3));
+    if (span > 0.05) { minZ = Math.min(minZ, 11); maxZ = Math.min(maxZ, 17); }
+    if (span < 0.008) { maxZ = Math.min(20, Math.max(maxZ, 19)); }
     return { minZ, maxZ };
   }
+
+  /** Same fraction of a grid cell as at z14 (middle). Lines follow this. High zoom capped. */
+  function mbtilesViewScale(z) {
+    const zz = Number(z);
+    if (!Number.isFinite(zz)) return 1;
+    const dz = zz - 14;
+    if (dz <= 0) return Math.max(0.12, Math.pow(2, dz));
+    return Math.min(1.28, Math.pow(2, dz * 0.4));
+  }
+
+  function mbtilesOverlayScale(z) {
+    return mbtilesViewScale(z);
+  }
+
+  /**
+   * Schrift (px) und Punkt-Radius (px) pro Zoom — direkt steuerbar.
+   * z10 wie z11, falls der Export so weit rausgeht.
+   */
+  /** Rasterlinie (px) bei Editor-Dicke 2. Freihand skaliert proportional. */
+  const MBTILES_LINE_WIDTH_BY_Z = {
+    10: 0.25,
+    11: 0.25,
+    12: 0.25,
+    13: 0.50,
+    14: 0.75,
+    15: 1.00,
+    16: 1.00,
+    17: 1.00,
+    18: 1.00,
+    19: 1.00,
+    20: 1.00
+  };
+
+  function mbtilesLineWidthPx(z, styleWidth, fallbackWidth) {
+    const zz = Math.round(Number(z));
+    const base = Number(MBTILES_LINE_WIDTH_BY_Z[zz]);
+    const gridPx = (Number.isFinite(base) && base > 0) ? base : 2;
+    const sw = Number(styleWidth);
+    const fw = Number(fallbackWidth) || 2;
+    const style = (Number.isFinite(sw) && sw > 0) ? sw : fw;
+    return Math.max(0.2, gridPx * (style / 2));
+  }
+
+  const MBTILES_LABEL_SIZE_BY_Z = {
+    10: { font: 4, point: 0.5 },
+    11: { font: 4, point: 0.5 },
+    12: { font: 4, point: 0.5 },
+    13: { font: 6, point: 0.6 },
+    14: { font: 6, point: 0.6 },
+    15: { font: 10, point: 0.8 },
+    16: { font: 10, point: 0.8 },
+    17: { font: 14, point: 1.0 },
+    18: { font: 14, point: 1.0 },
+    19: { font: 16, point: 1.0 },
+    20: { font: 0, point: 1.0 }
+  };
+
+  function mbtilesLabelSizeInfo(z) {
+    const zz = Math.round(Number(z));
+    const row = MBTILES_LABEL_SIZE_BY_Z[zz] || MBTILES_LABEL_SIZE_BY_Z[14] || { font: 3, point: 0.6 };
+    const fontPx = Math.max(0, Number(row.font) || 0);
+    const pointPx = Math.max(0.2, Number(row.point) || 0.5);
+    return {
+      z: zz,
+      scale: fontPx / 11,
+      fontPx,
+      pointPx
+    };
+  }
+
+  function mbtilesLabelScale(z) {
+    return mbtilesLabelSizeInfo(z).scale;
+  }
+
+  function mbtilesLabelSizeReport(minZ, maxZ) {
+    const lo = Math.max(10, Math.round(Number(minZ) || 10));
+    const hi = Math.min(20, Math.round(Number(maxZ) || 20));
+    const rows = [];
+    for (let z = lo; z <= hi; z += 1) rows.push(mbtilesLabelSizeInfo(z));
+    return rows;
+  }
+
+  function formatMbtilesLabelSizeReport(minZ, maxZ) {
+    const lo = Math.max(10, Math.round(Number(minZ) || 10));
+    const hi = Math.min(20, Math.round(Number(maxZ) || 20));
+    const parts = [];
+    for (let z = lo; z <= hi; z += 1) {
+      const r = mbtilesLabelSizeInfo(z);
+      const lw = mbtilesLineWidthPx(z, 2, 2);
+      parts.push("z" + z + " Schrift " + r.fontPx + "px / Punkt " + r.pointPx + " / Linie " + lw);
+    }
+    return parts.join(" · ");
+  }
+  try { window.__RKR_MBTILES_LABEL_SIZE__ = MBTILES_LABEL_SIZE_BY_Z; } catch (_) { /* noop */ }
+  try { window.__RKR_MBTILES_LINE_WIDTH__ = MBTILES_LINE_WIDTH_BY_Z; } catch (_) { /* noop */ }
 
   function mbtilesTileHasContent(ctx) {
     try {
@@ -7605,7 +8605,7 @@ ${kmlFooter()}`;
     return false;
   }
 
-  function mbtilesRenderTilePng(items, z, x, yxyz) {
+  function mbtilesRenderTilePng(items, z, x, yxyz, minZ) {
     const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = 256;
@@ -7614,6 +8614,9 @@ ${kmlFooter()}`;
     ctx.clearRect(0, 0, 256, 256);
     const originX = x * 256;
     const originY = yxyz * 256;
+    const scale = mbtilesOverlayScale(z);
+    const labelSize = mbtilesLabelSizeInfo(z);
+    const labelScale = labelSize.scale;
     const toPx = (lon, lat) => {
       const w = mbtilesLonLatToWorldPx(lon, lat, z);
       return [w[0] - originX, w[1] - originY];
@@ -7635,7 +8638,7 @@ ${kmlFooter()}`;
           ctx.globalAlpha = 1;
         }
         ctx.strokeStyle = it.style.stroke || "#ffcc00";
-        ctx.lineWidth = Math.max(1, Number(it.style.width) || 2);
+        ctx.lineWidth = mbtilesLineWidthPx(z, it.style.width, 2);
         ctx.stroke();
       } else if (it.kind === "line" && it.pts && it.pts.length >= 2) {
         ctx.beginPath();
@@ -7645,27 +8648,39 @@ ${kmlFooter()}`;
           else ctx.lineTo(p[0], p[1]);
         });
         ctx.strokeStyle = it.style.stroke || "#e11d48";
-        ctx.lineWidth = Math.max(1, Number(it.style.width) || 3);
+        ctx.lineWidth = mbtilesLineWidthPx(z, it.style.width, 3);
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
         ctx.stroke();
       } else if (it.kind === "point") {
         const p = toPx(it.lon, it.lat);
         if (p[0] < -40 || p[0] > 296 || p[1] < -40 || p[1] > 296) return;
+        const text = String(it.text || "").trim();
+        const lowZ = Number.isFinite(Number(minZ)) ? (z <= Number(minZ) + 1) : (z <= 13);
         const pc = it.style.pointColor || it.style.color || "#ff8c00";
         ctx.fillStyle = pc;
         ctx.beginPath();
-        ctx.arc(p[0], p[1], 4, 0, Math.PI * 2);
+        ctx.arc(p[0], p[1], labelSize.pointPx, 0, Math.PI * 2);
         ctx.fill();
-        const text = String(it.text || "").trim();
-        if (text) {
-          const fs = Math.max(9, Math.min(18, Number(it.style.font) || 11));
+        if (text && labelSize.fontPx > 0) {
+          const fs = labelSize.fontPx;
           ctx.font = "600 " + fs + "px Arial,Helvetica,sans-serif";
-          ctx.lineWidth = 3;
+          ctx.lineWidth = Math.max(0.4, fs * 0.22);
           ctx.strokeStyle = "#ffffff";
           ctx.fillStyle = it.style.color || "#0000ff";
-          ctx.strokeText(text, p[0] + 6, p[1] - 6);
-          ctx.fillText(text, p[0] + 6, p[1] - 6);
+          if (lowZ) {
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.strokeText(text, p[0], p[1]);
+            ctx.fillText(text, p[0], p[1]);
+            ctx.textAlign = "start";
+            ctx.textBaseline = "alphabetic";
+          } else {
+            const ox = Math.max(1.5, 4 * labelScale);
+            const oy = Math.max(1.5, 4 * labelScale);
+            ctx.strokeText(text, p[0] + ox, p[1] - oy);
+            ctx.fillText(text, p[0] + ox, p[1] - oy);
+          }
         }
       }
     });
@@ -7705,7 +8720,7 @@ ${kmlFooter()}`;
     const batch = planned.list;
     for (let i = 0; i < batch.length; i += 1) {
       const t = batch[i];
-      const png = mbtilesRenderTilePng(collected.items, t.z, t.x, t.yxyz);
+      const png = mbtilesRenderTilePng(collected.items, t.z, t.x, t.yxyz, zr.minZ);
       if (!png) continue;
       tiles.push({
         z: t.z,
@@ -7783,7 +8798,8 @@ ${kmlFooter()}`;
         : "";
       setSharePanelStatus(
         "MBTiles gespeichert (" + payload.tiles.length + " Kacheln, z" + payload.minzoom + "–" + payload.maxzoom + ")"
-        + note + ". Auf RC: Pilot 2 → Profil → Karteneinstellungen → Custom Layer → MBTiles-Datei wählen (KML dort nicht als Overlay)."
+        + note + ". " + formatMbtilesLabelSizeReport(payload.minzoom, payload.maxzoom)
+        + ". Auf RC: Pilot 2 → Profil → Karteneinstellungen → Custom Layer → MBTiles-Datei wählen (KML dort nicht als Overlay)."
       );
     } catch (err) {
       const msg = "MBTiles fehlgeschlagen: " + ((err && err.message) ? err.message : String(err));
@@ -7815,8 +8831,8 @@ ${kmlFooter()}`;
 
   const SHARE_PANEL_HINT = "KML = Earth/geo.admin. DJI Layer = MBTiles auf die RC: Profil → Karteneinstellungen → Custom Layer (kein Live). SwissTopo, PDF (Massstab 1:10'000 / 1:25'000 / 1:50'000 auf A4) und Ansicht-Link. Geladene (aktive) KML-Layer gehen in KML-/SwissTopo-Export und PDF-Ansicht mit. PDF im Druckdialog auf 100 % / tatsächliche Grösse stellen.";
   const SHARE_PANEL_HINT_HUB2 = "KML = Earth/geo.admin. Hub 2 KML = Annotationen in FlightHub 2 importieren, dann Ordner an Pilot 2 verteilen (kein Live). DJI Layer = MBTiles auf die RC: Profil → Karteneinstellungen → Custom Layer (kein Live). SwissTopo, PDF (Massstab 1:10'000 / 1:25'000 / 1:50'000 auf A4) und Ansicht-Link. Geladene (aktive) KML-Layer gehen in KML-/SwissTopo-Export und PDF-Ansicht mit. PDF im Druckdialog auf 100 % / tatsächliche Grösse stellen.";
-  const OBJ_EDITOR_HELP_EXPORT = "8. Sektion Export & Teilen: nichts davon ist Live (Snapshot). KML = Earth/geo.admin. DJI Layer = MBTiles direkt auf die RC (Profil → Karteneinstellungen → Custom Layer). SwissTopo, PDF (Massstab Ansicht / 1:10'000 / 1:25'000 / 1:50'000 auf A4, 100 % drucken) und Ansicht-Link (kein Broadcast zu DJI).";
-  const OBJ_EDITOR_HELP_EXPORT_HUB2 = "8. Sektion Export & Teilen: nichts davon ist Live (Snapshot). KML = Earth/geo.admin. Hub 2 KML = Annotationen in FlightHub 2 importieren, Ordner als Projekt-Admin an Pilot 2 verteilen; RC im selben Projekt anmelden. DJI Layer = MBTiles direkt auf die RC (Profil → Karteneinstellungen → Custom Layer), kein Hub-2-Objekt. Optional Nach Hub 2 senden, wenn der Server Key/Projekt hat. SwissTopo, PDF (Massstab Ansicht / 1:10'000 / 1:25'000 / 1:50'000 auf A4, 100 % drucken) und Ansicht-Link (kein Broadcast zu DJI).";
+  const OBJ_EDITOR_HELP_EXPORT = "9. Sektion Export & Teilen: nichts davon ist Live (Snapshot). KML = Earth/geo.admin. DJI Layer = MBTiles direkt auf die RC (Profil → Karteneinstellungen → Custom Layer). SwissTopo, PDF (Massstab Ansicht / 1:10'000 / 1:25'000 / 1:50'000 auf A4, 100 % drucken) und Ansicht-Link (kein Broadcast zu DJI).";
+  const OBJ_EDITOR_HELP_EXPORT_HUB2 = "9. Sektion Export & Teilen: nichts davon ist Live (Snapshot). KML = Earth/geo.admin. Hub 2 KML = Annotationen in FlightHub 2 importieren, Ordner als Projekt-Admin an Pilot 2 verteilen; RC im selben Projekt anmelden. DJI Layer = MBTiles direkt auf die RC (Profil → Karteneinstellungen → Custom Layer), kein Hub-2-Objekt. Optional Nach Hub 2 senden, wenn der Server Key/Projekt hat. SwissTopo, PDF (Massstab Ansicht / 1:10'000 / 1:25'000 / 1:50'000 auf A4, 100 % drucken) und Ansicht-Link (kein Broadcast zu DJI).";
 
   function hub2UiAllowed() {
     try {
@@ -7829,6 +8845,28 @@ ${kmlFooter()}`;
     }
   }
 
+  function overlayFileAdminAllowed() {
+    try {
+      const u = new URL(window.location.href);
+      if (u.searchParams.has("ADMIN")) return true;
+      const code = String(u.searchParams.get("code") || "").trim().toUpperCase();
+      return code === "ADMIN";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function syncObjEditorOverlayFileHelp() {
+    const el = document.getElementById("objEditorHelp");
+    if (!el || !overlayFileAdminAllowed()) return;
+    const html = String(el.innerHTML || "");
+    if (/Datei speichern\/laden/.test(html)) return;
+    el.innerHTML = html.replace(
+      /(Zeichnungen darunter speichern\/laden\.)/i,
+      "$1 <em>Datei speichern/laden</em> (nur ?ADMIN) legt die Overlay-Datei lokal ab (PC, USB)."
+    );
+  }
+
   function sharePanelHintText() {
     return hub2UiAllowed() ? SHARE_PANEL_HINT_HUB2 : SHARE_PANEL_HINT;
   }
@@ -7838,8 +8876,8 @@ ${kmlFooter()}`;
     if (!el) return;
     const html = String(el.innerHTML || "");
     const next = hub2UiAllowed() ? OBJ_EDITOR_HELP_EXPORT_HUB2 : OBJ_EDITOR_HELP_EXPORT;
-    if (/8\.\s*Sektion/.test(html)) {
-      el.innerHTML = html.replace(/8\.\s*Sektion[\s\S]*?(?=<br\s*\/?>\s*9\.|$)/i, next + "<br>");
+    if (/9\.\s*Sektion/.test(html)) {
+      el.innerHTML = html.replace(/9\.\s*Sektion[\s\S]*?(?=<br\s*\/?>\s*10\.|$)/i, next);
     }
   }
 
@@ -8374,28 +9412,46 @@ ${kmlFooter()}`;
 
   function loadImageForPdf(src) {
     return new Promise((resolve, reject) => {
-      if (!src) {
+      const url = String(src || "").trim();
+      if (!url) {
         reject(new Error("Inlay-Logo: leerer Pfad"));
         return;
       }
       const img = new Image();
       img.decoding = "async";
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("Inlay-Logo nicht ladbar: " + src));
-      img.src = src + (src.indexOf("?") >= 0 ? "&" : "?") + "v=20260722r";
+      img.onload = () => {
+        if (img.naturalWidth > 0 || img.width > 0) resolve(img);
+        else reject(new Error("Inlay-Logo leer: " + url));
+      };
+      img.onerror = () => reject(new Error("Inlay-Logo nicht ladbar: " + url));
+      img.src = url;
     });
   }
 
+  function collectPdfLogoCandidates() {
+    const brand = window.__RKR_BRAND__ || {};
+    const out = [];
+    const push = (src) => {
+      const url = String(src || "").trim();
+      if (url) out.push(url);
+    };
+    const ready = (el) => el && el.tagName === "IMG" && el.complete && (el.naturalWidth > 0 || el.width > 0);
+    ["rkrMapInlayImg", "rkrBrandLogo"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (ready(el) && el.src) push(el.src);
+    });
+    push(brand.mapInlaySrc);
+    push(brand.logoSrc);
+    push(getMapInlayImageSrc());
+    return out;
+  }
+
   async function resolvePdfBrandImage() {
-    const ready = (el) => el && el.tagName === "IMG" && el.complete && el.naturalWidth > 0;
+    const ready = (el) => el && el.tagName === "IMG" && el.complete && (el.naturalWidth > 0 || el.width > 0);
     const fromDom = [document.getElementById("rkrMapInlayImg"), document.getElementById("rkrBrandLogo")]
       .find(ready);
     if (fromDom) return fromDom;
-    const brand = window.__RKR_BRAND__ || {};
-    const candidates = [];
-    if (brand.mapInlaySrc) candidates.push(brand.mapInlaySrc);
-    if (brand.logoSrc) candidates.push(brand.logoSrc);
-    candidates.push(getMapInlayImageSrc());
+    const candidates = collectPdfLogoCandidates();
     const seen = {};
     for (let i = 0; i < candidates.length; i += 1) {
       const src = String(candidates[i] || "").trim();
@@ -8633,11 +9689,15 @@ ${kmlFooter()}`;
   }
 
   const MAP_PDF_MARGIN_MM = 8;
+  const MAP_PDF_DPI = 600;
   const MAP_PDF_PAGE = { L: { w: 297, h: 210 }, P: { w: 210, h: 297 } };
   const MAP_SCREEN_PX_MM = 0.28; // OGC-Standardpixel für Bildschirm-Massstab
   // Papier-Kalibrierung: 1 km-Raster mass 9.55–9.6 cm statt 10 cm (1:10'000)
   // bzw. 3.85–3.9 cm statt 4 cm (1:25'000) — typisch «An Seite anpassen».
   const MAP_PDF_SCALE_GAIN = 1.044;
+  // A4-Druck: 2 px-Rasterlinie → ~0.75 mm, 11 px-Zelle → ~3.8 mm (~11 pt)
+  const MAP_PDF_LINE_MM = 0.75;
+  const MAP_PDF_LABEL_MM = 2.8;
 
   function formatSwissScaleDenom(denom) {
     const n = Math.max(1, Math.round(Number(denom) || 1));
@@ -9251,8 +10311,205 @@ ${kmlFooter()}`;
     return canvas;
   }
 
+  function mapNativePixelRatio() {
+    let pr = 1;
+    try {
+      const n = Number(map && map.pixelRatio_);
+      if (Number.isFinite(n) && n > 0) pr = n;
+    } catch (_) { /* noop */ }
+    const dpr = Number(typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1;
+    if (dpr > pr) pr = dpr;
+    return Math.max(1, Math.min(8, pr));
+  }
+
+  function pdfTargetPixelRatio() {
+    try {
+      const size = (typeof map !== "undefined" && map && typeof map.getSize === "function")
+        ? map.getSize()
+        : null;
+      const cssW = (Array.isArray(size) && size[0] > 0) ? size[0] : 0;
+      const cssH = (Array.isArray(size) && size[1] > 0) ? size[1] : 0;
+      if (cssW > 0 && cssH > 0) {
+        const paper = choosePdfPaperMm(cssW, cssH);
+        const targetW = (Number(paper.imgWmm) / 25.4) * MAP_PDF_DPI;
+        const targetH = (Number(paper.imgHmm) / 25.4) * MAP_PDF_DPI;
+        const pr = Math.max(targetW / cssW, targetH / cssH);
+        if (Number.isFinite(pr) && pr > 0) return Math.max(2, Math.min(8, pr));
+      }
+    } catch (_) { /* noop */ }
+    return Math.max(2, mapNativePixelRatio());
+  }
+
+  function detectLayerCanvasPixelRatio(layerCanvases) {
+    let pr = 1;
+    Array.prototype.forEach.call(layerCanvases || [], (canvas) => {
+      if (!canvas || !(canvas.width > 0)) return;
+      const cssW = parseFloat(canvas.style.width) || canvas.clientWidth || 0;
+      if (!(cssW > 0)) return;
+      const r = canvas.width / cssW;
+      if (Number.isFinite(r) && r > pr) pr = r;
+    });
+    return Math.max(1, Math.min(8, pr));
+  }
+
+  function computePdfOverlayStyleScales() {
+    const fallback = { stroke: 2.2, font: 1.55 };
+    try {
+      const size = (typeof map !== "undefined" && map && typeof map.getSize === "function")
+        ? map.getSize()
+        : null;
+      const cssW = (Array.isArray(size) && size[0] > 0) ? size[0] : 0;
+      const cssH = (Array.isArray(size) && size[1] > 0) ? size[1] : 0;
+      if (!(cssW > 0) || !(cssH > 0)) return fallback;
+      const paper = choosePdfPaperMm(cssW, cssH);
+      const paperWmm = Number(paper && paper.imgWmm);
+      if (!(paperWmm > 0)) return fallback;
+      const pxPerMm = cssW / paperWmm;
+      const lineBoost = (MAP_PDF_LINE_MM * pxPerMm) / 2;
+      const fontBoost = (MAP_PDF_LABEL_MM * pxPerMm) / 11;
+      return {
+        stroke: (Number.isFinite(lineBoost) && lineBoost > 0) ? Math.max(2, Math.min(4, lineBoost)) : fallback.stroke,
+        font: (Number.isFinite(fontBoost) && fontBoost > 0) ? Math.max(1.35, Math.min(2.2, fontBoost)) : fallback.font
+      };
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function refreshOverlayStylesForPdf() {
+    try { renderManagedObjects({ skipListRefresh: true }); } catch (_) { /* noop */ }
+    try {
+      if (typeof previewActive !== "undefined" && previewActive && typeof drawPreview === "function") {
+        drawPreview();
+      }
+    } catch (_) { /* noop */ }
+  }
+
+  async function withPdfOverlayStyleBoost(work) {
+    const prevStroke = pdfOverlayStrokeScale_;
+    const prevFont = pdfOverlayFontScale_;
+    const next = computePdfOverlayStyleScales();
+    pdfOverlayStrokeScale_ = next.stroke;
+    pdfOverlayFontScale_ = next.font;
+    refreshOverlayStylesForPdf();
+    try {
+      return await work();
+    } finally {
+      pdfOverlayStrokeScale_ = prevStroke;
+      pdfOverlayFontScale_ = prevFont;
+      refreshOverlayStylesForPdf();
+    }
+  }
+
+  function waitForMapRenderComplete(timeoutMs) {
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(tid);
+        resolve();
+      };
+      const tid = setTimeout(finish, Math.max(800, Number(timeoutMs) || 10000));
+      if (typeof map === "undefined" || !map || typeof map.once !== "function") {
+        finish();
+        return;
+      }
+      try {
+        map.once("rendercomplete", finish);
+        try { map.render(); } catch (_) { /* noop */ }
+      } catch (_) {
+        finish();
+      }
+    });
+  }
+
+  function pdfTileDetailBoost(cssW, cssH) {
+    const w = Number(cssW) || 0;
+    const h = Number(cssH) || 0;
+    if (!(w > 0) || !(h > 0)) return 1;
+    const maxCss = 3600;
+    const byW = maxCss / w;
+    const byH = maxCss / h;
+    const room = Math.min(2, byW, byH);
+    if (!(room > 1.2)) return 1;
+    return room >= 1.9 ? 2 : room;
+  }
+
+  async function withPdfTileDetail(work) {
+    const size = (typeof map !== "undefined" && map && typeof map.getSize === "function")
+      ? map.getSize()
+      : null;
+    const cssW = (Array.isArray(size) && size[0] > 0) ? size[0] : 0;
+    const cssH = (Array.isArray(size) && size[1] > 0) ? size[1] : 0;
+    const boost = pdfTileDetailBoost(cssW, cssH);
+    if (!(boost > 1.05) || !map || typeof map.getView !== "function") {
+      return work();
+    }
+    const view = map.getView();
+    const prevSize = [cssW, cssH];
+    const extent = (typeof view.calculateExtent === "function") ? view.calculateExtent(prevSize) : null;
+    const center = view.getCenter ? view.getCenter() : null;
+    const resolution = view.getResolution ? view.getResolution() : null;
+    const rotation = view.getRotation ? view.getRotation() : 0;
+    const nextSize = [Math.max(1, Math.round(cssW * boost)), Math.max(1, Math.round(cssH * boost))];
+    const targetEl = (typeof map.getTargetElement === "function") ? map.getTargetElement() : null;
+    const prevOverflow = targetEl ? targetEl.style.overflow : "";
+    let changed = false;
+    try {
+      if (targetEl) targetEl.style.overflow = "hidden";
+      if (typeof view.setMaxZoom === "function") {
+        try { view.setMaxZoom(28); } catch (_) { /* noop */ }
+      }
+      map.setSize(nextSize);
+      if (extent && typeof view.fit === "function") {
+        view.fit(extent, { size: nextSize, constrainResolution: false, padding: [0, 0, 0, 0] });
+      } else if (Number.isFinite(resolution) && resolution > 0) {
+        view.setResolution(resolution / boost);
+      }
+      changed = true;
+      await waitForMapRenderComplete(14000);
+      return await work();
+    } finally {
+      if (changed) {
+        try { map.setSize(prevSize); } catch (_) { /* noop */ }
+        try {
+          if (Array.isArray(center)) view.setCenter(center);
+          if (Number.isFinite(resolution) && resolution > 0) view.setResolution(resolution);
+          if (Number.isFinite(rotation)) view.setRotation(rotation);
+        } catch (_) { /* noop */ }
+      }
+      if (targetEl) targetEl.style.overflow = prevOverflow;
+      try { map.render(); } catch (_) { /* noop */ }
+    }
+  }
+
+  async function withPdfCapturePixelRatio(work) {
+    const prevN = Number(map && map.pixelRatio_);
+    const prev = (Number.isFinite(prevN) && prevN > 0) ? prevN : 1;
+    const want = pdfTargetPixelRatio();
+    const bumped = want > prev + 0.05;
+    if (bumped) {
+      try { map.pixelRatio_ = want; } catch (_) { /* noop */ }
+      try { map.renderSync(); } catch (_) {
+        try { map.render(); } catch (__) { /* noop */ }
+      }
+      await waitForMapRenderComplete(2500);
+    }
+    try {
+      return await work();
+    } finally {
+      if (bumped) {
+        try { map.pixelRatio_ = prev; } catch (_) { /* noop */ }
+        try { map.renderSync(); } catch (_) {
+          try { map.render(); } catch (__) { /* noop */ }
+        }
+      }
+    }
+  }
+
   function captureMapViewportCanvas(timeoutMs) {
-    return new Promise((resolve, reject) => {
+    return withPdfTileDetail(() => withPdfOverlayStyleBoost(() => withPdfCapturePixelRatio(() => new Promise((resolve, reject) => {
       if (typeof map === "undefined" || !map || typeof map.once !== "function") {
         reject(new Error("Karte nicht bereit."));
         return;
@@ -9271,17 +10528,20 @@ ${kmlFooter()}`;
             settle(reject, new Error("Kartengroesse ungueltig."));
             return;
           }
+          const layerCanvases = map.getViewport().querySelectorAll(".ol-layer canvas, canvas.ol-layer");
+          const pr = detectLayerCanvasPixelRatio(layerCanvases) || mapNativePixelRatio();
           const out = document.createElement("canvas");
-          out.width = Math.round(size[0]);
-          out.height = Math.round(size[1]);
+          out.width = Math.max(1, Math.round(size[0] * pr));
+          out.height = Math.max(1, Math.round(size[1] * pr));
           const ctx = out.getContext("2d");
           if (!ctx) {
             settle(reject, new Error("Canvas nicht verfuegbar."));
             return;
           }
+          ctx.imageSmoothingEnabled = true;
+          if (ctx.imageSmoothingQuality) ctx.imageSmoothingQuality = "high";
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, out.width, out.height);
-          const layerCanvases = map.getViewport().querySelectorAll(".ol-layer canvas, canvas.ol-layer");
           Array.prototype.forEach.call(layerCanvases, (canvas) => {
             if (!canvas || !(canvas.width > 0) || !(canvas.height > 0)) return;
             const parent = canvas.parentNode;
@@ -9295,19 +10555,24 @@ ${kmlFooter()}`;
               matrix = m[1].split(",").map((v) => Number(String(v).trim()));
             }
             if (matrix && matrix.length === 6 && matrix.every((n) => Number.isFinite(n))) {
-              CanvasRenderingContext2D.prototype.setTransform.apply(ctx, matrix);
+              ctx.setTransform(
+                matrix[0] * pr, matrix[1] * pr,
+                matrix[2] * pr, matrix[3] * pr,
+                matrix[4] * pr, matrix[5] * pr
+              );
+              ctx.drawImage(canvas, 0, 0);
             } else {
-              const cssW = parseFloat(canvas.style.width) || canvas.width;
-              const cssH = parseFloat(canvas.style.height) || canvas.height;
-              ctx.setTransform(cssW / canvas.width, 0, 0, cssH / canvas.height, 0, 0);
+              const cssW = parseFloat(canvas.style.width) || (canvas.width / pr);
+              const cssH = parseFloat(canvas.style.height) || (canvas.height / pr);
+              ctx.setTransform(pr, 0, 0, pr, 0, 0);
+              ctx.drawImage(canvas, 0, 0, cssW, cssH);
             }
-            ctx.drawImage(canvas, 0, 0);
           });
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           Promise.resolve(stampMapInlayOnCanvas(out))
             .then((stamped) => {
-              try { stamped.toDataURL("image/jpeg", 0.92); } catch (e) { /* CORS check */ }
+              try { stamped.toDataURL("image/jpeg", 0.95); } catch (e) { /* CORS check */ }
               settle(resolve, stamped);
             })
             .catch((err) => settle(reject, err));
@@ -9325,7 +10590,7 @@ ${kmlFooter()}`;
       } catch (err) {
         settle(reject, err);
       }
-    });
+    }))));
   }
 
   function jpegBytesToPdfBlob(jpegBytes, imgW, imgH, layout) {
@@ -9405,7 +10670,7 @@ ${kmlFooter()}`;
   }
 
   function canvasToJpegBytes(canvas, quality) {
-    const dataUrl = canvas.toDataURL("image/jpeg", quality == null ? 0.92 : quality);
+    const dataUrl = canvas.toDataURL("image/jpeg", quality == null ? 0.95 : quality);
     const b64 = dataUrl.split(",")[1];
     if (!b64) throw new Error("JPEG-Export fehlgeschlagen.");
     const bin = atob(b64);
@@ -9462,6 +10727,163 @@ ${kmlFooter()}`;
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function setDrawingFileStatus(msg) {
+    const status = document.getElementById("drawingStatus");
+    if (status) status.textContent = msg;
+  }
+
+  function unwrapOverlayFile(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+    if (data.kind === "rkrk-overlay" && data.drawing && typeof data.drawing === "object") {
+      return { name: String(data.name || ""), drawing: data.drawing };
+    }
+    if (data.drawing && typeof data.drawing === "object"
+        && (data.drawing.version || data.drawing.managedObjects || data.drawing.grid || data.drawing.polygon)) {
+      return { name: String(data.name || ""), drawing: data.drawing };
+    }
+    if (data.version || Array.isArray(data.managedObjects) || data.grid || data.polygon) {
+      return { name: String(data.name || ""), drawing: data };
+    }
+    return null;
+  }
+
+  function overlayFileHasContent() {
+    try {
+      if (typeof managedObjects !== "undefined" && Array.isArray(managedObjects) && managedObjects.length) {
+        return true;
+      }
+    } catch (_) { /* noop */ }
+    try {
+      const st = (typeof getDrawingState === "function") ? getDrawingState() : null;
+      if (!st || typeof st !== "object") return false;
+      if (Array.isArray(st.managedObjects) && st.managedObjects.length) return true;
+      if (Array.isArray(st.labeledPoints) && st.labeledPoints.length) return true;
+      if (st.polygon && Array.isArray(st.polygon.vertices) && st.polygon.vertices.length) return true;
+    } catch (_) { /* noop */ }
+    return false;
+  }
+
+  function exportOverlayFile() {
+    if (!overlayFileAdminAllowed()) {
+      setDrawingFileStatus("Datei speichern nur mit URL ?ADMIN.");
+      return;
+    }
+    if (typeof getDrawingState !== "function") {
+      setDrawingFileStatus("Zeichnung kann nicht gelesen werden.");
+      return;
+    }
+    try { if (typeof syncEditingObjectFromUi === "function") syncEditingObjectFromUi(); } catch (_) { /* noop */ }
+    const drawing = getDrawingState();
+    const nameEl = document.getElementById("drawingName");
+    let name = nameEl ? String(nameEl.value || "").trim() : "";
+    if (!name && typeof getOverlayEditorTitle === "function") {
+      try { name = String(getOverlayEditorTitle() || "").trim(); } catch (_) { name = ""; }
+    }
+    if (!name) name = "overlay";
+    const payload = {
+      kind: "rkrk-overlay",
+      format: 1,
+      name: name,
+      savedAt: new Date().toISOString(),
+      drawing: drawing
+    };
+    const filename = stampExportFilename("overlay", "rkrkoverlay");
+    downloadBlob(filename, new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }));
+    setDrawingFileStatus("Datei gespeichert: " + filename);
+  }
+
+  function importOverlayFileFromText(text, filename) {
+    if (!overlayFileAdminAllowed()) {
+      setDrawingFileStatus("Datei laden nur mit URL ?ADMIN.");
+      return;
+    }
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      throw new Error("Datei ist kein gültiges Overlay-JSON.");
+    }
+    const unwrapped = unwrapOverlayFile(data);
+    if (!unwrapped) throw new Error("Keine Overlay-Zeichnung in dieser Datei.");
+    if (typeof applyDrawingState !== "function") {
+      throw new Error("Zeichnung kann nicht geladen werden.");
+    }
+    if (overlayFileHasContent() && !window.confirm("Aktuelle Zeichnung durch die Datei ersetzen?")) {
+      return;
+    }
+    applyDrawingState(unwrapped.drawing);
+    const nameEl = document.getElementById("drawingName");
+    if (nameEl && unwrapped.name) nameEl.value = unwrapped.name;
+    setDrawingFileStatus("Datei geladen" + (filename ? ": " + filename : "") + ".");
+  }
+
+  function installOverlayFileAdminUi() {
+    const hint = document.getElementById("drawingFileHint");
+    const exportBtn = document.getElementById("exportDrawingFileBtn");
+    const importBtn = document.getElementById("importDrawingFileBtn");
+    const input = document.getElementById("importDrawingFileInput");
+    const retention = document.getElementById("drawingRetentionHint");
+    const allowed = overlayFileAdminAllowed();
+    if (!allowed) {
+      if (hint) hint.hidden = true;
+      if (exportBtn) exportBtn.hidden = true;
+      if (importBtn) importBtn.hidden = true;
+      return;
+    }
+    if (hint) hint.hidden = false;
+    if (exportBtn) exportBtn.hidden = false;
+    if (importBtn) importBtn.hidden = false;
+    if (retention && !/Datei speichern/.test(String(retention.textContent || ""))) {
+      retention.textContent = String(retention.textContent || "").trim()
+        + " Datei speichern/laden bleibt lokal und unterliegt keiner Frist.";
+    }
+    if (exportBtn && !exportBtn.__rkrkOverlayFileBound) {
+      exportBtn.__rkrkOverlayFileBound = true;
+      exportBtn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        try { exportOverlayFile(); } catch (err) {
+          setDrawingFileStatus("Datei speichern fehlgeschlagen: " + ((err && err.message) ? err.message : String(err)));
+        }
+      });
+    }
+    if (importBtn && input && !importBtn.__rkrkOverlayFileBound) {
+      importBtn.__rkrkOverlayFileBound = true;
+      importBtn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        if (!overlayFileAdminAllowed()) {
+          setDrawingFileStatus("Datei laden nur mit URL ?ADMIN.");
+          return;
+        }
+        input.value = "";
+        input.click();
+      });
+    }
+    if (input && !input.__rkrkOverlayFileBound) {
+      input.__rkrkOverlayFileBound = true;
+      input.addEventListener("change", () => {
+        if (!overlayFileAdminAllowed()) {
+          setDrawingFileStatus("Datei laden nur mit URL ?ADMIN.");
+          return;
+        }
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            importOverlayFileFromText(String(reader.result || ""), file.name);
+          } catch (err) {
+            setDrawingFileStatus("Datei laden fehlgeschlagen: " + ((err && err.message) ? err.message : String(err)));
+          }
+        };
+        reader.onerror = () => {
+          setDrawingFileStatus("Datei konnte nicht gelesen werden.");
+        };
+        reader.readAsText(file, "utf-8");
+      });
+    }
+    try { syncObjEditorOverlayFileHelp(); } catch (_) { /* noop */ }
   }
 
   function stampPdfFilename() {
@@ -9538,7 +10960,7 @@ ${kmlFooter()}`;
       return;
     }
     async function downloadPdfViaTcpdf(canvas, filename, paper, scaleLabel) {
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
       const title = getOverlayEditorTitle();
       const res = await fetch("export_map_pdf.php", {
         method: "POST",
@@ -9580,7 +11002,7 @@ ${kmlFooter()}`;
       const viewSnap = snapshotMapView();
       let restoreView = false;
       try { if (typeof window.refreshMapInlayTime === "function") window.refreshMapInlayTime(); } catch (_) {}
-      hint.textContent = "Kartenansicht wird erfasst...";
+        hint.textContent = "Karte in hoher Auflösung wird geladen...";
       try {
         const size = (typeof map !== "undefined" && map && typeof map.getSize === "function") ? map.getSize() : null;
         const mapW = (Array.isArray(size) && size[0] > 0) ? size[0] : 0;
@@ -9602,7 +11024,7 @@ ${kmlFooter()}`;
             await new Promise((r) => setTimeout(r, 250));
           }
         }
-        const captureMs = (wantScale >= 50000) ? 22000 : (restoreView ? 14000 : 8000);
+        const captureMs = (wantScale >= 50000) ? 28000 : (restoreView ? 18000 : 14000);
         const canvas = await captureMapViewportCanvas(captureMs);
         const paper = choosePdfPaperMm(canvas.width, canvas.height);
         const stamp = getMapScaleStampInfo(canvas.width, canvas.height);
@@ -9619,7 +11041,7 @@ ${kmlFooter()}`;
             console.warn(tcpErr);
           }
         }
-        const jpeg = canvasToJpegBytes(canvas, 0.92);
+        const jpeg = canvasToJpegBytes(canvas, 0.95);
         const pdf = jpegBytesToPdfBlob(jpeg, canvas.width, canvas.height, paper);
         downloadBlob(filename, pdf);
         hint.textContent = `PDF ${scaleLabel || ""} gespeichert — A4, Druck 100 %.`.replace("  ", " ");
@@ -9687,25 +11109,107 @@ ${kmlFooter()}`;
     }, 250);
   }
 
+  function snapshotImportedKmlLayers() {
+    return pruneImportedKmlLayersByAge(
+      importedKmlLayers
+        .filter((e) => e && String(e.kmlText || "").trim())
+        .map((e) => ({
+          id: e.id,
+          name: e.name || "KML",
+          visible: e.visible !== false,
+          opacity: Number.isFinite(Number(e.opacity)) ? Math.max(0, Math.min(1, Number(e.opacity))) : 1,
+          kmlText: String(e.kmlText || ""),
+          featureCount: Number(e.featureCount) || 0,
+          savedAt: e.savedAt || new Date().toISOString()
+        }))
+    );
+  }
+
+  function collectImportedKmlState() {
+    return {
+      version: 1,
+      seq: importedKmlSeq,
+      layers: snapshotImportedKmlLayers()
+    };
+  }
+
+  let lastImportedKmlStateJson = "";
+
+  function applyImportedKmlFromDrawing(state, opts) {
+    if (!state || typeof state !== "object") return false;
+    const hasPack = Object.prototype.hasOwnProperty.call(state, "importedKml");
+    const hasLegacy = Array.isArray(state.importedKmlLayers);
+    if (!hasPack && !hasLegacy) return false;
+    const pack = (state.importedKml && typeof state.importedKml === "object") ? state.importedKml : {};
+    const layers = Array.isArray(pack.layers)
+      ? pack.layers
+      : (Array.isArray(state.importedKmlLayers) ? state.importedKmlLayers : []);
+    const nextSeq = Number.isFinite(Number(pack.seq)) ? Number(pack.seq) : importedKmlSeq;
+    const fingerprint = JSON.stringify({
+      seq: nextSeq,
+      layers: (Array.isArray(layers) ? layers : []).map((e) => ({
+        id: e && e.id,
+        name: e && e.name,
+        visible: e && e.visible,
+        opacity: e && e.opacity,
+        savedAt: e && e.savedAt,
+        kmlLen: e && String(e.kmlText || "").length
+      }))
+    });
+    const force = !!(opts && opts.force);
+    if (!force && fingerprint === lastImportedKmlStateJson) return false;
+    lastImportedKmlStateJson = fingerprint;
+    importedKmlRestoreDone = true;
+    importedKmlLayers.slice().forEach((entry) => {
+      try {
+        if (entry && entry.layer && typeof map !== "undefined" && map) {
+          map.removeLayer(entry.layer);
+        }
+      } catch (_) { /* noop */ }
+    });
+    importedKmlLayers.length = 0;
+    importedKmlSeq = Math.max(importedKmlSeq, nextSeq || 0);
+    let restored = 0;
+    (Array.isArray(layers) ? layers : []).forEach((saved) => {
+      if (!saved || !String(saved.kmlText || "").trim()) return;
+      try {
+        const features = parseKmlTextToFeatures(saved.kmlText);
+        if (!features.length) return;
+        addImportedKmlLayer(saved.name || "KML", features, saved.kmlText, {
+          id: saved.id,
+          visible: saved.visible !== false,
+          opacity: saved.opacity,
+          savedAt: saved.savedAt,
+          skipFit: true,
+          skipPersist: true,
+          quiet: true
+        });
+        restored += 1;
+      } catch (_) { /* skip broken layer */ }
+    });
+    try { renderImportedKmlLayerRows(); } catch (_) { /* noop */ }
+    try { persistImportedKmlLayers(); } catch (_) { /* noop */ }
+    if (restored > 0) {
+      try { setKmlImportStatus(restored + " KML-Layer aus Zeichnung geladen."); } catch (_) { /* noop */ }
+      try {
+        const box = document.getElementById("overlayBox");
+        if (box) box.open = true;
+      } catch (_) { /* noop */ }
+    } else {
+      try { setKmlImportStatus("Kein KML-Layer in der Zeichnung."); } catch (_) { /* noop */ }
+    }
+    return true;
+  }
+  try { window.__rkrkApplyImportedKmlFromDrawing = applyImportedKmlFromDrawing; } catch (_) { /* noop */ }
+  try { window.__rkrkCollectImportedKmlState = collectImportedKmlState; } catch (_) { /* noop */ }
+
   function persistImportedKmlLayers() {
     try {
       if (liveShareViewerMode || liveShareViewOnly) return false;
       try {
         if (document.body && document.body.classList.contains("rkrk-share-sub")) return false;
       } catch (_) { /* noop */ }
-      const layers = pruneImportedKmlLayersByAge(
-        importedKmlLayers
-          .filter((e) => e && String(e.kmlText || "").trim())
-          .map((e) => ({
-            id: e.id,
-            name: e.name || "KML",
-            visible: e.visible !== false,
-            opacity: Number.isFinite(Number(e.opacity)) ? Math.max(0, Math.min(1, Number(e.opacity))) : 1,
-            kmlText: String(e.kmlText || ""),
-            featureCount: Number(e.featureCount) || 0,
-            savedAt: e.savedAt || new Date().toISOString()
-          }))
-      );
+      const layers = snapshotImportedKmlLayers();
       if (!layers.length) {
         try { localStorage.removeItem(IMPORTED_KML_STORAGE_KEY); } catch (_) { /* noop */ }
         return true;
@@ -9944,6 +11448,7 @@ ${kmlFooter()}`;
       properties: { rkrkImportedKml: true, rkrkKmlLayerId: id, name: name || "KML" }
     });
     map.addLayer(layer);
+    try { raiseEditorObjectLayersAboveOverlays(); } catch (_) { /* noop */ }
     const entry = {
       id,
       name: name || ("KML " + importedKmlSeq),
@@ -10478,26 +11983,36 @@ ${kmlFooter()}`;
     name.addEventListener("click", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
-      if (name.dataset.renaming === "1") return;
+      if (name.dataset.renaming === "1" || objectListRenameActive) return;
       name.dataset.renaming = "1";
+      objectListRenameActive = true;
+      li.draggable = false;
       const input = document.createElement("input");
       input.type = "text";
       input.className = "obj-list-name-input";
       input.value = String(group.name || "");
+      input.title = "Enter übernimmt, Esc bricht ab";
+      input.setAttribute("aria-label", "Gruppe umbenennen, Enter übernimmt");
+      input.setAttribute("enterkeyhint", "done");
       name.replaceWith(input);
       input.focus();
       input.select();
+      const originalName = String(group.name || "");
       let finished = false;
       const finish = (save) => {
         if (finished) return;
         finished = true;
+        objectListRenameActive = false;
+        try { input.remove(); } catch (_) { /* noop */ }
         if (save) {
           rememberFixedHistory();
           group.name = String(input.value || "").trim() || ("Gruppe " + group.id);
           markFixedHistoryCursor();
           try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+        } else {
+          group.name = originalName;
         }
-        refreshManagedObjectList();
+        refreshManagedObjectList({ force: true });
       };
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") { e.preventDefault(); finish(true); }
@@ -10643,7 +12158,23 @@ ${kmlFooter()}`;
     nestDrawingsPanelUnderObjects();
     try { ensureManagedObjectListToolbar(); } catch (_) { /* noop */ }
   }
-  refreshManagedObjectList = function () {
+  function isObjectListRenameActive() {
+    if (objectListRenameActive) return true;
+    try {
+      return !!document.querySelector("#objManagedList .obj-list-name-input");
+    } catch (_) {
+      return false;
+    }
+  }
+  try { window.__rkrkIsObjectListRenaming = isObjectListRenameActive; } catch (_) { /* noop */ }
+
+  refreshManagedObjectList = function (opts) {
+    if (!(opts && opts.force) && isObjectListRenameActive()) {
+      objectListRefreshPending = true;
+      return;
+    }
+    objectListRenameActive = false;
+    objectListRefreshPending = false;
     const list = document.getElementById("objManagedList");
     const empty = document.getElementById("objManagedListEmpty");
     if (!list) return;
@@ -10762,27 +12293,41 @@ ${kmlFooter()}`;
           ev.preventDefault();
           ev.stopPropagation();
         }
-        if (name.dataset.renaming === "1") return;
+        if (name.dataset.renaming === "1" || objectListRenameActive) return;
         name.dataset.renaming = "1";
+        objectListRenameActive = true;
+        li.draggable = false;
         const input = document.createElement("input");
         input.type = "text";
         input.className = "obj-list-name-input";
         input.value = managedObjectDisplayName(obj);
-        input.title = "Umbenennen";
-        input.setAttribute("aria-label", "Umbenennen");
+        input.title = "Enter übernimmt, Esc bricht ab";
+        input.setAttribute("aria-label", "Objekt umbenennen, Enter übernimmt");
+        input.setAttribute("enterkeyhint", "done");
         name.replaceWith(input);
         input.focus();
         input.select();
+        const originalName = obj.name;
         let finished = false;
         const finish = (save) => {
           if (finished) return;
           finished = true;
+          objectListRenameActive = false;
+          try { input.remove(); } catch (_) { /* noop */ }
           if (save) {
             const next = String(input.value || "").trim();
             obj.name = next || defaultManagedObjectName(obj);
+            try { touchManagedObjectSyncMeta(obj); } catch (_) { /* noop */ }
             managedStatusText(`«${managedObjectDisplayName(obj)}» umbenannt.`);
+            try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+            try { renderManagedObjects(); } catch (_) { /* noop */ }
+            try {
+              if (obj.type === "grid" && !obj.fixed && typeof drawPreview === "function") drawPreview();
+            } catch (_) { /* noop */ }
+          } else {
+            obj.name = originalName;
           }
-          refreshManagedObjectList();
+          refreshManagedObjectList({ force: true });
         };
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") {
@@ -10821,6 +12366,38 @@ ${kmlFooter()}`;
       });
       visBtn.addEventListener("mousedown", (e) => e.stopPropagation());
       actions.appendChild(visBtn);
+      if (obj.type === "grid" || obj.type === "polygon") {
+        const isGrid = obj.type === "grid";
+        const fillsOn = isGrid ? obj.showResultFills !== false : obj.showFill !== false;
+        const fillsBtn = document.createElement("button");
+        fillsBtn.type = "button";
+        fillsBtn.className = "obj-list-visibility";
+        setObjToolButton(fillsBtn, fillsOn ? "fills" : "hide",
+          fillsOn
+            ? (isGrid ? "Resultatflächen ausblenden" : "Flächenfärbung ausblenden")
+            : (isGrid ? "Resultatflächen einblenden" : "Flächenfärbung einblenden"));
+        fillsBtn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (isGrid) {
+            obj.showResultFills = obj.showResultFills === false;
+          } else {
+            obj.showFill = obj.showFill === false;
+          }
+          try { touchManagedObjectSyncMeta(obj); } catch (_) { /* noop */ }
+          const el = document.getElementById(isGrid ? "objGridShowResultFills" : "objPolyShowFill");
+          if (el && Number(selectedManagedObjectId) === Number(obj.id)) {
+            el.checked = isGrid ? obj.showResultFills !== false : obj.showFill !== false;
+          }
+          try { renderManagedObjects(); } catch (_) { /* noop */ }
+          try { if (typeof drawPreview === "function") drawPreview(); } catch (_) { /* noop */ }
+          try { if (typeof renderPolygonEditor === "function") renderPolygonEditor(); } catch (_) { /* noop */ }
+          try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+          refreshManagedObjectList();
+        });
+        fillsBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+        actions.appendChild(fillsBtn);
+      }
       // In Objekte-Liste immer: Bearbeiten (fixiert) bzw. Abschliessen/Fixieren (in Bearbeitung)
       if (obj.fixed) {
         const editBtn = document.createElement("button");
@@ -10930,6 +12507,22 @@ ${kmlFooter()}`;
       li.appendChild(selectCb);
       li.appendChild(meta);
       li.appendChild(actions);
+      li.addEventListener("click", (ev) => {
+        if (ev.target && ev.target.closest && ev.target.closest(".obj-list-actions, .obj-list-name-input, input, button, .obj-list-name")) {
+          return;
+        }
+        if (obj.fixed) {
+          ensureSingleEditingObject(null, { sync: true });
+          selectedManagedObjectId = obj.id;
+          managedEditPaused = false;
+          applyManagedObjectToUi(obj);
+          renderManagedObjects();
+          try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+          try { refreshObjectActionButtons(); } catch (_) { /* noop */ }
+        } else {
+          beginEditManagedObject(obj.id);
+        }
+      });
       list.appendChild(li);
     };
     const renderedIds = new Set();
@@ -11367,7 +12960,21 @@ ${kmlFooter()}`;
           state.managedObjectIdSeq = managedObjectIdSeq;
           state.managedObjectGroupIdSeq = managedObjectGroupIdSeq;
           state.selectedManagedObjectId = selectedManagedObjectId;
+          if (state.grid && typeof state.grid === "object") {
+            state.grid.spacing = String(readNumberInput(["objGridSize", "spacing"], Number(state.grid.spacing) || 333));
+            state.grid.northCount = String(readNumberInput(["objNorthCount", "northCount"], Number(state.grid.northCount) || 8));
+            state.grid.eastCount = String(readNumberInput(["objEastCount", "eastCount"], Number(state.grid.eastCount) || 8));
+            state.grid.rotation = getGridRotationAngle();
+          }
           state.projectTitle = getOverlayEditorTitle();
+          try {
+            if (typeof collectMapChromeState === "function") {
+              state.mapChrome = collectMapChromeState();
+            }
+          } catch (_) { /* noop */ }
+          try {
+            state.importedKml = collectImportedKmlState();
+          } catch (_) { /* noop */ }
         }
         return state;
       };
@@ -11395,6 +13002,8 @@ ${kmlFooter()}`;
               managedListOrder = state.managedListOrder.map((e) => JSON.parse(JSON.stringify(e || {})));
             }
             syncManagedListOrder();
+            try { applyImportedKmlFromDrawing(state); } catch (_) { /* noop */ }
+            try { applyMapChromeState(state); } catch (_) { /* noop */ }
             return;
           }
           // Broadcast-/View-Updates: Ausschnitt konstant — kein Sprung auf Homepunkt/Fit
@@ -11419,6 +13028,7 @@ ${kmlFooter()}`;
           } else {
             try { window.__rkrkDeferFitToManaged = true; } catch (_) { /* noop */ }
           }
+          try { seedDrawingStateFormFromObjects(state); } catch (_) { /* noop */ }
           originalApply(state);
           if (state && state.projectTitle && typeof setProjectTitle === "function") {
             setProjectTitle(state.projectTitle);
@@ -11456,7 +13066,24 @@ ${kmlFooter()}`;
           syncManagedListOrder();
           selectedManagedObjectId = null;
           managedEditPaused = false;
-          if (typeof previewActive !== "undefined" && state && state.previewActive
+          const formObj = fillObjectFormFromDrawing(state);
+          try { scheduleFormSyncFromDrawing(state); } catch (_) { /* noop */ }
+          if (formObj) {
+            selectedManagedObjectId = formObj.id;
+            if (formObj.fixed === false) {
+              if (typeof previewActive !== "undefined") previewActive = true;
+              if ((formObj.type === "grid" || formObj.type === "circles" || formObj.type === "circle")
+                  && typeof drawPreview === "function"
+                  && Array.isArray(selectedLonLat) && selectedLonLat.length === 2) {
+                drawPreview();
+              }
+            } else {
+              if (typeof previewActive !== "undefined") previewActive = false;
+              if (typeof clearPreview === "function") {
+                try { clearPreview(); } catch (_) { /* noop */ }
+              }
+            }
+          } else if (typeof previewActive !== "undefined" && state && state.previewActive
             && Array.isArray(selectedLonLat) && selectedLonLat.length === 2
             && typeof drawPreview === "function"
             && exportTypeEl && (exportTypeEl.value === "grid" || exportTypeEl.value === "circles" || exportTypeEl.value === "circle")) {
@@ -11464,6 +13091,10 @@ ${kmlFooter()}`;
             drawPreview();
           }
           renderManagedObjects();
+          try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+          try { refreshObjectActionButtons(); } catch (_) { /* noop */ }
+          try { applyImportedKmlFromDrawing(state, { force: true }); } catch (_) { /* noop */ }
+          try { applyMapChromeState(state, { force: true }); } catch (_) { /* noop */ }
           if (preserveMapView) {
             // Ausschnitt wiederherstellen (originalApply ruft sonst fitViewToCurrentDrawing)
             if (savedView && typeof map !== "undefined" && map && map.getView) {
@@ -12313,10 +13944,13 @@ ${kmlFooter()}`;
     let basemap = "map";
     try {
       if (typeof window.__rkrkGetBasemapMode === "function") {
-        basemap = window.__rkrkGetBasemapMode() === "satellite" ? "satellite" : "map";
+        const m = String(window.__rkrkGetBasemapMode() || "map");
+        basemap = (m === "satellite" || m === "gray" || m === "sw") ? (m === "sw" ? "gray" : m) : "map";
       } else {
         const satBtn = document.getElementById("basemapSatelliteBtn");
+        const grayBtn = document.getElementById("basemapGrayBtn");
         if (satBtn && satBtn.classList.contains("selected-flight-reference")) basemap = "satellite";
+        else if (grayBtn && grayBtn.classList.contains("selected-flight-reference")) basemap = "gray";
       }
     } catch (_) { /* noop */ }
     const overlays = {};
@@ -12330,21 +13964,36 @@ ${kmlFooter()}`;
         opacity: Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 100
       };
     });
-    return { basemap, overlays };
+    let obstacleHeights = null;
+    try {
+      const h = document.getElementById("obstacleHeights");
+      if (h) obstacleHeights = !!h.checked;
+    } catch (_) { /* noop */ }
+    return { basemap, overlays, obstacleHeights };
   }
 
-  async function applyMapChromeState(drawing) {
+  async function applyMapChromeState(drawing, opts) {
     if (!drawing || !drawing.mapChrome || typeof drawing.mapChrome !== "object") return;
     const chrome = drawing.mapChrome;
     const json = JSON.stringify(chrome);
-    if (json === liveShareLastMapChromeJson) return;
+    const force = !!(opts && opts.force);
+    if (!force && json === liveShareLastMapChromeJson) return;
     liveShareLastMapChromeJson = json;
 
     if (chrome.basemap && typeof window.__rkrkSetBasemapMode === "function") {
       try { window.__rkrkSetBasemapMode(chrome.basemap); } catch (_) { /* noop */ }
     }
 
-    const overlays = (chrome.overlays && typeof chrome.overlays === "object") ? chrome.overlays : {};
+    const overlays = (chrome.overlays && typeof chrome.overlays === "object")
+      ? Object.assign({}, chrome.overlays)
+      : {};
+    if (force) {
+      Array.from(document.querySelectorAll(".overlay-toggle")).forEach((el) => {
+        const key = el.getAttribute("data-overlay-key");
+        if (!key || overlays[key]) return;
+        overlays[key] = { enabled: false, opacity: 100 };
+      });
+    }
     const keys = Object.keys(overlays);
     for (let i = 0; i < keys.length; i += 1) {
       const key = keys[i];
@@ -12363,8 +14012,14 @@ ${kmlFooter()}`;
       if (toggle.checked !== want) {
         toggle.checked = want;
         toggle.dispatchEvent(new Event("change", { bubbles: true }));
-        // setOverlayEnabled is async — give it a moment between layers
         await new Promise((r) => setTimeout(r, 80));
+      }
+    }
+    if (typeof chrome.obstacleHeights === "boolean") {
+      const heights = document.getElementById("obstacleHeights");
+      if (heights && heights.checked !== chrome.obstacleHeights) {
+        heights.checked = chrome.obstacleHeights;
+        heights.dispatchEvent(new Event("change", { bubbles: true }));
       }
     }
   }
@@ -13146,6 +14801,7 @@ function stopLiveShareViewerPoll() {
       if (typeof applyDrawingState === "function") {
         applyDrawingState(draft.drawing);
       }
+      try { scheduleFormSyncFromDrawing(draft.drawing); } catch (_) { /* noop */ }
       if (typeof applySharedMapView === "function") {
         applySharedMapView(draft.drawing);
       }
@@ -13245,6 +14901,7 @@ function stopLiveShareViewerPoll() {
   function boot() {
     if (typeof exportTypeEl === "undefined" || !exportTypeEl) return false;
     ensureManagedObjectLayer();
+    raiseEditorObjectLayersAboveOverlays();
     applyCompactCss();
     installObjectContextMenu();
     installSidebarResizeAndCollapse();
@@ -13255,6 +14912,7 @@ function stopLiveShareViewerPoll() {
     forceObjectMode();
     extendLabelPointTypes();
     injectObjectParamsIntoObjectBox();
+    try { installObjectFormDrawingSync(); } catch (_) { /* noop */ }
     ensureCircleRadiusField();
     ensureCirclesFixPanel();
     ensureTopFixBar();
@@ -13340,6 +14998,7 @@ function stopLiveShareViewerPoll() {
     installBroadcastButton();
     installFreehandDrawing();
     patchDrawingStorageForManagedObjects();
+    try { installOverlayFileAdminUi(); } catch (_) { /* noop */ }
     installSessionDraftPersistence();
 
   // Hooks für rkrk_map_multiedit.js

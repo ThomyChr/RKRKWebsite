@@ -399,6 +399,9 @@ body.rkrk-storyboard-print .sb-cue{display:inline;margin:0!important;padding:0!i
 		}
 
 		$pointTitles = array();
+		$pointProcess = function_exists("rkrk_assess_storyboard_point_process_map")
+			? rkrk_assess_storyboard_point_process_map($tplFile)
+			: array();
 		if ($tplFile !== "" && function_exists("rkrk_assess_storyboard_point_titles_map")) {
 			$pointTitles = rkrk_assess_storyboard_point_titles_map($tplFile);
 		} elseif ($tplFile !== "" && function_exists("rkrk_assess_storyboard_template_point_options")) {
@@ -480,6 +483,19 @@ body.rkrk-storyboard-print .sb-cue{display:inline;margin:0!important;padding:0!i
 				}
 				if ($info !== "") {
 					$html .= " <span class=\"sb-info\">" . htmlspecialchars($info, ENT_QUOTES, "UTF-8") . "</span>";
+				}
+				$process = ($fieldCode !== "" && isset($pointProcess[$fieldCode]))
+					? trim((string) $pointProcess[$fieldCode])
+					: "";
+				if ($process !== "") {
+					if (function_exists("rkrk_assess_format_process_html_for_screen")) {
+						$procHtml = rkrk_assess_format_process_html_for_screen($process);
+					} elseif (function_exists("rkrk_render_process_html")) {
+						$procHtml = rkrk_render_process_html($process);
+					} else {
+						$procHtml = nl2br(htmlspecialchars($process, ENT_QUOTES, "UTF-8"));
+					}
+					$html .= "<div class=\"sb-process\"><em>Ablauf:</em> " . $procHtml . "</div>";
 				}
 				if ($hasInject) {
 					$html .= " <span class=\"sb-stoer\" style=\"background-color:#ffedd5;color:#9a3412;padding:0 4px;\"><strong>St&ouml;rung:</strong> "

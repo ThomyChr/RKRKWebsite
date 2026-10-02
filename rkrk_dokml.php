@@ -1,13 +1,32 @@
 <?php
-	//header('Access-Control-Allow-Origin: *');
-	header("Content-type: text/xml");
-	//header("Content-type: application/json");
 	//session_start();
 	include_once('scripts/rkrk_gen.php');
 	include_once('scripts/rkrk_kml.php');
 	include_once('scripts/rkrk_felddaten.php');
-	include_once('scripts/rkrk_xml2kml.php');
 	include_once('scripts/rkrk_csvfiles.php');
+
+	if (!function_exists('rkrk_status_has')) {
+		function rkrk_status_has($value, $code) {
+			$value = strtoupper(trim(function_exists('rkrk_str') ? rkrk_str($value) : (string)$value));
+			$code = strtoupper(trim((string)$code));
+			if ($value === '' || $code === '') {
+				return false;
+			}
+			return strpos($value, $code) !== false;
+		}
+	}
+
+	if (!headers_sent()) {
+		header('Content-Type: application/vnd.google-earth.kml+xml; charset=UTF-8');
+		// Kein Access-Control-Allow-Origin hier: der Webserver setzt bereits "*".
+		// Ein zweites "*" wird zu "*, *" und map.geo.admin.ch blockiert die KML.
+		header('Access-Control-Allow-Methods: GET, OPTIONS');
+		header('Cache-Control: no-store');
+	}
+	if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+		http_response_code(204);
+		exit;
+	}
 
 	
 	//check impropriate IP addresses accessing page
@@ -189,7 +208,6 @@
 		$SaveFile = false;
 	}
 
-	header("Content-disposition: attachment; filename=" . $kmloutputfile . ".kml");
 	$DebugText .= "File: " . $kmloutputfile . chr(10);
 
 	// DL=1 -> nur lokaler Browser-Download, kein Speichern auf Drive/Server
@@ -201,6 +219,17 @@
 		$DownloadOnly = in_array($dlVal, array("1","on","true","yes"), true);
 	}
 	$DebugText .= "DownloadOnly: " . ($DownloadOnly ? "on" : "off") . chr(10);
+	if (!headers_sent()) {
+		$kmlDownloadName = preg_replace('/[^A-Za-z0-9._-]+/', '_', (string)$kmloutputfile);
+		if ($kmlDownloadName === '' || $kmlDownloadName === null) {
+			$kmlDownloadName = 'RKRK_Felder';
+		}
+		if ($DownloadOnly) {
+			header('Content-Disposition: attachment; filename="' . $kmlDownloadName . '.kml"');
+		} else {
+			header('Content-Disposition: inline; filename="' . $kmlDownloadName . '.kml"');
+		}
+	}
 
 /*	
 	if (empty($_GET["File"])) {
@@ -574,35 +603,35 @@ weiter bla bla bla
 			if ($htmloutput) {
 			  echo "<li>" .$feld ->FeldID . " - " . $feld ->Feldname . "</li>";
 			}
-			if (like($feld->Freigabe, "OK")) {
+			if (rkrk_status_has($feld->Freigabe, "OK")) {
 				$feldstatus = "free";
 			}
-			if (like($feld->Freigabe, "TFL")) {
+			if (rkrk_status_has($feld->Freigabe, "TFL")) {
 				$feldstatus = "testflight";
 			}
-			if (like($feld->Warnung, "OBJ")) {
+			if (rkrk_status_has($feld->Warnung, "OBJ")) {
 				$feldstatus = "object";
 			}
 			//Richtig auch für neue Flugzonen NGT1, NGT2 ab 2024
-			if (like($feld->Warnung, "NGT")) {
+			if (rkrk_status_has($feld->Warnung, "NGT")) {
 				$feldstatus = "free_night";
 			}
-			if (like($feld->Warnung, "NGT") && like($feld->Warnung, "OBJ")){
+			if (rkrk_status_has($feld->Warnung, "NGT") && rkrk_status_has($feld->Warnung, "OBJ")){
 				$feldstatus = "object_night";
 			}
-			if (like($feld->Warnung, "SORA")) {
+			if (rkrk_status_has($feld->Warnung, "SORA")) {
 				$feldstatus = "150zone";
 			}
-			if (like($feld->Warnung, "STP")) {
+			if (rkrk_status_has($feld->Warnung, "STP")) {
 				$feldstatus = "restrict";
 			}
-			if (like($feld->Freigabe, "PRF")) {
+			if (rkrk_status_has($feld->Freigabe, "PRF")) {
 				$feldstatus = "tocheck";
 			}
-			if (like($feld->Freigabe, "NO")) {
+			if (rkrk_status_has($feld->Freigabe, "NO")) {
 				$feldstatus = "retire";
 			}
-			if (like($feld->Freigabe, "NEU")) {
+			if (rkrk_status_has($feld->Freigabe, "NEU")) {
 				$feldstatus = "new";
 			}
 		// startpunkt 

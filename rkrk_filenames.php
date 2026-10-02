@@ -35,12 +35,11 @@ $MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 	//pre_R($Feldkatalog);
 
 	$FontSizeInPoints = 11;
-	if ($FontSize== "") {
+	if (!isset($FontSize) || $FontSize === "") {
 		$FontSize= "100%";
 	}
 	
 
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 $RegionList = Array();
 //form to change setting
@@ -76,6 +75,9 @@ echo "<table class='rkrk-filter-form' width=100%>";
 	echo "</td>";
 	echo "</tr>";
 	echo "</table  width=100%>";
+	if (!isset($EnableDeleteSet)) {
+		$EnableDeleteSet = "";
+	}
 	echo '<input type="hidden" name="Act" id="Act" value="save" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'">'. chr(10);
 	echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'"> '. chr(10);
 	echo '<br>';

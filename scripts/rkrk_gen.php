@@ -5,6 +5,17 @@
   include_once(__DIR__ . '/rkrk_encoding.php');
   include_once(__DIR__ . '/rkrk_catalog_io.php');
 
+if (!function_exists('rkrk_normalize_rkropen_path')) {
+	/** Collapse accidental .../rkropen/rkropen/... in filesystem paths. */
+	function rkrk_normalize_rkropen_path($p) {
+		$p = str_replace("\\", "/", (string)$p);
+		while (strpos($p, "/rkropen/rkropen/") !== false) {
+			$p = str_replace("/rkropen/rkropen/", "/rkropen/", $p);
+		}
+		return $p;
+	}
+}
+
 // JSON-Kataloge sind die Quelle. XML-Support zum Abschalten:
 // false = JSON only (weder XML lesen noch schreiben).
 $RKRKXmlCatalogSupport = false;
@@ -2359,6 +2370,7 @@ global $RegionSettings;
 	$output ="";
 	$output .=  "<font style='font-size: " . $fontsize . ";'>" .chr(10);
 	$output .=  "Regionen:  " .chr(10); 
+	$RegionsArray = array();
 	foreach ($RegionSettings as $key => $Region) {
 		if (
 			($Region["Aktiv"]) 
@@ -2874,128 +2886,343 @@ function OpenLogFileSafe($filename, $mode) {
 	return @fopen($filename, $mode);
 }
 
-function WriteToStatistic($Type, $Content, $Text1, $Text2, $Text3, $Text4, $LogArt="Site") {
-global $logfilelocation, $DebugWork, $RKRKLocalLoactionMissionFiles, $CleanAgeOfFilesInDays, $WebFreigabe, $RKRKSiteStatsCSV, $RKRKIPStatsCSV,$IPUsed, $searchUML, $replaceUML;
+function rkrk_stats_is_site($logArt)
+{
+	return strcasecmp((string)$logArt, 'IP') !== 0;
+}
 
-	$delimiter= ";";
-	$entryfound = false;
-	$Statistic = Array();
-	if (!isset($searchUML) || !is_array($searchUML)) {
-		$searchUML = array();
-	}
-	if (!isset($replaceUML) || !is_array($replaceUML)) {
-		$replaceUML = array();
-	}
-	if ($LogArt=="Site") {
-		//Site
-		$CountTitle = "Seite";
-		$headerline = "Monat;Level;" . $CountTitle . ";Anzahl";
-		$filename= $logfilelocation.$RKRKSiteStatsCSV;
-	} else {
-		//IP log
-		$CountTitle = "IPNr";
-		$headerline = "Monat;Level;" . $CountTitle . ";Pers;Provider;Anzahl";
-		$filename= $logfilelocation.$RKRKIPStatsCSV;
-	}
-	$header = explode(";", $headerline);
-	if(file_exists($filename) && is_readable($filename)) {
-		
-		$header = NULL;
-		$data = array();
-		if (($handle = fopen($filename, 'r')) !== FALSE)
-		{
-			while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE)
-			{
-				//pre_r($row);
-				if(!$header)
-					$header = $row;
-				else
-				  $data[] = array_combine($header, $row);
-			}
-			fclose($handle);
+function rkrk_stats_headerline($logArt)
+{
+	return rkrk_stats_is_site($logArt)
+		? 'Monat;Level;Seite;Anzahl'
+		: 'Monat;Level;IPNr;Pers;Provider;Anzahl';
+}
 
-			$Statistic = str_replace($searchUML, $replaceUML, $data);
-			//pre_r($Statistic);
-			//echo "Monat: " . $Statistic[0][$header[0]] . "<br>";
+function rkrk_stats_legacy_path($logArt)
+{
+	global $logfilelocation, $RKRKSiteStatsCSV, $RKRKIPStatsCSV;
+	$name = rkrk_stats_is_site($logArt) ? $RKRKSiteStatsCSV : $RKRKIPStatsCSV;
+
+	return $logfilelocation . $name;
+}
+
+function rkrk_stats_year_path($logArt, $year)
+{
+	global $logfilelocation;
+	$year = (int)$year;
+	$prefix = rkrk_stats_is_site($logArt) ? 'sitestats_' : 'ipstats_';
+
+	return $logfilelocation . $prefix . $year . '.csv';
+}
+
+function rkrk_stats_csv_cell($value)
+{
+	$v = str_replace(array("\r", "\n", "\0", ';'), array(' ', ' ', '', ','), (string)$value);
+
+	return trim($v);
+}
+
+function rkrk_stats_row_key(array $row, $logArt)
+{
+	$monat = trim((string)($row['Monat'] ?? ''));
+	$level = trim((string)($row['Level'] ?? ''));
+	$id = rkrk_stats_is_site($logArt)
+		? trim((string)($row['Seite'] ?? ''))
+		: trim((string)($row['IPNr'] ?? ''));
+
+	return $monat . "\t" . $level . "\t" . $id;
+}
+
+function rkrk_stats_is_protected_file($basename)
+{
+	$b = strtolower((string)$basename);
+	if ($b === 'statisic.csv' || $b === 'ipstatisic.csv') {
+		return true;
+	}
+	if (preg_match('/^(sitestats|ipstats)_\d{4}\.csv(\.bak)?$/i', $b)) {
+		return true;
+	}
+	if (preg_match('/^(statisic|ipstatisic)\.csv\.bak$/i', $b)) {
+		return true;
+	}
+	if (substr($b, -5) === '.lock') {
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * @return array<string, array<string, string>>
+ */
+function rkrk_stats_read_map($filename, $logArt)
+{
+	$map = array();
+	if ($filename === '' || !is_file($filename) || !is_readable($filename)) {
+		return $map;
+	}
+	$fh = @fopen($filename, 'r');
+	if ($fh === false) {
+		return $map;
+	}
+	$header = null;
+	while (($cols = fgetcsv($fh, 1048576, ';')) !== false) {
+		if ($cols === array(null) || $cols === false) {
+			continue;
 		}
-		aasort($Statistic, "Level");
-		aasort($Statistic, $CountTitle);
-		aasort($Statistic, "Monat");
-		//pre_R($Statistic);
+		if ($header === null) {
+			if (isset($cols[0]) && is_string($cols[0])) {
+				$cols[0] = (string)preg_replace('/^\xEF\xBB\xBF/', '', $cols[0]);
+			}
+			$header = array();
+			foreach ($cols as $c) {
+				$header[] = trim((string)$c);
+			}
+			continue;
+		}
+		if (!is_array($header) || $header === array()) {
+			continue;
+		}
+		$nHead = count($header);
+		$nCols = count($cols);
+		if ($nCols < $nHead) {
+			$cols = array_pad($cols, $nHead, '');
+		} elseif ($nCols > $nHead) {
+			$cols = array_slice($cols, 0, $nHead);
+		}
+		$row = array_combine($header, $cols);
+		if (!is_array($row)) {
+			continue;
+		}
+		$key = rkrk_stats_row_key($row, $logArt);
+		if (trim(str_replace("\t", '', $key)) === '') {
+			continue;
+		}
+		$countField = 'Anzahl';
+		$n = (int)($row[$countField] ?? 0);
+		if ($n < 0) {
+			$n = 0;
+		}
+		if (isset($map[$key])) {
+			$map[$key][$countField] = (string)((int)($map[$key][$countField] ?? 0) + $n);
+		} else {
+			$row[$countField] = (string)$n;
+			$map[$key] = $row;
+		}
+	}
+	fclose($fh);
 
+	return $map;
+}
+
+function rkrk_stats_write_map($filename, $logArt, array $map)
+{
+	$headerline = rkrk_stats_headerline($logArt);
+	$fields = explode(';', $headerline);
+	$dir = dirname($filename);
+	if (!is_dir($dir)) {
+		@mkdir($dir, 0777, true);
+	}
+	$tmp = $filename . '.tmp.' . getmypid();
+	$fh = @fopen($tmp, 'w');
+	if ($fh === false) {
+		return false;
+	}
+	fwrite($fh, $headerline . "\n");
+	foreach ($map as $row) {
+		if (!is_array($row)) {
+			continue;
+		}
+		$cells = array();
+		foreach ($fields as $field) {
+			$cells[] = rkrk_stats_csv_cell($row[$field] ?? '');
+		}
+		fwrite($fh, implode(';', $cells) . "\n");
+	}
+	fflush($fh);
+	fclose($fh);
+	if (!@rename($tmp, $filename)) {
+		@unlink($filename);
+		if (!@rename($tmp, $filename)) {
+			@unlink($tmp);
+
+			return false;
+		}
 	}
 
-	$txt = $headerline . chr(10);
-	$myfile = OpenLogFileSafe($filename, "w");
-	if ($myfile === false) {
+	return true;
+}
+
+function rkrk_stats_with_lock($lockFile, $fn)
+{
+	$dir = dirname($lockFile);
+	if (!is_dir($dir)) {
+		@mkdir($dir, 0777, true);
+	}
+	$lock = @fopen($lockFile, 'c+');
+	if ($lock === false) {
+		return $fn();
+	}
+	flock($lock, LOCK_EX);
+	try {
+		return $fn();
+	} finally {
+		flock($lock, LOCK_UN);
+		fclose($lock);
+	}
+}
+
+function rkrk_stats_merge_maps(array $into, array $from)
+{
+	foreach ($from as $key => $row) {
+		if (!isset($into[$key])) {
+			$into[$key] = $row;
+			continue;
+		}
+		$a = (int)($into[$key]['Anzahl'] ?? 0);
+		$b = (int)($row['Anzahl'] ?? 0);
+		if ($b > $a) {
+			$into[$key] = $row;
+			$into[$key]['Anzahl'] = (string)$b;
+		}
+	}
+
+	return $into;
+}
+
+function rkrk_stats_migrate_legacy($logArt)
+{
+	$legacy = rkrk_stats_legacy_path($logArt);
+	$bak = $legacy . '.bak';
+	if (!is_file($legacy) || is_file($bak)) {
 		return;
 	}
-	fwrite($myfile, $txt);
-	//fwrite($myfile, mb_convert_encoding( $txt, 'UTF-16LE', 'UTF-8'));
-	foreach ($Statistic as $key => $StatLine) {
-		//echo $key. "<br>";
-		//echo "Monat: " . $StatLine[$header[0]] . " - ";
-		//echo "Level: " . $StatLine[$header[1]] . " - ";
-		//echo "Seite: " . $StatLine[$header[2]] . " - ";
-		//echo "Anzahl: " . $StatLine[$header[3]] . "<br>";
-		//echo "<br>";
-		//pre_R($StatLine);
-		if (
-			(trim(date("Ym"))==trim($StatLine[$header[0]])) and
-			(trim($WebFreigabe)==trim($StatLine[$header[1]])) and
-			(trim($Content)==trim($StatLine[$header[2]]))
-			) 	
-		{
-			if ($LogArt=="Site") {
-				//Site
-				$StatLine[$header[3]] = intval($StatLine[$header[3]]) + 1;
-				$txt = $StatLine[$header[0]] . ";" . $StatLine[$header[1]] .";" . $StatLine[$header[2]] .";" . $StatLine[$header[3]]  . chr(10);
-			} else {
-				//IP log
-				$StatLine[$header[5]] = intval($StatLine[$header[5]]) + 1;
-				$txt = str_replace(Array("\0"," "), Array("",""), $StatLine[$header[0]] . ";" . $StatLine[$header[1]] .";" . $StatLine[$header[2]] .";" . $StatLine[$header[3]].";" . $StatLine[$header[4]].";" . $StatLine[$header[5]]) . chr(10);
+	$map = rkrk_stats_read_map($legacy, $logArt);
+	if ($map === array()) {
+		@rename($legacy, $bak);
+
+		return;
+	}
+	$byYear = array();
+	foreach ($map as $key => $row) {
+		$ym = preg_replace('/\D+/', '', (string)($row['Monat'] ?? ''));
+		$year = (strlen($ym) >= 4) ? (int)substr($ym, 0, 4) : (int)date('Y');
+		if ($year < 2000) {
+			$year = (int)date('Y');
+		}
+		if (!isset($byYear[$year])) {
+			$byYear[$year] = array();
+		}
+		$byYear[$year][$key] = $row;
+	}
+	foreach ($byYear as $year => $yearMap) {
+		$path = rkrk_stats_year_path($logArt, $year);
+		$existing = rkrk_stats_read_map($path, $logArt);
+		$merged = rkrk_stats_merge_maps($existing, $yearMap);
+		rkrk_stats_write_map($path, $logArt, $merged);
+	}
+	@rename($legacy, $bak);
+}
+
+/**
+ * @return array<int, array<string, string>>
+ */
+function rkrk_stats_load_site_rows()
+{
+	global $logfilelocation;
+	rkrk_stats_migrate_legacy('Site');
+	$rows = array();
+	$files = array();
+	$legacy = rkrk_stats_legacy_path('Site');
+	if (is_file($legacy)) {
+		$files[] = $legacy;
+	}
+	if (is_file($legacy . '.bak')) {
+		$files[] = $legacy . '.bak';
+	}
+	$glob = glob($logfilelocation . 'sitestats_*.csv');
+	if (is_array($glob)) {
+		foreach ($glob as $f) {
+			$files[] = $f;
+		}
+	}
+	$map = array();
+	foreach ($files as $f) {
+		$map = rkrk_stats_merge_maps($map, rkrk_stats_read_map($f, 'Site'));
+	}
+	foreach ($map as $row) {
+		$rows[] = $row;
+	}
+
+	return $rows;
+}
+
+function WriteToStatistic($Type, $Content, $Text1, $Text2, $Text3, $Text4, $LogArt = 'Site')
+{
+	global $logfilelocation, $WebFreigabe, $IPUsed;
+
+	$isSite = rkrk_stats_is_site($LogArt);
+	$year = (int)date('Y');
+	$monat = date('Ym');
+	$level = trim((string)$WebFreigabe);
+	$content = rkrk_stats_csv_cell($Content);
+	if ($content === '') {
+		return;
+	}
+	$lockFile = $logfilelocation . ($isSite ? 'sitestats.lock' : 'ipstats.lock');
+	rkrk_stats_with_lock($lockFile, function () use ($LogArt, $isSite, $year, $monat, $level, $content, $Text1, $IPUsed) {
+		rkrk_stats_migrate_legacy($LogArt);
+		$path = rkrk_stats_year_path($LogArt, $year);
+		$map = rkrk_stats_read_map($path, $LogArt);
+		$probe = array(
+			'Monat' => $monat,
+			'Level' => $level,
+			'Seite' => $isSite ? $content : '',
+			'IPNr' => $isSite ? '' : $content,
+		);
+		$key = rkrk_stats_row_key($probe, $LogArt);
+		if (isset($map[$key])) {
+			$map[$key]['Anzahl'] = (string)((int)($map[$key]['Anzahl'] ?? 0) + 1);
+			if (!$isSite && strcasecmp((string)$Text1, 'kill') === 0) {
+				$prov = (string)($map[$key]['Provider'] ?? '');
+				if (strpos($prov, 'KILLED') === false) {
+					$map[$key]['Provider'] = trim($prov . ' - KILLED');
+				}
 			}
-			//echo "Seite erkannt: " . $txt . "<br>";
-			$entryfound = true;
 		} else {
-			if ($LogArt=="Site") {
-				//Site
-				$txt = str_replace(Array("\0"," "), Array("",""), $StatLine[$header[0]] . ";" . $StatLine[$header[1]] .";" . $StatLine[$header[2]] .";" . $StatLine[$header[3]]) . chr(10);
+			if ($isSite) {
+				$map[$key] = array(
+					'Monat' => $monat,
+					'Level' => $level,
+					'Seite' => $content,
+					'Anzahl' => '1',
+				);
 			} else {
-				//IP log
-				if ($Text1=="kill") 
-					$addremark = " - KILLED";
-				else
-					$addremark = "";
-				$txt = str_replace(Array("\0"," "), Array("",""), $StatLine[$header[0]] . ";" . $StatLine[$header[1]] .";" . $StatLine[$header[2]] .";" . $StatLine[$header[3]].";" . $StatLine[$header[4]]. $addremark . ";" . $StatLine[$header[5]]) . chr(10);
+				$name = '??';
+				$provider = '';
+				if (isset($IPUsed[$content]) && is_array($IPUsed[$content])) {
+					if (!empty($IPUsed[$content]['Name'])) {
+						$name = (string)$IPUsed[$content]['Name'];
+					}
+					if (!empty($IPUsed[$content]['Provider'])) {
+						$provider = (string)$IPUsed[$content]['Provider'];
+					}
+				}
+				if (strcasecmp((string)$Text1, 'kill') === 0) {
+					$provider = trim($provider . ' - KILLED');
+				}
+				$map[$key] = array(
+					'Monat' => $monat,
+					'Level' => $level,
+					'IPNr' => $content,
+					'Pers' => $name,
+					'Provider' => $provider,
+					'Anzahl' => '1',
+				);
 			}
 		}
-		fwrite($myfile, $txt);
-		//fwrite($myfile, mb_convert_encoding( $txt, 'UTF-16LE', 'UTF-8'));
-	}
-	if (!$entryfound) {
-		if ($LogArt=="Site") {
-			//Site
-			$txt = date("Ym") . ";" . $WebFreigabe .";" . $Content .";1" . chr(10);
-		} else {
-			//IP log
-			if ($IPUsed[$Content]["Name"]!="") {
-				$Name=$IPUsed[$Content]["Name"];
-				$Provdier=$IPUsed[$Content]["Provider"];
-			} else {
-				$Name="??";
-				$Provdier="";
-			}
-			//IP log
-			if ($Text1=="kill") 
-				$addremark = " - KILLED";
-			else
-				$addremark = "";
-			$txt = date("Ym") . ";" . $WebFreigabe .";" . $Content . ";" . $Name . ";" . $Provdier . $addremark.";1" . chr(10);
-		}
-		fwrite($myfile, $txt);
-	}
-	fclose($myfile);
+		rkrk_stats_write_map($path, $LogArt, $map);
+	});
 }
 
 
@@ -3080,6 +3307,7 @@ function GetNameUser() {
 
 function WriteToLog($Type, $Page, $Text1, $Text2, $Text3, $Text4) {
 	global $logfilelocation, $DebugWork, $RKRKLocalLoactionMissionFiles, $CleanAgeOfFilesInDays, $WebFreigabe,$SessNme_RegisteredInitialen;
+	$GLOBALS['RKRK_PAGE_LOGGED'] = true;
 
 	$LogfileName = date("Ymd") . "_logfile.csv";
 	$LogfilePath = $logfilelocation.$LogfileName;
@@ -3125,33 +3353,22 @@ function CleanupOldFiles($ageInDays) {
 }
 
 function DeleteFilesOlderThan($dir , $files2delete, $ageInDays) {
-	global 	$RKRKSiteStatsCSV, $RKRKIPStatsCSV;
-
 	$filenames2delete = $dir. $files2delete;
-	$files = glob($filenames2delete); // To get a list of the files in the images directory
-	//echo "<br>AgeInDays: " . $ageInDays;
-	
-	//pre_r($files);
-	//delete files //
-	foreach($files as $file){ // To iterate through the files
+	$files = glob($filenames2delete);
+	if (!is_array($files)) {
+		return;
+	}
+
+	foreach($files as $file){
 		$now = strtotime("now");
-		
 		$filemtime=filemtime ($file);
-		$diff = time()-filemtime($file);
-		$days = round($diff/86400);
-		
-		//echo "Filetime: " .$filemtime . " - DeleteTime:  ". 60 * 60 * 24 * $ageInDays . " delta: " . (($now - $filemtime)/(60 * 60 * 24)) . " delete:" . ($now - $filemtime >= 60 * 60 * 24 * $ageInDays) . " - " . ($now - $filemtime >= 60 * 60 * 24 * $ageInDays) ."<br>";
-		
-		if(is_file($file)) {  //To check whether the filename is valid
-			// files nicht zu löschen
-			//echo "Basefilname : " . basename($file) . " - " . $RKRKSiteStatsCSV . "<br>";
-			//echo "Basefilname : " . basename($file) . " - " . $RKRKIPStatsCSV . "<br>";
-			if((basename($file)!= $RKRKSiteStatsCSV) and (basename($file)!= $RKRKIPStatsCSV)){
-			 
-				if ($now - $filemtime >= 60 * 60 * 24 * $ageInDays) { // 2 days
-					unlink($file); // To delete the file
-					//echo "deleted " . $file . "<br>";
-				}
+
+		if(is_file($file)) {
+			if (function_exists('rkrk_stats_is_protected_file') && rkrk_stats_is_protected_file(basename($file))) {
+				continue;
+			}
+			if ($now - $filemtime >= 60 * 60 * 24 * $ageInDays) {
+				unlink($file);
 			}
 		}
 	}
@@ -3175,7 +3392,8 @@ Function ChangeHeightInFilename($Filename, $NewHeight, $ToDrone, $WithExtension=
 	$MeaningFileName = GetMeaningFilename(basename($Filename));
 	$ext = pathinfo($Filename, PATHINFO_EXTENSION);
 	//echo " Filename " . basename($Filename) . "/" . ($MeaningFileName[4]/5) . " - " . round($MeaningFileName[4]/5,0) . "<br>";
-	if (((($MeaningFileName[4]??0)/5) == round(($MeaningFileName[4]??0)/5,0)) and ($MeaningFileName[4]??0)>0) {
+	$heightPart = (float)($MeaningFileName[4] ?? 0);
+	if ((($heightPart / 5) == round($heightPart / 5, 0)) and $heightPart > 0) {
 		$NewFilename = $MeaningFileName[0] .  "_" . $MeaningFileName[7] . "_" . $NewHeight . "_" . $MeaningFileName[5] . "_" . $MeaningFileName[6];
 	} else {
 		$NewFilename = pathinfo($Filename,PATHINFO_FILENAME)."_". $ToDrone."_H".$NewHeight;
@@ -3522,8 +3740,19 @@ function GetFlightHeightForAltDrone($CurDrone, $NewDrone, $Flightheight, $Parame
 	global $DroneSettings;
 	
 	if (array_key_exists($CurDrone,$DroneSettings) and array_key_exists($NewDrone,$DroneSettings)) {
-		$HighFactor= (tan($DroneSettings[$CurDrone][$Parameter]/360*pi())/tan($DroneSettings[$NewDrone][$Parameter]/360*pi()));
-		$NewFlightHeight = round(($HighFactor*$Flightheight)/$roundto,0)*$roundto;
+		$curAngle = (float)($DroneSettings[$CurDrone][$Parameter] ?? 0);
+		$newAngle = (float)($DroneSettings[$NewDrone][$Parameter] ?? 0);
+		$height = (float)$Flightheight;
+		$step = (float)$roundto;
+		if ($step == 0.0) {
+			$step = 5.0;
+		}
+		if ($newAngle == 0.0) {
+			$NewFlightHeight = $height;
+		} else {
+			$HighFactor = (tan($curAngle / 360 * pi()) / tan($newAngle / 360 * pi()));
+			$NewFlightHeight = round(($HighFactor * $height) / $step, 0) * $step;
+		}
 		//echo $CurDrone .  "(".$DroneSettings[$CurDrone][$Parameter] . "°)" . " -> " . $NewDrone .  "(".$DroneSettings[$NewDrone][$Parameter] . "°)" ." => Factor " . round($HighFactor ,2) . " => Height: " . $Flightheight . "m -> " . $NewFlightHeight . "m";
 	} else {
 		$NewFlightHeight=0;
@@ -4170,6 +4399,7 @@ function MissionLibraryButtons($AddUrl="", $AsForm=true) {
 	if (GetAccess("InternLinks")) {
 		$FirstInRow="";
 		$NextMission="";
+		$ExitNext=false;
 		$CurrentMission=$_SESSION[$SessNme_MissionDBSetting]; 
 
 		//get next Mission according to access rights
@@ -4227,18 +4457,12 @@ function MissionLibraryButtons($AddUrl="", $AsForm=true) {
 
 function GetSasionStartDate($Jahr)
 {
-	$FromDate = date("Y-m-d", strtotime("third monday " . $Jahr . "-04"));
-	$AdjFromDate = date("Y-m-d", strtotime("last monday " . date()));
-	//Adjust Date to current week
-	if 	(($AdjFromDate>$FromDate) and ($AdjFromDate<$ToDate))
-		$FromDate = $AdjFromDate;
-	return $FromDate;
+	return sprintf('%04d-04-01', (int)$Jahr);
 }
 
 function GetSasionEndDate($Jahr)
 {
-	$ToDate = date("Y-m-d",strtotime("third sunday " . $Jahr . "-07"));
-	return $ToDate;
+	return sprintf('%04d-07-31', (int)$Jahr);
 }
 
 function GetWeatherIcon ($Text) {

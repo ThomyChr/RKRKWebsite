@@ -788,34 +788,43 @@ function KopiereFeldDaten(&$Source, &$Target) {
 
 function VergleicheFeldDaten($Source, $Target) {
 	$Vergleich = true;
+	$val = function ($row, $key) {
+		return (is_array($row) && array_key_exists($key, $row)) ? $row[$key] : null;
+	};
+	$nested = function ($row, $key, $sub) {
+		if (!is_array($row) || !isset($row[$key]) || !is_array($row[$key]) || !array_key_exists($sub, $row[$key])) {
+			return null;
+		}
+		return $row[$key][$sub];
+	};
 	//echo " T: " .$Target["FeldID"] . " S: " .$Source["FeldID"] . "<br>" ;
-	$Vergleich = $Vergleich && ($Target["FeldID"] == $Source["FeldID"]);
+	$Vergleich = $Vergleich && ($val($Target, "FeldID") == $val($Source, "FeldID"));
 	//echo " T: " .$Target["JG"] . " S: " .$Source["JG"] . "<br>" ;
-	$Vergleich = $Vergleich && ($Target["JG"] 				== $Source["JG"]);
+	$Vergleich = $Vergleich && ($val($Target, "JG") 				== $val($Source, "JG"));
 	//echo " T: " .$Target["Feldname"] . " S: " .$Source["Feldname"] . "<br>" ;
-	$Vergleich = $Vergleich && ($Target["Feldname"] 		== $Source["Feldname"]);
+	$Vergleich = $Vergleich && ($val($Target, "Feldname") 		== $val($Source, "Feldname"));
 	//echo " T: " .$Target["Flurname"] . " S: " .$Source["Flurname"] . "<br>" ;
-	$Vergleich = $Vergleich and ($Target["Flurname"] 		== $Source["Flurname"]);
-	$Vergleich = $Vergleich and ($Target["GrundstueckID"] 	== $Source["GrundstueckID"]);
-	$Vergleich = $Vergleich and ($Target["Flugzeit"] 		== $Source["Flugzeit"]);
-	$Vergleich = $Vergleich and ($Target["Flaeche"] 			== $Source["Flaeche"]);
-	$Vergleich = $Vergleich and ($Target["Wegpunkte"] 		== $Source["Wegpunkte"]);
-	$Vergleich = $Vergleich and ($Target["Distanz"] 			== $Source["Distanz"]);
-	$Vergleich = $Vergleich and ($Target["Gemeinde"] 		== $Source["Gemeinde"]);
-	$Vergleich = $Vergleich and ($Target["Betrieb"] 			== $Source["Betrieb"]);
-	$Vergleich = $Vergleich and ($Target["Freigabe"] 		== $Source["Freigabe"]);
-	$Vergleich = $Vergleich and ($Target["Warnung"] 			== $Source["Warnung"]);
-	$Vergleich = $Vergleich and ($Target["Jaeger"] 			== $Source["Jaeger"]);
-	$Vergleich = $Vergleich and ($Target["Bemerkung"] 		== $Source["Bemerkung"]);
+	$Vergleich = $Vergleich and ($val($Target, "Flurname") 		== $val($Source, "Flurname"));
+	$Vergleich = $Vergleich and ($val($Target, "GrundstueckID") 	== $val($Source, "GrundstueckID"));
+	$Vergleich = $Vergleich and ($val($Target, "Flugzeit") 		== $val($Source, "Flugzeit"));
+	$Vergleich = $Vergleich and ($val($Target, "Flaeche") 			== $val($Source, "Flaeche"));
+	$Vergleich = $Vergleich and ($val($Target, "Wegpunkte") 		== $val($Source, "Wegpunkte"));
+	$Vergleich = $Vergleich and ($val($Target, "Distanz") 			== $val($Source, "Distanz"));
+	$Vergleich = $Vergleich and ($val($Target, "Gemeinde") 		== $val($Source, "Gemeinde"));
+	$Vergleich = $Vergleich and ($val($Target, "Betrieb") 			== $val($Source, "Betrieb"));
+	$Vergleich = $Vergleich and ($val($Target, "Freigabe") 		== $val($Source, "Freigabe"));
+	$Vergleich = $Vergleich and ($val($Target, "Warnung") 			== $val($Source, "Warnung"));
+	$Vergleich = $Vergleich and ($val($Target, "Jaeger") 			== $val($Source, "Jaeger"));
+	$Vergleich = $Vergleich and ($val($Target, "Bemerkung") 		== $val($Source, "Bemerkung"));
 	//$Vergleich = $Vergleich and ($Target["Flug"] 			== $Source["Flug"]);
 	//$Vergleich = $Vergleich and ($Target["Funde"] 			== $Source["Funde"]);
 	//$Vergleich = $Vergleich and ($Target["StdFlughohe"] 	== $Source["StdFlughohe"]);
-	$Vergleich = $Vergleich and ($Target["Bauer"] 			== $Source["Bauer"]);
-	$Vergleich = $Vergleich and ($Target["Notiz"] 			== $Source["Freigabe"]);
-	$Vergleich = $Vergleich and ($Target["Grundstueckdaten"]["Startplatz"]  		== $Source["Grundstueckdaten"]["Startplatz"] );
-	$Vergleich = $Vergleich and ($Target["Grundstueckdaten"]["Zentrum"]  		== $Source["Grundstueckdaten"]["Zentrum"] );
-	$Vergleich = $Vergleich and ($Target["Flaechendaten"] 	== $Source["Flaechendaten"]);
-	$Vergleich = $Vergleich and ($Target["Flugweg"] 			== $Source["Flugweg"]);
+	$Vergleich = $Vergleich and ($val($Target, "Bauer") 			== $val($Source, "Bauer"));
+	$Vergleich = $Vergleich and ($val($Target, "Notiz") 			== $val($Source, "Freigabe"));
+	$Vergleich = $Vergleich and ($nested($Target, "Grundstueckdaten", "Startplatz")  		== $nested($Source, "Grundstueckdaten", "Startplatz") );
+	$Vergleich = $Vergleich and ($nested($Target, "Grundstueckdaten", "Zentrum")  		== $nested($Source, "Grundstueckdaten", "Zentrum") );
+	$Vergleich = $Vergleich and ($val($Target, "Flaechendaten") 	== $val($Source, "Flaechendaten"));
+	$Vergleich = $Vergleich and ($val($Target, "Flugweg") 			== $val($Source, "Flugweg"));
 	return $Vergleich;
 }
 

@@ -1650,14 +1650,10 @@ function rkrkInitFilesCollapse(){
 	// Paramters
 	// ===========================================
 
-if (isset($_GET["EnableDelete"])) {
-   if (strtolower($_GET["EnableDelete"])=="on") {
-		//echo "EnableDelete=on";
- 		$EnableDelete= true;
-	} else {
-		//echo "EnableDelete=of";
-		$EnableDelete= false;
-	}
+if (isset($_GET["EnableDelete"]) && strtolower((string)$_GET["EnableDelete"])=="on") {
+	$EnableDelete= true;
+} else {
+	$EnableDelete= false;
 }
 
 IF ($EnableDelete) {
@@ -1676,23 +1672,15 @@ if (isset($_GET["DoSafe"])) {
 	$dosafe= false;
 }
 
-if (isset($_GET["EnableNeu"])) {
-   if ($_GET["EnableNeu"]=="on") {
-		//echo "EnableNeu=on";
- 		$EnableNeu= true;
-	} else {
-		//echo "EnableNeu=off";
-		$EnableNeu= false;
-	}
+if (isset($_GET["EnableNeu"]) && $_GET["EnableNeu"]=="on") {
+	$EnableNeu= true;
+} else {
+	$EnableNeu= false;
 }
-if (isset($_GET["EnableCon"])) {
-   if ($_GET["EnableCon"]=="on") {
-		//echo "EnableCon=on";
- 		$EnableCon= true;
-	} else {
-		//echo "EnableCon=off";
-		$EnableCon= false;
-	}
+if (isset($_GET["EnableCon"]) && $_GET["EnableCon"]=="on") {
+	$EnableCon= true;
+} else {
+	$EnableCon= false;
 }
 
 IF ($EnableCon) {
@@ -1707,14 +1695,10 @@ IF ($EnableNeu) {
 	$EnableNeuSet = "EnableNeu=off";
 }
 
-if (isset($_GET["Modus"])) {
-	if ($_GET["Modus"]=="on") {
-		//echo "Modus=on";
-		$Modus= true;
-	} else {
-		//echo "Modus=off";
-		$Modus= false;
-	}
+if (isset($_GET["Modus"]) && $_GET["Modus"]=="on") {
+	$Modus= true;
+} else {
+	$Modus= false;
 }
 
 IF ($Modus) {
@@ -2161,7 +2145,6 @@ if (($ConFile!="") and ($ConTo!="")) {
 			// safe file
 			//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 			$df = fopen($filepath, 'w');
-			file_put_contents($df, "");
 			fputs($df, $filecontent);
 			fclose($df);
 		} else {
@@ -2210,6 +2193,8 @@ if (($ConFile!="") and ($ConTo!="")) {
 	}
 	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 		$FontSize= $_POST["FontSize"];
+	} else {
+		$FontSize= "100%";
 	}
 
 
@@ -2237,8 +2222,6 @@ if (($ConFile!="") and ($ConTo!="")) {
 // HEADER FORM
 // ===========================================
 
-//removes what does not belong to tick list
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 //form to change setting
 
@@ -2368,7 +2351,7 @@ echo "</div>";
 		// ===========================================
 		$i=1;
 		//Write to LOGfile
-		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Edit Fluege ",$FeldID, $RKRKMissionSelected,"");
+		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Edit Fluege ", $FeldID ?? '', $RKRKMissionSelected,"");
 		
 		$outputdata = Array();
 		
@@ -2757,15 +2740,15 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 			echo "<td class='rkrk-col-secondary rkrk-col-files' data-summary-action='1'>" .chr(10);
 			if (GetAccess("GoogleMapLocation")){
 				//Zeig Parkplatz an falls definiert, ansonsten den Startpunkt)
-				if ($Feldkatalog[explode("-",$dataline['Feld'])[0]][$dataline['Feld']]["Grundstueckdaten"]["Parkplatz"]!="") {
-					$Location = explode("," ,$Feldkatalog[explode("-",$dataline['Feld'])[0]][$dataline['Feld']]["Grundstueckdaten"]["Parkplatz"]);
-
+				$gs = $Feldkatalog[explode("-",$dataline['Feld'])[0]][$dataline['Feld']]["Grundstueckdaten"] ?? array();
+				if (($gs["Parkplatz"] ?? '') != "") {
+					$Location = explode("," ,$gs["Parkplatz"]);
 				} else {
-					$Location = explode("," ,$Feldkatalog[explode("-",$dataline['Feld'])[0]][$dataline['Feld']]["Grundstueckdaten"]["Startplatz"]);
+					$Location = explode("," ,(string)($gs["Startplatz"] ?? ''));
 				}
 					
-				$StartLat = $Location[0];
-				$StartLon = $Location[1];
+				$StartLat = $Location[0] ?? '';
+				$StartLon = $Location[1] ?? '';
 				
 				if ($StartLat != "" && $StartLon !='') {
 					echo "<!--startpunkt--><a href='https://maps.google.ch/?q=". trim($StartLon) . " ," . trim($StartLat) . "&t=k'><img src='" . $IconLoc . "\startpnt.png' height='" . $ButtonHeight ."' title='Startpunkt File " . $dataline['Feld'] . " auf GoogleMap'></a> " . chr(10);

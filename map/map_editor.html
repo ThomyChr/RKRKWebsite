@@ -328,10 +328,12 @@
       font-size: 13px;
     }
     .style-box summary {
-      cursor: pointer;
+      cursor: move;
       font-weight: 600;
       padding: 8px 10px;
       user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
     .style-box-content {
       padding: 0 10px 10px;
@@ -426,6 +428,8 @@
       padding: 10px 28px 10px 12px;
       min-width: 220px;
       max-width: 420px;
+      max-height: min(60vh, 420px);
+      overflow: auto;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
       font-size: 12px;
       color: #1b3552;
@@ -437,6 +441,19 @@
     .rkrk-dabs-popup .pop-desc {
       line-height: 1.35;
       margin-top: 6px;
+      overflow-wrap: anywhere;
+    }
+    .rkrk-dabs-popup .pop-kv {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 10px;
+      margin-top: 8px;
+    }
+    .rkrk-dabs-popup .pop-k {
+      color: #64748b;
+      font-weight: 600;
+    }
+    .rkrk-dabs-popup .pop-v {
       overflow-wrap: anywhere;
     }
     .rkrk-dabs-popup .pop-close {
@@ -722,6 +739,10 @@
         <select id="drawingList"></select>
         <button id="loadDrawingBtn" type="button" title="Ausgewählte Zeichnung laden">Laden</button>
         <button id="deleteDrawingBtn" type="button" title="Ausgewählte Zeichnung löschen">Löschen</button>
+        <p class="small" id="drawingFileHint" hidden>Extern (PC / USB / Mail)</p>
+        <button id="exportDrawingFileBtn" type="button" hidden title="Zeichnung als Datei auf diesem Gerät speichern">Datei speichern</button>
+        <button id="importDrawingFileBtn" type="button" hidden title="Zeichnung von einer Datei laden">Datei laden</button>
+        <input type="file" id="importDrawingFileInput" accept=".json,.rkrkoverlay,application/json" hidden />
         <p class="small" id="drawingRetentionHint">Speicherfrist: nach 30 Tagen Archiv, nach 90 Tagen Löschung (KML &amp; Zeichnungen).</p>
         <p class="small" id="drawingStatus"></p>
         <p class="small" id="storagePathInfo" style="display:none;"></p>
@@ -733,15 +754,16 @@
       <div class="panel-details-content">
         <p class="small" id="objEditorHelp">
           <strong>Kurzbedienung:</strong><br>
-          1. Objekttyp w&auml;hlen, dann <em>Zeichnen</em> (sonst Karte navigieren) / <em>Fixieren</em> / <em>Verwerfen</em> / Undo.<br>
-          2. Nur ein Objekt gleichzeitig bearbeiten; Fixierte erst nach Best&auml;tigung &auml;ndern.<br>
-          3. unter <em>Objektliste</em>; Zeichnungen speichern darunter.<br>
-          4. Raster: Kachelfarben per Doppelklick/Rechtsklick (gr&uuml;n&rarr;rot&rarr;orange&rarr;gelb&rarr;grau&rarr;durchsichtig).<br>
-          5. Stileinstellungen und SwissTopo-Overlays (inkl. Transparenz) in der Seitenleiste. Wohngebiete nach AuLaV, swissALTI3D und swissSURFACE3D Relief sind standard aus.<br>
-          6. Projekttitel: Doppelklick auf Karte/Header (gilt f&uuml;r PDF/KML/geo.admin). Massstab unten links: Doppelklick zum Eingeben (z.B. 1:15'000).<br>
-          7. Broadcast/Edit nur mit URL-Code <code>ADMIN</code>, <code>KOS</code> oder <code>INSTR</code> (oben rechts).<br>
-          8. Sektion <em>Export &amp; Teilen</em>: nichts davon ist Live (Snapshot). <em>KML</em> = Earth/geo.admin. <em>DJI Layer</em> = MBTiles direkt auf die RC (Profil → Karteneinstellungen → Custom Layer). SwissTopo, PDF (Massstab Ansicht / 1:10'000 / 1:25'000 / 1:50'000 auf A4, 100&nbsp;% drucken) und Ansicht-Link (kein Broadcast zu DJI).<br>
-          9. Basemap: Karte, Satellit oder S/W (SwissTopo schwarz-weiss).
+          1. Objekttyp w&auml;hlen, dann <em>Zeichnen</em> (sonst Karte navigieren). <em>Fixieren</em> schliesst die Bearbeitung ab und speichert das Objekt fest in der Liste (Badge &laquo;fix&raquo;). <em>Verwerfen</em> / Undo nimmt &Auml;nderungen zur&uuml;ck.<br>
+          2. Nur ein Objekt gleichzeitig bearbeiten. Ein fixiertes Objekt &auml;ndern Sie erst nach <em>Bearbeiten</em> in der Objektliste.<br>
+          3. <em>Objektliste</em>: Name anklicken zum Umbenennen (Enter &uuml;bernimmt, Esc bricht ab). Auge = sichtbar. Farb-Icon = Resultatfl&auml;chen (Raster) bzw. Fl&auml;chenf&auml;rbung (Polygon) ein/aus &mdash; die Farben bleiben gespeichert. Zeichnungen darunter speichern/laden.<br>
+          4. Raster: Kachelfarben per Doppelklick/Rechtsklick auf die Beschriftung (gr&uuml;n&rarr;rot&rarr;orange&rarr;gelb&rarr;grau&rarr;durchsichtig). Winkel nur w&auml;hrend der Bearbeitung. H&auml;kchen &laquo;Resultatfl&auml;chen anzeigen&raquo;.<br>
+          5. Polygon: H&auml;kchen &laquo;Fl&auml;chenf&auml;rbung anzeigen&raquo; blendet die F&uuml;llfarbe aus, ohne sie zu l&ouml;schen.<br>
+          6. Stileinstellungen und SwissTopo-Overlays (inkl. Transparenz) in der Seitenleiste. Wohngebiete nach AuLaV, swissALTI3D und swissSURFACE3D Relief sind standard aus. SwissTopo-Fenster: Doppelklick andockt es oben rechts.<br>
+          7. Projekttitel: Doppelklick auf Karte/Header (gilt f&uuml;r PDF/KML/geo.admin). Massstab unten links: Doppelklick zum Eingeben (z.B. 1:15'000).<br>
+          8. Broadcast/Edit nur mit URL-Code <code>ADMIN</code>, <code>KOS</code> oder <code>INSTR</code> (oben rechts). Der Men&uuml;punkt Overlay Editor &ouml;ffnet mit <code>?ADMIN</code>.<br>
+          9. Sektion <em>Export &amp; Teilen</em>: nichts davon ist Live (Snapshot). <em>KML</em> = Earth/geo.admin. <em>DJI Layer</em> = MBTiles direkt auf die RC (Profil → Karteneinstellungen → Custom Layer). SwissTopo, PDF (Massstab Ansicht / 1:10'000 / 1:25'000 / 1:50'000 auf A4, 100&nbsp;% drucken) und Ansicht-Link (kein Broadcast zu DJI).<br>
+          10. Basemap: Karte, Satellit oder S/W (SwissTopo schwarz-weiss).
         </p>
         <p class="small obj-editor-help-schulung">
           <a id="objEditorHelpSchulung" href="help/202609%20RKRSplus%20Overlay%20Editor.pdf" target="_blank" rel="noopener" title="Schulung (PDF)">
@@ -786,13 +808,13 @@
     <div class="overlay-box-content">
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="electrical" /> Elektrische Anlagen</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="electrical" /><span data-overlay-opacity-label="electrical">100%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="boundaries" /> Kantons, Gemeindegrenzen</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="boundaries" /><span data-overlay-opacity-label="boundaries">100%</span></span></div>
-      <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="hunting" /> Jagdbanngebiete</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="50" data-overlay-opacity-key="hunting" /><span data-overlay-opacity-label="hunting">50%</span></span></div>
+      <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill" title="Jagdbanngebiete AuLaV (Swisstopo/BAFU)"><input class="overlay-toggle" type="checkbox" data-overlay-key="hunting" /> Jagdbanngebiete AuLaV</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="50" data-overlay-opacity-key="hunting" /><span data-overlay-opacity-label="hunting">50%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="rpas" /> RPAS Karte</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="50" data-overlay-opacity-key="rpas" /><span data-overlay-opacity-label="rpas">50%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="uasZones" /> UAS Aktivitätszonen</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="50" data-overlay-opacity-key="uasZones" /><span data-overlay-opacity-label="uasZones">50%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill" title="Wohngebiete nach AuLaV (BAZL, standard aus)"><input class="overlay-toggle" type="checkbox" data-overlay-key="aulavWohngebiete" /> Wohngebiete nach AuLaV</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="50" data-overlay-opacity-key="aulavWohngebiete" /><span data-overlay-opacity-label="aulavWohngebiete">50%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill" title="swissALTI3D multidirektionales Relief (standard aus)"><input class="overlay-toggle" type="checkbox" data-overlay-key="alti3dRelief" /> swissALTI3D Relief</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="70" data-overlay-opacity-key="alti3dRelief" /><span data-overlay-opacity-label="alti3dRelief">70%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill" title="swissSURFACE3D multidirektionales Relief (standard aus)"><input class="overlay-toggle" type="checkbox" data-overlay-key="surface3dRelief" /> swissSURFACE3D Relief</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="70" data-overlay-opacity-key="surface3dRelief" /><span data-overlay-opacity-label="surface3dRelief">70%</span></span></div>
-      <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="dabs" /> DABS bis 120 m AGL</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="55" data-overlay-opacity-key="dabs" /><span data-overlay-opacity-label="dabs">55%</span></span></div>
+      <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="dabs" /> DABS bis 200 m AGL</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="75" data-overlay-opacity-key="dabs" /><span data-overlay-opacity-label="dabs">75%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="obstacles" /> Luftfahrthindernisse</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="obstacles" /><span data-overlay-opacity-label="obstacles">100%</span></span></div>
       <div class="overlay-option overlay-subopt" id="obstacleHeightsRow"><label class="rkrk-sel rkrk-reg-pill"><input type="checkbox" id="obstacleHeights" checked disabled /> Höhenangaben</label></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="landregister" /> Grundbuchinformationen</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="landregister" /><span data-overlay-opacity-label="landregister">100%</span></span></div>
@@ -800,6 +822,7 @@
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="nature" /> Naturschutzgebiete</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="nature" /><span data-overlay-opacity-label="nature">100%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="roadnames" /> Strassennamen</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="roadnames" /><span data-overlay-opacity-label="roadnames">100%</span></span></div>
       <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill"><input class="overlay-toggle" type="checkbox" data-overlay-key="cableways" /> Seilbahnen</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="cableways" /><span data-overlay-opacity-label="cableways">100%</span></span></div>
+      <div class="overlay-option"><label class="rkrk-sel rkrk-reg-pill" title="SwissTLM3D Wanderwege (Swisstopo)"><input class="overlay-toggle" type="checkbox" data-overlay-key="wanderwege" /> Wanderwege</label><span class="overlay-opacity"><input type="range" min="0" max="100" step="5" value="100" data-overlay-opacity-key="wanderwege" /><span data-overlay-opacity-label="wanderwege">100%</span></span></div>
       <div class="overlay-kml-section" id="overlayKmlSection">
         <div class="overlay-kml-title">KML-Layer</div>
         <div class="overlay-kml-actions">
@@ -981,7 +1004,7 @@
   </details>
 
   <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
-  <script src="rkrk_swiss_overlays.js?v=20260906a"></script>
+  <script src="rkrk_swiss_overlays.js?v=20260917dabs1"></script>
   <script>
     const exportTypeEl = document.getElementById("exportType");
     const circlesSettingsEl = document.getElementById("circlesSettings");
@@ -1092,6 +1115,7 @@
     let uasCtl = null;
     let uasLabelCtl = null;
     let obstInfoCtl = null;
+    let overlayInfoCtl = null;
     let previewActive = false;
     /** Raster/Kreis: Kartenklick setzt Basispunkt erst nach «Zeichnen».
      *  var (nicht let): muss global für rkrk_map_obj_features.js sichtbar sein. */
@@ -1160,9 +1184,9 @@
         ]
       },
       hunting: {
-        label: "Jagdbanngebiete",
-        fixedLayerIds: ["ch.bafu.jagdbanngebiete"],
-        searches: [{ text: "Jagdbanngebiete", tokens: ["jagdbann"] }]
+        label: "Jagdbanngebiete AuLaV",
+        fixedLayerIds: ["ch.bafu.schutzgebiete-aulav_jagdbanngebiete"],
+        searches: [{ text: "Jagdbanngebiete AuLaV", tokens: ["aulav", "jagdbann"] }]
       },
       rpas: {
         label: "RPAS Karte",
@@ -1205,7 +1229,7 @@
         ]
       },
       dabs: {
-        label: "DABS bis 120 m AGL",
+        label: "DABS bis 200 m AGL",
         kind: "dabs"
       },
       obstacles: {
@@ -1243,6 +1267,11 @@
         label: "Seilbahnen",
         fixedLayerIds: ["ch.swisstopo.bahnen-winter", "ch.swisstopo.swisstlm3d-uebrigerverkehr"],
         searches: [{ text: "bahnen-winter", tokens: ["bahnen-winter"] }]
+      },
+      wanderwege: {
+        label: "Wanderwege",
+        fixedLayerIds: ["ch.swisstopo.swisstlm3d-wanderwege"],
+        searches: [{ text: "Wanderwege", tokens: ["wanderwege"] }]
       }
     };
 
@@ -1844,6 +1873,13 @@
         const closeBtn = document.getElementById("dabsPopupClose");
         if (closeBtn) closeBtn.addEventListener("click", hideDabsPopup);
       }
+      if (window.RkrkSwissOverlays && typeof window.RkrkSwissOverlays.attachMapIdentify === "function") {
+        overlayInfoCtl = window.RkrkSwissOverlays.attachMapIdentify(map, {
+          popupOverlay: dabsPopupOverlay,
+          getLayerIds: collectEnabledIdentifyLayerIds
+        });
+        overlayInfoCtl.enable();
+      }
 
       map.getInteractions().forEach((interaction) => {
         if (interaction instanceof ol.interaction.DoubleClickZoom) {
@@ -1859,6 +1895,8 @@
       labelPointsSource = new ol.source.Vector();
       const markerLayer = new ol.layer.Vector({
         source: markerSource,
+        zIndex: 205,
+        properties: { rkrkEditorObject: true },
         style: () => {
           const styles = getEditorStyles();
           const isFlightStartSelected = highlightStartForFlight && Array.isArray(flightStartLonLat) && flightStartLonLat.length === 2;
@@ -1872,12 +1910,14 @@
         }
       });
       map.addLayer(markerLayer);
-      map.addLayer(new ol.layer.Vector({ source: previewSource }));
-      map.addLayer(new ol.layer.Vector({ source: polygonSource }));
-      map.addLayer(new ol.layer.Vector({ source: flightCoverageSource, zIndex: 3 }));
-      map.addLayer(new ol.layer.Vector({ source: flightPathSource }));
+      map.addLayer(new ol.layer.Vector({ source: previewSource, zIndex: 205, properties: { rkrkEditorObject: true } }));
+      map.addLayer(new ol.layer.Vector({ source: polygonSource, zIndex: 205, properties: { rkrkEditorObject: true } }));
+      map.addLayer(new ol.layer.Vector({ source: flightCoverageSource, zIndex: 200, properties: { rkrkEditorObject: true } }));
+      map.addLayer(new ol.layer.Vector({ source: flightPathSource, zIndex: 200, properties: { rkrkEditorObject: true } }));
       map.addLayer(new ol.layer.Vector({
-        source: labelPointsSource
+        source: labelPointsSource,
+        zIndex: 205,
+        properties: { rkrkEditorObject: true }
       }));
 
       map.on("singleclick", (evt) => {
@@ -1889,7 +1929,15 @@
           if (showDabsPopupAtEvent(evt)) {
             return;
           }
-          if (window.RkrkSwissOverlays && typeof window.RkrkSwissOverlays.runIdentifyChain === "function") {
+          const kmlHit = findImportedKmlFeatureAtPixel(evt.pixel);
+          if (overlayInfoCtl && typeof overlayInfoCtl.showAtEvent === "function") {
+            overlayInfoCtl.showAtEvent(evt).then((hit) => {
+              if (hit) return;
+              if (kmlHit) showImportedKmlPopup(evt.coordinate, kmlHit);
+            });
+          } else if (kmlHit) {
+            showImportedKmlPopup(evt.coordinate, kmlHit);
+          } else if (window.RkrkSwissOverlays && typeof window.RkrkSwissOverlays.runIdentifyChain === "function") {
             window.RkrkSwissOverlays.runIdentifyChain(evt, [uasCtl, obstInfoCtl]);
           }
         }
@@ -2337,6 +2385,56 @@
       return matched ? matched.layerId : candidates[0].layerId;
     }
 
+    function collectEnabledIdentifyLayerIds() {
+      const ids = [];
+      Object.keys(overlayDefinitions).forEach((key) => {
+        const toggle = document.querySelector(`.overlay-toggle[data-overlay-key="${key}"]`);
+        if (!toggle || !toggle.checked) return;
+        const def = overlayDefinitions[key] || {};
+        if (def.kind === "dabs") return;
+        if (key === "alti3dRelief" || key === "surface3dRelief") return;
+        const resolved = (Array.isArray(overlayResolvedLayerIds[key]) && overlayResolvedLayerIds[key].length)
+          ? overlayResolvedLayerIds[key]
+          : (Array.isArray(def.fixedLayerIds) ? def.fixedLayerIds : []);
+        resolved.forEach((id) => {
+          const layerId = String(id || "").trim();
+          if (layerId && ids.indexOf(layerId) < 0) ids.push(layerId);
+        });
+      });
+      return ids;
+    }
+
+    function findImportedKmlFeatureAtPixel(pixel) {
+      if (!map || !pixel) return null;
+      let hit = null;
+      map.forEachFeatureAtPixel(pixel, (feature, layer) => {
+        if (!hit && layer && typeof layer.get === "function" && layer.get("rkrkImportedKml")) {
+          hit = feature;
+        }
+      }, { hitTolerance: 8 });
+      return hit;
+    }
+
+    function showImportedKmlPopup(coordinate, feature) {
+      const el = document.getElementById("dabsPopup");
+      const body = document.getElementById("dabsPopupBody");
+      if (!el || !body || !dabsPopupOverlay || !feature) return false;
+      const name = String(feature.get("name") || feature.get("Name") || feature.get("layerName") || "").trim();
+      const descRaw = String(feature.get("description") || feature.get("Description") || "").trim();
+      let html = '<div class="pop-title">' + escapeDabsPopupText(name || "KML-Objekt") + "</div>";
+      if (descRaw) {
+        const descHtml = /<[a-z][\s\S]*>/i.test(descRaw)
+          ? descRaw.replace(/<script[\s\S]*?<\/script>/gi, "")
+          : escapeDabsPopupText(descRaw).replace(/\n/g, "<br>");
+        html += '<div class="pop-desc">' + descHtml + "</div>";
+      }
+      html += '<div class="pop-desc"><i>KML-Layer</i></div>';
+      body.innerHTML = html;
+      el.style.display = "block";
+      dabsPopupOverlay.setPosition(coordinate);
+      return true;
+    }
+
     async function resolveOverlayLayerIds(key) {
       if (overlayResolvedLayerIds[key]) {
         return overlayResolvedLayerIds[key];
@@ -2413,7 +2511,7 @@
       if (bits.length) html += '<div class="pop-desc">' + bits.join(" · ") + "</div>";
       if (remark) html += '<div class="pop-desc"><b>Bemerkung</b><br>' + remark + "</div>";
       if (notam) html += '<div class="pop-desc">NOTAM ' + notam + "</div>";
-      html += '<div class="pop-desc"><i>Nur Segment GND–120 m AGL. Quelle: Skyguide DABS, ersetzt keine NOTAMs.</i></div>';
+      html += '<div class="pop-desc"><i>Nur Segment GND–200 m AGL. Quelle: Skyguide DABS, ersetzt keine NOTAMs.</i></div>';
       const verLine = dabsVersionLine(feature);
       if (verLine) html += '<div class="pop-desc">' + escapeDabsPopupText(verLine) + "</div>";
       return html;
@@ -2426,18 +2524,18 @@
       const showLabel = !!name && Number.isFinite(res) && res < 140;
       return new ol.style.Style({
         stroke: new ol.style.Stroke({
-          color: "#cc0000",
-          width: isPoly ? 2.8 : 2.2,
+          color: "#8b0000",
+          width: isPoly ? 3.4 : 2.8,
           lineJoin: "round",
           lineDash: isPoly ? undefined : [7, 5]
         }),
-        fill: new ol.style.Fill({ color: isPoly ? "rgba(204,0,0,0.10)" : "rgba(204,0,0,0.05)" }),
+        fill: new ol.style.Fill({ color: isPoly ? "rgba(180,0,0,0.36)" : "rgba(180,0,0,0.26)" }),
         text: showLabel
           ? new ol.style.Text({
               text: name,
-              font: "bold 12px sans-serif",
-              fill: new ol.style.Fill({ color: "#cc0000" }),
-              stroke: new ol.style.Stroke({ color: "rgba(255,255,255,0.95)", width: 3 }),
+              font: "bold 13px sans-serif",
+              fill: new ol.style.Fill({ color: "#7a0000" }),
+              stroke: new ol.style.Stroke({ color: "rgba(255,255,255,0.95)", width: 4 }),
               overflow: true
             })
           : undefined
@@ -2531,9 +2629,9 @@
         const skipped = Number(meta.skipped_high) || 0;
         const polyN = Number(meta.polygons);
         const circN = Number(meta.circles);
-        let shapeBit = features.length + " Gebiete bis 120 m AGL";
+        let shapeBit = features.length + " Gebiete bis 200 m AGL";
         if (Number.isFinite(polyN) && Number.isFinite(circN) && (polyN + circN) > 0) {
-          shapeBit = polyN + " Polygone, " + circN + " Kreise bis 120 m AGL";
+          shapeBit = polyN + " Polygone, " + circN + " Kreise bis 200 m AGL";
         }
         overlayStatusEl.textContent = "DABS " + (ver || "heute") + ": " + shapeBit
           + (skipped ? " (" + skipped + " höher ausgeblendet)" : "");
@@ -2628,6 +2726,11 @@
         });
         overlayLayersByKey[key] = layers;
         loadDabsOverlay();
+        try {
+          if (typeof window.__rkrkRaiseEditorObjectLayers === "function") {
+            window.__rkrkRaiseEditorObjectLayers();
+          }
+        } catch (_) { /* noop */ }
         return;
       }
       const layerIds = await resolveOverlayLayerIds(key);
@@ -2678,6 +2781,11 @@
       layers.forEach((layer) => map.addLayer(layer));
       overlayLayersByKey[key] = layers;
       overlayStatusEl.textContent = `${definition.label}: ${layerIds.join(", ")}`;
+      try {
+        if (typeof window.__rkrkRaiseEditorObjectLayers === "function") {
+          window.__rkrkRaiseEditorObjectLayers();
+        }
+      } catch (_) { /* noop */ }
     }
 
     function updateStyleSectionVisibility() {
@@ -4123,6 +4231,11 @@
       } else {
         gridCellFillCycleMap[k] = cur + 1;
       }
+      const showEl = document.getElementById("objGridShowResultFills");
+      if (showEl && !showEl.checked) {
+        showEl.checked = true;
+        try { showEl.dispatchEvent(new Event("change")); } catch (_) { /* noop */ }
+      }
     }
     window.cycleGridCellFill = cycleGridCellFill;
 
@@ -4214,6 +4327,10 @@
     }
 
     function getGridCellFillRgbaForPreview(style, n, e) {
+      const showEl = document.getElementById("objGridShowResultFills");
+      if (showEl && !showEl.checked) {
+        return hexToRgba("#ffffff", GRID_NEUTRAL_FILL_PICK_ALPHA);
+      }
       const k = gridCellKey(n, e);
       const idx = k ? gridCellFillCycleMap[k] : undefined;
       if (idx === undefined) {
@@ -5220,7 +5337,13 @@
             width: glowActive ? Math.max(style.lineWidth + 1, 3) : style.lineWidth,
             lineDash: [8, 6]
           }),
-          fill: new ol.style.Fill({ color: hexToRgba(style.fillColor, glowActive ? Math.max(style.fillOpacity, 0.3) : style.fillOpacity) })
+          fill: new ol.style.Fill({ color: hexToRgba(style.fillColor, (function () {
+            const showEl = document.getElementById("objPolyShowFill");
+            if (showEl && !showEl.checked) {
+              return (typeof GRID_NEUTRAL_FILL_PICK_ALPHA === "number") ? GRID_NEUTRAL_FILL_PICK_ALPHA : 0.012;
+            }
+            return glowActive ? Math.max(style.fillOpacity, 0.3) : style.fillOpacity;
+          })()) })
         }));
         polygonSource.addFeature(polygonFeature);
       } else if (polygonVertices.length >= 2) {

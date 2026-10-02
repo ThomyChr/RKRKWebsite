@@ -54,6 +54,7 @@ function kmlfooter() {
 
 Function kml_flugfeld_style($StyleName, $AreaColor, $AreaWidth, $LineColor, $Scale, $Target, $Condition) {
 	if ($Condition) {
+		$output = "";
 		$output .=  '  <!-- ===== STYLE ' . $StyleName. ' ====== -->' . Chr(10);
 		$output .=  '    <Style id=' . Chr(34) . $StyleName . Chr(34) . '>' . Chr(10);
 		$output .=  '      <LineStyle>' . Chr(10);
@@ -71,6 +72,7 @@ Function kml_flugfeld_style($StyleName, $AreaColor, $AreaWidth, $LineColor, $Sca
 
 Function kml_flugpfad_style($StyleName, $LineColor, $AreaColor,  $LineWidth,  $Target,  $Condition) {
 	if ($Condition) {
+		$output = "";
 		$output .=  '  <!-- ===== STYLE  ' . $StyleName. ' ====== -->' . Chr(10);
 		$output .=  '    <Style id=' . Chr(34) . $StyleName . Chr(34) . '>' . Chr(10);
 		$output .=  '      <LineStyle>' . Chr(10);
@@ -119,6 +121,7 @@ Function kml_flugpfad_style($StyleName, $LineColor, $AreaColor,  $LineWidth,  $T
 Function kml_POI_style($StyleName, $Icon ,$IconColor, $IconScale, $LabelColor, $Scale, $Target ,$Condition) {
 	global $NewMapGeoAdminPics;
 	if ($Condition) {
+		$output = "";
 		$output .=  '  <!-- ===== STYLE  ' . $StyleName. ' ====== -->' . Chr(10);
 		$output .=  '    <Style id=' . Chr(34) . $StyleName . Chr(34) . '>' . Chr(10);
 		$output .=  '      <IconStyle>' . Chr(10);
@@ -573,7 +576,7 @@ switch ($Mapstyle) {
 	$StyleTypeList["Flugverbotszone"] 	=  kml_Area_style("Flugverbotszone",$FlugverbotRandColor, 1, $FlugverbotAreaColor, 1, 1, $Target ,true);
 	$StyleTypeList["70mFlugzone"]	 	=  kml_Area_style("70mFlugzone",$Fz70mRandColor, 1, $Fz70mAreaColor, 1, 1, $Target ,true);
 	$StyleTypeList["120mFlugzone"]	 	=  kml_Area_style("120mFlugzone",$Fz120mRandColor, 1, $Fz120mAreaColor, 1, 1, $Target ,true);
-	$StyleTypeList["150mFlugzone"]	 	=  kml_Area_style("150mFlugzone",$FZ150mRandColor, 1, $Fz150mAreaColor, 1, 1, $Target ,true);
+	$StyleTypeList["150mFlugzone"]	 	=  kml_Area_style("150mFlugzone",$Fz150mRandColor, 1, $Fz150mAreaColor, 1, 1, $Target ,true);
 	$StyleTypeList["Nachtflugzone"]	 	=  kml_Area_style("Nachtflugzone",$NachtFlugRandColor, 1, $NachtFlugAreaColor, 1, 1, $Target ,true);
 
 //	FZO: Flight Zone Options
@@ -704,7 +707,7 @@ switch ($FlightZoneOptions) {
 	
    foreach ($ListOfStylesUsed as $key => $value)	{
 	 //$output .= "<!--  " . $key . " -->";
-	 $output .= $StyleTypeList[$key];	
+	 $output .= $StyleTypeList[$key] ?? '';	
 	 //$output .= Chr(10) . Chr(10);
    }
  
@@ -738,6 +741,15 @@ function InGdeList($Feldname,$RegionSelected) {
 // Add all POI to a specific region
 // ===========================================
 
+function rkrk_kml_region_row($name) {
+	global $RegionSettings;
+	$key = explode(' ', (string)$name)[0];
+	if ($key === '' || !isset($RegionSettings[$key]) || !is_array($RegionSettings[$key])) {
+		return array();
+	}
+	return $RegionSettings[$key];
+}
+
 function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $WFOn, $SORAOn, $SunOn, $JggOn, $GdeOn, $KTOn, $ORTOn, $FZOn, $AlertOn, $EGOn, $LabelOn, $FileName, &$ListOfStylesUsed) {
 
 	//used global variales
@@ -755,6 +767,7 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 
 	//process data
 
+	$DataOutput = "";
 	$i= 0;
 	IF ($debugoutput) {
 		echo "<p>POI hinzugefügt:</p>";
@@ -772,6 +785,9 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 		//if (xlike("136 148" , $feld->Region, ",")) {	
 		//if (strpos("26, 28", strval($feld->Region))!==false) {
 			
+			$regRow = rkrk_kml_region_row($feld->name);
+			$regGebiet = (string)($regRow["Gebiettyp"] ?? '');
+			$regAktiv = !empty($regRow["Aktiv"]);
 			if (
 				($feld->Kat=="WF" and $WFOn) or
 				($feld->Kat=="SORA" and $SORAOn) or
@@ -784,8 +800,8 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 					and (like(explode(" ",$feld->name)[0],$RegionSelected," ") or ($RegionSelected=="leer") or ($RegionSelected=="ALL"))
 				)  or
 				($feld->Kat=="JG" and $EGOn 
-					and ($RegionSettings[explode(" ",$feld->name)[0]]["Gebiettyp"]!="") 
-					and ($RegionSettings[explode(" ",$feld->name)[0]]["Aktiv"])
+					and ($regGebiet!="") 
+					and ($regAktiv)
 					and (like(explode(" ",$feld->name)[0],$RegionSelected,",") or ($RegionSelected=="leer") or ($RegionSelected=="ALL"))
 				)  or
 				($feld->Kat=="Gde" and $GdeOn and InGdeList($feld->name,$RegionSelected)) or 
@@ -796,8 +812,8 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 				($feld->Kat=="Ort" and $ORTOn and $LabelOn) or 
 				
 				((($feld->Kat=="JGLabel" and $JggOn) or (
-					($RegionSettings[explode(" ",$feld->name)[0]]["Gebiettyp"]!="") 
-					and ($RegionSettings[explode(" ",$feld->name)[0]]["Aktiv"])
+					($regGebiet!="") 
+					and ($regAktiv)
 					and $EGOn)) and $LabelOn 
 					and (like(explode(" ",$feld->name)[0],$RegionSelected,",") or ($RegionSelected=="leer") or ($RegionSelected=="ALL"))
 				)  or
@@ -878,12 +894,12 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 					$DataOutput .= "    <styleUrl>";
 					$DataOutput .= trim($feld->styleUrl);
 					if (($EGOn) and ($feld->Kat=="JG") 
-						and ($RegionSettings[explode(" ",$feld->name)[0]]["Gebiettyp"]!="") 
-						and ($RegionSettings[explode(" ",$feld->name)[0]]["Aktiv"]))
+						and ($regGebiet!="") 
+						and ($regAktiv))
 						{
 						//Passe JG Style and Einsatzgebiet an
-						$DataOutput .= 	"_".$RegionSettings[explode(" ",$feld->name)[0]]["Gebiettyp"];
-						$ListOfStylesUsed[trim(substr($feld->styleUrl, 1))."_".$RegionSettings[explode(" ",$feld->name)[0]]["Gebiettyp"]]=trim(substr($feld->styleUrl, 1))."_".$RegionSettings[explode(" ",$feld->name)[0]]["Gebiettyp"];
+						$DataOutput .= 	"_".$regGebiet;
+						$ListOfStylesUsed[trim(substr($feld->styleUrl, 1))."_".$regGebiet]=trim(substr($feld->styleUrl, 1))."_".$regGebiet;
 					}	
 					$ListOfStylesUsed[trim(substr($feld->styleUrl, 1))]=trim(substr($feld->styleUrl, 1));
 					$DataOutput .= "</styleUrl>" . chr(10);
@@ -958,7 +974,6 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 		IF ($debugoutput) {
 			echo "save file: ". $filepath;
 		}
-		file_put_contents($df, "");
 		fputs($df, $DataOutput);
 		fclose($df);
 	}

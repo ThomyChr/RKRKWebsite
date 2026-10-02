@@ -1311,10 +1311,10 @@ echo "var SelectedDrone = '". $set_drone. "';\n";
 echo "var SelectedCalc = '". $set_calc. "';\n";
 echo "var HAngle = '';\n";
 echo "var VAngle = '';\n";
-echo "var graph = '".$graph."';\n";
+echo "var graph = '".($graph ?? '')."';\n";
 echo "var drawwidth = '".$drawwidth."';\n";
 echo "var drawheight = '".$drawheight."';\n";
-echo "var infoplus = '".$Infoplus."';\n";
+echo "var infoplus = '".($Infoplus ?? '')."';\n";
 
 ?>
 

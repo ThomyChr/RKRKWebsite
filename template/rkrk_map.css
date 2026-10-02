@@ -631,3 +631,124 @@ html.rkrk-map27-embed .top,
 html.rkrk-map27-embed .rkrk-shell-header {
   display: none !important;
 }
+
+/* Druck: Kartenbild seitenfüllend, Menü und Werkzeuge ausblenden. */
+#rkrkPrintSheet {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+#rkrkPrintSheet img {
+  display: block;
+  width: 297mm;
+  height: 210mm;
+  object-fit: contain;
+  object-position: center center;
+}
+@page {
+  margin: 0;
+  size: A4 landscape;
+}
+@page rkrkPort {
+  margin: 0;
+  size: A4 portrait;
+}
+@media print {
+  html.rkrk-map27 body.rkrk-print-port {
+    page: rkrkPort;
+  }
+  html.rkrk-map27 .rkrk-shell-header,
+  html.rkrk-map27 .top,
+  html.rkrk-map27 #rkrkSidebarToggleBtn,
+  html.rkrk-map27 #rkrkSidebarResizeHandle,
+  html.rkrk-map27 .rkrk-setup-btn,
+  html.rkrk-map27 .rkrk-setup-panel,
+  html.rkrk-map27 .rkrk-map27-panel,
+  html.rkrk-map27 .left,
+  html.rkrk-map27 #debuginfo,
+  html.rkrk-map27 .rkrk-map27-legend,
+  html.rkrk-map27 .rkrk-map27-map-btns,
+  html.rkrk-map27 .rkrk-map27-popup,
+  html.rkrk-map27 .rkrk-map27-load,
+  html.rkrk-map27 .rkrk-map27-scale,
+  html.rkrk-map27 .ol-control,
+  html.rkrk-map27 .ol-scale-line,
+  html.rkrk-map27 .ol-overlaycontainer-stopevent {
+    display: none !important;
+  }
+  html.rkrk-map27 body.rkrk-print-ready > *:not(#rkrkPrintSheet) {
+    display: none !important;
+  }
+  html.rkrk-map27 body.rkrk-print-ready {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    height: auto !important;
+  }
+  html.rkrk-map27 #rkrkPrintSheet {
+    position: static !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: normal !important;
+    background: #fff !important;
+  }
+  html.rkrk-map27 body.rkrk-print-land #rkrkPrintSheet,
+  html.rkrk-map27 body.rkrk-print-land #rkrkPrintSheet img {
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+  html.rkrk-map27 body.rkrk-print-port #rkrkPrintSheet,
+  html.rkrk-map27 body.rkrk-print-port #rkrkPrintSheet img {
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+  html.rkrk-map27 #rkrkPrintSheet img {
+    display: block !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) .rkrk-map27-wrap.wrap {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    grid-template-columns: 1fr !important;
+  }
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) .map-wrap,
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) #map,
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) .ol-viewport {
+    position: static !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) .ol-layer,
+  html.rkrk-map27 body.rkrk-map27-page:not(.rkrk-print-ready) .ol-layer canvas {
+    width: 297mm !important;
+    height: 210mm !important;
+    max-width: 297mm !important;
+    max-height: 210mm !important;
+  }
+}

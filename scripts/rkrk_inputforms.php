@@ -255,7 +255,7 @@ function SelectJSFunctionField ($FieldName, $Value, $Options, $JSFunction, $JSVa
 	Return $output;
 }	
 
-function SelectFieldMultiOptArr ($FieldName, $Value ,$Options, $align="left", $class="") {
+function SelectFieldMultiOptArr ($FieldName, $Value ,$Options, $align="left", $class="", $emptyLabel="") {
 /*
 				$output .= "<select type='text' id='". $Inputfieldname . "' name='" . $Inputfieldname ."'>";
 					foreach ($OptionFrei as $opt) {
@@ -287,10 +287,17 @@ function SelectFieldMultiOptArr ($FieldName, $Value ,$Options, $align="left", $c
 				continue;
 			}
 			$optVal = function_exists('rkrk_str') ? rkrk_str($opt["Opt"]) : (string)$opt["Opt"];
-			if (like($Value , $optVal)) {
-				$output .= "<option value='". $optVal . "' selected>". $optVal . "</option>".chr(10);
+			// like("", $opt) ist immer wahr (strpos auf leerem String). Sonst wird
+			// bei leerem Wert jede Option selected und der Browser zeigt die letzte.
+			$valueEmpty = trim($Value) === '';
+			$optEmpty = trim($optVal) === '';
+			$selected = ($valueEmpty && $optEmpty)
+				|| (!$valueEmpty && !$optEmpty && like($Value, $optVal));
+			$label = ($optEmpty && $emptyLabel !== '') ? $emptyLabel : $optVal;
+			if ($selected) {
+				$output .= "<option value='". $optVal . "' selected>". $label . "</option>".chr(10);
 			} else {
-				$output .= "<option value='". $optVal . "'>". $optVal . "</option>".chr(10);
+				$output .= "<option value='". $optVal . "'>". $label . "</option>".chr(10);
 			}
 		}
 	$output .= "</select>" . chr(10);
@@ -528,6 +535,15 @@ function rkrk_echo_pill_checkbox($name, $label, $checked, $opts = array()) {
 	if ($checked) {
 		echo ' checked';
 	}
+	if (!empty($opts['attrs']) && is_array($opts['attrs'])) {
+		foreach ($opts['attrs'] as $ak => $av) {
+			$ak = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$ak);
+			if ($ak === '') {
+				continue;
+			}
+			echo ' ' . $ak . '="' . rkrk_pill_h($av) . '"';
+		}
+	}
 	echo '> ' . rkrk_pill_h($label);
 	echo '</label>';
 }
@@ -616,7 +632,10 @@ function rkrk_print_region_pills($RegionSettings, &$EnabledRegion, $nameSuffix =
 			if ($enabled) {
 				$NoSelection = false;
 			}
-			rkrk_echo_pill_checkbox($key . $nameSuffix, $key, (!$alleChecked && ($posted || $fromGet)));
+			$jgList = isset($Reg['JGList']) ? (string)$Reg['JGList'] : $key;
+			rkrk_echo_pill_checkbox($key . $nameSuffix, $key, (!$alleChecked && ($posted || $fromGet)), array(
+				'attrs' => array('data-jg-list' => $jgList),
+			));
 		}
 	}
 	rkrk_echo_pills_close();

@@ -5,6 +5,7 @@
 	include_once('scripts/rkrk_gen.php');
 	include_once('scripts/rkrk_csvfiles.php');
 	include_once('scripts/rkrk_inputforms.php');
+	include_once('scripts/rkrk_adr_ui.php');
 	include_once('scripts/rkrk_jsonfiles.php');
 	include_once('scripts/rkrk_felddaten.php');
 	$AdressTableType="Bauern";
@@ -20,6 +21,7 @@
 	GrantAccess();
 	CreateTopMenu();
 	PrintRKRKHeader($pagetitle);
+echo "<link rel='stylesheet' href='scripts/rkrk_adr_grid.css?v=20260924live2'>";
 echo "<style>
 .rkrk-card-table {
   width: 100%;
@@ -125,6 +127,7 @@ function rkrkApplyResponsiveCardTables() {
   var tables = document.querySelectorAll('table');
   for (var t = 0; t < tables.length; t++) {
     var table = tables[t];
+    if (table.classList.contains('rkrk-adr-grid')) continue;
     if (table.dataset.rkrkResponsiveInit === '1') continue;
     var rows = table.querySelectorAll('tr');
     var headerRow = null;
@@ -206,7 +209,7 @@ function rkrkApplyDesktopTableScroll() {
   var tables = document.querySelectorAll('table');
   for (var i = 0; i < tables.length; i++) {
     var table = tables[i];
-    if (!table || table.closest('.rkrk-desktop-scroll')) continue;
+    if (!table || table.classList.contains('rkrk-adr-grid') || table.closest('.rkrk-desktop-scroll') || table.closest('.rkrk-adr-grid-wrap')) continue;
     var rowCount = table.querySelectorAll('tr').length;
     if (rowCount < 2) continue;
     if (table.scrollWidth <= availableWidthFor(table) + 1) continue;
@@ -477,6 +480,7 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 		}
 		$emptyRow["ID"] = $newId;
 		$updatedRow = ApplyImportRowToAddressRow($emptyRow, $importRow, $effectiveCode, false);
+		rkrk_adr_apply_geomaploc($updatedRow, "");
 
 		$data[$newId] = $updatedRow;
 		$saveError = "";
@@ -705,7 +709,9 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 
 		$effectiveCode = ($usedCode !== "" ? $usedCode : $betriebCode);
 		$importRow = BuildFarmerImportRow($payload, $effectiveCode);
+		$previousAddress = isset($data[$rowId]["Adresse"]) ? $data[$rowId]["Adresse"] : "";
 		$updatedRow = ApplyImportRowToAddressRow($data[$rowId], $importRow, $effectiveCode, true);
+		rkrk_adr_apply_geomaploc($updatedRow, $previousAddress);
 		$data[$rowId] = $updatedRow;
 		$saveError = "";
 		if (!SaveAddressDataAndVerifyById($data, $rowId, $TableSetup, $filepath, $csvFile, $csvDesc, $saveError)) {
@@ -914,6 +920,7 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 				? rkrk_adr_merge_jagdgebiet($jagdgebiet, (string)$record["Jagdgebiet"])
 				: (string)$record["Jagdgebiet"];
 		}
+		$previousAddress = ($rowId !== "" && isset($data[$rowId]["Adresse"])) ? $data[$rowId]["Adresse"] : "";
 		if ($rowId !== "") {
 			if ($betrieb !== "") {
 				$data[$rowId]["Betrieb"] = $betrieb;
@@ -970,6 +977,7 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 			$data[$rowId]["Typ"] = "Bauer";
 			$data[$rowId]["Jagdgebiet"] = $jagdgebiet;
 		}
+		rkrk_adr_apply_geomaploc($data[$rowId], $previousAddress);
 
 		$saveError = "";
 		if (!SaveAddressDataAndVerifyById($data, $rowId, $TableSetup, $filepath, $csvFile, $csvDesc, $saveError)) {
@@ -1097,7 +1105,7 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 		$ColSort = "Name";
 	}
 
-	$RegList = array_diff($RegionSettings, array('NO'));
+	$RegList = $RegionSettings;
 	$RegList["ALL"]["Aktiv"] = true;
 	$listFilters = rkrk_adr_parse_list_filters($RegList, $RegionSettings, $AddressTypeOptions, $SetAll);
 	$SearchOption = $listFilters["SearchOption"];
@@ -1275,7 +1283,7 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 		$debugoutput = false;
 	//pre_r($TableSetup);
 
-	$RegList = array_diff($RegionSettings, array('NO'));
+	$RegList = $RegionSettings;
 	
 
 	// ===========================================
@@ -1366,6 +1374,7 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 				} else { 
 					$IDField = $_POST["ID-" . $i];
 				}
+				$previousAddress = isset($data[$IDField]["Adresse"]) ? $data[$IDField]["Adresse"] : "";
 				// copy input data to internal array
 				foreach ($TableSetup AS $TableEntry) {
 					if ($TableEntry["Field"]=="ID") {
@@ -1374,6 +1383,7 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 						$data[$IDField][$TableEntry["Field"]] =$_POST[$TableEntry["Field"]."-" . $i];
 					}
 				}
+				rkrk_adr_apply_geomaploc($data[$IDField], $previousAddress);
 			}
 		}	
 		//pre_r($data);
@@ -1446,7 +1456,6 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 				// safe file
 				//echo "FilePath: " . $filepath . " - NumEntries:" . $i . "<br>";
 				$df = fopen($filepath, 'w');
-				file_put_contents($df, "");
 				fputs($df, $filecontent);
 				fclose($df);
 			} else {
@@ -1566,113 +1575,50 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 	$DataSetFound = false;
 
 	echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">'. chr(10);
-	echo "<table class='rkrk-filter-form'>";
-	echo "<tr>";
-	echo "<td class='rkrk-filter-label'>";
-	echo "Typ:";
-	echo "</td>";
-	echo "<td>";
+	echo '<div class="rkrk-adr-head">';
+	echo '<div class="rkrk-adr-head-main">';
+	echo '<div class="rkrk-adr-head-row" data-adr-filter="typ">';
+	echo '<span class="rkrk-adr-head-label">Typ</span>';
 	$EnabledOption = Array();
 	$SearchOption = Array();
 	$i=1;
 	rkrk_echo_pills_open();
 	foreach ($AddressTypeOptions as $Opt ) {
-		if ((isset($_POST["Opt-".$i]) && $_POST["Opt-".$i]=="on") or $SetAll) {
-			$on = true;
-			$EnabledOption[$Opt["Text"]] = 1;
-			$SearchOption[] = $Opt["Text"];
-		} else {
-			$on = false;
-			$EnabledOption[$Opt["Text"]] = 0;
-		}
+		$on = true;
+		$EnabledOption[$Opt["Text"]] = 1;
+		$SearchOption[] = $Opt["Text"];
 		rkrk_echo_pill_checkbox("Opt-".$i, $Opt["Text"], $on);
 		$i++;
 	}
 	rkrk_echo_pills_close();
-	//pre_R($EnabledOption);
-	//pre_R($SearchOption);
-	echo "</td>";
-	echo "<td rowspan=3>";
-		echo CreateSiteLink ("PdfAdressenBauern", "Search=" .$FeldNamenWahl ."&TypFilter=" . implode(",", $SearchOption) . "&RegFilter=" . implode(",", $RegionSelected) . "&Sortieren=" . $ColSort . $MissionSelectionParameter );
-		if (GetAccess("InternPilots")) {
-			echo "<span id='exceldwnld'><a href='". $excel_csv_path ."' ><image src='" . $IconLoc . "/excel.png' height='" . $ButtonHeight. "'  title='Excel Adressliste herunterladen'></a></span> ";
-			//$csvDocLocation.$RKRK_LWB_ContactFile = "Rehkitzrettung Konaueramt - Landwirtschaftsbetriebe.csv";
-			//$csvDocLocation.$RKRK_Users = "Rehitzrettung - Users.csv";
-			//$csvDocLocation.$RKRKFelderfileCSV = 'RKRKFelder.csv';
-			//$csvDocLocation.$RKRKWeatherCSV = '_RKRKPlan.csv';
-			//$csvDocLocation.$RKRKFlightsCSV= "_RKRKFluege.csv";
+	echo '</div>';
+	echo '<div class="rkrk-adr-head-row" data-adr-filter="region">';
+	echo '<span class="rkrk-adr-head-label">Region</span>';
+	rkrk_echo_pills_open();
+	foreach ($RegList as $Reg ) {
+		if ($Reg["Aktiv"] && ("NO" != $Reg["Reg"])) {
+			$regKey = (string)$Reg["Reg"];
+			$isAll = (strcasecmp($regKey, 'ALL') === 0 || strcasecmp($regKey, 'alle') === 0);
+			rkrk_echo_pill_checkbox($regKey, $regKey, !empty($EnabledRegion[$regKey]), $isAll ? array('exclusive' => true) : array());
 		}
-
-/*
-		//pre_R($RegionSelected);
-		//PDF Dokument
-		echo " <a href='rkrk_pdf_adrlwbtr.php?Search=" . $FeldNamenWahl ."&TypFilter=" . implode(",", $SearchOption) . "&RegFilter=" . implode(",", $RegionSelected) . "&Sortieren=" . $ColSort. "' target='_pdfdoc'><img src='" . $IconLoc . "/pdf_button.png' height='" . $ButtonHeight ."' title='Adress-PDF kreieren'></a>    ".chr(10);
-*/
-	//}
+	}
+	rkrk_echo_pills_close();
+	echo '</div></div>';
+	echo '<div class="rkrk-adr-head-tools">';
+	echo CreateSiteLink ("PdfAdressenBauern", "Search=" .$FeldNamenWahl ."&TypFilter=" . implode(",", $SearchOption) . "&RegFilter=" . implode(",", $RegionSelected) . "&Sortieren=" . $ColSort . $MissionSelectionParameter );
+	if (GetAccess("InternPilots")) {
+		echo "<span id='exceldwnld'><a href='". $excel_csv_path ."' ><image src='" . $IconLoc . "/excel.png' height='" . $ButtonHeight. "'  title='Excel Adressliste herunterladen'></a></span> ";
+	}
 	echo CreateSiteLink ("Home", "");
 	echo CreateSiteLink ("GoBack", "");
-	//Enable Delete
 	if (GetAccess("DeleteData")) {
 		if ($EnableDelete) {
-			//echo "ED - ON";
 			echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_on.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" . $MissionSelectionParameter . "&EnableDelete=off' height='" . $ButtonHeight . "'  title='Delete Moduls ausschalten'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
 		} else {
-			//echo "ED - OFF";
 			echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_off.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&". $MissionSelectionParameter . "&EnableDelete=on' height='" . $ButtonHeight . "'title='Delete Moduls einschalten'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
 		}
 	}
-	//Not needed on this page
-	//echo  MissionLibraryButtons("&ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&" . $EnableDeleteSet . "&",true);
-
-
-	echo "</td>";
-
-	echo "<tr><td class='rkrk-filter-label'>";
-		echo "Region: ";
-		echo "</td><td>";
-		rkrk_echo_pills_open();
-		foreach ($RegList as $Reg ) {
-			if ($Reg["Aktiv"] && ("NO" != $Reg["Reg"])) {
-				$regKey = (string)$Reg["Reg"];
-				$isAll = (strcasecmp($regKey, 'ALL') === 0 || strcasecmp($regKey, 'alle') === 0);
-				rkrk_echo_pill_checkbox($regKey, $regKey, !empty($EnabledRegion[$regKey]), $isAll ? array('exclusive' => true) : array());
-			}
-		}
-		rkrk_echo_pills_close();
-	echo "<tr><td class='rkrk-filter-label'>";
-		echo "Felder: ";
-		echo "</td><td>";
-		$isPost = isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST";
-		rkrk_echo_pills_open();
-		foreach ($TableSetup as $Feld ) {
-			if ($isPost) {
-				$on = isset($_POST[$Feld["Field"] . "_en"]) && $_POST[$Feld["Field"] . "_en"]=="on";
-				$TableSetup[$Feld["Field"]]["Show"] = $on;
-			} else {
-				$on = ($Feld["Show"]==true);
-			}
-			rkrk_echo_pill_checkbox($Feld["Field"] . "_en", $Feld["Text"], $on);
-		}
-		rkrk_echo_pills_close();
-		$i++;
-
-	echo "</tr><tr>";
-	echo "<td>";
-	echo "Suche:";
-	echo "</td>";
-	echo "<td>";
-	echo InputField("FeldNamenWahl", $FeldNamenWahl, 20);
-	echo "</td>";
-	echo "</tr>";
-	echo "</table>";
-	if (GetAccess("DebugDataBase")) {
-		$dbwParam = isset($_GET["DBW"]) ? (string)$_GET["DBW"] : "";
-		echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. '&DBW=' . htmlspecialchars($dbwParam). '"> '. chr(10);
-	} else {
-		echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?' . '"> '. chr(10);
-	}
-	echo "</br>";
-	echo "</br>";
+	echo '</div></div>';
 	//echo '		<button type="submit" >Adressen speichern</button>'. chr(10);
 	//echo "<input type='submit' value='Speichern' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?" . $MissionSelectionParameter . "&" . $EnableDeleteSet . "'>" .chr(10);
 	//echo "ActPage: " . $ActPage;
@@ -1688,54 +1634,9 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 		$i=1;
 		//pre_r($RegionSelected);
 		foreach ($data as $Key => $dataline) {
-			$regionMatch = false;
-			$entryJgs = array();
-			if (trim((string)($dataline["Jagdgebiet"] ?? "")) !== "") {
-				foreach (explode(",", (string)$dataline["Jagdgebiet"]) as $jg) {
-					$jg = trim($jg);
-					if ($jg !== "") {
-						$entryJgs[$jg] = $jg;
-					}
-				}
-			} elseif (function_exists("rkrk_adr_missing_entry_jgs") && trim((string)($dataline["Felder"] ?? "")) !== "") {
-				foreach (rkrk_adr_missing_entry_jgs(array("Felder" => (string)$dataline["Felder"])) as $jg) {
-					$entryJgs[$jg] = $jg;
-				}
-			}
-			if (count($entryJgs) > 0) {
-				foreach ($RegionSelected as $regSel) {
-					if (isset($entryJgs[$regSel])) {
-						$regionMatch = true;
-						break;
-					}
-				}
-			} else {
-				$regionMatch = (
-					in_array($dataline["Jagdgebiet"], $RegionSelected) or
-					(count($RegionSelected) != count(array_diff($RegionSelected, explode(",",(string)$dataline["Jagdgebiet"]))))
-				);
-			}
-			//cho "compare array to array: " . $dataline["Jagdgebiet"] . " - " . implode(",",$RegionSelected) ." - ". (count($RegionSelected)!=count(array_diff($RegionSelected, explode(",",$dataline["Jagdgebiet"])))) . "<br>";
-			//pre_R(array_diff($RegionSelected, explode(",",$dataline["Jagdgebiet"])));
-			//echo $dataline["Betrieb"] . "-" . like($dataline["Betrieb"], $FeldNamenWahl). "<br>";
-				
-			if ( 
-					($FeldNamenWahl == "" 
-					or like($dataline["Name"], $FeldNamenWahl)
-					or like($dataline["Betrieb"], $FeldNamenWahl)
-					or like($dataline["Adresse"], $FeldNamenWahl)
-					or like($dataline["Felder"], $FeldNamenWahl)
-					or like($dataline["Bemerkung"], $FeldNamenWahl))
-					and in_array($dataline["Typ"], $SearchOption)  
-					and $regionMatch
-				) 
-			{
-				$data[$Key]["ListNr"]= $i;
-				$outputdata[$Key] = $dataline;
-				$i++;
-			} else {
-				$data[$Key]["ListNr"]= "";
-			}
+			$data[$Key]["ListNr"]= $i;
+			$outputdata[$Key] = $dataline;
+			$i++;
 		}
 		$MaxSelectedEntries = $i;
 	}
@@ -1759,21 +1660,20 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 		$FontSize= "100%";
 	}
 
-	PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, false, "Speichern", false, "&" . "Sortieren="  . $ColSort);
-
-	echo "<table>" .chr(10);
+	foreach ($TableSetup as $fieldKey => $Feld) {
+		$TableSetup[$fieldKey]["Show"] = true;
+	}
+	$adrUi = rkrk_adr_ui_load('bauern');
+	echo "<div class='rkrk-adr-grid-wrap'>" .chr(10);
+	echo "<table class='rkrk-adr-grid' data-adr-grid='bauern' data-ui='" . htmlspecialchars(json_encode($adrUi), ENT_QUOTES, 'UTF-8') . "'>" .chr(10);
 	echo "<tr >" .chr(10);
 	if ($EnableDelete) {
-		echo "<th></th>" .chr(10);
+		echo "<th data-col='__del'></th>" .chr(10);
 	}
-	echo "<th>#</th>" .chr(10);
+	echo "<th data-col='__nr'>#</th>" .chr(10);
 	foreach ($TableSetup AS $TableEntry) {
 		if ($TableEntry["Show"]== true) {
-			echo "<th>" .chr(10);
-			if ($TableEntry["Sort"]!="") {
-				echo "<input type='image' value='Sortieren' src='" . $IconLoc . "/sortieren.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&" . "Sortieren="  . $TableEntry["Sort"] . "&" . $MissionSelectionParameter . "&EnableDelete=on' height='" . $ButtonHeight*0.7 . "'  title='Spalte sortieren'  style='background-color:transparent; bOrder-color:transparent;'>" .chr(10);
-			}
-			echo $TableEntry["Text"] . " </th>" .chr(10);
+			echo "<th class='rkrk-adr-sortable' data-col='" . htmlspecialchars($TableEntry["Field"], ENT_QUOTES, 'UTF-8') . "'>" . $TableEntry["Text"] . "</th>" .chr(10);
 
 		}
 	}
@@ -1782,20 +1682,12 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 	foreach ($data as $key => $dataline) {
 		//pre_R($dataline);
 		//echo "ID. " . $dataline["ID"] . " .<br>";
-		if ($dataline["ListNr"]!="" && 
-			$dataline["ListNr"]>=$showfrom && 
-			$dataline["ListNr"]<$showto){
+		if ($dataline["ListNr"]!=""){
 		// Existing Data
 			echo '<tr>' .chr(10);
 			if ($EnableDelete) {
-				echo '<td>' .chr(10);
-				// delete
-				if (GetAccess("DeleteData")) {
-					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&" .  "Sortieren="  . $ColSort . "&" . "ID=" . $dataline['ID'] . "&delete=Y&EnableDelete=" . htmlspecialchars($delEnableDelete) . "&DBW=" . htmlspecialchars($dbwParam) . "' height='" . $ButtonHeightSmall . "' title='Linie " . $i . " löschen'>" .chr(10);
-				} else {
-					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&" . "Sortieren="  . $ColSort . "&". " delete=Y&EnableDelete=" . htmlspecialchars($delEnableDelete) . "' height='" . $ButtonHeightSmall . "'  title='Linie " . $i . " löschen'>" .chr(10);
-				}
-			echo '</td>' .chr(10);
+				$delUrl = htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&Sortieren=" . urlencode($ColSort) . "&ID=" . urlencode($dataline['ID']) . "&delete=Y&EnableDelete=" . urlencode($delEnableDelete) . "&DBW=" . urlencode($dbwParam);
+				echo '<td><a class="rkrk-adr-icon" href="' . $delUrl . '" title="Zeile löschen" onclick="return confirm(\'Diese Zeile löschen?\')">' . rkrk_adr_ico('trash') . '</a></td>' .chr(10);
 			}
 			
 
@@ -1843,61 +1735,40 @@ if (($JSONupdate ?? "") !== "" || ($DBupdate ?? "") !== "") {
 		}
 		$i++;
 	}
-	//new data
-	echo "<tr><td colspan='12'><i>Neue Einträge:</i><td></tr>". chr(10);
-	$MaxEntry = $i+5;
-	while ($i <= $MaxEntry)  {
-		if (true) {
-		// Configsform empty
-		// Existing Data
-			echo '<tr>' .chr(10);
-			if ($EnableDelete) {
-				echo "<td></td>" .chr(10);
+	$lastIndex = $i - 1;
+	echo "</table></div>" .chr(10);
+	echo "<template id='rkrk-adr-new'><tr>";
+	if ($EnableDelete) {
+		echo "<td></td>";
+	}
+	echo "<td class='rkrk-adr-nr'>neu</td>";
+	foreach ($TableSetup AS $TableEntry) {
+		if ($TableEntry["Show"]== true) {
+			if ($TableEntry["Type"]=="input" || $TableEntry["Type"]=="Text" || $TableEntry["Type"]=="text") {
+				echo '<td>';
+				echo InputField($TableEntry["Field"]."-__N__", "", $TableEntry["Length"] , $TableEntry["Align"]);
+				echo '</td>';
 			}
-			echo '<td>' .chr(10);
-			echo $i;
-			echo '</td>' .chr(10);
-
-			foreach ($TableSetup AS $TableEntry) {
-				if ($TableEntry["Show"]== true) {
-					// show entries
-					if ($TableEntry["Type"]=="input") {
-						echo '<td>' .chr(10);
-						echo InputField($TableEntry["Field"]."-" . $i, "", $TableEntry["Length"] , $TableEntry["Align"]);
-						echo '</td>' .chr(10);
-					}
-					if ($TableEntry["Type"]=="text") {
-						echo '<td>' .chr(10);
-						echo $dataline[$TableEntry["Field"]];
-						echo InputField($TableEntry["Field"]."-" . $i, "", $TableEntry["Length"] , $TableEntry["Align"], "hidden");
-						echo '</td>' .chr(10);
-					}
-					if ($TableEntry["Type"]=="InputArea") {
-						echo '<td>' .chr(10);
-						echo InputTextarea($TableEntry["Field"]."-" . $i, "", $TableEntry["Length"], 1, 30);
-						echo '</td>' .chr(10);
-					}
-					if ($TableEntry["Type"]=="select") {
-						if ($TableEntry["Field"]=="Typ") {
-							echo '<td>' .chr(10);
-							echo SelectField($TableEntry["Field"]."-". $i, "" , $TableEntry["Options"] );
-							echo "</td>" .chr(10);
-						}
-					}
-				} else {
-					//hidden
-					echo '<input type="hidden" name="'.$TableEntry['Field'] . '-' . $i . '" id="'. $TableEntry['Field'] . '-' . $i . '" value="" />'. chr(10);
-				}
+			if ($TableEntry["Type"]=="InputArea") {
+				echo '<td>';
+				echo InputTextarea($TableEntry["Field"]."-__N__", "", $TableEntry["Length"], 1, 30);
+				echo '</td>';
+			}
+			if ($TableEntry["Type"]=="select") {
+				echo '<td>';
+				echo SelectField($TableEntry["Field"]."-__N__", "" , $TableEntry["Options"] );
+				echo '</td>';
 			}
 		}
-		$i++;
 	}
-	echo "</table>" .chr(10);
-	echo '<input type="hidden" name="NumEntries" id="NumEntries" value="'. $i. '" />'. chr(10);
-
-//	echo '		<button type="submit" >Adressen speichern</button>'. chr(10);
-//	echo "<input type='submit' value='Speichern' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?" . $MissionSelectionParameter. "&" . $EnableDeleteSet . "'>" .chr(10);
-	PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, true, "Speichern", false, "&" . "Sortieren="  . $ColSort);
+	echo "</tr></template>" .chr(10);
+	echo "<script src='scripts/rkrk_adr_grid.js?v=20260924live2'></script>" .chr(10);
+	echo '<input type="hidden" name="NumEntries" id="NumEntries" value="'. $lastIndex. '" />'. chr(10);
+	$saveUrl = htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=1&DoSafe=Y&" . $EnableDeleteSet;
+	echo "<div class='rkrk-adr-actions'>";
+	echo "<button type='submit' class='rkrk-adr-icon is-primary' title='Speichern' aria-label='Speichern' formaction='" . $saveUrl . "'>" . rkrk_adr_ico('save') . "</button>";
+	echo "<button type='button' class='rkrk-adr-icon' id='rkrk-adr-add' title='Zeile hinzufügen' aria-label='Zeile hinzufügen'>" . rkrk_adr_ico('plus') . "</button>";
+	echo "</div>";
 	
 	echo '</form>'. chr(10);
 

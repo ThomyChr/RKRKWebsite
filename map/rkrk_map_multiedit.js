@@ -8,6 +8,33 @@
   const SHARE_API = "share_drawing.php";
   const NAME_KEY = "rkrk_live_share_editor_name_v1";
   const ID_KEY = "rkrk_live_share_editor_id_v1";
+  const SHARE_FETCH_MS = 8000;
+
+  function fetchWithTimeout(url, opts, ms) {
+    const timeoutMs = Math.max(500, Number(ms) || SHARE_FETCH_MS);
+    if (typeof AbortController === "undefined") {
+      return fetch(url, opts || {});
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      try { ctrl.abort(); } catch (_) { /* noop */ }
+    }, timeoutMs);
+    const options = Object.assign({}, opts || {}, { signal: ctrl.signal });
+    return fetch(url, options).finally(() => clearTimeout(timer));
+  }
+
+  function isObjectListRenaming() {
+    try {
+      if (typeof window.__rkrkIsObjectListRenaming === "function") {
+        return !!window.__rkrkIsObjectListRenaming();
+      }
+    } catch (_) { /* noop */ }
+    try {
+      return !!document.querySelector("#objManagedList .obj-list-name-input");
+    } catch (_) {
+      return false;
+    }
+  }
 
   let multiEdit = false;
   let coEditor = false;
@@ -25,6 +52,7 @@
     if (typeof window.__rkrkManagedStatusText === "function") window.__rkrkManagedStatusText(msg);
   }
   function refreshList() {
+    if (isObjectListRenaming()) return;
     if (typeof window.__rkrkRefreshManagedObjectList === "function") window.__rkrkRefreshManagedObjectList();
   }
 
@@ -186,9 +214,9 @@
     const token = window.__rkrkGetLiveShareToken ? window.__rkrkGetLiveShareToken() : "";
     if (!token || !isSession()) return true;
     try {
-      // Sperre nur auf Basis des Shared-Files
-      try { await pullShareBaseQuiet(); } catch (_) { /* noop */ }
-      const res = await fetch(SHARE_API, {
+      // Kein vorausgehendes Full-Pull: share_drawing.php auf langsamen Hosts
+      // (tools.rehkitzrettung.ch) läuft sonst in ein Timeout und bricht die Bearbeitung ab.
+      const res = await fetchWithTimeout(SHARE_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -210,19 +238,23 @@
           })()
         }),
         cache: "no-store"
-      });
+      }, SHARE_FETCH_MS);
       const payload = await res.json().catch(() => ({}));
       if (payload.locks) applyLocks(payload.locks);
-      if (!res.ok || !payload.ok) {
+      if (res.status === 409 || payload.error === "locked") {
         const who = (payload.lock && payload.lock.name) ? payload.lock.name : "anderer Editor";
         status("Objekt gesperrt von «" + who + "».");
         toast("Objekt gesperrt (" + who + ").", 2800);
         return false;
       }
+      if (!res.ok || !payload.ok) {
+        status("Sperre nicht bestätigt — Bearbeitung lokal fortgesetzt.");
+        return true;
+      }
       return true;
     } catch (_) {
-      status("Sperre konnte nicht gesetzt werden.");
-      return false;
+      status("Server antwortet langsam — Bearbeitung lokal fortgesetzt.");
+      return true;
     }
   }
 
@@ -821,7 +853,7 @@
         + "&editor_id=" + encodeURIComponent(getOrCreateEditorId())
         + "&editor_name=" + encodeURIComponent(getEditorName())
         + "&sync_base=1";
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetchWithTimeout(url, { cache: "no-store" }, 4000);
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload || !payload.ok) return null;
       lastSharePullAt = Date.now();
@@ -843,6 +875,7 @@
 
   function applyRemoteDrawingSoft(drawing) {
     if (!drawing || typeof drawing !== "object") return;
+    if (isObjectListRenaming()) return;
     // Waehrend lokalem Verschieben/Ziehen: Sync nicht anwenden (sonst springt Objekt zurueck)
     try {
       if (typeof window.__rkrkIsLocalObjectDragging === "function" && window.__rkrkIsLocalObjectDragging()) {
@@ -899,7 +932,7 @@
         + "&editor_id=" + encodeURIComponent(getOrCreateEditorId())
         + "&editor_name=" + encodeURIComponent(getEditorName())
         + (since ? "" : "&sync_base=1");
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetchWithTimeout(url, { cache: "no-store" }, SHARE_FETCH_MS);
       const payload = await res.json().catch(() => ({}));
       if (!res.ok || !payload.ok) return;
       if (payload.multi_edit != null) {
@@ -920,6 +953,7 @@
       }
       try { ingestEditorModeration(payload); } catch (_) { /* noop */ }
       if (payload.kicked) return;
+      if (isObjectListRenaming()) return;
       if (payload.unchanged || !payload.drawing) return;
       if (payload.updated_at && since && payload.updated_at === since) return;
 
@@ -1061,9 +1095,11 @@
         }
         const ok = await claimLock(id);
         if (!ok) {
-          refreshList();
-          paintLockedRows();
-          return;
+          if (lockedByOther(id) && !pointish) {
+            refreshList();
+            paintLockedRows();
+            return;
+          }
         }
         paintLockedRows();
       }

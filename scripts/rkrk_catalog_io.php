@@ -6,6 +6,60 @@
 
 include_once(__DIR__ . '/rkrk_encoding.php');
 
+if (!function_exists('rkrk_log_data_access')) {
+	/**
+	 * Ein Zugriff pro HTTP-Request ins Tages-Log, falls die Seite selbst
+	 * noch nicht WriteToLog aufgerufen hat (Missionenkatalog / Adressen).
+	 */
+	function rkrk_log_data_access($kind, $detail = '') {
+		if (!empty($GLOBALS['RKRK_PAGE_LOGGED'])) {
+			return;
+		}
+		if (defined('PHP_SAPI') && PHP_SAPI === 'cli') {
+			return;
+		}
+		if (!function_exists('WriteToLog')) {
+			return;
+		}
+		$page = basename((string)($_SERVER['PHP_SELF'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
+		if ($page === '' || strcasecmp($page, 'rkrk_catalog_io.php') === 0) {
+			return;
+		}
+		$kind = trim((string)$kind);
+		if ($kind === '') {
+			return;
+		}
+		$method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+		$type = ($method === 'POST') ? 'do' : 'get';
+		WriteToLog($type, $page, $kind, (string)$detail, '', '');
+	}
+}
+
+if (!function_exists('rkrk_log_if_address_file')) {
+	function rkrk_log_if_address_file($filename) {
+		global $RKRKContactFile, $RKRK_LWB_ContactFile;
+		$base = basename(str_replace('\\', '/', (string)$filename));
+		if ($base === '') {
+			return;
+		}
+		$lwb = !empty($RKRK_LWB_ContactFile)
+			? basename((string)$RKRK_LWB_ContactFile)
+			: 'Rehkitzrettung Konaueramt - Landwirtschaftsbetriebe.csv';
+		$knt = !empty($RKRKContactFile)
+			? basename((string)$RKRKContactFile)
+			: 'Rehkitzrettung Konaueramt - Kontaktnummern.csv';
+		$kind = '';
+		if (strcasecmp($base, $lwb) === 0 || substr($base, -strlen($lwb)) === $lwb || stripos($base, 'Landwirtschaftsbetriebe') !== false) {
+			$kind = 'Adressen Bauern';
+		} elseif (strcasecmp($base, $knt) === 0 || substr($base, -strlen($knt)) === $knt || stripos($base, 'Kontaktnummern') !== false) {
+			$kind = 'Adressen Kontakte';
+		}
+		if ($kind !== '' && function_exists('rkrk_log_data_access')) {
+			rkrk_log_data_access($kind, $base);
+		}
+	}
+}
+
 if (!function_exists('rkrk_xml_catalog_support')) {
 	function rkrk_xml_catalog_support() {
 		global $RKRKXmlCatalogSupport;
@@ -511,6 +565,9 @@ if (!function_exists('rkrk_feldkatalog_save_json')) {
 	function rkrk_feldkatalog_save_json($xmlFileOrDir, $Feldkatalog) {
 		global $RKRKFelderfileXML;
 		$basename = !empty($RKRKFelderfileXML) ? $RKRKFelderfileXML : 'RKRKFelder.xml';
+		if (function_exists('rkrk_log_data_access')) {
+			rkrk_log_data_access('Missionenkatalog', 'speichern ' . basename((string)$xmlFileOrDir));
+		}
 		$xmlPath = $xmlFileOrDir;
 		if (is_string($xmlPath) && $xmlPath !== '' && substr(strtolower($xmlPath), -4) !== '.xml') {
 			$xmlPath = rtrim(str_replace('\\', '/', $xmlPath), '/') . '/' . $basename;
@@ -543,6 +600,9 @@ if (!function_exists('rkrk_feldkatalog_save_json_from_xml')) {
 if (!function_exists('rkrk_feldkatalog_load')) {
 	function rkrk_feldkatalog_load($xmlFilePath) {
 		global $EnabledRegion, $OptionJaeger, $MaxSelectedEntries;
+		if (function_exists('rkrk_log_data_access')) {
+			rkrk_log_data_access('Missionenkatalog', basename((string)$xmlFilePath));
+		}
 		if (!is_array($EnabledRegion ?? null)) {
 			$EnabledRegion = array();
 		}
