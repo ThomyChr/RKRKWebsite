@@ -344,7 +344,9 @@ if (!function_exists('rkrk_favicon_manifest_href')) {
 		if ($prefix === '') {
 			return '';
 		}
-		return $prefix . 'scripts/rkrk_favicon_manifest.php';
+		$app = trim((string)($GLOBALS['RKRK_MANIFEST_APP'] ?? ''));
+		$appQuery = ($app === 'rc') ? 'app=rc&' : '';
+		return $prefix . 'scripts/rkrk_favicon_manifest.php?' . $appQuery . 'v=20261015b';
 	}
 }
 
@@ -355,7 +357,7 @@ if (!function_exists('rkrk_favicon_link_tags_html')) {
 			return htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
 		};
 		$out = '';
-		$v = '?v=20260915a';
+		$v = '?v=20261015a';
 		if ($a['kind'] === 'rkrs') {
 			$out .= "  <link rel='icon' type='image/x-icon' href='" . $h($a['ico']) . "'>\n";
 			$out .= "  <link rel='shortcut icon' type='image/x-icon' href='" . $h($a['ico']) . "'>\n";
@@ -394,6 +396,9 @@ if (!function_exists('rkrk_favicon_link_tags_html')) {
 		}
 		$out .= "  <meta name='theme-color' content='#ffffff'>\n";
 		$out .= "  <meta name='mobile-web-app-capable' content='yes'>\n";
+		if (trim((string)($GLOBALS['RKRK_MANIFEST_APP'] ?? '')) === 'rc') {
+			$out .= "  <meta name='apple-mobile-web-app-title' content='RKRK RC'>\n";
+		}
 		return $out;
 	}
 }

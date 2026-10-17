@@ -173,7 +173,7 @@
 		echo "</video>". chr(10);	
 		echo '<br>' .chr(10);
 		echo "<h3>Hinzufügen eines neuen Feldes</h3>";
-		echo "<p>Hinzufügen eines neuen Feldes durch hochladen der relevanten Files (Übersichtsbild, Flugplan, JSON-, KML- und LCHM Datei).</p>";
+		echo "<p>Hinzufügen eines neuen Feldes durch hochladen der relevanten Files (Übersichtsbild, Flugplan, JSON- und KMZ-Datei).</p>";
 		echo "<video width='320' height='240' controls>". chr(10);
 		echo "<source src='..\help\RKRK Laden der Daten eines neuen Feldes.mp4' type='video/mp4'>". chr(10);
 		echo "</video>". chr(10);	
@@ -183,12 +183,6 @@
 		echo "<video width='320' height='240' controls>". chr(10);
 		echo "<source src='..\help\RKRK Buchen und Bearbeiten von Flügen.mp4' type='video/mp4'>". chr(10);
 		echo "</video>". chr(10);	
-		echo "<h3>Direktes Herunterladen und Übertragen von Dateien nach Litchi</h3>";
-		echo "<p>Auswählen und herunterladen von Dateien in der Buchungsseite und wie sie einfach über den SolidExplorer nach Litchi geladen und geprüft werden können.</p>";
-		echo "<video width='320' height='240' controls>". chr(10);
-		echo "<source src='..\help\RKRK Direktes Laden von Daten in Litchi.mp4' type='video/mp4'>". chr(10);
-		echo "</video>". chr(10);	
-		echo "<p><b>Merke:</b> <i>Der Zugriff auf den Android/data Ordner, um Litchi Daten zu kopieren geht nur noch bis und mit Andoir 12. Android 13+ habet diesen Zugriff gesperrt! Alternativ kann die App FV File Explorer verwendet werden. Hier kann durch drücken auf den Ordner:ˋAndroid/data/com.aryuthere.visionplusˋ der Zugriff auf die Benutzerdaten von Litchi wieder erreicht werden.</i></p>";
 		echo "<p>KMZ- und JSON-Dateien für den Einsatz direkt in den Flugbuchungen über die Download-Icons am Pilotentag herunterladen.</p>";
         echo "<h3>Löschen eines neuen Feldes</h3>";
 		echo "<p>Löschen eines Feldes inkl. den zughörigen Dateien und dem Katalogeintrag.</p>";

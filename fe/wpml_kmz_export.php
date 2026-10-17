@@ -53,7 +53,7 @@ if (!function_exists('wpml_fmt_num')) {
 }
 
 if (!function_exists('wpml_heading_block_xml')) {
-    function wpml_heading_block_xml(array $wp, int $indent = 4): string
+    function wpml_heading_block_xml(array $wp, int $indent = 4, bool $includeUseGlobal = false): string
     {
         $pad = str_repeat('  ', $indent);
         $mode = (string)($wp['heading_mode'] ?? 'followWayline');
@@ -69,14 +69,17 @@ if (!function_exists('wpml_heading_block_xml')) {
             $pathMode = 'followBadArc';
         }
         $xml = $pad . '<wpml:waypointHeadingParam>' . "\n";
+        if ($includeUseGlobal) {
+            $xml .= wpml_xml_leaf('wpml:useGlobalHeadingParam', 0, $indent + 1);
+        }
         $xml .= wpml_xml_leaf('wpml:waypointHeadingMode', $mode, $indent + 1);
-        if ($mode === 'smoothTransition') {
-            $xml .= wpml_xml_leaf('wpml:waypointHeadingAngle', wpml_fmt_num(floatval($wp['heading_angle'] ?? 0.0), 1), $indent + 1);
+        if ($mode === 'smoothTransition' && array_key_exists('heading_angle', $wp) && $wp['heading_angle'] !== null && $wp['heading_angle'] !== '' && is_numeric($wp['heading_angle'])) {
+            $xml .= wpml_xml_leaf('wpml:waypointHeadingAngle', wpml_fmt_num(floatval($wp['heading_angle']), 1), $indent + 1);
         }
         if ($mode === 'towardPOI') {
             $xml .= wpml_xml_leaf('wpml:waypointPoiPoint', (string)$wp['poi_point'], $indent + 1);
         }
-        $xml .= wpml_xml_leaf('wpml:waypointHeadingPathMode', $pathMode, $indent + 1);
+        $xml .= wpml_xml_leaf('wpml:waypointHeadingYawPathMode', $pathMode, $indent + 1);
         $xml .= $pad . '</wpml:waypointHeadingParam>' . "\n";
         return $xml;
     }
@@ -92,6 +95,7 @@ if (!function_exists('wpml_turn_block_xml')) {
             'toPointAndStopWithDiscontinuityCurvature',
             'toPointAndStopWithContinuityCurvature',
             'toPointAndPassWithContinuityCurvature',
+            'toPointAndPassWithContinuityCurvature2',
         ];
         if (!in_array($mode, $allowed, true)) {
             $mode = 'coordinateTurn';
@@ -100,10 +104,8 @@ if (!function_exists('wpml_turn_block_xml')) {
         if (!is_finite($damp) || $damp < 0.0) {
             $damp = 0.0;
         }
-        $straight = intval($wp['use_straight_line'] ?? 1) ? 1 : 0;
         $xml = $pad . '<wpml:waypointTurnParam>' . "\n";
         $xml .= wpml_xml_leaf('wpml:waypointTurnDampingDist', wpml_fmt_num($damp, 1), $indent + 1);
-        $xml .= wpml_xml_leaf('wpml:useStraightLine', $straight, $indent + 1);
         $xml .= wpml_xml_leaf('wpml:waypointTurnMode', $mode, $indent + 1);
         $xml .= $pad . '</wpml:waypointTurnParam>' . "\n";
         return $xml;
@@ -168,10 +170,16 @@ if (!function_exists('wpml_template_placemark_xml')) {
             $xml .= wpml_xml_leaf('wpml:waypointSpeed', wpml_fmt_num(floatval($wp['speed'] ?? ($ctx['auto_flight_speed'] ?? 5.0)), 1), 3);
         }
         $xml .= wpml_xml_leaf('wpml:useGlobalTurnParam', $useTurn, 3);
+        $xml .= wpml_xml_leaf('wpml:useStraightLine', intval($wp['use_straight_line'] ?? 1) ? 1 : 0, 3);
         $xml .= wpml_turn_block_xml($wp, 3);
-        $xml .= wpml_xml_leaf('wpml:useGlobalHeadingParam', $useHead, 3);
-        if ($useHead === 0) {
-            $xml .= wpml_heading_block_xml($wp, 3);
+        if ($useHead === 1) {
+            $xml .= wpml_xml_leaf('wpml:useGlobalHeadingParam', 1, 3);
+        } else {
+            $xml .= wpml_heading_block_xml($wp, 3, true);
+        }
+        if ((string)($ctx['gimbal_pitch_mode'] ?? '') === 'usePointSetting') {
+            $pitch = floatval($wp['gimbal_pitch'] ?? -90.0);
+            $xml .= wpml_xml_leaf('wpml:gimbalPitchAngle', wpml_fmt_num($pitch, 1), 3);
         }
         $xml .= '    </Placemark>' . "\n";
         return $xml;
@@ -193,6 +201,7 @@ if (!function_exists('wpml_wayline_placemark_xml')) {
         $xml .= wpml_xml_leaf('wpml:executeHeight', wpml_fmt_num($h, 1), 3);
         $xml .= wpml_xml_leaf('wpml:waypointSpeed', wpml_fmt_num($speed, 1), 3);
         $xml .= wpml_heading_block_xml($wp, 3);
+        $xml .= wpml_xml_leaf('wpml:useStraightLine', intval($wp['use_straight_line'] ?? 1) ? 1 : 0, 3);
         $xml .= wpml_turn_block_xml($wp, 3);
         $xml .= '    </Placemark>' . "\n";
         return $xml;
@@ -203,7 +212,11 @@ if (!function_exists('build_dji_wpml_template_kml')) {
     function build_dji_wpml_template_kml(array $ctx): string
     {
         $ms = (string)round(microtime(true) * 1000);
-        $inner = wpml_xml_leaf('wpml:author', (string)($ctx['author'] ?? 'RKRK'), 1);
+        $inner = '';
+        if (trim((string)($ctx['mission_name'] ?? '')) !== '') {
+            $inner .= '  <name>' . wpml_xml_esc((string)$ctx['mission_name']) . '</name>' . "\n";
+        }
+        $inner .= wpml_xml_leaf('wpml:author', (string)($ctx['author'] ?? 'RKRK'), 1);
         $inner .= wpml_xml_leaf('wpml:createTime', $ms, 1);
         $inner .= wpml_xml_leaf('wpml:updateTime', $ms, 1);
         $inner .= wpml_mission_config_xml($ctx, false, 1);
@@ -213,6 +226,10 @@ if (!function_exists('build_dji_wpml_template_kml')) {
         $inner .= wpml_xml_leaf('wpml:autoFlightSpeed', wpml_fmt_num(floatval($ctx['auto_flight_speed'] ?? 5.0), 1), 2);
         $inner .= '    <wpml:globalWaypointHeadingParam>' . "\n";
         $inner .= wpml_xml_leaf('wpml:waypointHeadingMode', (string)($ctx['heading_mode'] ?? 'followWayline'), 3);
+        if ((string)($ctx['heading_mode'] ?? '') === 'towardPOI' && trim((string)($ctx['heading_poi_point'] ?? '')) !== '') {
+            $inner .= wpml_xml_leaf('wpml:waypointPoiPoint', (string)$ctx['heading_poi_point'], 3);
+            $inner .= wpml_xml_leaf('wpml:waypointHeadingYawPathMode', 'followBadArc', 3);
+        }
         $inner .= '    </wpml:globalWaypointHeadingParam>' . "\n";
         $inner .= wpml_xml_leaf('wpml:globalWaypointTurnMode', (string)($ctx['turn_mode'] ?? 'coordinateTurn'), 2);
         $inner .= wpml_xml_leaf('wpml:globalUseStraightLine', intval($ctx['use_straight_line'] ?? 1), 2);

@@ -1,5 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" >
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="icon" type="image/png" sizes="192x192" href="../favicon/Reh_FA840B_orange/android-icon-192x192.png?v=20260915a" />
+<link rel="apple-touch-icon" sizes="192x192" href="../favicon/Reh_FA840B_orange/android-icon-192x192.png?v=20260915a" />
+<link rel="icon" type="image/png" sizes="96x96" href="../favicon/Reh_FA840B_orange/android-icon-96x96.png?v=20260915a" />
+<link rel="icon" type="image/png" sizes="48x48" href="../favicon/Reh_FA840B_orange/android-icon-48x48.png?v=20260915a" />
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon/Reh_FA840B_orange/favicon-32x32.png?v=20260915a" />
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon/Reh_FA840B_orange/favicon-16x16.png?v=20260915a" />
+<link rel="icon" type="image/x-icon" href="../favicon/Reh_FA840B_orange/rkrk.ico?v=20260915a" />
+<link rel="shortcut icon" href="../favicon/Reh_FA840B_orange/rkrk.ico?v=20260915a" />
+<link rel="apple-touch-icon" sizes="180x180" href="../favicon/Reh_FA840B_orange/apple-icon-180x180.png?v=20260915a" />
+</head>
 <?php
 	//session_start();
 ?>

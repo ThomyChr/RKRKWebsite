@@ -208,13 +208,33 @@ body.rkrk-map27-page {
 	white-space: nowrap;
 	flex: 0 0 auto;
 }
+.rkrk-shell-header .rkrk-shell-favicon {
+	display: inline-flex;
+	align-items: center;
+	flex: 0 0 auto;
+	order: -1;
+	padding: 4px 10px 4px 8px;
+	background: transparent !important;
+}
+.rkrk-shell-header .rkrk-shell-favicon img {
+	height: 32px;
+	width: 32px;
+	object-fit: contain;
+	background: transparent;
+}
 .rkrk-shell-header .rkrk-shell-logo {
+	display: inline-flex;
+	align-items: center;
 	margin-left: auto;
+	flex: 0 0 auto;
+	padding: 4px 10px 4px 12px;
+	background: transparent !important;
+}
+.rkrk-shell-header .rkrk-shell-logo img {
 	height: 40px;
 	width: auto;
-	flex: 0 0 auto;
-	padding: 4px 8px 4px 12px;
 	object-fit: contain;
+	background: transparent;
 }
 .rkrk-shell-nav-label {
 	white-space: nowrap;

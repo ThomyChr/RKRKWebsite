@@ -43,6 +43,7 @@ html.rkrk-shell .rkrk-shell-main {
   padding: 6px 10px;
 }
 .rkrk-adr-col-vis summary { cursor: pointer; font-weight: 600; }
+.rkrk-adr-col-vis:not([open]) > :not(summary) { display: none; }
 .rkrk-adr-note { color: #666; font-size: 12px; margin: 6px 0; }
 .rkrk-adr-count { color: #666; font-size: 12px; }
 .rkrk-adr-cols { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 6px; margin: 0 0 8px; }

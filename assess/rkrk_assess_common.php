@@ -4614,7 +4614,7 @@ function rkrk_assess_encode_url_for_request(string $url): string {
 		$rest = isset($m[2]) ? (string) $m[2] : '';
 		$frag = '';
 		$query = '';
-		if (preg_match('#^([^?#]*)(\?[^#]*)?(#.*)?$#', $rest, $rm) === 1) {
+		if (preg_match('~^([^?#]*)(\?[^#]*)?(#.*)?$~', $rest, $rm) === 1) {
 			$path = (string) ($rm[1] ?? '');
 			$query = (string) ($rm[2] ?? '');
 			$frag = (string) ($rm[3] ?? '');

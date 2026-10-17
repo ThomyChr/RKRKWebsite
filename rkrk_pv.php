@@ -79,7 +79,7 @@ table, td, th {
 	echo "<H2> Personen Verifikation <b>drohnenrehkitzrettung.ch</b></H2></br>";
 	//pre_r($PersonenDaten[$Pers]);
 	
-	if (count($PersonenDaten[$Pers])>0) {
+	if ($Pers !== '' && isset($PersonenDaten[$Pers]) && is_array($PersonenDaten[$Pers]) && count($PersonenDaten[$Pers])>0) {
 		echo "<table id='table1'>";
 		echo "<tr>";
 		echo "<td rowspan='10'>";
@@ -232,14 +232,15 @@ table, td, th {
 		echo "</tr>";
 
 		echo "</table>";
-		if (file_exists($PersImageLoc . $PersonenDaten[$Pers]['STSAcc'])) {
+		$stsAcc = trim((string)($PersonenDaten[$Pers]['STSAcc'] ?? ''));
+		if ($stsAcc !== '' && is_file($PersImageLoc . $stsAcc)) {
 			echo "<br><hr>";
 			echo "<h2>Accreditierung der praktischen STS Prüfung</h2>";
 			echo "<div id='STSACC'>";
 			$PAWidth= 680;
 			$PAHeight= 730;
 			$PAZoom=30;
-			echo "<iframe name='myiframe' id='myiframe' src='".$PersImageLoc . $PersonenDaten[$Pers]['STSAcc']."#toolbar=0&zoom=".$PAZoom."' width='".$PAWidth."' height='".$PAHeight."' style='overflow: hidden; overflow-x: hidden; overflow-y: hidden;' type='application/pdf'></iframe>";
+			echo "<iframe name='myiframe' id='myiframe' src='".$PersImageLoc . $stsAcc."#toolbar=0&zoom=".$PAZoom."' width='".$PAWidth."' height='".$PAHeight."' style='overflow: hidden; overflow-x: hidden; overflow-y: hidden;' type='application/pdf'></iframe>";
 			echo "</div>";
 		}
 		
@@ -263,22 +264,26 @@ table, td, th {
 		echo "<br><hr>";
 		echo "<h2>Flugberechtigungen</h2>";
 		echo "Folgende spezifische Flugberechtiungen sind zusätzlich gültig:<br>";
+		$kmlQuery = "Reg=leer&Strt=on&Cntr=off&Area=on&Pfad=on&WW=off&FZ=on&GDE=off&JGG=off&KT=off&ORT=off&Poi=off&HSP=off&Label=off&GeLa=off&Sun=off&EG=off&SORA=off&WF=off&KA=S&Zoom=1&MDB=3T&GA=gast&FZO=" . ($PersonenDaten[$Pers]['FlugzonenOption'] ?? '') . "&WebAccess=test";
+		$kmlAbsolute = rtrim((string)$ThisPageDirectory, '/') . "/rkrk_dokml.php?" . $kmlQuery;
+		$kmlLayerToken = 'KML%7C' . str_replace(
+			array('|', '?', '&', '#'),
+			array('%7C', '%3F', '%26', '%23'),
+			$kmlAbsolute
+		);
 		if ((in_array("FGHO_RKRK", explode(",",$PersonenDaten[$Pers]['Flugberechtigung'])))
 			or (in_array("FGHO_RKRS", explode(",",$PersonenDaten[$Pers]['Flugberechtigung']))))
 		{
 			echo "<h3>FGHO/ Hausen am Albis</h3>";
 
 			$CenterLocation = "center=2682069.16,1232735.4&z=5";
-			$Map = "KML%7C".$ThisPageDirectory."/rkrk_dokml.php?Reg=leer%26Strt=on%26Cntr=off%26Area=on%26Pfad=on%26WW=off%26FZ=on%26GDE=off%26JGG=off%26KT=off%26ORT=off%26Poi=off%26HSP=off%26Label=off%26GeLa=off%26Sun=off%26EG=off%26SORA=off%26WF=off%26KA=S%26Zoom=1%26FFilter=%26SFilter=%26MDB=3T%26GA=gast";
-			$Add = "%26FZO=".$PersonenDaten[$Pers]['FlugzonenOption']."%26WebAccess=test";
-			
-			$MapSetting = "https://map.geo.admin.ch/#/embed?lang=de&".$CenterLocation."&bgLayer=ch.swisstopo.pixelkarte-grau&topic=ech&layers=ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f;ch.bazl.einschraenkungen-drohnen,f;ch.bazl.uas-aktivitaetszonen,f;".$Map."&featureInfo=default";
+			$baseLayers = "ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f;ch.bazl.einschraenkungen-drohnen,f;ch.bazl.uas-aktivitaetszonen,f";
+			$MapSetting = $MapGeoAdminURL . "lang=de&" . $CenterLocation . "&bgLayer=ch.swisstopo.pixelkarte-grau&topic=ech&layers=" . $baseLayers . ";" . $kmlLayerToken;
 			
 			echo "<table id='table3' style='width:".$Width."'>";
 			echo "<tr>";
 			echo "<td style='width:".$MapWidth."'>";
-			//echo "Setting: " . $MapSetting . "&FDY=" . $Today . "<br>";
-			echo '<iframe width="'.$MapWidth.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.$MapSetting . "&FDY=" . $Today . '"></iframe>'.chr(10);
+			echo '<iframe width="'.$MapWidth.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.$MapSetting.'"></iframe>'.chr(10);
 			echo "</td>";
 			echo "<td style='width:".$ColWidth."'>";
 			echo fligtzone_legend(true, "100%", "FGHO", $PersonenDaten[$Pers]['FlugzonenOption']);
@@ -300,17 +305,13 @@ table, td, th {
 			echo "<h3>LSXN Haltikon</h3>";
 		
 			$CenterLocation = "center=2674376.48,1215932.74&z=5";
-			//$Map = "KML%7C".$ThisPageDirectory."/rkrk_dokml.php?Reg=leer%26Strt=on%26Cntr=off%26Area=on%26Pfad=on%26WW=off%26FZ=on%26GDE=off%26JGG=off%26KT=off%26ORT=off%26Poi=off%26HSP=off%26Label=off%26GeLa=off%26Sun=off%26EG=off%26SORA=off%26WF=off%26KA=S%26Zoom=1%26FFilter=%26SFilter=%26MDB=3T%26GA=gast";
-			//$Add = "%26FZO=".$PersonenDaten[$Pers]['FlugzonenOption']."%26WebAccess=test";
-			
-			$MapSetting = "https://map.geo.admin.ch/#/embed?lang=de&".$CenterLocation."&bgLayer=ch.swisstopo.pixelkarte-grau&topic=ech&layers=ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f;ch.bazl.einschraenkungen-drohnen,f;".$Map."&featureInfo=default";
-			
+			$baseLayers = "ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f;ch.bazl.einschraenkungen-drohnen,f";
+			$MapSetting = $MapGeoAdminURL . "lang=de&" . $CenterLocation . "&bgLayer=ch.swisstopo.pixelkarte-grau&topic=ech&layers=" . $baseLayers . ";" . $kmlLayerToken;
 			
 			echo "<table id='table4' style='width:".$Width."'>";
 			echo "<tr>";
 			echo "<td style='width:".$MapWidth."'>";
-			//echo "Setting: " . $MapSetting . "&FDY=" . $Today . "<br>";
-			echo '<iframe width="'.$MapWidth.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.$MapSetting . "&FDY=" . $Today . '"></iframe>'.chr(10);
+			echo '<iframe width="'.$MapWidth.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.$MapSetting.'"></iframe>'.chr(10);
 			echo "</td>";
 			echo "<td style='width:".$ColWidth."'>";
 			echo fligtzone_legend(true, "100%", "LSXN");
@@ -332,7 +333,7 @@ table, td, th {
 			echo "<tr>";
 			echo "<td style='width:".$MapWidth."'>";
 			//echo "Setting: " . $MapSetting . "&FDY=" . $Today . "<br>";
-			echo '<iframe width="'.$MapWidth.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.$MapSetting . "&FDY=" . $Today . '"></iframe>'.chr(10);
+			echo '<iframe width="'.$MapWidth.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.$MapSetting.'"></iframe>'.chr(10);
 			echo "</td>";
 			echo "<td>";
 			echo "<b>Beispiel</b> 'Unterwerk Sursee'<br>";

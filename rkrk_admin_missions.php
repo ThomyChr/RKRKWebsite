@@ -32,7 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['missions']) && is_arr
 	}
 }
 
-echo "<p>Ordnerpfade (<code>MissionLocation</code> / <code>DocLocation</code>) und MDB-Schlüssel sind fest. Speichern schreibt nur Name, aktiv und Freigabe nach <code>rkrk/config/missions.json</code>.</p>\n";
+echo "<p>Ordnerpfade (<code>MissionLocation</code> / <code>DocLocation</code>) und MDB-Schlüssel sind fest. Speichern schreibt nur Name, aktiv und Freigabe nach <code>rkrk/config/missions.json</code>. Ein Feldkatalog wird nur hier in der Website-Konfiguration geführt, nicht im Feldeditor: ein neuer Katalog hängt an Missionsordner, Freigabe, Karte und Konvertierung.</p>\n";
+echo "<p>Feldkatalog vorhanden: Mavic 3T, Matrice 4TD, Mavic 3T Debug. Keinen Feldkatalog haben Matrice 4T, Matrice 3TD und Mavic 3TA. Mavic II und Matrice 30T sind aus der Auswahl entfernt. Die vorhandenen Missionsordner bleiben.</p>\n";
 if ($msg !== '') {
 	echo "<p><b>" . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . "</b></p>\n";
 }

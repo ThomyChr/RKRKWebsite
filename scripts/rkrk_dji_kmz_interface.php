@@ -1,5 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" >
 <?php
 // DJI KMZ Interface
 // https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html
@@ -21,7 +19,22 @@
 						"external" => false,
 						"advanced" => true,
 						"editor" => true,
-					),	
+					),
+					"D" => array(
+						"Name" => "Mavic 3T - Debug",
+						"UAVCopterProfile" => "dji-pilot-2",
+						"UAVDroneType" => "mavic3T",
+						"DFOV" => 61,
+						"IRCamAngle_H" => 49,
+						"IRCamAngle_V" => 40,
+						"IRCamResolution_H" => 640,
+						"IRCamResolution_V" => 512,
+						"img" => "M3T.png",
+						"conversion" => true,
+						"external" => false,
+						"advanced" => true,
+						"editor" => true,
+					),
 					"3TD" => array(
 						"Name" => "Mavic 3TD",
 						"UAVCopterProfile" => "dji-pilot-2",
@@ -93,10 +106,10 @@
 						"IRCamResolution_H" => 640,
 						"IRCamResolution_V" => 512,
 						"img" => "M30T.png",
-						"conversion" => true,
+						"conversion" => false,
 						"external" => false,
 						"advanced" => true,
-						"editor" => true,
+						"editor" => false,
 					),	
 					"M2EA" => array(
 						"Name" => "Mavic 2EA",

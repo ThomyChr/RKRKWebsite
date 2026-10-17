@@ -130,6 +130,7 @@ $ShowButton = false;
 		echo "<div class='darkgreen'>". chr(10);
 		echo "<br><b>Für weitere Informationen musst du dich einloggen.</b><br><br>Falls du noch nicht registriert bist, bitte zuerst registrieren - danach kannst du dich einloggen.<br><br>";
 		echo '<p style="margin:12px 0;"><a class="btn" href="' . $loginSelf . '?page_action=login" title="Login-Formular; Registrieren über den Button im Formular">Zum Login / Registrieren</a></p>';
+		echo '<p style="margin:12px 0;"><a class="btn" href="rkrk_rc_access.php">RC Zugang</a></p>';
 		echo "</div>";
 	}	
 
@@ -312,35 +313,15 @@ $ShowButton = false;
 		// ==============================
 
 		if (GetAccess("AllPilots")){
-			if (GetAccess("InternPilots")){
-			
-				if (GetAccess("TestOnly")){
-					echo '<h2>In Arbeit</h2>' .chr(10);
-					echo '<ul>' .chr(10);
-					//echo '<li><a href="rkrk_quiz.php">Quiz</a></li>' .chr(10);
-					//echo '<br>';
-					echo '<li><a href="rkrk_pictures.php">Test Bildspeicherung</a></li>' .chr(10);
-					echo '<li><a href="2023_rkrk_adrlwbtr.php">Adressen Bauern (2023)</a></li>' .chr(10);
-					echo '<li><a href="2024_rkrk_fluege.php">Flüge (2023)</a></li>' .chr(10);
-					echo '<li><a href="test_flex_layout.php">FlexLayout</a></li>' .chr(10);
-					echo '<li><a href="test_flex_template.php">FlexTemplate</a></li>' .chr(10);
-					echo '</ul>' .chr(10);			echo '</ul>' .chr(10);
-				}
-			}
 			echo '<h2>Hilfslinks</h2>' .chr(10);
 			echo '<ul>' .chr(10);
+			echo '<li><a href="rkrk_rc_access.php">RC Zugang</a></li>' .chr(10);
 			echo '<li><a href="rkrk_calc.php?RKRK">Flugberechnung</a></li>' .chr(10);
-			echo '<li><a href="rkrk_map.php?Reg=leer&KA=F&Strt=on&Area=on&&Label=on&EG=on&WF=off&EX=no&MAP=&FFilter=&Zoom=1.0&MenuOn=off&GA=gast&Color=white&MapButtons=off">Unsere Einsatzgebiete</a></li>' .chr(10);
 			if (GetAccess("TestOnly")){
-				echo '<li><a href="rkrk_conversion.php?TEST">Feldkonvertierungswerkzeug (Test)</a></li>' .chr(10);
-				echo '<li><a href="rkrk_calc.php?TEST">Flugberechnung (Test)</a></li>' .chr(10);
 				echo '<li><a href="rkrk_xml2kml.php?Reg=26&File=26_Felder&Deb=off">generiere und speichere KML file für Region 26 (ohne Debug outputs)</a></li>' .chr(10);
-				echo '<li><a href="rkrk_dokml.php?Reg=ALL&Strt=On&Cnrt=On&Area=On&Pfad=On&File=ALL_kml&Poi=Off&WebAccess='.$Webaccess.'">generiere KML Daten für alle Regionen (ohne Debug outputs)</a></li>' .chr(10);
-				echo '<li><a href="rkrk_dokml.php?Reg=21&Strt=On&Cnrt=On&Area=On&Pfad=On&File=21_kml&Poi=Off&WebAccess='.$Webaccess.'">generiere KML Daten für Region 21 (ohne Debug outputs)</a></li>' .chr(10);
+				echo '<li><a href="rkrk_dokml.php?Reg=ALL&Strt=On&Cnrt=On&Area=On&Pfad=On&File=ALL_kml&Poi=Off&WebAccess='.($WebFreigabe ?? 'gast').'">generiere KML Daten für alle Regionen (ohne Debug outputs)</a></li>' .chr(10);
+				echo '<li><a href="rkrk_dokml.php?Reg=21&Strt=On&Cnrt=On&Area=On&Pfad=On&File=21_kml&Poi=Off&WebAccess='.($WebFreigabe ?? 'gast').'">generiere KML Daten für Region 21 (ohne Debug outputs)</a></li>' .chr(10);
 				echo '<li><a href="rkrk_jg_summary.php?Reg=26&Color=white">Externe Zusammenfassungsseite (z.B. JG 26)</a></li>' .chr(10);
-				echo '<li><a href="rkrk_catalog_health.php">Feldkatalog Health (Überarbeitung der Felddaten)</a></li>' .chr(10);
-				echo '<li><a href="test_conv_kml2svg.php">Test converting KML files to SVG/JPG/PNG pictures</a></li>' .chr(10);	
-				echo '<li><a href="test_checklist.php">Test einer online Checkliste für Drohnenpiloten</a></li>' .chr(10);	
 				//echo '<li><a href="rkrk_pv.php?P=tc-mxmi&Color=white">Personen Verifikation (Thomas Christen)</a>' .chr(10);
 				echo '<li>Personen Verifikation:' .chr(10);
 				foreach ($OptionPilot as $key => $OptPilot) {
@@ -353,11 +334,6 @@ $ShowButton = false;
 				}	
 				echo ' (<a href="rkrk_pv.php?P=tc-mxmi&Color=white">lokal ch</a>, <a href="rkrk_pv.php?P=tchr-hwsr&Color=white">lokal de</a>)' .chr(10);
 				//echo ' - <a href="https://www.drohnenrehkitzrettung.ch/pv/verify?P=tc-mxmi"><i>flex auf DRKRK</i></a></li>' .chr(10);
-				echo '<li><a href="https://www.drohnenrehkitzrettung.ch/flugkatalog1/fg?JG=ZG1%20ZG2%20ZG3&JGN=ZG%20Zug">Feldkatalog (auf drohnenrehkitzrettung.ch) - <i>flex</i></a></li>' .chr(10);
-			
-			
-				echo '<li><a href="test_jg_summary.php">Test externe Zusammenfassungsseite (z.B. JG 26)</a></li>' .chr(10);
-				echo '<li><a href="rkrk_felderliste.php?'. base64_encode("Reg=26,27") . '">Test Verschlüsselung Feldliste</a></li>' .chr(10);
 			}
 			//2023-08-29 Ausgeschaltet, wenn keine Überarbeitungen nötig sind am Feldkatalog 
 			//echo '<li><a href="dev_maintain_feldkatalog.php">DEV: Überarbeitung des Feldkatalogs</a></li>' .chr(10);

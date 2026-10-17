@@ -1,5 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" >
 <?php
 // Handling of ZIP and KMZ files 
 // Needs ZIP package enabled on Server to run
@@ -107,19 +105,12 @@ $KMZTemplate = Array(
 
 		// get the absolute path to $file
 		$path = $UnzipDirectory.pathinfo($ZipFile, PATHINFO_FILENAME);
-		echo "zip archive: ".$path. "<br>";
 
 		$zip = new ZipArchive;
-		//echo "open ZipFile<br>";
 		$res = $zip->open($ZipFile);
-		$res=true;
 		if ($res === TRUE) {
-		  // extract it to the path we determined above
 		  $zip->extractTo($path);
 		  $zip->close();
-		  //echo "GREAT! $ZipFile extracted to $path!<br>";
-		} else {
-		  echo "File: $ZipFile not found!<br>";
 		}
 	}
 	
@@ -468,7 +459,34 @@ $KMZTemplate = Array(
 		//pre_r($KmzData);
 	}	
 
-	Function CreateKMZforNewDrone($Confile, $SourceDrone, $TargetDrone) {
+	function rkrk_kmz_force_drone_tags($xml, $targetDrone) {
+		global $DJI_DroneInformation;
+		$xml = (string)$xml;
+		if (!is_array($DJI_DroneInformation ?? null)) {
+			return $xml;
+		}
+		$map = array(
+			'droneEnumValue' => $DJI_DroneInformation['wpml:droneEnumValue'][$targetDrone] ?? null,
+			'droneSubEnumValue' => $DJI_DroneInformation['wpml:droneSubEnumValue'][$targetDrone] ?? null,
+			'payloadEnumValue' => $DJI_DroneInformation['wpml:payloadEnumValue'][$targetDrone] ?? null,
+			'payloadSubEnumValue' => $DJI_DroneInformation['wpml:payloadSubEnumValue'][$targetDrone] ?? null,
+			'payloadPositionIndex' => $DJI_DroneInformation['wpml:payloadPositionIndex'][$targetDrone] ?? null,
+		);
+		foreach ($map as $tag => $value) {
+			if ($value === null || $value === '') {
+				continue;
+			}
+			$xml = preg_replace(
+				'#(<wpml:' . $tag . '>)[^<]*(</wpml:' . $tag . '>)#',
+				'${1}' . $value . '${2}',
+				$xml,
+				1
+			);
+		}
+		return $xml;
+	}
+
+	Function CreateKMZforNewDrone($Confile, $SourceDrone, $TargetDrone, $persist = true) {
 		global 	$RKRKRelWebLocation,
 				$RegionSettings,
 				$MissionDroneTypes,
@@ -496,7 +514,7 @@ $KMZTemplate = Array(
 
 			// CREATE KML data from array
 			// --------------------------
-			$XmlFileContent = arrayToXml($KMZData);
+			$XmlFileContent = rkrk_kmz_force_drone_tags(arrayToXml($KMZData), $TargetDrone);
 			//var_dump($XmlFileContent);
 			
 			//echo "TempTargetZipFile: ". $TargetDirectory . $KmzFileName . "<br>";
@@ -514,8 +532,11 @@ $KMZTemplate = Array(
 			//only for debugging
 			//CreateZipFile($tempfilelocation, $TargetZipFile, $OutputKmzFile, "zip");
 			$KMZFileLocation =  CreateZipFile($tempfilelocation, $TargetZipFile, $OutputKmzFile, "kmz");
+			if (!$persist) {
+				return $KMZFileLocation;
+			}
 
-			//$TargetZipLocation = $RKRKRelWebLocation.$MissionDroneTypes[$TargetDrone]["MissionLocation"].$RegionSettings[multiexplode(array("_", "-"),pathinfo($ConFile, PATHINFO_FILENAME))[0]]["Dir"]."/".$TargetZipFile
+			//$TargetZipLocation = $RKRKRelWebLocation.$MissionDroneTypes[$TargetDrone]["MissionLocation"].$RegionSettings[multiexplode(array("_", "-"),pathinfo($ConFile, PATHINFO_FILENAME))[0]]["Dir"]."/".$TargetZipFile
 			
 			
 			$TargetKMZLocation = $RKRKRelWebLocation.$MissionDroneTypes[$TargetDrone]["MissionLocation"] . $RegionSettings[multiexplode(array("_", "-"),$CoreFilename)[0]]["Dir"] . "/" . $TargetZipFile.".kmz";

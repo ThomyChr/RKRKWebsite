@@ -83,20 +83,61 @@ if (!function_exists('rkrk_config_merge_assoc')) {
 if (!function_exists('rkrk_config_apply_missions')) {
 	function rkrk_config_apply_missions(array &$missionDroneTypes): void {
 		$overlay = rkrk_config_load('missions');
-		if ($overlay === array()) {
-			return;
-		}
-		$frozen = rkrk_config_mission_frozen_fields();
-		foreach ($missionDroneTypes as $mdb => $row) {
-			if (!isset($overlay[$mdb]) || !is_array($overlay[$mdb])) {
-				continue;
-			}
-			$missionDroneTypes[$mdb] = rkrk_config_merge_assoc($row, $overlay[$mdb], $frozen);
-			foreach ($frozen as $field) {
-				if (isset($row[$field])) {
-					$missionDroneTypes[$mdb][$field] = $row[$field];
+		if ($overlay !== array()) {
+			$frozen = rkrk_config_mission_frozen_fields();
+			foreach ($missionDroneTypes as $mdb => $row) {
+				if (!isset($overlay[$mdb]) || !is_array($overlay[$mdb])) {
+					continue;
+				}
+				$missionDroneTypes[$mdb] = rkrk_config_merge_assoc($row, $overlay[$mdb], $frozen);
+				foreach ($frozen as $field) {
+					if (isset($row[$field])) {
+						$missionDroneTypes[$mdb][$field] = $row[$field];
+					}
 				}
 			}
+		}
+	}
+}
+
+if (!function_exists('rkrk_config_catalog_location_ok')) {
+	function rkrk_config_catalog_location_ok($location): bool {
+		$loc = trim(str_replace('\\', '/', (string)$location));
+		if (!preg_match('#^Missionen [^/]+/$#', $loc)) {
+			return false;
+		}
+		if (strpos($loc, '..') !== false || stripos($loc, 'webdaten') !== false || stripos($loc, 'Intern') !== false) {
+			return false;
+		}
+		return true;
+	}
+}
+
+if (!function_exists('rkrk_config_apply_catalog_extra')) {
+	function rkrk_config_apply_catalog_extra(array &$missionDroneTypes): void {
+		$data = rkrk_config_load('catalogs_extra');
+		$added = (isset($data['added']) && is_array($data['added'])) ? $data['added'] : array();
+		$frozen = rkrk_config_frozen_mdb_keys();
+		foreach ($added as $key => $row) {
+			$key = (string)$key;
+			if (!preg_match('/^[A-Za-z0-9]{1,8}$/', $key) || in_array($key, $frozen, true) || isset($missionDroneTypes[$key]) || !is_array($row)) {
+				continue;
+			}
+			$loc = trim(str_replace('\\', '/', (string)($row['MissionLocation'] ?? '')));
+			if (!rkrk_config_catalog_location_ok($loc)) {
+				continue;
+			}
+			$missionDroneTypes[$key] = array(
+				'Name' => trim((string)($row['Name'] ?? $key)),
+				'MissionLocation' => $loc,
+				'DocLocation' => 'Missionen/',
+				'active' => true,
+				'release' => 'test, intern',
+				'DataFile' => 'SuchfeldBild,FlugplanBild,JasonFile,KMZFile',
+				'button' => trim((string)($row['button'] ?? 'mavic3t_button.png')),
+				'button_orange' => trim((string)($row['button_orange'] ?? 'mavic3t_orange_button.png')),
+				'img' => trim((string)($row['img'] ?? '')),
+			);
 		}
 	}
 }
@@ -324,6 +365,15 @@ if (!function_exists('rkrk_config_apply_personen')) {
 
 if (!function_exists('rkrk_config_apply_menu')) {
 	function rkrk_config_apply_menu(array &$mainMenu): void {
+		if (!isset($GLOBALS['RkrkMenuPhpKeys'])) {
+			$GLOBALS['RkrkMenuPhpKeys'] = array();
+			$GLOBALS['RkrkMenuBaseSites'] = array();
+			foreach ($mainMenu as $key => $row) {
+				$key = (string)$key;
+				$GLOBALS['RkrkMenuPhpKeys'][$key] = true;
+				$GLOBALS['RkrkMenuBaseSites'][$key] = is_array($row) ? (string)($row['site'] ?? '') : '';
+			}
+		}
 		$overlay = rkrk_config_load('menu');
 		if ($overlay === array()) {
 			return;
@@ -338,6 +388,8 @@ if (!function_exists('rkrk_config_apply_menu')) {
 				'sort' => true,
 				'release' => true,
 				'main_menu' => true,
+				'parameter' => true,
+				'site' => true,
 				'image' => true,
 				'image_small' => true,
 				'users' => true,
@@ -358,10 +410,32 @@ if (!function_exists('rkrk_config_apply_menu')) {
 					$mainMenu[$key][$field] = $icon;
 				} elseif ($field === 'users') {
 					$mainMenu[$key][$field] = rkrk_config_sanitize_menu_users($value);
+				} elseif ($field === 'parameter') {
+					$mainMenu[$key][$field] = rkrk_config_sanitize_menu_parameter($value);
+				} elseif ($field === 'site') {
+					$site = rkrk_config_sanitize_menu_site($value);
+					if ($site === '') {
+						continue;
+					}
+					$mainMenu[$key][$field] = $site;
 				} else {
 					$mainMenu[$key][$field] = $value;
 				}
 			}
+		}
+		foreach ($overlay as $key => $row) {
+			$key = (string)$key;
+			if ($key === '' || isset($mainMenu[$key]) || !is_array($row)) {
+				continue;
+			}
+			if (rkrk_config_sanitize_menu_key($key) !== $key) {
+				continue;
+			}
+			$built = rkrk_config_menu_entry_from_overlay($row);
+			if ($built === null) {
+				continue;
+			}
+			$mainMenu[$key] = $built;
 		}
 	}
 }
@@ -378,6 +452,126 @@ if (!function_exists('rkrk_config_sanitize_menu_icon')) {
 			return '';
 		}
 		return '/' . $base;
+	}
+}
+
+if (!function_exists('rkrk_config_sanitize_menu_parameter')) {
+	function rkrk_config_sanitize_menu_parameter($value): string {
+		$s = function_exists('rkrk_str') ? rkrk_str($value) : (string)$value;
+		$s = ltrim(trim($s), '?');
+		if ($s === '') {
+			return '';
+		}
+		if (!preg_match('/^[A-Za-z0-9_&=.%+\-]*$/', $s)) {
+			return '';
+		}
+		return $s;
+	}
+}
+
+if (!function_exists('rkrk_config_menu_is_php_key')) {
+	function rkrk_config_menu_is_php_key($key): bool {
+		$keys = $GLOBALS['RkrkMenuPhpKeys'] ?? array();
+		return !empty($keys[(string)$key]);
+	}
+}
+
+if (!function_exists('rkrk_config_menu_base_site')) {
+	function rkrk_config_menu_base_site($key): string {
+		$sites = $GLOBALS['RkrkMenuBaseSites'] ?? array();
+		$key = (string)$key;
+		return array_key_exists($key, $sites) ? (string)$sites[$key] : '';
+	}
+}
+
+if (!function_exists('rkrk_config_sanitize_menu_key')) {
+	function rkrk_config_sanitize_menu_key($value): string {
+		$s = trim(function_exists('rkrk_str') ? rkrk_str($value) : (string)$value);
+		if (!preg_match('/^[A-Za-z][A-Za-z0-9_]{0,48}$/', $s)) {
+			return '';
+		}
+		return $s;
+	}
+}
+
+if (!function_exists('rkrk_config_sanitize_menu_target')) {
+	function rkrk_config_sanitize_menu_target($value): string {
+		$s = trim(function_exists('rkrk_str') ? rkrk_str($value) : (string)$value);
+		if (preg_match('/^_[A-Za-z0-9_\-]{1,40}$/', $s)) {
+			return $s;
+		}
+		return '_self';
+	}
+}
+
+if (!function_exists('rkrk_config_sanitize_menu_site')) {
+	function rkrk_config_sanitize_menu_site($value): string {
+		$s = function_exists('rkrk_str') ? rkrk_str($value) : (string)$value;
+		$s = trim($s);
+		if ($s === '' || strlen($s) > 16000) {
+			return '';
+		}
+		if (preg_match('/[\x00-\x1F\x7F\'"<>\\\\]/', $s)) {
+			return '';
+		}
+		if (preg_match('#^(?:javascript|data|vbscript):#i', $s)) {
+			return '';
+		}
+		if (preg_match('#^https?://#i', $s)) {
+			if (!preg_match('#^https?://[A-Za-z0-9][A-Za-z0-9.\-]*(?::\d+)?(?:/[A-Za-z0-9._~:/?#\[\]@!$&()*+,;=%|\-]*)?$#', $s)) {
+				return '';
+			}
+			return $s;
+		}
+		$parts = explode('?', $s, 2);
+		$path = $parts[0];
+		if (isset($parts[1]) && !preg_match('/^[A-Za-z0-9_&=.%+\-]*$/', $parts[1])) {
+			return '';
+		}
+		if (!preg_match('#^(?:(?:\.\./)+)?(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\- .]*[A-Za-z0-9_\-]?/?$#', $path)) {
+			return '';
+		}
+		if (!preg_match('/[A-Za-z0-9]/', $path)) {
+			return '';
+		}
+		$rest = preg_replace('#^(?:\.\./)+#', '', $path);
+		if (strpos($rest, '..') !== false) {
+			return '';
+		}
+		return $s;
+	}
+}
+
+if (!function_exists('rkrk_config_menu_entry_from_overlay')) {
+	function rkrk_config_menu_entry_from_overlay(array $row): ?array {
+		$site = rkrk_config_sanitize_menu_site($row['site'] ?? '');
+		$title = trim(function_exists('rkrk_str') ? rkrk_str($row['title'] ?? '') : (string)($row['title'] ?? ''));
+		if ($site === '' || $title === '') {
+			return null;
+		}
+		list($imageSmall, $image) = rkrk_config_menu_icons($row['image_small'] ?? '', $row['image'] ?? '');
+		if ($imageSmall !== '' && function_exists('rkrk_menu_icon_is_readable') && !rkrk_menu_icon_is_readable($imageSmall)) {
+			$imageSmall = '';
+		}
+		if ($image !== '' && function_exists('rkrk_menu_icon_is_readable') && !rkrk_menu_icon_is_readable($image)) {
+			$image = $imageSmall;
+		}
+		return array(
+			'title' => $title,
+			'site' => $site,
+			'parameter' => rkrk_config_sanitize_menu_parameter($row['parameter'] ?? ''),
+			'target' => rkrk_config_sanitize_menu_target($row['target'] ?? '_self'),
+			'image' => $image,
+			'image_small' => $imageSmall,
+			'desc_short' => $title,
+			'desc_long' => $title,
+			'release' => function_exists('rkrk_str') ? rkrk_str($row['release'] ?? '') : (string)($row['release'] ?? ''),
+			'main_menu' => function_exists('rkrk_str') ? rkrk_str($row['main_menu'] ?? '') : (string)($row['main_menu'] ?? ''),
+			'sort' => intval($row['sort'] ?? 0),
+			'activ' => !empty($row['activ']) && $row['activ'] !== '0' && $row['activ'] !== 'false',
+			'securl' => !empty($row['securl']) && $row['securl'] !== '0' && $row['securl'] !== 'false',
+			'users' => rkrk_config_sanitize_menu_users($row['users'] ?? ''),
+		);
 	}
 }
 
@@ -437,6 +631,10 @@ if (!function_exists('rkrk_config_menu_icon_choices')) {
 				if ($v !== '') {
 					$found[$v] = true;
 				}
+				$v = rkrk_config_sanitize_menu_icon($row['image'] ?? '');
+				if ($v !== '') {
+					$found[$v] = true;
+				}
 			}
 		}
 		$keys = array_keys($found);
@@ -457,6 +655,17 @@ if (!function_exists('rkrk_config_menu_icon_pair')) {
 			}
 		}
 		return array($small, $image);
+	}
+}
+
+if (!function_exists('rkrk_config_menu_icons')) {
+	function rkrk_config_menu_icons($imageSmall, $image): array {
+		$small = rkrk_config_sanitize_menu_icon($imageSmall);
+		$large = rkrk_config_sanitize_menu_icon($image);
+		if ($large === '' && $small !== '') {
+			list(, $large) = rkrk_config_menu_icon_pair($small);
+		}
+		return array($small, $large);
 	}
 }
 
@@ -593,7 +802,7 @@ if (!function_exists('rkrk_admin_msg_nav')) {
 }
 
 if (!function_exists('rkrk_admin_boot')) {
-	function rkrk_admin_boot(string $title): bool {
+	function rkrk_admin_boot(string $title, $beforeMenu = null): bool {
 		global $LoggedOn;
 		headerpage($title, false);
 		GrantAccess();
@@ -601,6 +810,9 @@ if (!function_exists('rkrk_admin_boot')) {
 			echo "<p>Diese Seite ist nur für Benutzer mit Stufe <b>test</b> / Admin.</p>\n";
 			footer();
 			return false;
+		}
+		if (is_callable($beforeMenu)) {
+			$beforeMenu();
 		}
 		CreateTopMenu();
 		echo "<link rel='stylesheet' href='template/rkrk_reg_pills.css?v=20260915adminnav'>\n";

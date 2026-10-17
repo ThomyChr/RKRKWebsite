@@ -121,6 +121,130 @@ if (!function_exists('rkrk_flugflaechen_filter_geflogen')) {
 	}
 }
 
+if (!function_exists('rkrk_flugflaechen_flightlog_regions')) {
+	/**
+	 * Regionen wie rkrk_flugliste.php: aktive Regions-Codes aus Reg, ohne JGList-Ausbau.
+	 * Die Flugliste filtert die Spalte JG gegen diese Codes.
+	 */
+	function rkrk_flugflaechen_flightlog_regions($regParam) {
+		global $RegionSettings;
+		$out = array();
+		$tokens = preg_split('/[\s,;]+/', trim((string)$regParam), -1, PREG_SPLIT_NO_EMPTY);
+		if (!is_array($tokens)) {
+			return array();
+		}
+		foreach ($tokens as $token) {
+			$token = trim((string)$token);
+			if ($token === '' || strcasecmp($token, 'ALL') === 0 || strcasecmp($token, 'alle') === 0) {
+				continue;
+			}
+			if (is_array($RegionSettings) && isset($RegionSettings[$token]['Reg'])) {
+				$code = trim((string)$RegionSettings[$token]['Reg']);
+				if ($code !== '') {
+					$out[$code] = $code;
+				}
+			}
+		}
+		return array_values($out);
+	}
+}
+
+if (!function_exists('rkrk_flugflaechen_filter_flightlog')) {
+	/**
+	 * Dieselbe Menge wie die Flugliste mit Status „geflogen“:
+	 * Geflogen genau Ja, Datum im Intervall, JG gleich Regions-Code.
+	 */
+	function rkrk_flugflaechen_filter_flightlog($flights, $fromDate, $toDate, $regionCodes) {
+		$out = array();
+		if (!is_array($flights)) {
+			return $out;
+		}
+		$regions = array();
+		if (is_array($regionCodes)) {
+			foreach ($regionCodes as $jg) {
+				$jg = trim((string)$jg);
+				if ($jg !== '') {
+					$regions[$jg] = true;
+				}
+			}
+		}
+		foreach ($flights as $key => $flug) {
+			if (!is_array($flug)) {
+				continue;
+			}
+			if (trim((string)($flug['Geflogen'] ?? '')) !== 'Ja') {
+				continue;
+			}
+			$datum = trim((string)($flug['Datum'] ?? ''));
+			if ($datum === '' || $datum < (string)$fromDate || $datum > (string)$toDate) {
+				continue;
+			}
+			if (count($regions) > 0) {
+				$jg = trim((string)($flug['JG'] ?? ''));
+				if ($jg === '' || !isset($regions[$jg])) {
+					continue;
+				}
+			}
+			$out[$key] = $flug;
+		}
+		return $out;
+	}
+}
+
+if (!function_exists('rkrk_flugflaechen_drawn_stats')) {
+	/**
+	 * Nur Felder mit Flächenpolygon im Katalog zählen und auflisten.
+	 * Flüge ohne zeichenbares Feld fallen aus der Statistik.
+	 *
+	 * @return array{flights:int,feldIds:array}
+	 */
+	function rkrk_flugflaechen_drawn_stats($filteredFlights) {
+		global $xmlMissionLocation, $RKRKFelderfileXML;
+		$feldIds = array();
+		$flights = 0;
+		$drawable = array();
+		$kat = null;
+		if (!function_exists('GetFeldkatalog') && is_file(__DIR__ . '/rkrk_felddaten.php')) {
+			include_once __DIR__ . '/rkrk_felddaten.php';
+		}
+		if (function_exists('GetFeldkatalog')) {
+			$path = (string)$xmlMissionLocation . (string)$RKRKFelderfileXML;
+			$loaded = GetFeldkatalog($path);
+			if (is_array($loaded)) {
+				$kat = $loaded;
+			}
+		}
+		if (!is_array($filteredFlights)) {
+			$filteredFlights = array();
+		}
+		foreach ($filteredFlights as $flug) {
+			if (!is_array($flug)) {
+				continue;
+			}
+			$feld = trim((string)($flug['Feld'] ?? $flug['FeldID'] ?? ''));
+			if ($feld === '') {
+				continue;
+			}
+			if (!array_key_exists($feld, $drawable)) {
+				$entry = is_array($kat) ? rkrk_flugflaechen_lookup_field($kat, $feld) : null;
+				$coords = is_array($entry) ? trim((string)($entry['Flaechendaten'] ?? '')) : '';
+				$drawable[$feld] = ($coords !== '');
+			}
+			if (empty($drawable[$feld])) {
+				continue;
+			}
+			$flights++;
+			$feldIds[$feld] = $feld;
+		}
+		$ids = array_values($feldIds);
+		natsort($ids);
+		return array(
+			'flights' => $flights,
+			'feldIds' => array_values($ids),
+		);
+	}
+}
+
 if (!function_exists('rkrk_flugflaechen_collect_stats')) {
 	/**
 	 * @return array{flights:int,fields:int,flaeche:float,feldIds:array,fieldList:array}

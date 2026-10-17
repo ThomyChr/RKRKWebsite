@@ -177,7 +177,6 @@ global 	$RKRKLocalLoactionMissionFiles,
 }
 
 
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
 $EnabledRegion = Array();
 $RegionList = Array();
 

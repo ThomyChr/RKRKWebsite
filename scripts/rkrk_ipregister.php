@@ -58,6 +58,8 @@
 	);
 
 	$WhitelistGroup = Array (
+						"192.168.1.1" => Array("Name" =>"TC", "Provider" => "home"),
+						"13.220.16.33" => Array("Name" =>"TC", "Provider" => "dieser Rechner"),
 						"195.34" => Array("Name" =>"CH", "Provider" => "Swisscom"),
 						"178.197.217" => Array("Name" =>"CH", "Provider" => "Swisscom"),
 						"188.60.21.223" => Array("Name" =>"CH", "Provider" => "Swisscom"),
@@ -97,28 +99,47 @@
 						"191.96" => Array("Name" =>"US", "Provider" => "Agent, US"),
 					);
 
+function rkrk_ip_in_group($ip, $list) {
+	if (!is_array($list)) {
+		return false;
+	}
+	$ip = trim((string)$ip);
+	if ($ip === '' || $ip === 'UNKNOWN') {
+		return false;
+	}
+	if (array_key_exists($ip, $list)) {
+		return true;
+	}
+	$parts = explode('.', $ip);
+	$n = count($parts);
+	if ($n >= 1 && $parts[0] !== '' && array_key_exists($parts[0], $list)) {
+		return true;
+	}
+	if ($n >= 2 && array_key_exists($parts[0] . '.' . $parts[1], $list)) {
+		return true;
+	}
+	if ($n >= 3 && array_key_exists($parts[0] . '.' . $parts[1] . '.' . $parts[2], $list)) {
+		return true;
+	}
+	return false;
+}
+
 function ProtectFromAccess ($TCPAdress) {
 	global $IPBanned,$IPBannedGroup, $IPUsed, $WhitelistGroup;
 	if (!is_array($WhitelistGroup ?? null)) {
 		$WhitelistGroup = [];
 	}
-	//pre_r($IPBanned);
-	//pre_r($IPBannedGroup);
-	$TCPAdress = getIPAddress();
-	//pre_r(explode(".",$TCPAdress)) . "<br>";
-	$TCPIP =explode(".",$TCPAdress);
-	if ((array_key_exists($TCPAdress, $WhitelistGroup))) {
-		// in whitelist
-		return (false);
-	} else {
-		// check if banned
-		return  (
-				(array_key_exists($TCPIP[0], $IPBannedGroup)) 
-				or (array_key_exists($TCPIP[0].".".$TCPIP[1], $IPBannedGroup))
-				or (array_key_exists($TCPIP[0].".".$TCPIP[1].".".$TCPIP[2], $IPBannedGroup))
-				or (array_key_exists($TCPAdress, $IPBanned))
-			);
-	}		
+	if (!is_array($IPBannedGroup ?? null)) {
+		$IPBannedGroup = [];
+	}
+	if (!is_array($IPBanned ?? null)) {
+		$IPBanned = [];
+	}
+	$TCPAdress = trim((string)getIPAddress());
+	if (rkrk_ip_in_group($TCPAdress, $WhitelistGroup)) {
+		return false;
+	}
+	return rkrk_ip_in_group($TCPAdress, $IPBannedGroup) || rkrk_ip_in_group($TCPAdress, $IPBanned);
 }
 
 ?>

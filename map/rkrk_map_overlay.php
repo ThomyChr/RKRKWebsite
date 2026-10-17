@@ -125,7 +125,7 @@ if (is_file($indexPath)) {
     }
     $modeScriptTag = '<script>window.__ON_RKRS__=' . ($OnRKRS ? 'true' : 'false')
         . ';window.__RKRK_FLIGHTHUB__=' . $fhJson . ';</script>' . "\n";
-    $featureScriptTag = '<script src="rkrk_map_obj_features.js?v=20260922mbtfont5"></script>' . "\n"
+    $featureScriptTag = '<script src="rkrk_map_obj_features.js?v=20261002labeldbl3"></script>' . "\n"
         . '<script src="rkrk_map_multiedit.js?v=20260916rename1"></script>' . "\n"
         . '<script src="rkrk_map_announce.js?v=20260825djihint1"></script>' . "\n"
         . '<script src="rkrk_map_viewfollow.js?v=20260825djihint1"></script>' . "\n";

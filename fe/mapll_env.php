@@ -184,18 +184,45 @@ if (!function_exists('mapll_theme_css_link')) {
     }
 }
 
+if (!function_exists('mapll_mission_catalog_3t_root')) {
+    /** Aktiver 3T-Feldkatalog: rkropen/Missionen (nicht «Missionen Intern»). */
+    function mapll_mission_catalog_3t_root(): string
+    {
+        return mapll_rkropen_root() . DIRECTORY_SEPARATOR . 'Missionen';
+    }
+}
+
+if (!function_exists('mapll_mission_intern_legacy_roots')) {
+    /**
+     * Historische «Missionen Intern»-Ordner, nur zum Lesen.
+     * @return list<string>
+     */
+    function mapll_mission_intern_legacy_roots(): array
+    {
+        return [
+            mapll_rkropen_root() . DIRECTORY_SEPARATOR . 'Missionen Intern',
+            mapll_root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'Missionen Intern',
+        ];
+    }
+}
+
 if (!function_exists('mapll_mission_intern_root')) {
+    /**
+     * Export und Pfad-Nachschlagen zeigen auf den 3T-Katalog.
+     * Fehlt dieser Ordner, bleibt der historische Intern-Pfad lesbar.
+     */
     function mapll_mission_intern_root(): string
     {
-        $shared = mapll_rkropen_root() . DIRECTORY_SEPARATOR . 'Missionen Intern';
-        $local = mapll_root() . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'Missionen Intern';
-        if (mapll_is_rkrs_env() && mapll_is_tools_host()) {
-            return $local;
+        $canonical = mapll_mission_catalog_3t_root();
+        if (is_dir($canonical)) {
+            return $canonical;
         }
-        if (is_dir($shared) || !mapll_is_rkrs_env()) {
-            return $shared;
+        foreach (mapll_mission_intern_legacy_roots() as $legacy) {
+            if (is_dir($legacy)) {
+                return $legacy;
+            }
         }
-        return $local;
+        return $canonical;
     }
 }
 
@@ -223,12 +250,13 @@ if (!function_exists('mapll_mission_intern_paths')) {
 if (!function_exists('mapll_fields_xml_path')) {
     function mapll_fields_xml_path(): string
     {
-        $mission = mapll_mission_intern_paths();
         $candidates = [
-            $mission['xml_path'],
-            mapll_rkropen_root() . DIRECTORY_SEPARATOR . 'Missionen' . DIRECTORY_SEPARATOR . 'xmlfiles' . DIRECTORY_SEPARATOR . 'RKRKFelder.xml',
+            mapll_mission_catalog_3t_root() . DIRECTORY_SEPARATOR . 'xmlfiles' . DIRECTORY_SEPARATOR . 'RKRKFelder.xml',
             mapll_root() . DIRECTORY_SEPARATOR . 'RKRKFelder.xml',
         ];
+        foreach (mapll_mission_intern_legacy_roots() as $legacy) {
+            $candidates[] = $legacy . DIRECTORY_SEPARATOR . 'xmlfiles' . DIRECTORY_SEPARATOR . 'RKRKFelder.xml';
+        }
         foreach ($candidates as $path) {
             if (is_file($path)) {
                 return $path;
@@ -535,6 +563,7 @@ if (!function_exists('mapll_nav_catalog')) {
             'analyse' => ['href' => 'analyse_ui.php', 'icon' => '&#128202;', 'title' => 'Analyse'],
             'editor' => ['href' => 'rkrk_feld_editor.php', 'icon' => '&#9998;', 'title' => 'Feld-Editor'],
             'requirements' => ['href' => 'requirements.php', 'icon' => '&#128203;', 'title' => 'Requirements'],
+            'spec' => ['href' => 'rkrk_feldeditor_spec.php', 'icon' => '&#128214;', 'title' => 'Spec'],
             'steps' => ['href' => 'step_requirements.php', 'icon' => '&#128196;', 'title' => 'Schritt-Requirements'],
             'mapping' => ['href' => 'mapping_matrix.php', 'icon' => '&#128279;', 'title' => 'Mapping'],
             'layers' => ['href' => 'ref_layers_admin.php', 'icon' => '&#128205;', 'title' => 'Eigene Layer verwalten'],

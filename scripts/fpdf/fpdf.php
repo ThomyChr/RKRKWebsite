@@ -486,8 +486,9 @@ function SetFont($family, $style='', $size=0)
 		$this->underline = false;
 	if($style=='IB')
 		$style = 'BI';
-	if($size==0)
+	if(!is_numeric($size) || $size==0)
 		$size = $this->FontSizePt;
+	$size = (float)$size;
 	// Test if font is already selected
 	if($this->FontFamily==$family && $this->FontStyle==$style && $this->FontSizePt==$size)
 		return;

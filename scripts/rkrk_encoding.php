@@ -175,11 +175,24 @@ if (!function_exists('rkrk_json_decode_utf8')) {
 
 if (!function_exists('rkrk_read_json_file')) {
 	function rkrk_read_json_file($path) {
+		static $requestCache = array();
+		$key = is_string($path) ? str_replace('\\', '/', $path) : '';
+		if ($key !== '' && array_key_exists($key, $requestCache)) {
+			return $requestCache[$key];
+		}
 		$raw = rkrk_read_text_file($path);
 		if ($raw === false || $raw === '') {
-			return array();
+			$data = array();
+		} else {
+			$data = json_decode($raw, true);
+			if (!is_array($data)) {
+				$data = rkrk_json_decode_utf8($raw);
+			}
 		}
-		return rkrk_json_decode_utf8($raw);
+		if ($key !== '') {
+			$requestCache[$key] = $data;
+		}
+		return $data;
 	}
 }
 

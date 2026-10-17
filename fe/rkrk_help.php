@@ -16,10 +16,11 @@
   <div class="topnav">
     <strong>RKRK Hilfe</strong>
     <a href="rkrk_feld_editor.php">Feld-Editor</a>
+    <a href="rkrk_feld_editor_rc.php">Fernsteuerung</a>
     <a href="analyse_ui.php">Algo-Analysator</a>
   </div>
   <div id="helpRoot"></div>
-  <script src="rkrk_help_catalog.js?v=20260907help"></script>
+  <script src="rkrk_help_catalog.js?v=20261014easy"></script>
   <script src="rkrk_help.js"></script>
   <script>
     RkrkHelp.renderStandalone('#helpRoot');

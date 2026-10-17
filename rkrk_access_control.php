@@ -132,7 +132,7 @@ $GuestAccess = GetURLwDefault("GA", "GA", "GA", "");
 		$CookieScope = (isset($_COOKIE[$CookieKey]) && is_array($_COOKIE[$CookieKey])) ? $_COOKIE[$CookieKey] : [];
 		$Cookie_User = $CookieScope[$SessNme_RegisteredUser] ?? "";
 		if (isset($_POST['login_user'])) {
-			$InputUserInfo["Login"]["Benutzername"]=$_POST['login_user'];
+			$InputUserInfo["Login"]["Benutzername"]=trim((string)$_POST['login_user']);
 		} elseif (($Cookie_User!="") and $EnableCookie) {
 			$InputUserInfo["Login"]["Benutzername"]=$Cookie_User;
 		} elseif (($_SESSION[$SessNme_RegisteredUser] ?? "")!="") {
@@ -182,7 +182,7 @@ $GuestAccess = GetURLwDefault("GA", "GA", "GA", "");
 
 		$Cookie_Password = $CookieScope[$SessNme_Password] ?? "";
 		if (isset($_POST['login_password']))
-			$InputUserInfo["Login"]["Passwort"] = $_POST['login_password'];
+			$InputUserInfo["Login"]["Passwort"] = (string)$_POST['login_password'];
 		elseif (($Cookie_Password!="") and $EnableCookie)
 			$InputUserInfo["Login"]["Passwort"]=$Cookie_Password;
 		elseif (($_SESSION[$SessNme_Password] ?? "")!="")
@@ -513,11 +513,25 @@ Function GrantAccess() {
 			exit;
 			
 		} elseif ($LogInGranted==false && !$suppressLoginHtml && (!$allowAnonymous || $forceLoginForm)) {
-			echo "<table style='background-color: ".$BackgroundColor.";' width=100%><tr><td>";
+			$faviconSrc = '/rkropen/favicon/Reh_FA840B_orange/favicon-32x32.png';
+			if (function_exists('rkrk_favicon_assets')) {
+				$faviconAssets = rkrk_favicon_assets();
+				if (!empty($faviconAssets['png'])) {
+					$faviconSrc = (string)$faviconAssets['png'];
+				}
+			}
+			$homeHref = function_exists('rkrk_menu_site_href') ? rkrk_menu_site_href('Home', '') : 'rkrk.php';
+			$scriptDir = str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '')));
+			if ($homeHref !== '' && $homeHref[0] !== '/' && strpos($homeHref, '../') !== 0 && substr($scriptDir, -3) === '/fe') {
+				$homeHref = '../' . $homeHref;
+			}
+			echo "<table style='background-color: ".$BackgroundColor.";' width=100%><tr>";
+			echo "<td style='width:52px;vertical-align:middle;padding-left:8px;'>";
+			echo "<a href='" . htmlspecialchars($homeHref, ENT_QUOTES, 'UTF-8') . "' title='Zur Startseite'><img src='" . htmlspecialchars($faviconSrc, ENT_QUOTES, 'UTF-8') . "' alt='RKRK' height='32' style='display:block;background:transparent;'></a>";
+			echo "</td><td>";
 			echo "<br><b>Benutzer - Login </b>" . "<br>";
 			echo "<i>Bitte einloggen, resp. registrieren, falls kein Konto vorhanden ist:</i>" . "<br>". "<br>";
 			echo "</td><td>";
-			echo CreateSiteLink ("Home", "");
 			echo CreateSiteLink ("GoBack", "");
 			echo "</td></table>";
 			$IPAddress = getIPAddress();
@@ -559,20 +573,26 @@ Function GrantAccess() {
 
 Function LogoutAndClearData() {
 	global $InputUserInfo,
-			$AccDebugInfo,
+			$AccessDebugOutput,
+			$SessNme_UserList,
 			$SessNme_Sessionstart,
 			$SessNme_RegisteredUser,
 			$SessNme_AccessLevel,
 			$SessNme_Password,
 			$SessNme_PasswordHashed,
 			$SessNme_SelRegions,
+			$SessNme_RegisteredInitialen,
 			$SessNme_RegisteredName,
 			$SessNme_RegisteredVorname,
 			$SessNme_RegisteredEmail,
-			$SessNme_IPAddress;			
-			
-	if ($AccessDebugOutput)	
+			$SessNme_IPAddress;
+
+	if (!empty($AccessDebugOutput))
 		echo "logout: " ."<br>";
+	if (!isset($InputUserInfo["Login"]) || !is_array($InputUserInfo["Login"])) {
+		$InputUserInfo["Login"] = array();
+	}
+	$UserKey = trim((string)($_SESSION[$SessNme_RegisteredUser] ?? ($InputUserInfo["Login"]["Benutzername"] ?? "")));
 	$InputUserInfo["Login"]["Vorname"]="";
 	$InputUserInfo["Login"]["Name"]="";
 	$InputUserInfo["Login"]["Benutzername"]="";
@@ -581,10 +601,6 @@ Function LogoutAndClearData() {
 	$InputUserInfo["Login"]["PasswordHashed"]="";
 	$InputUserInfo["Login"]["Regions"]="";
 
-	$_SESSION[$SessNme_UserList][$UserKey]["Initialen"]="";
-	$_SESSION[$SessNme_UserList][$UserKey]["Name"]="";
-	$_SESSION[$SessNme_UserList][$UserKey]["Vorname"]="";
-	$_SESSION[$SessNme_UserList][$UserKey]["Email"]="";
 	unset ($_SESSION[$SessNme_Sessionstart]);
 	unset ($_SESSION[$SessNme_RegisteredUser]);
 	unset ($_SESSION[$SessNme_AccessLevel]);
@@ -597,12 +613,7 @@ Function LogoutAndClearData() {
 	unset ($_SESSION[$SessNme_IPAddress]);
 	unset ($_SESSION[$SessNme_SelRegions]);
 
-	//DeleteCookie($CookieKey, $SessNme_Sessionstart);
-	//DeleteCookie($CookieKey ,$SessNme_RegisteredUser);
-	//DeleteCookie($CookieKey, $SessNme_AccessLevel);
-	//DeleteCookie($CookieKey, $SessNme_Password);
-	//DeleteCookie($CookieKey, $SessNme_PasswordHashed);
-	WriteToLog("logout", basename($_SERVER['PHP_SELF']), $UserKey ,"","","");
+	WriteToLog("logout", basename($_SERVER['PHP_SELF'] ?? 'rkrk.php'), $UserKey ,"","","");
 	$LogInGranted=false;
 }
 function UpdateData() {
@@ -922,6 +933,7 @@ Function ReadUserList() {
 		}
 		$data[$userName] = $entry;
 		$data[$userName]['Benutzername'] = $userName;
+		$data[$userName]["Passwort_hashed_file"] = (string)($entry["Passwort_hashed"] ?? '');
 		$data[$userName]["Passwort_hashed"] = password_hash((string)($entry["Passwort"] ?? ''), PASSWORD_DEFAULT);
 	}
 	//pre_R($data);
@@ -1157,8 +1169,28 @@ Function CheckLoginAndSetUser() {
 			$dateformat,
 			$EnableCookie;
 
+	$loginPosted = isset($_POST['login_user']) || isset($_POST['login_password']);
+	if ($loginPosted) {
+		unset($_SESSION[$SessNme_UserList]);
+	}
 	GetUserList();
-	$UserKey=$InputUserInfo["Login"]["Benutzername"];
+	if (!isset($_SESSION[$SessNme_UserList]) || !is_array($_SESSION[$SessNme_UserList])) {
+		$_SESSION[$SessNme_UserList] = array();
+	}
+	$UserKey=trim((string)($InputUserInfo["Login"]["Benutzername"] ?? ''));
+	if ($UserKey !== '' && !array_key_exists($UserKey, $_SESSION[$SessNme_UserList])) {
+		foreach ($_SESSION[$SessNme_UserList] as $candidate => $candidateRow) {
+			if (!is_array($candidateRow)) {
+				continue;
+			}
+			$initialen = trim((string)($candidateRow['Initialen'] ?? ''));
+			if (strcasecmp((string)$candidate, $UserKey) === 0 || ($initialen !== '' && strcasecmp($initialen, $UserKey) === 0)) {
+				$UserKey = (string)$candidate;
+				$InputUserInfo["Login"]["Benutzername"] = $UserKey;
+				break;
+			}
+		}
+	}
 
 	if ($EnableCookie) {
 		$CookieData = (isset($_COOKIE[$CookieKey]) && is_array($_COOKIE[$CookieKey])) ? $_COOKIE[$CookieKey] : [];
@@ -1178,12 +1210,26 @@ Function CheckLoginAndSetUser() {
 		//echo "skip storing login<br>";
 	}
 
+	$typedPassword = (string)($InputUserInfo["Login"]["Passwort"] ?? '');
+	$sessionPassword = (string)($_SESSION[$SessNme_Password] ?? '');
 	if (array_key_exists($UserKey,$_SESSION[$SessNme_UserList])) {
-		if (
-			(password_verify($InputUserInfo["Login"]["Passwort"], $_SESSION[$SessNme_UserList][$UserKey]["Passwort_hashed"])) 
-				or password_verify($_SESSION[$SessNme_Password], $_SESSION[$SessNme_UserList][$UserKey]["Passwort_hashed"])
-				//or ($CookieData[$PasswordHashed]== $_SESSION[$SessNme_UserList][$UserKey]["Passwort_hashed"])
-			) {
+		$freshHash = (string)($_SESSION[$SessNme_UserList][$UserKey]["Passwort_hashed"] ?? '');
+		$fileHash = (string)($_SESSION[$SessNme_UserList][$UserKey]["Passwort_hashed_file"] ?? '');
+		$passwordOk = false;
+		foreach (array($typedPassword, trim($typedPassword), $sessionPassword) as $candidatePassword) {
+			if ($candidatePassword === '') {
+				continue;
+			}
+			if ($freshHash !== '' && password_verify($candidatePassword, $freshHash)) {
+				$passwordOk = true;
+				break;
+			}
+			if ($fileHash !== '' && password_verify($candidatePassword, $fileHash)) {
+				$passwordOk = true;
+				break;
+			}
+		}
+		if ($passwordOk) {
 			
 			$LoggedOn=true;
 
@@ -1221,6 +1267,9 @@ Function CheckLoginAndSetUser() {
 			$AccSystemInfo .= "<li><b>Access denied</b></li>";
 			$AccSystemInfo .= "Benutzername, -vorname oder Passwort ungültig!<br>Bitte nochmals versuchen." . chr(10);
 			$AccSystemInfo .= "</ul>";
+			if (isset($_POST['login_user']) || isset($_POST['login_password'])) {
+				$GLOBALS['rkrk_login_error'] = 'Benutzername oder Passwort ist ungültig. Bitte nochmals versuchen.';
+			}
 			$_SESSION[$SessNme_RegisteredUser]="";
 			$_SESSION[$SessNme_AccessLevel]= "";
 			$_SESSION[$SessNme_SelRegions]="";
@@ -1233,6 +1282,9 @@ Function CheckLoginAndSetUser() {
 		}		
 	} else {
 		if ($AccessDebugOutput) $AccSystemInfo .= "<li>user name not existing</li>";
+		if (isset($_POST['login_user']) || isset($_POST['login_password'])) {
+			$GLOBALS['rkrk_login_error'] = 'Benutzername oder Passwort ist ungültig. Bitte nochmals versuchen.';
+		}
 		$LoggedOn=false;
 		$_SESSION[$SessNme_RegisteredUser]="";
 		$_SESSION[$SessNme_AccessLevel]= "";
@@ -1331,10 +1383,10 @@ Function RegisterForm($IPAddress,$Action="Login",$FloatingTop=false) {
 			$Log_output .= '<form name="form2" action="' . htmlspecialchars($_SERVER["PHP_SELF"]) . '" method="POST">' . chr(10);
 			$Log_output .= '	<table class="none" style="width:100%;background-color: transparent;border-collapse:separate;border-spacing:0 8px;">' . chr(10);
 			//$Log_output .= '		<tr><td>Initialen:</td><td><input type="text" name="login_acronym" placeholder="Initialen" minlength="4" maxlength="6" size=20 required></td></tr>' . chr(10);
-			$Log_output .= '		<tr><td>Benutzername:</td><td><input type="text" name="login_user" placeholder="Benutzername" minlength="4" maxlength="30" size=20 required></td></tr>' . chr(10);
+			$Log_output .= '		<tr><td>Benutzername:</td><td><input type="text" name="login_user" autocomplete="username" placeholder="Benutzername" minlength="2" maxlength="30" size=20 required></td></tr>' . chr(10);
 			//$Log_output .= '		<tr><td>Name:</td><td><input type="text" name="login_name" placeholder="Name" minlength="4" maxlength="30" size=20 required></td></tr>' . chr(10);
 			//$Log_output .= '		<tr><td>Vorname:</td><td><input type="text" name="login_prename" placeholder="Vorname" minlength="4" maxlength="8" size=20 required></td></tr>' . chr(10);
-			$Log_output .= '		<tr><td>Passwort</td><td><input type="password" placeholder="Passwort" name="login_password" id="login_password" onkeyup="validatePassword()" required></td></tr>' . chr(10);
+			$Log_output .= '		<tr><td>Passwort</td><td><input type="password" autocomplete="current-password" placeholder="Passwort" name="login_password" id="login_password" required></td></tr>' . chr(10);
 			$Log_output .= '	</table>';
 			$Log_output .= '<br>' . chr(10);
 			$Log_output .= '	<input type="hidden" name="page_action" id="page_action" value="login">' . chr(10);
@@ -1366,7 +1418,10 @@ Function RegisterForm($IPAddress,$Action="Login",$FloatingTop=false) {
 				$output .= "<div id='rkrk-login-card' style='margin:14px auto;'>". chr(10);
 			}
 			$output .= "<h3>Benutzer Login</h3>". chr(10);
-			$output .= '	<div style="display" id="bloc2">' .chr(10);
+			if (!empty($GLOBALS['rkrk_login_error'])) {
+				$output .= '<p id="rkrk-login-error" style="margin:0 0 10px 0;padding:8px 10px;background:#F8D7DA;border:1px solid #f1b0b7;border-radius:6px;color:#7a1f1f;font-weight:600;">' . htmlspecialchars((string)$GLOBALS['rkrk_login_error'], ENT_QUOTES, 'UTF-8') . '</p>' . chr(10);
+			}
+			$output .= '	<div id="bloc2">' .chr(10);
 			$output .= $Log_output;
 			$output .= '	</div>' . chr(10);
 			$output .= '	<div style="display:none" id="bloc1">' .chr(10);

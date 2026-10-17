@@ -189,11 +189,15 @@ function ref_layers_norm_file_row($f)
         $aktiv = !empty($aktivIn);
     }
     $kml = ref_layers_find_kml($name);
+    $sched = ref_layers_alert_schedule($f);
     return array(
         'name' => $name,
         'region' => $region,
         'kat' => $kat,
         'aktiv' => $aktiv,
+        'from' => $sched['from'],
+        'to' => $sched['to'],
+        'yearly' => $sched['yearly'],
         'kml_exists' => $kml !== null,
         'kml_path' => $kml,
     );
@@ -312,12 +316,19 @@ function ref_layers_save_settings($files)
         } else {
             $aktiv = !empty($aktivIn);
         }
-        $out[] = array(
+        $rowOut = array(
             'name' => $name,
             'Region' => $region,
             'Kat' => $kat,
             'Aktiv' => $aktiv ? 'Ja' : 'Nein',
         );
+        $sched = ref_layers_alert_schedule($f);
+        if ($sched['from'] !== '' || $sched['to'] !== '' || $sched['yearly']) {
+            $rowOut['from'] = $sched['from'];
+            $rowOut['to'] = $sched['to'];
+            $rowOut['yearly'] = $sched['yearly'];
+        }
+        $out[] = $rowOut;
     }
     return rkrk_catalog_write_json($xmlMissionLocation . $poi_settings_file, array(
         'schema' => 'rkrk-catalog',
@@ -356,6 +367,29 @@ function ref_layers_parse_coords($raw)
     return $pairs;
 }
 
+/** Coordinates of a Polygon, including one that only wraps another Polygon. */
+function ref_layers_polygon_coord_text($node)
+{
+    if (!$node instanceof SimpleXMLElement) {
+        return '';
+    }
+    if (isset($node->outerBoundaryIs->LinearRing->coordinates)) {
+        $text = trim((string)$node->outerBoundaryIs->LinearRing->coordinates);
+        if ($text !== '') {
+            return $text;
+        }
+    }
+    if (isset($node->Polygon)) {
+        foreach ($node->Polygon as $inner) {
+            $text = ref_layers_polygon_coord_text($inner);
+            if ($text !== '') {
+                return $text;
+            }
+        }
+    }
+    return '';
+}
+
 function ref_layers_features_from_kml($kmlPath, $region, $kat)
 {
     $xml = @simplexml_load_file($kmlPath);
@@ -372,8 +406,8 @@ function ref_layers_features_from_kml($kmlPath, $region, $kat)
         $style = trim((string)($pm->styleUrl ?? ''));
         $geometry = null;
         $type = 'Point';
-        if (isset($pm->Polygon->outerBoundaryIs->LinearRing->coordinates)) {
-            $coords = ref_layers_parse_coords((string)$pm->Polygon->outerBoundaryIs->LinearRing->coordinates);
+        if (isset($pm->Polygon)) {
+            $coords = ref_layers_parse_coords(ref_layers_polygon_coord_text($pm->Polygon));
             if (count($coords) >= 3) {
                 $ring = $coords;
                 $first = $ring[0];
@@ -398,8 +432,8 @@ function ref_layers_features_from_kml($kmlPath, $region, $kat)
             }
         } elseif (isset($pm->MultiGeometry)) {
             $mg = $pm->MultiGeometry;
-            if (isset($mg->Polygon->outerBoundaryIs->LinearRing->coordinates)) {
-                $coords = ref_layers_parse_coords((string)$mg->Polygon->outerBoundaryIs->LinearRing->coordinates);
+            if (isset($mg->Polygon)) {
+                $coords = ref_layers_parse_coords(ref_layers_polygon_coord_text($mg->Polygon));
                 if (count($coords) >= 3) {
                     $ring = $coords;
                     $first = $ring[0];
@@ -1317,4 +1351,489 @@ function ref_layers_save_kml_features($stem, $features)
         'rebuilt' => $rebuilt,
         'poidata' => $poi,
     );
+}
+
+function ref_layers_alert_norm_date($value)
+{
+    $value = trim((string)$value);
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : '';
+}
+
+function ref_layers_alert_yearly_flag($value)
+{
+    if (is_bool($value)) {
+        return $value;
+    }
+    if (is_int($value) || is_float($value)) {
+        return ((int)$value) === 1;
+    }
+    $text = strtolower(trim((string)$value));
+    return in_array($text, array('1', 'ja', 'true', 'yes', 'on'), true);
+}
+
+/** Empty from or to means no time limit. Yearly compares month-day and may wrap the year. */
+function ref_layers_alert_schedule($row)
+{
+    $from = ref_layers_alert_norm_date(is_array($row) ? ($row['from'] ?? '') : '');
+    $to = ref_layers_alert_norm_date(is_array($row) ? ($row['to'] ?? '') : '');
+    $yearly = ref_layers_alert_yearly_flag(is_array($row) ? ($row['yearly'] ?? false) : false);
+    if ($from !== '' && $to !== '' && !$yearly && $to < $from) {
+        $swap = $from;
+        $from = $to;
+        $to = $swap;
+    }
+    return array('from' => $from, 'to' => $to, 'yearly' => $yearly);
+}
+
+function ref_layers_alert_window_open($from, $to, $onDate, $yearly)
+{
+    $from = ref_layers_alert_norm_date($from);
+    $to = ref_layers_alert_norm_date($to);
+    if ($from === '' || $to === '') {
+        return true;
+    }
+    $onDate = ref_layers_alert_norm_date($onDate);
+    if ($onDate === '') {
+        return false;
+    }
+    if (!$yearly) {
+        return $onDate >= $from && $onDate <= $to;
+    }
+    $fromMd = substr($from, 5);
+    $toMd = substr($to, 5);
+    $onMd = substr($onDate, 5);
+    if ($fromMd <= $toMd) {
+        return $onMd >= $fromMd && $onMd <= $toMd;
+    }
+    return $onMd >= $fromMd || $onMd <= $toMd;
+}
+
+function ref_layers_alert_row_on($row, $onDate)
+{
+    if (!is_array($row) || empty($row['aktiv'])) {
+        return false;
+    }
+    $sched = ref_layers_alert_schedule($row);
+    return ref_layers_alert_window_open($sched['from'], $sched['to'], $onDate, $sched['yearly']);
+}
+
+/** Basename only: no directories, no list/query separators. */
+function ref_layers_alert_kml_safe_name($name)
+{
+    $name = trim((string)$name);
+    if (function_exists('rkrk_str')) {
+        $name = rkrk_str($name);
+    }
+    $name = preg_replace('/\.kml$/i', '', $name);
+    $name = trim((string)$name);
+    if ($name === '' || $name === '.' || $name === '..') {
+        return '';
+    }
+    if (basename($name) !== $name) {
+        return '';
+    }
+    if (strpbrk($name, "/\\\0,&=#?%") !== false || strpos($name, '..') !== false) {
+        return '';
+    }
+    return $name;
+}
+
+function ref_layers_alert_kml_path_ok($path)
+{
+    $real = realpath($path);
+    if ($real === false) {
+        return false;
+    }
+    $real = strtolower(str_replace('\\', '/', $real));
+    foreach (ref_layers_kml_source_dirs() as $dir) {
+        $dirReal = realpath($dir);
+        if ($dirReal === false) {
+            continue;
+        }
+        $dirReal = strtolower(rtrim(str_replace('\\', '/', $dirReal), '/'));
+        if ($real === $dirReal || strpos($real, $dirReal . '/') === 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Alert reference KMLs that exist on disk, including files whose permanent Aktiv flag is off.
+ * Does not write settings.
+ */
+function ref_layers_alert_kml_catalog()
+{
+    $out = array();
+    foreach (ref_layers_load_settings() as $row) {
+        if (!is_array($row) || (string)($row['kat'] ?? '') !== 'Alert' || empty($row['kml_exists'])) {
+            continue;
+        }
+        $name = ref_layers_alert_kml_safe_name($row['name'] ?? '');
+        if ($name === '' || isset($out[$name])) {
+            continue;
+        }
+        $path = ref_layers_find_kml($name);
+        if ($path === null || !ref_layers_alert_kml_path_ok($path)) {
+            continue;
+        }
+        $sched = ref_layers_alert_schedule($row);
+        $out[$name] = array(
+            'name' => $name,
+            'aktiv' => !empty($row['aktiv']),
+            'from' => $sched['from'],
+            'to' => $sched['to'],
+            'yearly' => $sched['yearly'],
+        );
+    }
+    return array_values($out);
+}
+
+/**
+ * Alert files that are on for $onDate: Aktiv and inside from/to.
+ * $onlyNames null = every such file. A list limits the result to those names.
+ */
+function ref_layers_alert_files_for_date($onDate, $onlyNames = null)
+{
+    $only = null;
+    if (is_array($onlyNames)) {
+        $only = array();
+        foreach ($onlyNames as $name) {
+            $safe = ref_layers_alert_kml_safe_name($name);
+            if ($safe !== '') {
+                $only[$safe] = true;
+            }
+        }
+    }
+    $out = array();
+    foreach (ref_layers_load_settings() as $row) {
+        if (!is_array($row) || (string)($row['kat'] ?? '') !== 'Alert' || empty($row['kml_exists'])) {
+            continue;
+        }
+        $name = ref_layers_alert_kml_safe_name($row['name'] ?? '');
+        if ($name === '' || isset($out[$name])) {
+            continue;
+        }
+        if ($only !== null && !isset($only[$name])) {
+            continue;
+        }
+        if (!ref_layers_alert_row_on($row, $onDate)) {
+            continue;
+        }
+        $path = ref_layers_find_kml($name);
+        if ($path === null || !ref_layers_alert_kml_path_ok($path)) {
+            continue;
+        }
+        $out[$name] = $name;
+    }
+    return array_values($out);
+}
+
+function ref_layers_alert_uploaded_kml($raw)
+{
+    $raw = (string)$raw;
+    if (trim($raw) === '') {
+        return '';
+    }
+    if (strlen($raw) > 2000000) {
+        return null;
+    }
+    if (stripos($raw, '<?php') !== false || stripos($raw, '<!ENTITY') !== false || stripos($raw, '<!DOCTYPE') !== false) {
+        return null;
+    }
+    if (stripos($raw, '<kml') === false) {
+        return null;
+    }
+    $dom = new DOMDocument();
+    $prev = libxml_use_internal_errors(true);
+    $ok = $dom->loadXML($raw, LIBXML_NONET);
+    libxml_clear_errors();
+    libxml_use_internal_errors($prev);
+    if ($ok !== true) {
+        return null;
+    }
+    $root = $dom->documentElement;
+    if (!$root || strcasecmp($root->localName, 'kml') !== 0) {
+        return null;
+    }
+    $xml = $dom->saveXML();
+    return (is_string($xml) && $xml !== '') ? $xml : null;
+}
+
+/** Basename only. Rejects directories and parent-segment tricks. */
+function ref_layers_layer_basename($name)
+{
+    $name = trim((string)$name);
+    if (function_exists('rkrk_str')) {
+        $name = rkrk_str($name);
+    }
+    $name = preg_replace('/\.kml$/i', '', $name);
+    $name = trim((string)$name);
+    if ($name === '' || $name === '.' || $name === '..' || strlen($name) > 180) {
+        return '';
+    }
+    if (strpos($name, '/') !== false || strpos($name, '\\') !== false || strpos($name, '..') !== false || strpos($name, "\0") !== false) {
+        return '';
+    }
+    if (basename($name) !== $name) {
+        return '';
+    }
+    return $name;
+}
+
+function ref_layers_jagdgebiet_json_path()
+{
+    $settings = ref_layers_settings_path();
+    if (!is_string($settings) || $settings === '') {
+        return null;
+    }
+    $path = dirname(str_replace('\\', '/', $settings)) . '/jagdgebietsseite.json';
+    return is_file($path) ? $path : null;
+}
+
+function ref_layers_layer_name_taken($name, $except)
+{
+    foreach (ref_layers_load_settings() as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $rowName = trim((string)($row['name'] ?? ''));
+        if ($rowName !== '' && strcasecmp($rowName, $name) === 0 && strcasecmp($rowName, $except) !== 0) {
+            return true;
+        }
+    }
+    $path = ref_layers_find_kml($name);
+    if ($path !== null && strcasecmp(basename($path), $except . '.kml') !== 0) {
+        return true;
+    }
+    return false;
+}
+
+function ref_layers_rename_layer_file($from, $to)
+{
+    $src = ref_layers_find_kml($from);
+    if ($src === null) {
+        return array('ok' => true, 'renamed' => false);
+    }
+    if (!ref_layers_alert_kml_path_ok($src) || strcasecmp(basename($src), $from . '.kml') !== 0) {
+        return array('ok' => false, 'error' => 'path_rejected', 'message' => 'Die Datei liegt ausserhalb der Referenzordner.');
+    }
+    $dest = rtrim(str_replace('\\', '/', dirname($src)), '/') . '/' . $to . '.kml';
+    if (is_file($dest)) {
+        return array('ok' => false, 'error' => 'kml_exists', 'message' => 'Die Zieldatei gibt es schon.');
+    }
+    if (!@rename($src, $dest)) {
+        return array('ok' => false, 'error' => 'rename_failed', 'message' => 'Die Datei konnte nicht umbenannt werden.');
+    }
+    return array('ok' => true, 'renamed' => true);
+}
+
+/** Notice and JG assignment store the catalog basename. Exact key values only. */
+function ref_layers_retarget_zone_refs($from, $to)
+{
+    $from = ref_layers_layer_basename($from);
+    $to = ref_layers_layer_basename($to);
+    if ($from === '' || $to === '' || strcasecmp($from, $to) === 0) {
+        return array('ok' => true, 'changed' => false);
+    }
+    $path = ref_layers_jagdgebiet_json_path();
+    if ($path === null) {
+        return array('ok' => true, 'changed' => false);
+    }
+    $raw = file_get_contents($path);
+    if (!is_string($raw) || $raw === '') {
+        return array('ok' => false, 'error' => 'notice_read_failed', 'message' => 'Die Jagdgebietsseite konnte nicht gelesen werden.');
+    }
+    $next = $raw;
+    foreach (array('alert', 'file') as $key) {
+        $next = str_replace('"' . $key . '": "' . $from . '"', '"' . $key . '": "' . $to . '"', $next);
+        $next = str_replace('"' . $key . '":"' . $from . '"', '"' . $key . '":"' . $to . '"', $next);
+    }
+    if ($next === $raw) {
+        return array('ok' => true, 'changed' => false);
+    }
+    if (strlen($next) + 200 < strlen($raw)) {
+        return array('ok' => false, 'error' => 'notice_shrink', 'message' => 'Die Jagdgebietsseite würde schrumpfen.');
+    }
+    if (file_put_contents($path, $next) === false) {
+        return array('ok' => false, 'error' => 'notice_write_failed', 'message' => 'Die Jagdgebietsseite konnte nicht angepasst werden.');
+    }
+    return array('ok' => true, 'changed' => true);
+}
+
+/**
+ * Catalog name is the KML basename. A changed visible name renames that file.
+ * $checkCatalog is false only when undoing a rename that has not been saved yet.
+ */
+function ref_layers_rename_layer($from, $to, $checkCatalog = true)
+{
+    $fromSafe = ref_layers_layer_basename($from);
+    $toSafe = ref_layers_layer_basename($to);
+    if ($fromSafe === '' || $toSafe === '') {
+        return array('ok' => false, 'error' => 'name_invalid', 'message' => 'Nur der Dateiname ist erlaubt.');
+    }
+    if (strcasecmp($toSafe, '_Alert') === 0 && strcasecmp($fromSafe, '_Alert') !== 0) {
+        return array('ok' => false, 'error' => 'name_reserved', 'message' => '_Alert bleibt unverändert.');
+    }
+    if (strcasecmp($fromSafe, $toSafe) === 0) {
+        return array('ok' => true, 'name' => $toSafe, 'renamed' => false);
+    }
+    if ($checkCatalog && ref_layers_layer_name_taken($toSafe, $fromSafe)) {
+        return array('ok' => false, 'error' => 'name_exists', 'message' => 'Dieser Name ist schon vergeben.');
+    }
+    $file = ref_layers_rename_layer_file($fromSafe, $toSafe);
+    if (empty($file['ok'])) {
+        return $file;
+    }
+    $refs = ref_layers_retarget_zone_refs($fromSafe, $toSafe);
+    if (empty($refs['ok'])) {
+        if (!empty($file['renamed'])) {
+            ref_layers_rename_layer_file($toSafe, $fromSafe);
+        }
+        return $refs;
+    }
+    return array('ok' => true, 'name' => $toSafe, 'renamed' => !empty($file['renamed']));
+}
+
+/** Removes one catalog row and its KML. The name must already be a catalog basename. */
+function ref_layers_delete_layer($name)
+{
+    $safe = ref_layers_layer_basename($name);
+    if ($safe === '') {
+        return array('ok' => false, 'error' => 'name_invalid', 'message' => 'Nur der Dateiname ist erlaubt.');
+    }
+    $files = ref_layers_load_settings();
+    $keep = array();
+    $found = null;
+    foreach ($files as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $rowName = trim((string)($row['name'] ?? ''));
+        if ($rowName !== '' && strcasecmp($rowName, $safe) === 0) {
+            if ($found !== null) {
+                return array('ok' => false, 'error' => 'name_ambiguous', 'message' => 'Der Name ist nicht eindeutig.');
+            }
+            $found = $row;
+            continue;
+        }
+        $keep[] = $row;
+    }
+    if ($found === null) {
+        return array('ok' => false, 'error' => 'not_found', 'message' => 'Der Eintrag ist nicht im Katalog.');
+    }
+    $stored = trim((string)$found['name']);
+    $path = ref_layers_find_kml($stored);
+    $moved = null;
+    if ($path !== null) {
+        if (!ref_layers_alert_kml_path_ok($path) || strcasecmp(basename($path), $stored . '.kml') !== 0) {
+            return array('ok' => false, 'error' => 'path_rejected', 'message' => 'Die Datei liegt ausserhalb der Referenzordner.');
+        }
+        $moved = $path . '.deleting';
+        if (is_file($moved) || !@rename($path, $moved)) {
+            return array('ok' => false, 'error' => 'delete_failed', 'message' => 'Die Datei konnte nicht gelöscht werden.');
+        }
+    }
+    if (!ref_layers_save_settings($keep)) {
+        if ($moved !== null && is_file($moved)) {
+            @rename($moved, $path);
+        }
+        return array('ok' => false, 'error' => 'save_failed', 'message' => 'Der Katalogeintrag konnte nicht entfernt werden.');
+    }
+    if ($moved !== null && is_file($moved)) {
+        @unlink($moved);
+    }
+    return array(
+        'ok' => true,
+        'name' => $stored,
+        'files' => ref_layers_load_settings(),
+    );
+}
+
+function ref_layers_create_alert_zone($payload)
+{
+    if (!is_array($payload)) {
+        $payload = array();
+    }
+    $rawName = trim((string)($payload['name'] ?? ''));
+    $rawName = preg_replace('/\.kml$/i', '', $rawName);
+    $rawName = preg_replace('/\s+/u', '_', (string)$rawName);
+    $rawName = preg_replace('/_+/', '_', (string)$rawName);
+    $rawName = trim((string)$rawName, '._');
+    $name = ref_layers_alert_kml_safe_name($rawName);
+    if ($name === '' || !preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,60}$/', $name)) {
+        return array('ok' => false, 'error' => 'name_invalid', 'message' => 'Name fehlt oder ist ungültig.');
+    }
+    if (strcasecmp($name, '_Alert') === 0) {
+        return array('ok' => false, 'error' => 'name_reserved', 'message' => '_Alert bleibt unverändert. Bitte einen neuen Namen wählen.');
+    }
+    $files = ref_layers_load_settings();
+    foreach ($files as $f) {
+        if (strcasecmp((string)($f['name'] ?? ''), $name) === 0) {
+            return array('ok' => false, 'error' => 'name_exists', 'message' => 'Diese Zone gibt es schon.');
+        }
+    }
+    if (ref_layers_find_kml($name) !== null) {
+        return array('ok' => false, 'error' => 'kml_exists', 'message' => 'Die KML-Datei gibt es schon.');
+    }
+    $path = ref_layers_kml_write_path($name);
+    if ($path === null || is_file($path)) {
+        return array('ok' => false, 'error' => 'write_path_failed', 'message' => 'KML konnte nicht angelegt werden.');
+    }
+    $uploaded = ref_layers_alert_uploaded_kml($payload['kml'] ?? '');
+    if ($uploaded === null) {
+        return array('ok' => false, 'error' => 'kml_invalid', 'message' => 'Die KML-Datei ist ungültig.');
+    }
+    $xml = $uploaded !== '' ? $uploaded : ('<?xml version="1.0" encoding="UTF-8"?>' . "\n"
+        . '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'
+        . htmlspecialchars($name, ENT_XML1 | ENT_QUOTES, 'UTF-8')
+        . '</name></Document></kml>' . "\n");
+    if (file_put_contents($path, $xml) === false) {
+        return array('ok' => false, 'error' => 'write_failed', 'message' => 'KML konnte nicht geschrieben werden.');
+    }
+    $region = trim((string)($payload['region'] ?? ''));
+    if ($region === '') {
+        $region = 'ALL,';
+    }
+    $sched = ref_layers_alert_schedule($payload);
+    $files[] = array(
+        'name' => $name,
+        'region' => $region,
+        'kat' => 'Alert',
+        'aktiv' => !empty($payload['aktiv']),
+        'from' => $sched['from'],
+        'to' => $sched['to'],
+        'yearly' => $sched['yearly'],
+    );
+    if (!ref_layers_save_settings($files)) {
+        @unlink($path);
+        return array('ok' => false, 'error' => 'save_failed', 'message' => 'Die Zone wurde nicht in den Katalog geschrieben.');
+    }
+    return array(
+        'ok' => true,
+        'name' => $name,
+        'files' => ref_layers_load_settings(),
+    );
+}
+
+/** Comma list of Alert basenames. Unknown names and path fragments are dropped. */
+function ref_layers_alert_kml_selection($raw)
+{
+    $raw = trim((string)$raw);
+    if ($raw === '') {
+        return array();
+    }
+    $raw = html_entity_decode($raw, ENT_QUOTES, 'UTF-8');
+    $allowed = array();
+    foreach (ref_layers_alert_kml_catalog() as $row) {
+        $allowed[$row['name']] = true;
+    }
+    $picked = array();
+    foreach (preg_split('/\s*,\s*/', $raw) ?: array() as $part) {
+        $name = ref_layers_alert_kml_safe_name($part);
+        if ($name !== '' && isset($allowed[$name])) {
+            $picked[$name] = $name;
+        }
+    }
+    return array_values($picked);
 }

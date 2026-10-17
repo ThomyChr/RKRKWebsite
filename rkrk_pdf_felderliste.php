@@ -208,6 +208,7 @@ function Endremark()
 	$this->Cell(15,0,"Legende:",'',0,'L');
 	$this->SetY($this->GetY()+3);
 	$PicPos = 2;
+	$w = array(15, 45);
 	foreach ($OptionFrei  as $key => $Frei) {
 		if (in_array($key,$FreiList)) {
 			$this->SetX($this->GetX() +$w[0]+$w[1]+$PicPos);
@@ -414,8 +415,8 @@ function FancyTable($header, $Feldkatalog)
 					//COL2
 					$this->SetY($this->GetY() +2);
 					$this->SetX($this->GetX() +$w[0]+$w[1]);
-					$LFile = explode("/", str_replace($localsearchSDZ, $localreplaceSDZ, $Feld["LichtiFile"]));
-					$this->Cell($w[2],$lineheight,$LFile[1],2,0,'L');
+					$LFile = explode("/", str_replace($localsearchSDZ, $localreplaceSDZ, (string)($Feld["LichtiFile"] ?? '')));
+					$this->Cell($w[2],$lineheight,$LFile[1] ?? '',2,0,'L');
 					$this->SetFont('Arial','',8);
 					//$this->SetY($this->GetY() +5);
 					//$this->SetX($this->GetX() +$w[0]+$w[1]);
@@ -459,12 +460,14 @@ function FancyTable($header, $Feldkatalog)
 						$this->SetX($this->GetX() +$w[0]+$w[1]+$w[2]);
 						$this->Cell($w[3],$lineheight,"",'LR',0,'LR',$fill);
 						$this->SetY($this->GetY() -10);
-						$Bewirtschafter = explode("//", str_replace(array("A:", "T:", "M:",",",chr(10)), Array("//","//","//","//",""), str_replace($localsearchSDZ, $localreplaceSDZ, $Feld["Bauer"])));
+						$Bewirtschafter = explode("//", str_replace(array("A:", "T:", "M:",",",chr(10)), Array("//","//","//","//",""), str_replace($localsearchSDZ, $localreplaceSDZ, (string)($Feld["Bauer"] ?? ''))));
 						$lines=0;
-						for ($i = 0; $i <= count($Bewirtschafter); $i++) {
+						$bewCount = count($Bewirtschafter);
+						for ($i = 0; $i < $bewCount; $i++) {
+							$bewLine = trim((string)($Bewirtschafter[$i] ?? ''));
 							$this->SetX($this->GetX() +$w[0]+$w[1]+$w[2]);
-							if ((trim($Bewirtschafter[$i]) <> "+") and (trim($Bewirtschafter[$i])<>"Schweiz")) {
-								$this->Cell($w[3],$lineheight,$Bewirtschafter[$i],2,0,'L');
+							if ($bewLine !== '' && $bewLine !== "+" && $bewLine !== "Schweiz") {
+								$this->Cell($w[3],$lineheight,$bewLine,2,0,'L');
 								$this->SetY($this->GetY() +5);
 								$lines++;
 							}	
@@ -566,7 +569,7 @@ $pdf->SetFont('Arial','',10);
 $pdf->AddPage();
 $pdf->FancyTable($header,$Feldkatalog);
 $pdf->Endremark();
-$Filename = date("Ymd")."_RKRK_Feldkatalog".$PilotenWahl;
+$Filename = date("Ymd")."_RKRK_Feldkatalog".($PilotenWahl ?? '');
 if (($RegionSelected!="ALL" and $RegionSelected!="alle") or $FFilter!="")
 	$Filename .= "_".$RegionSelected;
 $pdf->Output("I", $Filename.".pdf");

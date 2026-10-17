@@ -1,3 +1,6 @@
+<?php
+ob_start();
+?>
 <!--
 <!--
   Funktion zum Anzeigen der Felddaten und identifizieren von neuen Files im Flugkatalog
@@ -26,7 +29,26 @@
 	headerpage($pagetitle, false);
 	GrantAccess();
 	CreateTopMenu();
-	echo "  <link rel='stylesheet' href='template/rkrk_felddaten.css?v=20260907pad9' type='text/css'>" . chr(10);
+	echo "  <link rel='stylesheet' href='template/rkrk_felddaten.css?v=20261013pilotmap' type='text/css'>" . chr(10);
+	echo "<style>"
+		. ".rkrk-felddaten-search td.rkrk-search-actions img,"
+		. ".rkrk-felddaten-search td.rkrk-search-actions image,"
+		. ".rkrk-felddaten-search td.rkrk-search-actions input[type=\"image\"]{"
+		. "box-sizing:border-box !important;"
+		. "height:26px !important;"
+		. "min-height:26px !important;"
+		. "width:auto !important;"
+		. "max-height:none !important;"
+		. "max-width:none !important;"
+		. "padding:2px 10px !important;"
+		. "margin:0 2px !important;"
+		. "border:0 !important;"
+		. "border-radius:0 !important;"
+		. "background-color:transparent !important;"
+		. "vertical-align:middle !important;"
+		. "object-fit:contain;"
+		. "}"
+		. "</style>" . chr(10);
 	echo "<div class='rkrk-felddaten'>" . chr(10);
 	PrintRKRKHeader($pagetitle);
 
@@ -93,6 +115,10 @@
 												"Show" => true),
 							"Bauer" => array ( "Field" => "Bauer",
 												"Name" => "Bauer",
+												"Type" => "text",
+												"Show" => true),
+							"Notiz" => array ( "Field" => "Notiz",
+												"Name" => "Notiz",
 												"Type" => "text",
 												"Show" => true),
 							"SuchfeldBild" => array ( "Field" => "SuchfeldBild",
@@ -235,7 +261,7 @@ foreach ($RegionSettings as $Reg ) {
 		//if (isset($_POST[$Feld["Field"] . "_en"])) {
 			//echo $Feld["Field"] . " ". ($_POST[$Feld["Field"] . "_en"]) . "/ ";
 			//echo "post  ";
-			if (($_POST[$Feld["Field"] . "_en"])=="on") {
+			if (($_POST[$Feld["Field"] . "_en"] ?? '')=="on") {
 				$checked = "checked";
 				$TableSetup[$Feld["Field"]]["Show"] = true;
 			} else {
@@ -306,6 +332,12 @@ if (isset($_GET["FeldID"]) && trim((string)$_GET["FeldID"]) !== '') {
 	$FeldIDWahl = '';
 }
 
+$rkrkFeldImKatalog = is_array(rkrk_felddaten_locate_entry($Feldkatalog, $FeldIDWahl));
+$rkrkFeldFromGet = isset($_GET["FeldID"]) && trim((string)$_GET["FeldID"]) !== '';
+if ($FeldIDWahl !== '' && !$rkrkFeldImKatalog && !$rkrkFeldFromGet) {
+	$FeldIDWahl = '';
+}
+
 if (isset($_GET["Search"])) {
 	$FeldNamenWahl = $_GET["Search"];
 } else {
@@ -338,6 +370,7 @@ if (isset($_GET["NeuesFeld"])) {
 } else {
 	$newfield= "";
 }
+$rkrkJsonShot = null;
 
 if (isset($_GET["deletefile"])) { 
 	$deletefile= $_GET["deletefile"];
@@ -401,6 +434,183 @@ if (isset($_GET["NewFileName"])) {
 	$NewFileName= false;
 }
 
+// Rotes X: der Dateiname liegt im POST-Körper. Ein input type=image mit
+// formmethod=get wirft die Query (deletefile, File, XMLLabel) weg.
+if (isset($_POST["rkrkPicDelete"]) && is_string($_POST["rkrkPicDelete"])) {
+	$rkrkPicParts = explode("|", $_POST["rkrkPicDelete"], 2);
+	if (count($rkrkPicParts) === 2) {
+		$rkrkPicLabel = rawurldecode($rkrkPicParts[0]);
+		$rkrkPicFile = rawurldecode($rkrkPicParts[1]);
+		if ($rkrkPicFile !== "" && in_array($rkrkPicLabel, array("SuchfeldBild", "FlugplanBild"), true)) {
+			$deletefile = "Y";
+			$XMLLabel = $rkrkPicLabel;
+			$updateFileName = $rkrkPicFile;
+			$_GET["deletefile"] = "Y";
+			$_GET["XMLLabel"] = $rkrkPicLabel;
+			$_GET["File"] = $rkrkPicFile;
+		}
+	}
+}
+
+
+function rkrk_felddaten_locate_entry($Feldkatalog, $feldId) {
+	$feldId = trim((string)$feldId);
+	if ($feldId === '' || !is_array($Feldkatalog)) {
+		return null;
+	}
+	foreach ($Feldkatalog as $jg => $region) {
+		if (!is_array($region)) {
+			continue;
+		}
+		if (isset($region[$feldId]) && is_array($region[$feldId])) {
+			return array((string)$jg, (string)$feldId);
+		}
+		foreach ($region as $key => $row) {
+			if (!is_array($row) || !isset($row["FeldID"]) || is_array($row["FeldID"])) {
+				continue;
+			}
+			if (trim((string)$row["FeldID"]) === $feldId) {
+				return array((string)$jg, (string)$key);
+			}
+		}
+	}
+	return null;
+}
+
+function rkrk_felddaten_shot_area_text($area) {
+	if (is_array($area)) {
+		$parts = array();
+		array_walk_recursive($area, function ($v) use (&$parts) {
+			if (is_scalar($v) && trim((string)$v) !== '') {
+				$parts[] = trim((string)$v);
+			}
+		});
+		return trim(implode(' ', $parts));
+	}
+	return trim((string)$area);
+}
+
+function rkrk_felddaten_shot_job($feldId, $area, $mdb, $flaeche = null) {
+	$feldId = trim((string)$feldId);
+	// ZG6-278 ist Buchstaben und Zahl, nicht nur Zahl-Zahl.
+	if (!preg_match('/^[A-Za-z0-9]+-\d+$/', $feldId)) {
+		return null;
+	}
+	$text = rkrk_felddaten_shot_area_text($area);
+	$nums = array();
+	preg_match_all('/-?\d+(?:\.\d+)?/', $text, $nums);
+	$n = count($nums[0] ?? array());
+	if ($n < 6) {
+		$flaecheText = str_replace(',', '.', rkrk_felddaten_shot_area_text($flaeche));
+		if ($flaecheText === '' || !is_numeric($flaecheText) || (float)$flaecheText <= 0) {
+			return null;
+		}
+	}
+	global $RKRKExternalLoactionMissionFiles;
+	$ga = isset($_GET['GA']) ? trim((string)$_GET['GA']) : '';
+	return array(
+		'id' => $feldId,
+		'feld_id' => $feldId,
+		'mdb' => (string)$mdb,
+		'ga' => $ga,
+		'fileBase' => (string)($RKRKExternalLoactionMissionFiles ?? ''),
+		'mapBase' => 'rkrk_map.php',
+		'apiUrl' => 'fe/api_field_editor.php?KAT=&MDB=' . rawurlencode((string)$mdb),
+	);
+}
+
+function rkrk_felddaten_pic_line($name, $kind) {
+	$safe = htmlspecialchars((string)$name, ENT_QUOTES, 'UTF-8');
+	if ($kind === 'such' || $kind === 'flug') {
+		return "<span class='rkrk-pic-name' data-rkrk-picname='" . $kind . "'>" . $safe . "</span>";
+	}
+	return (string)$name . "<br>";
+}
+
+function rkrk_felddaten_fold_filename($name) {
+	$base = basename(str_replace('\\', '/', trim((string)$name)));
+	if ($base === '') {
+		return '';
+	}
+	if (class_exists('Normalizer')) {
+		$norm = Normalizer::normalize($base, Normalizer::FORM_C);
+		if (is_string($norm) && $norm !== '') {
+			$base = $norm;
+		}
+	}
+	$base = strtr($base, array(
+		'ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss',
+		'Ä' => 'a', 'Ö' => 'o', 'Ü' => 'u',
+		'à' => 'a', 'á' => 'a', 'â' => 'a',
+		'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+		'À' => 'a', 'Á' => 'a', 'Â' => 'a',
+		'É' => 'e', 'È' => 'e', 'Ê' => 'e',
+	));
+	if (function_exists('mb_strtolower')) {
+		return mb_strtolower($base, 'UTF-8');
+	}
+	return strtolower($base);
+}
+
+function rkrk_felddaten_same_file($a, $b) {
+	$fa = rkrk_felddaten_fold_filename($a);
+	$fb = rkrk_felddaten_fold_filename($b);
+	return $fa !== '' && $fa === $fb;
+}
+
+function rkrk_felddaten_delete_input($src, $height, $title, $self, $actPage, $feldId, $jg, $fileName, $xmlLabel, $picture, $dbw = null) {
+	$q = 'ActPage=1'
+		. '&FeldID=' . rawurlencode((string)$feldId)
+		. '&JG=' . rawurlencode((string)$jg);
+	if ($dbw !== null && $dbw !== '') {
+		$q .= '&DBW=' . rawurlencode((string)$dbw);
+	}
+	$payload = rawurlencode((string)$xmlLabel) . '|' . rawurlencode((string)$fileName);
+	$action = htmlspecialchars((string)$self, ENT_QUOTES, 'UTF-8') . '?' . $q;
+	return "<button type='submit' name='rkrkPicDelete' value='" . htmlspecialchars($payload, ENT_QUOTES, 'UTF-8') . "'"
+		. " formmethod='post' formaction='" . $action . "'"
+		. " title='" . htmlspecialchars((string)$title, ENT_QUOTES, 'UTF-8') . "'"
+		. " style='background:transparent;border:0;padding:0;margin:0;vertical-align:middle;cursor:pointer;'>"
+		. "<img src='" . htmlspecialchars((string)$src, ENT_QUOTES, 'UTF-8') . "' height='" . htmlspecialchars((string)$height, ENT_QUOTES, 'UTF-8') . "' alt=''>"
+		. "</button>";
+}
+
+function rkrk_felddaten_redirect_same_field($feldId) {
+	$feldId = trim((string)$feldId);
+	if ($feldId === '') {
+		return;
+	}
+	$q = array(
+		'FeldID' => $feldId,
+		'ActPage' => '1',
+	);
+	if (isset($_GET['DBW']) && trim((string)$_GET['DBW']) !== '') {
+		$q['DBW'] = trim((string)$_GET['DBW']);
+	}
+	if (isset($_GET['GA']) && trim((string)$_GET['GA']) !== '') {
+		$q['GA'] = trim((string)$_GET['GA']);
+	}
+	if (isset($_GET['MDB']) && trim((string)$_GET['MDB']) !== '') {
+		$q['MDB'] = trim((string)$_GET['MDB']);
+	}
+	$self = (isset($_SERVER['PHP_SELF']) && $_SERVER['PHP_SELF'] !== '') ? $_SERVER['PHP_SELF'] : 'rkrk_edit_felddaten.php';
+	while (ob_get_level() > 0) {
+		ob_end_clean();
+	}
+	header('Location: ' . $self . '?' . http_build_query($q), true, 303);
+	exit;
+}
+
+function rkrk_felddaten_pic_entry($nameHtml, $icons, $kind, $color = '') {
+	if ($kind === 'such' || $kind === 'flug') {
+		$name = ($color !== '') ? "<span style='color: " . $color . ";'>" . $nameHtml . "</span>" : $nameHtml;
+		return "<div class='rkrk-pic-file' style='display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:6px;margin:0 0 8px;max-width:100%;'><span class='rkrk-pic-actions'>" . $icons . "</span>" . $name . "</div>";
+	}
+	if ($color !== '') {
+		return $icons . "<span style='color: " . $color . ";'>" . $nameHtml . "</span>";
+	}
+	return $icons . $nameHtml;
+}
 
 function GetNewFilename($FeldID, $FileName, $Height="", $Ext="") {
 	$FileMeaning = GetMeaningFilename($FileName);
@@ -428,12 +638,22 @@ function GetNewFilename($FeldID, $FileName, $Height="", $Ext="") {
 // Add or delete entry or delete files
 // =================================
 
+$rkrkAddLoc = null;
 if (($deleteentry=="Y") or ($deletefile=="Y") or ($addentry=="Y") or ($addnadaptentry=="Y") or ($cleanandadd=="Y") or ($transfer=="Y")) {
+	$rkrkAddLoc = rkrk_felddaten_locate_entry($Feldkatalog, $FeldIDWahl);
+}
+if (is_array($rkrkAddLoc)) {
 	$KeepFieldStatus = false;
 							
-	$JG= $_GET["JG"];
-	$FeldID=$FeldIDWahl;
-	$FileName =$_GET["File"];
+	$JG= $rkrkAddLoc[0];
+	$FeldID=$rkrkAddLoc[1];
+	$FileName = (string)($_GET["File"] ?? "");
+	if ($FileName === '' && is_string($updateFileName ?? null)) {
+		$FileName = $updateFileName;
+	}
+	$file = ($FileName !== "")
+		? $RKRKLocalLoactionMissionFiles.$RegionSettings[$JG]["Dir"]."/".$FileName
+		: "";
 	
 	$rawEntrys = $Feldkatalog[$JG][$FeldID][$XMLLabel] ?? '';
 	$Entrys = function_exists('rkrk_explode_csv')
@@ -441,7 +661,49 @@ if (($deleteentry=="Y") or ($deletefile=="Y") or ($addentry=="Y") or ($addnadapt
 		: explode(",", is_array($rawEntrys) ? implode(",", $rawEntrys) : (string)$rawEntrys);
 	//pre_R($Entrys);
 
-	if ($deletefile=="Y") {
+	$rkrkPicDelete = in_array((string)$XMLLabel, array("SuchfeldBild", "FlugplanBild"), true)
+		&& (($deletefile === "Y") || ($deleteentry === "Y"));
+	if ($rkrkPicDelete) {
+		// Rotes X: genau diese eine Bilddatei austragen und auf der Platte löschen.
+		// Süd/Sud und URL-Schreibweise gelten als dieselbe Datei, _24 und _26 nicht.
+		$addentry = false;
+		$picDir = $RKRKLocalLoactionMissionFiles.$RegionSettings[$JG]["Dir"]."/";
+		$wantBase = basename(str_replace("\\", "/", $FileName));
+		$diskBase = "";
+		if ($wantBase !== "" && is_file($picDir.$wantBase)) {
+			$diskBase = $wantBase;
+		} elseif ($wantBase !== "" && is_dir($picDir)) {
+			$folded = array();
+			foreach (scandir($picDir) as $cand) {
+				if ($cand === "." || $cand === ".." || !is_file($picDir.$cand)) {
+					continue;
+				}
+				if (rkrk_felddaten_same_file($cand, $wantBase)) {
+					$folded[] = $cand;
+				}
+			}
+			if (count($folded) === 1) {
+				$diskBase = $folded[0];
+			}
+		}
+		if ($diskBase !== "") {
+			$file = $picDir.$diskBase;
+			$destDir = (string)$deletefilelocation;
+			if ($destDir !== "" && !is_dir($destDir)) {
+				@mkdir($destDir, 0775, true);
+			}
+			if ($destDir !== "" && is_dir($destDir)) {
+				rename($file, $destDir.date("YmdHi")."_".basename($file));
+			}
+		}
+		WriteToLog("del", basename($_SERVER['PHP_SELF']), "Felddaten ", $file, $RKRKMissionSelected, "");
+		foreach ($Entrys as $key => $Entry) {
+			$entryBase = basename(str_replace("\\", "/", trim((string)$Entry)));
+			if ($entryBase === $wantBase || ($diskBase !== "" && $entryBase === $diskBase) || rkrk_felddaten_same_file($entryBase, $wantBase)) {
+				unset($Entrys[$key]);
+			}
+		}
+	} elseif ($deletefile=="Y") {
 		 //move files to delete folder
 		$file = $RKRKLocalLoactionMissionFiles.$RegionSettings[$JG]["Dir"]."/".$FileName;
 		if(is_file($file)) {  //To check whether the filename is valid
@@ -450,7 +712,7 @@ if (($deleteentry=="Y") or ($deletefile=="Y") or ($addentry=="Y") or ($addnadapt
 		 }
 	}
 
-	if (($deleteentry=="Y")  or ($deletefile=="Y")){
+	if (!$rkrkPicDelete && (($deleteentry=="Y")  or ($deletefile=="Y"))){
 		WriteToLog("del", basename($_SERVER['PHP_SELF']), "Felddaten ",$file, $RKRKMissionSelected,"");
 		echo  "Delete: " . "Felddaten ",$file. "<br>";
 		foreach ($Entrys as $key => $Entry) {
@@ -758,7 +1020,7 @@ if ($updatefile=="Y") {
 }
 
 // Update data in Flugkatalog
-if (($newfield=="Y") or ($updatefile=="Y")){
+if ((($newfield=="Y") or ($updatefile=="Y")) && isset($JsonData)){
 	//pre_R($JsonData);
 
 	// ==============================
@@ -806,7 +1068,7 @@ if (($newfield=="Y") or ($updatefile=="Y")){
 		} else {
 			//no changen on update
 		}
-		if (!$KeepFieldStatus)	{	
+		if (!($KeepFieldStatus ?? false))	{	
 			$Feldkatalog[$JG][$FeldID]["Freigabe"]= $OptionFrei["NEU"]["Opt"];
 		}
 		if (($updatefile!=="Y")){	
@@ -830,9 +1092,11 @@ if (($newfield=="Y") or ($updatefile=="Y")){
 			//$Feldkatalog[$JG][$FeldID]["Bemerkung"] .= "Update von Jason " . date("d.m.Y");
 			$Feldkatalog[$JG][$FeldID]["Update"]= date("d.m.Y");
 		}
-		if ($JsonData["Notiz"] != "") {
-			if ($Feldkatalog[$JG][$FeldID]["Bemerkung"] !="") {
+		if (($JsonData["Notiz"] ?? "") != "") {
+			if (($Feldkatalog[$JG][$FeldID]["Bemerkung"] ?? "") !="") {
 				$Feldkatalog[$JG][$FeldID]["Bemerkung"] .= ", ";
+			} else {
+				$Feldkatalog[$JG][$FeldID]["Bemerkung"] = "";
 			}
 			$Feldkatalog[$JG][$FeldID]["Bemerkung"] .= cleanString(str_replace($searchSDZ, $replaceSDZ,$JsonData["Notiz"]));
 			//For Zug only
@@ -857,7 +1121,7 @@ if (($newfield=="Y") or ($updatefile=="Y")){
 		$Feldkatalog[$JG][$FeldID]["Bauer"]= cleanString(str_replace($searchSDZ, $replaceSDZ,$JsonData["Bauer"]));
 		//echo "Bauer: " . $Feldkatalog[$JG][$FeldID]["Bauer"] . "<br>" . chr(10);
 		$Feldkatalog[$JG][$FeldID]["Notiz"]= cleanString(str_replace($searchSDZ, $replaceSDZ,$JsonData["Notiz"]));
-		if ($JsonData["Grundstueckdaten"]["Parkplatz"]<>"") {
+		if (($JsonData["Grundstueckdaten"]["Parkplatz"] ?? "")<>"") {
 			//echo "save Parkplatz";
 			$Feldkatalog[$JG][$FeldID]["Grundstueckdaten"]["Parkplatz"]= $JsonData["Grundstueckdaten"]["Parkplatz"];
 		} else {
@@ -873,7 +1137,9 @@ if (($newfield=="Y") or ($updatefile=="Y")){
 		$Feldkatalog[$JG][$FeldID]["Flugweg"]= $JsonData["Flugweg"];
 		$Feldkatalog[$JG][$FeldID]["Export"]= "Y";
 		$Feldkatalog[$JG][$FeldID]["Select"]= "Y";
-		$Feldkatalog[$JG][$FeldID][$FileSetting["XMLLabel"]] = $RegionSettings[$JG]["Dir"] . "/" .$FieldEntry;
+		if (isset($FileSetting["XMLLabel"], $FieldEntry)) {
+			$Feldkatalog[$JG][$FeldID][$FileSetting["XMLLabel"]] = $RegionSettings[$JG]["Dir"] . "/" .$FieldEntry;
+		}
 		$Feldkatalog[$JG][$FeldID]["Aenderung"]= date("d.m.Y");
 	}
 
@@ -897,6 +1163,10 @@ if (($newfield=="Y") or ($updatefile=="Y")){
 		
 	$FeldIDWahl= $FeldID;
 	$NoSelection = false;
+	$rkrkShotJob = rkrk_felddaten_shot_job($FeldID, $Feldkatalog[$JG][$FeldID]["Flaechendaten"] ?? '', $RKRKMissionSelected ?? '', $Feldkatalog[$JG][$FeldID]["Flaeche"] ?? '');
+	if (is_array($rkrkShotJob)) {
+		$rkrkJsonShot = $rkrkShotJob;
+	}
 }
 
 		
@@ -910,7 +1180,7 @@ if (($newfield!="N") and ($updatefile!="Y")){
 
 	if ($_SERVER["REQUEST_METHOD"] == "POST"){
 		//echo "<br>Postentries: " . $_POST["NumEntries"]. "<br><br>";
-		if ($_POST["NumEntries"]>0) {
+		if (($_POST["NumEntries"] ?? 0)>0) {
 			//new configuration, safe configuration file
 			//echo "NumE: " . $_POST["NumEntries"] .  "<br>" . chr(10);
 			for ($i = 1; $i < $_POST["NumEntries"]; $i++) {
@@ -1064,12 +1334,14 @@ if (($newfield!="N") and ($updatefile!="Y")){
 
 	//						for ($ii = 1; $ii <= $_POST['NumJSONFiles'. $i]; $ii++) {
 							
-								$FileName = $_FILES[$FileSetting["FileVar"] . $i ]['name'];
-								$FileTmpName = $_FILES[$FileSetting["FileVar"] . $i ]['tmp_name'];
-								$FileSize = $_FILES[$FileSetting["FileVar"] . $i ]['size'];
-								$FileError = $_FILES[$FileSetting["FileVar"] . $i ]['error'];
-								$FileType = $_FILES[$FileSetting["FileVar"] . $i ]['type'];
-								$Flughoehe = $_POST[$FileSetting["HightVar"] . $i ];
+								$uploadKey = $FileSetting["FileVar"] . $i;
+								$uploaded = (isset($_FILES[$uploadKey]) && is_array($_FILES[$uploadKey])) ? $_FILES[$uploadKey] : array();
+								$FileName = (string)($uploaded['name'] ?? '');
+								$FileTmpName = (string)($uploaded['tmp_name'] ?? '');
+								$FileSize = (int)($uploaded['size'] ?? 0);
+								$FileError = $uploaded['error'] ?? UPLOAD_ERR_NO_FILE;
+								$FileType = (string)($uploaded['type'] ?? '');
+								$Flughoehe = (string)($_POST[$FileSetting["HightVar"] . $i] ?? '');
 								//$FileName = str_replace($searchUML3, $replaceUML3, $FileName);
 								//echo "num: " . $ii . " -  " . $FileName . "<br>";
 									
@@ -1166,8 +1438,44 @@ if (($newfield!="N") and ($updatefile!="Y")){
 		}
 	// update XML
 	SaveFlugkatalog($Feldkatalog, $dosafe);
-	SaveFlugkatalog2CSV ($Feldkatalog); 
+	SaveFlugkatalog2CSV ($Feldkatalog);
+	if (empty($rkrkJsonShot) && isset($JG, $FeldID) && isset($Feldkatalog[$JG][$FeldID]) && is_array($Feldkatalog[$JG][$FeldID])) {
+		$rkrkSaveJob = rkrk_felddaten_shot_job($FeldID, $Feldkatalog[$JG][$FeldID]["Flaechendaten"] ?? '', $RKRKMissionSelected ?? '', $Feldkatalog[$JG][$FeldID]["Flaeche"] ?? '');
+		if (is_array($rkrkSaveJob)) {
+			$rkrkJsonShot = $rkrkSaveJob;
+		}
+	} 
 	}	
+}
+
+$rkrkUploaded = false;
+if (!empty($_FILES) && is_array($_FILES)) {
+	foreach ($_FILES as $rkrkUp) {
+		if (!is_array($rkrkUp)) {
+			continue;
+		}
+		$rkrkUpName = $rkrkUp['name'] ?? '';
+		if (is_array($rkrkUpName)) {
+			$rkrkUpName = implode('', $rkrkUpName);
+		}
+		if (trim((string)$rkrkUpName) !== '') {
+			$rkrkUploaded = true;
+			break;
+		}
+	}
+}
+$rkrkMutated = (
+	$deletefile === 'Y' || $deleteentry === 'Y' || $addentry === 'Y' || $addnadaptentry === 'Y'
+	|| $cleanandadd === 'Y' || $transfer === 'Y' || $updatefile === 'Y' || $rkrkUploaded
+	|| (isset($_GET['DoSafe']) && $_GET['DoSafe'] === 'Y')
+	|| ($newfield === 'Y' && (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'))
+);
+if ($rkrkMutated) {
+	$rkrkBackId = trim((string)$FeldIDWahl);
+	if ($rkrkBackId === '' && isset($_POST['FeldID1'])) {
+		$rkrkBackId = trim((string)$_POST['FeldID1']);
+	}
+	rkrk_felddaten_redirect_same_field($rkrkBackId);
 }
 
 //pre_r(array_keys($Feldkatalog));
@@ -1180,6 +1488,7 @@ if (isset($_GET["ActPage"]) and $_GET["ActPage"]!="") {
 	$ActPage= 1;
 }
 
+$FontSize = "100%";
 if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 	$FontSize= $_POST["FontSize"];
 }
@@ -1200,12 +1509,14 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 				continue;
 			}
 			$regionOn = !empty($EnabledRegion[$jgKey]);
-			foreach ($Region as $Feld) {
+			foreach ($Region as $feldKey => $Feld) {
 				if (!is_array($Feld)) {
 					continue;
 				}
-				$fid = (string)($Feld["FeldID"] ?? '');
-				$jg = (string)($Feld["JG"] ?? $jgKey);
+				$fid = (isset($Feld["FeldID"]) && !is_array($Feld["FeldID"])) ? trim((string)$Feld["FeldID"]) : '';
+				if ($fid === '') {
+					$fid = trim((string)$feldKey);
+				}
 				$match = ($fid !== '' && $fid === (string)$FeldIDWahl)
 					|| ($FeldNamenWahl !== '' && (
 						like($fid, strval($FeldNamenWahl))
@@ -1214,14 +1525,32 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 						|| like((string)($Feld["Flurname"] ?? ''), $FeldNamenWahl)
 					));
 				if ($match && ($regionOn || $FeldIDWahl !== '')) {
-					$Feldkatalog[$jg][$fid]["ListNr"] = $i;
+					if ($fid !== '' && !isset($Feldkatalog[$jgKey][$feldKey]["FeldID"])) {
+						$Feldkatalog[$jgKey][$feldKey]["FeldID"] = $fid;
+					}
+					$Feldkatalog[$jgKey][$feldKey]["ListNr"] = $i;
 					$i++;
 				} else {
-					$Feldkatalog[$jg][$fid]["ListNr"] = "";
+					$Feldkatalog[$jgKey][$feldKey]["ListNr"] = "";
 				}
 			}
 		}
 		$MaxSelectedEntries = $i;
+		$rkrkAddWithoutRow = (($addentry === "Y") || ($addnadaptentry === "Y") || ($cleanandadd === "Y"))
+			&& !is_array(rkrk_felddaten_locate_entry($Feldkatalog, $FeldIDWahl));
+		$rkrkImportedNow = (($newfield === "Y") && isset($JsonData)) || ($updatefile === "Y" && isset($JsonData));
+		if (empty($rkrkJsonShot) && !$rkrkAddWithoutRow && $rkrkImportedNow && $FeldIDWahl !== '') {
+			$rkrkOpenLoc = rkrk_felddaten_locate_entry($Feldkatalog, $FeldIDWahl);
+			if (is_array($rkrkOpenLoc)) {
+				$rkrkOpenRow = $Feldkatalog[$rkrkOpenLoc[0]][$rkrkOpenLoc[1]] ?? array();
+				$rkrkOpenArea = (is_array($rkrkOpenRow) && array_key_exists('Flaechendaten', $rkrkOpenRow)) ? $rkrkOpenRow['Flaechendaten'] : '';
+				$rkrkOpenFlaeche = (is_array($rkrkOpenRow) && array_key_exists('Flaeche', $rkrkOpenRow)) ? $rkrkOpenRow['Flaeche'] : '';
+				$rkrkOpenJob = rkrk_felddaten_shot_job($FeldIDWahl, $rkrkOpenArea, $RKRKMissionSelected ?? '', $rkrkOpenFlaeche);
+				if (is_array($rkrkOpenJob)) {
+					$rkrkJsonShot = $rkrkOpenJob;
+				}
+			}
+		}
 
 
 		if ($newfield!="N") {
@@ -1252,7 +1581,7 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 			//echo '<input type="submit" name="Einlesen" value="Einlesen"> ';
 			echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '">' .chr(10);
 			echo "</td>" .chr(10);
-			echo "<td>" .chr(10);
+			echo "<td class='rkrk-search-actions'>" .chr(10);
 			echo MissionLibraryButtons();
 //			echo "<br>";
 			if ($Layout!=2023) {
@@ -1316,6 +1645,7 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 				. ".rkrk-flight-params-table td{padding:4px 14px 4px 0;vertical-align:middle;}"
 				. "</style>" . chr(10);
 			echo "<table class='rkrk-felddaten-form'>" .chr(10);
+			$changeinfo = '';
 			//echo $showfrom . ", " . $showto . ", " . $MaxSelectedEntries . ", " . $AnzLinesPPage . ", " . $MaxPages;
 			//pre_r($Feldkatalog);
 			//pre_r($KatFileList);
@@ -1327,7 +1657,7 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 					foreach ($Region as $Key => $Feld) {
 						//echo ($Key) . " - " . $Feld["ListNr"] . "<br>";
 						//pre_r($Feld);
-						if ($Feld["ListNr"]!="" &&
+						if (($Feld["ListNr"] ?? '')!="" &&
 							$Feld["ListNr"]>=$showfrom && 
 							$Feld["ListNr"]<=$showto){
 							//echo "Feld: " . $Feld["ListNr"] . "<br>";
@@ -1336,8 +1666,8 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 							// Start Liste
 							// -----------
 							$CoreFileName = $Feld["CorName"] ?? '';
-							$CoreFileNameWoULM = str_replace($searchSDZ2, $replaceSDZ2 ,$CoreFileName);
-							$LenFeldID = strlen($Feld["FeldID"]);
+							$CoreFileNameWoULM = str_replace($searchSDZ2 ?? array(), $replaceSDZ2 ?? array(), $CoreFileName);
+							$LenFeldID = strlen((isset($Feld["FeldID"]) && !is_array($Feld["FeldID"])) ? (string)$Feld["FeldID"] : '');
 							echo "<tr class='rkrkedit'>" .chr(10);
 							echo "<td colspan=3>" . chr(10);
 							echo "<h2>Felddaten</h2>" . chr(10);
@@ -1355,27 +1685,34 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 							// JG
 							$Inputfieldname = "JG".$i;
 							echo InputField($Inputfieldname, $Feld["JG"], 0, "left", "hidden");
+							$katJg = (isset($Feld["JG"], $KatFileList[$Feld["JG"]]) && is_array($KatFileList[$Feld["JG"]])) ? $KatFileList[$Feld["JG"]] : array();
+							$katField = (isset($Feld["FeldID"], $katJg[$Feld["FeldID"]]) && is_array($katJg[$Feld["FeldID"]])) ? $katJg[$Feld["FeldID"]] : array();
+							$katId = (string)($katField["FeldID"] ?? '');
+							$katFeldname = (string)($katField["Feldname"] ?? '');
+							$katGrund = (string)($katField["GrundstueckID"] ?? '');
 							// FeldID  
 							if ($TableSetup["FeldID"]["Show"]== true) {
 								echo "<tr>" .chr(10);
 								echo "<td>" . chr(10);
 								echo "<i>FeldID:</i>" . chr(10);
 								echo "</td>" . chr(10);
-								$katId = $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["FeldID"] ?? '';
 								if ($katId == $Feld["FeldID"]) {
 									echo "<td  colspan=2>" .chr(10);
 									echo $Feld["FeldID"];
 								} else {
 									echo "<td   colspan=2 style='background-color:" . $colorNOK . "'>" .chr(10);
 									echo $Feld["FeldID"];
-									echo "<span style='color:" . $colorNOKtext . "'>  (". $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["FeldID"].") </span>" .chr(10);
+									echo "<span style='color:" . $colorNOKtext . "'>  (". $katId.") </span>" .chr(10);
 								}
 								$Inputfieldname = "FeldID".$i;
 								echo InputField($Inputfieldname, $Feld["FeldID"], 5, "left", "hidden");
 								//Geofence Jagdgebiet
 								if ($geofence) {
-									//echo " GEO: " . $Feld["Grundstueckdaten"]["Zentrum"];
-									$GeoJgd = GetJgdOfPOint($Feld["Grundstueckdaten"]["Zentrum"]);
+									$geoZentrum = '';
+									if (isset($Feld["Grundstueckdaten"]) && is_array($Feld["Grundstueckdaten"]) && isset($Feld["Grundstueckdaten"]["Zentrum"])) {
+										$geoZentrum = $Feld["Grundstueckdaten"]["Zentrum"];
+									}
+									$GeoJgd = GetJgdOfPOint($geoZentrum);
 /*
 									if ($GeoJgd != "") {
 									  if (substr($Feld["FeldID"],2)==$GeoJgd) {
@@ -1398,8 +1735,8 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								$SearchA = Array(" ","ä","ö","ü","Ä","Ö","Ü","-"," ","_");
 								$FindA = Array("-","a","o","u","A","O","U","-","-","-");
 								if ( 
-									(str_replace($SearchA, $FindA, $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"]) == str_replace($SearchA, $FindA, $Feld["Feldname"]))  
-									or (str_replace($SearchA, $FindA, $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"])  == str_replace($SearchA, $FindA, $Feld["Feldname"] . "_" . $Feld["Flurname"]))
+									(str_replace($SearchA, $FindA, $katFeldname) == str_replace($SearchA, $FindA, $Feld["Feldname"]))  
+									or (str_replace($SearchA, $FindA, $katFeldname)  == str_replace($SearchA, $FindA, $Feld["Feldname"] . "_" . ($Feld["Flurname"] ?? '')))
 									){
 								//if ($KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"] == $Feld["Feldname"]) {
 									echo "<td  colspan=2>" .chr(10);
@@ -1407,7 +1744,7 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								} else {
 									echo "<td  colspan=2 style='background-color:" . $colorNOK . "'>" .chr(10);
 									echo $Feld["Feldname"];
-									echo "<span style='color:" . $colorNOKtext . "'>  (". $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"].") </span>" .chr(10);
+									echo "<span style='color:" . $colorNOKtext . "'>  (". $katFeldname.") </span>" .chr(10);
 								}
 								$Inputfieldname = "Feldname".$i;
 								echo InputField($Inputfieldname, $Feld["Feldname"], 15, "left", "hidden");
@@ -1432,13 +1769,13 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								echo "<td>" . chr(10);
 								echo "<i>Grundstück:</i>" . chr(10);
 								echo "</td>" . chr(10);
-								if ($KatFileList[$Feld["JG"]][$Feld["FeldID"]]["GrundstueckID"] == $Feld["GrundstueckID"]) {
+								if ($katGrund == ($Feld["GrundstueckID"] ?? '')) {
 									echo "<td  colspan=2>" .chr(10);
-									echo $Feld["GrundstueckID"];
+									echo $Feld["GrundstueckID"] ?? '';
 								} else {
 									echo "<td  colspan=2 style='background-color:" . $colorNOK . "'>" .chr(10);
-									echo $Feld["GrundstueckID"];
-									echo "<span style='color:" . $colorNOKtext . "'>  (". $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["GrundstueckID"].") </span>" .chr(10);
+									echo $Feld["GrundstueckID"] ?? '';
+									echo "<span style='color:" . $colorNOKtext . "'>  (". $katGrund.") </span>" .chr(10);
 								}
 								$Inputfieldname = "GrundstueckID".$i;
 								echo InputField($Inputfieldname, $Feld["GrundstueckID"], 0, "left", "hidden");
@@ -1457,7 +1794,11 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								//Geofence Gemeinde
 								if ($geofence) {
 									//echo " GEO: " . $Feld["Grundstueckdaten"]["Zentrum"];
-									$GeoGde = GetGdeOfPOint($Feld["Grundstueckdaten"]["Zentrum"]);
+									$gdZentrum = '';
+									if (isset($Feld["Grundstueckdaten"]) && is_array($Feld["Grundstueckdaten"])) {
+										$gdZentrum = trim((string)($Feld["Grundstueckdaten"]["Zentrum"] ?? ''));
+									}
+									$GeoGde = ($gdZentrum !== '' && $gdZentrum !== ',') ? GetGdeOfPOint($gdZentrum) : '';
 									if ($GeoGde != "") {
 									  //set color
 									  if ($Feld["Gemeinde"]==$GeoGde) {
@@ -1511,9 +1852,12 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								
 								//Geofence Warning Flugzone
 								if ($geofence) {
-									//echo " GEO: " . $Feld["Grundstueckdaten"]["Zentrum"];
-									$GeoWarnFlgZ = GetWarnungFlgZOfPOint($Feld["Grundstueckdaten"]["Zentrum"]);
-									$GeoWarnSun = GetSunOfPOint($Feld["Grundstueckdaten"]["Zentrum"]);
+									$geoZentrum = '';
+									if (isset($Feld["Grundstueckdaten"]) && is_array($Feld["Grundstueckdaten"]) && isset($Feld["Grundstueckdaten"]["Zentrum"])) {
+										$geoZentrum = $Feld["Grundstueckdaten"]["Zentrum"];
+									}
+									$GeoWarnFlgZ = GetWarnungFlgZOfPOint($geoZentrum);
+									$GeoWarnSun = GetSunOfPOint($geoZentrum);
 									$GeoWarnSora = GetSoraOfPOint($Feld);
 									$GeoWarnFlgZ= trim($GeoWarnFlgZ . " " . $GeoWarnSun  . " " . $GeoWarnSora);
 									
@@ -1562,7 +1906,7 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								echo "</td>" . chr(10);
 								echo "<td  colspan=2>" .chr(10);
 								$Inputfieldname = "Bemerkung".$i;
-								echo InputTextarea($Inputfieldname, $Feld["Bemerkung"], 12, 2, 50);
+								echo InputTextarea($Inputfieldname, $Feld["Bemerkung"] ?? "", 12, 2, 50);
 								echo "</td>";
 								echo "</tr>" .chr(10);
 							}
@@ -1610,7 +1954,7 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								echo "</td>" . chr(10);
 								echo "<td  colspan=2>" . chr(10);
 								$Inputfieldname = "Notiz".$i;
-								echo InputTextarea($Inputfieldname, $Feld["Notiz"], 12, 5, 50);
+								echo InputTextarea($Inputfieldname, $Feld["Notiz"] ?? "", 12, 5, 50);
 								echo "</td>";
 								echo "</tr>" .chr(10);
 							}
@@ -1652,29 +1996,63 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 								echo "</tr>" . chr(10);
 								
 								// Pilot
-								echo "<tr>" .chr(10);
+								echo "<tr class='rkrk-pilot-row'>" .chr(10);
 								echo "<td>" . chr(10);
 								echo "<i>Pilot:</i>" . chr(10);
 								echo "</td>" . chr(10);
-								echo "<td>" .chr(10);
+								echo "<td class='rkrk-pilot-cell'>" .chr(10);
 								$Inputfieldname = "Pilot".$i;
 								echo SelectFieldMultiOptArr($Inputfieldname, $Pilot , rkrk_pilot_options_for_assign(null, $Pilot) );
+								$rkrkRenewBtn = "";
+								$rkrkHasPicRows = false;
+								foreach ($FlyFileSetting as $rkrkFs) {
+									$rkrkFsType = (string)($rkrkFs["Type"] ?? "");
+									if ($rkrkFsType !== "SuchfeldBild" && $rkrkFsType !== "FlugplanBild") {
+										continue;
+									}
+									if (in_array($rkrkFs["XMLLabel"] ?? "", explode(",", (string)($MissionDroneTypes[$RKRKMissionSelected]["DataFile"] ?? "")))
+										&& in_array("edit_felddaten", explode(",", (string)($rkrkFs["Show"] ?? "")))) {
+										$rkrkHasPicRows = true;
+										break;
+									}
+								}
+								if ($rkrkHasPicRows) {
+									$rkrkRenewJob = rkrk_felddaten_shot_job(
+										(string)($Feld["FeldID"] ?? ''),
+										$Feld["Flaechendaten"] ?? '',
+										(string)($RKRKMissionSelected ?? ''),
+										$Feld["Flaeche"] ?? ''
+									);
+									$rkrkRenewJson = json_encode($rkrkRenewJob, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+									if (!is_string($rkrkRenewJson) || $rkrkRenewJson === '') {
+										$rkrkRenewJson = 'null';
+									}
+									$rkrkRenewBtn = "<button type='button' class='rkrk-renew-pics' id='rkrkRenewPicsBtn' title='Bilder erneuern' data-job='" . htmlspecialchars($rkrkRenewJson, ENT_QUOTES, 'UTF-8') . "'><img src='" . $IconLoc . "/dataupdate.png' alt='' height='" . $ButtonHeight . "'></button>";
+								}
+								$rkrkPilotIcons = "";
 								if (GetAccess("PilotPartners"))	{							
-									echo "<td>" .chr(10);
 									if (GetAccess("DebugDataBase")) {
 										// clean and add all files from drive
-										echo "<input type='image' value='1st page' src='" . $IconLoc . "/cleanandadd.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&cleanandadd=Y&DBW=" . $_GET["DBW"]. "' height='" . $ButtonHeight . "'  title='Dateien von " . $Feld["FeldID"] . " löschen und Neue hinzufügen und XML Daten erneuern'>" .chr(10);
+										$rkrkPilotIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/cleanandadd.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&cleanandadd=Y&DBW=" . ($_GET["DBW"] ?? "off"). "' height='" . $ButtonHeight . "'  title='Dateien von " . $Feld["FeldID"] . " löschen und Neue hinzufügen und XML Daten erneuern'>";
 									} else {
 										// clean and add all files from drive
-										echo "<input type='image' value='1st page' src='" . $IconLoc . "/cleanandadd.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&cleanandadd=Y' height='" . $ButtonHeight . "'  title='Alle D von " . $Feld["FeldID"] . " löschen und Neue hinzufügen und XML Daten erneuern'>" .chr(10);
+										$rkrkPilotIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/cleanandadd.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&cleanandadd=Y' height='" . $ButtonHeight . "'  title='Alle D von " . $Feld["FeldID"] . " löschen und Neue hinzufügen und XML Daten erneuern'>";
 									}
 									if (GetAccess("TestOnly")) {
 										//Transfer JSON to dependant DroneMissions
-										echo "<input type='image' value='1st page' src='" . $IconLoc . "/jsontansfer.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&transfer=Y' height='" . $ButtonHeight . "'  title='". "Alles Daten von " . $Feld["FeldID"] . " auf verlinkte Drohne umwandlen und speichern'>" .chr(10);
+										$rkrkPilotIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/jsontansfer.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&transfer=Y' height='" . $ButtonHeight . "'  title='". "Alle Daten von " . $Feld["FeldID"] . " auf verlinkte Drohne umwandlen und speichern'>";
 									}
-									echo "</td>";
 								}
-								echo "</td>";
+								$rkrkPilotIcons .= $rkrkRenewBtn;
+								$rkrkPilotToolsHtml = "";
+								if ($rkrkPilotIcons !== "") {
+									$rkrkPilotToolsHtml = "<div class='rkrk-pilot-above-map'><span class='rkrk-pilot-icons'>" . $rkrkPilotIcons . "</span>";
+									if ($rkrkRenewBtn !== "") {
+										$rkrkPilotToolsHtml .= "<span id='rkrkRenewPicsNote'></span>";
+									}
+									$rkrkPilotToolsHtml .= "</div>";
+								}
+								echo "</td>" . chr(10);
 								echo "</tr>" .chr(10);
 								// Standard Flughöhe
 								//echo "<tr>" .chr(10);
@@ -1692,7 +2070,12 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 							//=======================
 							// MULTIPLE
 							$dosave_again = false;
+							if (!isset($rkrkPilotToolsHtml)) {
+								$rkrkPilotToolsHtml = "";
+							}
 							foreach ($FlyFileSetting as $FileSetting) {
+								$rkrkThirdCell = false;
+								$rkrkPicKind = '';
 								//echo "Label: " . $FileSetting["XMLLabel"] . "<br>";
 								//echo "FileList: " . $MissionDroneTypes[$RKRKMissionSelected]["DataFile"] . "<br>";
 								if (!$FileSetting["Picture"] or true) {
@@ -1703,7 +2086,8 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 											//Check if file on Drive
 											//echo $FileSetting["Type"] . "-" . $FileSetting["KatField"] . "<br>";
 											$TempContent="";
-											$Files["InKat"] = explode(",",$Feld[$FileSetting["XMLLabel"]]);
+											$labelFiles = (string)($Feld[$FileSetting["XMLLabel"]] ?? '');
+											$Files["InKat"] = ($labelFiles === '') ? array() : explode(",",$labelFiles);
 											//get basefilename
 											foreach ($Files["InKat"] as $key => $file) {
 												$Files["InKat"][$key] = pathinfo($file)["basename"];
@@ -1772,55 +2156,58 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 											//echo "<br>" . $FileSetting["XMLLabel"] . " - " . $FileSetting["KatField"]. "<br>";
 											
 
-											$TempContent .= "<tr>" .chr(10);
+											if ($FileSetting["Type"] == "SuchfeldBild") {
+												$rkrkPicKind = "such";
+											} elseif ($FileSetting["Type"] == "FlugplanBild") {
+												$rkrkPicKind = "flug";
+											}
+											$TempContent .= "<tr" . (($rkrkPicKind === "such" || $rkrkPicKind === "flug") ? " data-rkrk-picrow='" . $rkrkPicKind . "'" : "") . ">" . chr(10);
 											$TempContent .= "<td>" . chr(10);
 											$TempContent .= "<i>" . $FileSetting["Text"] . "</i>" . chr(10);
 											$TempContent .= "</td>" . chr(10);
 											$TempContent .= "<td>" . chr(10);
 											
 											$PropPicNameSB = $FeldIDWahl . "_" .$Feld['Feldname']."_".$Feld['GrundstueckID'] . "_" .  "00" . "_" . $Pilot . "_" . date("y");
-											$PropPicNameFB = $FeldIDWahl . "_" .$Feld['Feldname']."_".$Feld['GrundstueckID'] . "_" .  $Feld['StdFlughohe'] . "_" . $Pilot . "_" . date("y");
+											$PropPicNameFB = $FeldIDWahl . "_" .$Feld['Feldname']."_".$Feld['GrundstueckID'] . "_" .  ($Feld['StdFlughohe'] ?? '') . "_" . $Pilot . "_" . date("y");
 											
 											$LocalMissionDirectory = $MissionLocation.$RegionSettings[$Feld["JG"]]["Dir"]."/";
+											$rkrkPicOnce = "";
 											if (GetAccess("PilotPartners") and $FileSetting["Type"] =="SuchfeldBild") {
-												$TempContent .= "<a href='rkrk_map.php?FFilter=".$Feld["FeldID"]. $SuchplanBildParameter ."' target='_geomap'><img src='" . $IconLoc . "/suchplanbild.png' height='" . $ButtonHeight ."' title='Zeige Suchfeldbild'></a>". chr(10);
+												$rkrkPicOnce .= "<a href='rkrk_map.php?FFilter=".$Feld["FeldID"]. $SuchplanBildParameter ."&MenuOn=off&MapButtons=off' target='_geomap'><img src='" . $IconLoc . "/suchplanbild.png' height='" . 36 ."' title='Zeige Suchfeldbild'></a>";
 											}
 											if (GetAccess("TestOnly") and $FileSetting["Type"] =="SuchfeldBild") {
 												$Parameter = 'javascript:startSnapshot({ffilter: "'.$FeldIDWahl.'",filename: "'.$PropPicNameSB .".jpg".'", mode: "suchfeld",zoom: 70,w: 600,h: 600,off: 0});';
 												$flugplanbild_button = "<a href='". $Parameter."'>";
-												$flugplanbild_button .= "<img src='" . $IconLoc . "/flugplanbild_shot.png' height='" . $ButtonHeight ."' title='Kreiere Suchfeldbild und lade es in den lokalen Download Ordner'>";
-												//$flugplanbild_button .= "Suchfeldbild";
-												$flugplanbild_button .= "</a>  ";
-												$TempContent .= $flugplanbild_button;
+												$flugplanbild_button .= "<img src='" . $IconLoc . "/flugplanbild_shot.png' height='" . 36 ."' title='Kreiere Suchfeldbild und lade es in den lokalen Download Ordner'>";
+												$flugplanbild_button .= "</a>";
+												$rkrkPicOnce .= $flugplanbild_button;
 											}
 											if (GetAccess("PilotPartners") and $FileSetting["Type"] =="SuchfeldBild") {
 												$Parameter = 'javascript:startSnapshot({ffilter: "'.$FeldIDWahl.'",filename: "'.$PropPicNameSB .".jpg" .'", mode: "suchfeld",zoom: 70,w: 600,h: 600,off: 0, serverPath: "'.$LocalMissionDirectory.'"});';
 												$flugplanbild_button = "<a href='". $Parameter."'>";
-												$flugplanbild_button .= "<img src='" . $IconLoc . "/flugplanbild_shot_server.png' height='" . $ButtonHeight ."' title='Kreiere Suchfeldbild und lade es auf den Server'>";
-												//$flugplanbild_button .= "SuchfeldBild";
-												$flugplanbild_button .= "</a>  ";
-												$TempContent .= $flugplanbild_button;
+												$flugplanbild_button .= "<img src='" . $IconLoc . "/flugplanbild_shot_server.png' height='" . 36 ."' title='Kreiere Suchfeldbild und lade es auf den Server'>";
+												$flugplanbild_button .= "</a>";
+												$rkrkPicOnce .= $flugplanbild_button;
 											}
 											if (GetAccess("PilotPartners") and $FileSetting["Type"] =="FlugplanBild") {
-												$TempContent .= "<a href='rkrk_map.php?FFilter=".$Feld["FeldID"]. $FlugplanBildParameter ."' target='_geomap'><img src='" . $IconLoc . "/flugplanbild.png' height='" . $ButtonHeight ."' title='Zeige Flugplanbild'></a>  ". chr(10);
+												$rkrkPicOnce .= "<a href='rkrk_map.php?FFilter=".$Feld["FeldID"]. $FlugplanBildParameter ."&MenuOn=off&MapButtons=off' target='_geomap'><img src='" . $IconLoc . "/flugplanbild.png' height='" . 36 ."' title='Zeige Flugplanbild'></a>";
 											}
 											if (GetAccess("TestOnly") and $FileSetting["Type"] =="FlugplanBild") {
 												$Parameter = 'javascript:startSnapshot({ffilter: "'.$FeldIDWahl.'",filename: "'. $PropPicNameFB.".jpg" .'", mode: "flugplan",zoom: 90,w: 600,h: 600,off: 0});';
 												$suchplanbild_button = "<a href='". $Parameter."'>";
-												$suchplanbild_button .= "<img src='" . $IconLoc . "/suchplanbild_shot.png' height='" . $ButtonHeight ."' title='Kreiere FlugplanBild und lade es in den lokalen Download Ordner'>";
-												
-												//$suchplanbild_button .= "Suchfeld";
-												$suchplanbild_button .= "</a>  ";
-												$TempContent .=  $suchplanbild_button;											
+												$suchplanbild_button .= "<img src='" . $IconLoc . "/suchplanbild_shot.png' height='" . 36 ."' title='Kreiere FlugplanBild und lade es in den lokalen Download Ordner'>";
+												$suchplanbild_button .= "</a>";
+												$rkrkPicOnce .= $suchplanbild_button;
 											}
 											if (GetAccess("PilotPartners") and $FileSetting["Type"] =="FlugplanBild") {
-												$Parameter = 'javascript:startSnapshot({ffilter: "'.$FeldIDWahl.'",filename: "'. $PropPicNameFB .".jpg" .'", mode: "flugplan",zoom: 90,w: 600,h: 600,off: 0, serverPath: "'.$LocalMissionDirectory.'" });'; // ../../tmp
+												$Parameter = 'javascript:startSnapshot({ffilter: "'.$FeldIDWahl.'",filename: "'. $PropPicNameFB .".jpg" .'", mode: "flugplan",zoom: 90,w: 600,h: 600,off: 0, serverPath: "'.$LocalMissionDirectory.'" });';
 												$suchplanbild_button = "<a href='". $Parameter."'>";
-												$suchplanbild_button .= "<img src='" . $IconLoc . "/suchplanbild_shot_server.png' height='" . $ButtonHeight ."' title='Kreiere FlugplanBild und lade es auf den Server'>";
-												
-												//$suchplanbild_button .= "Suchfeld";
-												$suchplanbild_button .= "</a>  ";
-												$TempContent .=  $suchplanbild_button;											
+												$suchplanbild_button .= "<img src='" . $IconLoc . "/suchplanbild_shot_server.png' height='" . 36 ."' title='Kreiere FlugplanBild und lade es auf den Server'>";
+												$suchplanbild_button .= "</a>";
+												$rkrkPicOnce .= $suchplanbild_button;
+											}
+											if ($rkrkPicOnce !== "" && ($rkrkPicKind === "such" || $rkrkPicKind === "flug")) {
+												$TempContent .= "<div class='rkrk-pic-tools' style='display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:6px;margin:0 0 8px;'>" . $rkrkPicOnce . "</div>" . chr(10);
 											}
 											//if (count($Files["inKat"]))
 											//	$TempContent .= "<br>All Files in Kat: <li> ". implode("<li>", $Files["inKat"]) . "<br>";
@@ -1833,20 +2220,29 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 											if (count($Files["InKatAndDrive"])) {
 												//$TempContent .= "<br>Files In Kat and Drive: <li> ". implode("<li>", $Files["InKatAndDrive"]) . "<br>";
 												foreach ($Files["InKatAndDrive"] as $FileName) {
-													// delete
-													if (GetAccess("DebugDataBase")) {
-														$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&deletefile=Y&XMLLabel=".$FileSetting["XMLLabel"]."&DBW=" . $_GET["DBW"]. "' height='" . $ButtonHeightSmall . "' title='". $FileSetting["Type"] ."-".$HeightNum." Datei " . $Feld["FeldID"] . " löschen (".$FileName.")'>" .chr(10);
+													$HeightNum = GetMeaningFilename($FileName)[4];
+													if ($HeightNum === "") {
+														$HeightNum = (($Feld["StdFlughohe"] ?? "") !== "") ? $Feld["StdFlughohe"] : $DefHeightNum;
+													}
+													$lineIcons = "";
+													// delete: bei Suchfeld/Flugplan Datei und Katalogeintrag, Dateiname URL-kodiert
+													$rkrkPicRow = ($rkrkPicKind === "such" || $rkrkPicKind === "flug");
+													$rkrkDelTitle = $FileSetting["Type"] . "-" . $HeightNum . " Datei " . $Feld["FeldID"] . " löschen (" . $FileName . ")";
+													if ($rkrkPicRow) {
+														$lineIcons .= rkrk_felddaten_delete_input($IconLoc . "/delete.png", $ButtonHeightSmall, $rkrkDelTitle, $_SERVER["PHP_SELF"], $ActPage, $Feld["FeldID"], $Feld["JG"], $FileName, $FileSetting["XMLLabel"], true, GetAccess("DebugDataBase") ? ($_GET["DBW"] ?? "off") : null);
+													} elseif (GetAccess("DebugDataBase")) {
+														$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . rawurlencode((string)$FileName) . "&deletefile=Y&XMLLabel=".$FileSetting["XMLLabel"]."&DBW=" . ($_GET["DBW"] ?? "off"). "' height='" . $ButtonHeightSmall . "' title='". $rkrkDelTitle . "'>";
 													} else {
-														$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&deletefile=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " löschen (".$FileName.")'>" .chr(10);
+														$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . rawurlencode((string)$FileName) . "&deletefile=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $rkrkDelTitle . "'>";
 													}
 													if ((GetAccess("InternPilots")) and $FileSetting["Type"]=="JSON") {
 														//Transfer JSON to dependant DroneMissions
-														$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/jsontansfer.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&transfer=Y' height='" . $ButtonHeightSmall . "'  title='". "Datei " . $Feld["FeldID"] . " auf verlinkte Drohne umwandlen und speichern (".$FileName.")'>" .chr(10);
+														$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/jsontansfer.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&transfer=Y' height='" . $ButtonHeightSmall . "'  title='". "Datei " . $Feld["FeldID"] . " auf verlinkte Drohne umwandlen und speichern (".$FileName.")'>";
 													}
 													if ((GetAccess("PilotPartners")) and $FileSetting["Type"]=="JSON") {
-														$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/update.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&updatefile=Y&DBW=" . $_GET["DBW"]. "' height='" . $ButtonHeightSmall . "' title='Datei " . $Feld["FeldID"] . " mit Daten neu laden'>" .chr(10);
+														$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/update.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&updatefile=Y&DBW=" . ($_GET["DBW"] ?? "off"). "' height='" . $ButtonHeightSmall . "' title='Datei " . $Feld["FeldID"] . " mit Daten neu laden'>";
 													}
-													$TempContent .= $FileName . "<br>";
+													$TempContent .= rkrk_felddaten_pic_entry(rkrk_felddaten_pic_line($FileName, $rkrkPicKind), $lineIcons, $rkrkPicKind);
 												}
 											} else {
 												$FileMeaning = GetMeaningFilename($Files["OnDrive"]);
@@ -1865,15 +2261,21 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 											if (count($Files["MissingOnDrive"]))
 												//$TempContent .= "<br>Files missing drive: <li> ". implode("<li>", $Files["MissingOnDrive"]) . "<br>";
 											foreach ($Files["MissingOnDrive"] as $FileName) {
-												// delete
-												$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&deleteentry=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Eintrag " . $Feld["FeldID"] . " löschen (".$FileName.")'>" .chr(10);
-												//$TempContent .= "<img src='" . $IconLoc . "/void.png' height='" . $ButtonHeightSmall . "'>";
+												$HeightNum = GetMeaningFilename($FileName)[4];
+												if ($HeightNum === "") {
+													$HeightNum = (($Feld["StdFlughohe"] ?? "") !== "") ? $Feld["StdFlughohe"] : $DefHeightNum;
+												}
+												$lineIcons = "";
+												// delete: Suchfeld/Flugplan trägt aus und löscht die Datei
+												if ($rkrkPicKind === "such" || $rkrkPicKind === "flug") {
+													$lineIcons .= rkrk_felddaten_delete_input($IconLoc . "/delete.png", $ButtonHeightSmall, $FileSetting["Type"] . "-" . $HeightNum . " Datei " . $Feld["FeldID"] . " löschen (" . $FileName . ")", $_SERVER["PHP_SELF"], $ActPage, $Feld["FeldID"], $Feld["JG"], $FileName, $FileSetting["XMLLabel"], true);
+												} else {
+													$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . rawurlencode((string)$FileName) . "&deleteentry=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Eintrag " . $Feld["FeldID"] . " löschen (".$FileName.")'>";
+												}
 												if ((GetAccess("InternLinks")) and $FileSetting["Type"]=="JSON") {
-													$TempContent .= "<img src='" . $IconLoc . "/void.png' height='" . $ButtonHeightSmall . "'>";
-												}	
-												$TempContent .= "<span style='color: #E95F11;'>";
-												$TempContent .= $FileName . "<br>";
-												$TempContent .= "</span>";
+													$lineIcons .= "<img src='" . $IconLoc . "/void.png' height='" . $ButtonHeightSmall . "'>";
+												}
+												$TempContent .= rkrk_felddaten_pic_entry(rkrk_felddaten_pic_line($FileName, $rkrkPicKind), $lineIcons, $rkrkPicKind, "#E95F11");
 											}
 
 											//======================
@@ -1882,34 +2284,42 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 											if (count($Files["MissingInKat"]))
 												//$TempContent .= "<br>Files Missing in Kat: <li> ". implode("<li>", $Files["MissingInKat"]) . "<br>";
 											foreach ($Files["MissingInKat"] as $FileName) {
-												// delete
-												$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&deletefile=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " löschen (".$FileName.")'>" .chr(10);
+												$HeightNum = GetMeaningFilename($FileName)[4];
+												if ($HeightNum === "") {
+													$HeightNum = (($Feld["StdFlughohe"] ?? "") !== "") ? $Feld["StdFlughohe"] : $DefHeightNum;
+												}
+												$lineIcons = "";
+												// delete: Suchfeld/Flugplan trägt aus und löscht die Datei
+												if ($rkrkPicKind === "such" || $rkrkPicKind === "flug") {
+													$lineIcons .= rkrk_felddaten_delete_input($IconLoc . "/delete.png", $ButtonHeightSmall, $FileSetting["Type"] . "-" . $HeightNum . " Datei " . $Feld["FeldID"] . " löschen (" . $FileName . ")", $_SERVER["PHP_SELF"], $ActPage, $Feld["FeldID"], $Feld["JG"], $FileName, $FileSetting["XMLLabel"], true);
+												} else {
+													$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . rawurlencode((string)$FileName) . "&deletefile=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " löschen (".$FileName.")'>";
+												}
 												// add files from drive
-												$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/add.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&addentry=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " hinzufügen (".$FileName.")'>" .chr(10);
-												//echo $FileBasename = pathinfo($file)['filename'];
-												//	pre_r($FileMeaning);
-
-												//$NewFilename = $Feld["FeldID"] . "_" . $FileMeaning[7] . "_" .  $FileMeaning[4] . "_" . $FileMeaning[5] . "_" . $FileMeaning[6] . "." . $FileActualExt;
+												$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/add.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . rawurlencode((string)$Feld["FeldID"]) . "&JG=" . rawurlencode((string)$Feld["JG"]) . "&File=" . rawurlencode((string)$FileName) . "&addentry=Y&XMLLabel=".rawurlencode((string)$FileSetting["XMLLabel"])."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " hinzufügen (".$FileName.")'>";
+												$FeldID = (isset($Feld["FeldID"]) && !is_array($Feld["FeldID"]) && (string)$Feld["FeldID"] !== '')
+													? (string)$Feld["FeldID"]
+													: (string)($FeldIDWahl ?? '');
 												$NewFilename =  GetNewFilename($FeldID, $FileName);
 												if ($NewFilename != $FileName) {
 													// add files from drive and adapt name
-													$TempContent .= "<input type='image' value='1st page' src='" . $IconLoc . "/addnadpat.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&NewFileName=" . $NewFilename ."&addnadaptentry=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " hinzufügen und nach " . $NewFilename ." umbenennen'>" .chr(10);
-												}	
-												$TempContent .= "<span style='color: #125B07;'>";
-												$TempContent .= $FileName . "<br>";
-												$TempContent .= "</span>";
+													$lineIcons .= "<input type='image' value='1st page' src='" . $IconLoc . "/addnadpat.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&JG=" . $Feld["JG"] . "&File=" . $FileName . "&NewFileName=" . $NewFilename ."&addnadaptentry=Y&XMLLabel=".$FileSetting["XMLLabel"]."' height='" . $ButtonHeightSmall . "'  title='". $FileSetting["Type"] ."-".$HeightNum."Datei " . $Feld["FeldID"] . " hinzufügen und nach " . $NewFilename ." umbenennen'>";
+												}
+												$TempContent .= rkrk_felddaten_pic_entry(rkrk_felddaten_pic_line($FileName, $rkrkPicKind), $lineIcons, $rkrkPicKind, "#125B07");
 											}
-											$TempContent .= "<br>";
+											if ($rkrkPicKind !== "such" && $rkrkPicKind !== "flug") {
+												$TempContent .= "<br>";
+											}
 
 											//======================
 											// Neues File
 											//======================
-											$TempContent .= "<div>" . chr(10);
+											$TempContent .= "<div" . (($rkrkPicKind === "such" || $rkrkPicKind === "flug") ? " class='rkrk-pic-add'" : "") . ">" . chr(10);
 											$TempContent .= "  <label for='" . $FileSetting["FileVar"] . $i ."'>Datei hinzufügen</label>" . chr(10);
 											$TempContent .= "	<input type='file' id='" . $FileSetting["FileVar"] . $i . "' name='" . $FileSetting["FileVar"] . $i . "' accept='" . $FileSetting["allowedList"] .  "'>" . chr(10);
 											//echo "	<button type='submit' name='JSON_File_Load'>File laden</button>" . chr(10);
 											if ($FileSetting["Type"] != "SuchfeldBild") {
-												$HeightNum=$Feld["StdFlughohe"];
+												$HeightNum=$Feld["StdFlughohe"] ?? '';
 												if ($HeightNum=="" ) {
 													$HeightNum =$DefHeightNum;
 												}
@@ -1926,10 +2336,21 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 											//=======================
 
 											$TempContent .= "</td>";
-											if ($FileSetting["Type"]=="JSON")
+											if ($FileSetting["Type"]=="JSON") {
 												$TempContent .= "<td rowspan='3'>";
-											elseif (($FileSetting["Type"]!="KML") and ($FileSetting["Type"]!="LCHM"))
-												$TempContent .= "<td>";
+												$rkrkThirdCell = true;
+											} elseif (($FileSetting["Type"]!="KML") and ($FileSetting["Type"]!="LCHM")) {
+												if ($rkrkPicKind === "such" || $rkrkPicKind === "flug") {
+													$TempContent .= "<td data-rkrk-piccell='" . $rkrkPicKind . "'>";
+													if ($rkrkPicKind === "such" && !empty($rkrkPilotToolsHtml)) {
+														$TempContent .= $rkrkPilotToolsHtml;
+														$rkrkPilotToolsHtml = "";
+													}
+												} else {
+													$TempContent .= "<td>";
+												}
+												$rkrkThirdCell = true;
+											}
 												
 											//echo $FileName;
 											//pre_r( $KatFileList[$Feld["JG"]][$Feld["FeldID"]][]);
@@ -1944,8 +2365,10 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 												) {
 													//echo $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$FileName . "<br><br>";
 													//pre_r($Files);
-													$SelectedFlugplanBild = GetFlugplanbild($Files["InKatAndDrive"],$Feld["StdFlughohe"]);
-													$TempContent .= "<a href='" . $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$SelectedFlugplanBild. "' target='blank'><img src='" . $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$SelectedFlugplanBild . "' height='" . $PicHeight1 . "' style='object-fit: cover;'></a>" . chr(10);
+													$SelectedFlugplanBild = GetFlugplanbild($Files["InKatAndDrive"],$Feld["StdFlughohe"] ?? '');
+													$rkrkPicAttr = ($rkrkPicKind === "such" || $rkrkPicKind === "flug") ? " data-rkrk-piclink='" . $rkrkPicKind . "'" : "";
+													$rkrkImgAttr = ($rkrkPicKind === "such" || $rkrkPicKind === "flug") ? " data-rkrk-picimg='" . $rkrkPicKind . "'" : "";
+													$TempContent .= "<a" . $rkrkPicAttr . " href='" . $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$SelectedFlugplanBild. "' target='blank'><img" . $rkrkImgAttr . " src='" . $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$SelectedFlugplanBild . "' height='" . $PicHeight1 . "' style='object-fit: cover;'></a>" . chr(10);
 													//$TempContent .= "<a href='" . $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$Files["InKatAndDrive"][0]. "' target='blank'><img src='" . $RKRKExternalLoactionMissionFiles.$RegionSettings[$Feld["JG"]]["Dir"]."/".$Files["InKatAndDrive"][0]. "' height='" . $PicHeight1 . "' style='object-fit: cover;'></a>" . chr(10);
 												}
 											};
@@ -1957,11 +2380,13 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 												$PicZoom = 1.5;
 												$Search = "";
 												$KA = 'ch.swisstopo.swissimage';
-												if (($Feld["Grundstueckdaten"]["Zentrum"]!="") and (trim($Feld["Grundstueckdaten"]["Zentrum"])!=",")) {
-													$SemPos = strpos($Feld["Grundstueckdaten"]["Zentrum"], ",");
+												$gdMap = (isset($Feld["Grundstueckdaten"]) && is_array($Feld["Grundstueckdaten"])) ? $Feld["Grundstueckdaten"] : array();
+												$gdMapZentrum = trim((string)($gdMap["Zentrum"] ?? ''));
+												if (($gdMapZentrum!="") and ($gdMapZentrum!=",")) {
+													$SemPos = strpos($gdMapZentrum, ",");
 													if ($SemPos != false) {
-														$Centerpoint["Lat"] = trim(explode(",", $Feld["Grundstueckdaten"]["Zentrum"])[1]);
-														$Centerpoint["Lon"] =  trim(explode(",", $Feld["Grundstueckdaten"]["Zentrum"])[0]);
+														$Centerpoint["Lat"] = trim(explode(",", $gdMapZentrum)[1]);
+														$Centerpoint["Lon"] =  trim(explode(",", $gdMapZentrum)[0]);
 													}
 													//pre_R($Centerpoint);
 													$MidPointFromFFilter = GetLSV95EastNorthFromLonLat($Centerpoint);
@@ -1970,14 +2395,18 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 													$KartenArt =  $MapSettings["Types"]["S"]["Type"];
 													//echo KartenArt($KA);
 													//$TempContent .= "<iframe allow='geolocation' src='https://map.geo.admin.ch/#/embed?" . $Search . "lang=de&topic=ech&bgLayer=" . $KartenArt ."&layers=ch.swisstopo-vd.geometa-gemeinde,ch.swisstopo-vd.geometa-grundbuch,ch.kantone.cadastralwebmap-farbe,ch.swisstopo.swisstlm3d-karte-farbe,ch.bazl.einschraenkungen-drohnen,GPX%7C%7C" .$geoweblocation . "%2Frkrk_dokml.php?". $parameterset . "&layers_opacity=0.75,0.75,0.2,1,0.6,1&layers_visibility=false,false,false,false,false,true&layers_timestamp=18641231,,,,,&E=" . $MidPointFromFFilter["LV95East"] . "&N=" . $MidPointFromFFilter["LV95North"] . "&zoom=" . $MapZoom . "'' width='250' height='" . $PicHeight1 . "' frameborder='0' style='border:0'></iframe >";
-													$TempContent .= "<iframe allow='geolocation' src='https://map.geo.admin.ch/#/embed?lang=de&center=" . $MidPointFromFFilter["LV95East"] . "," . $MidPointFromFFilter["LV95North"] . "&z=" . $MapZoom . "&bgLayer=ch.swisstopo.swissimage&topic=ech&layers=ch.bfe.elektrische-anlagen_ueber_36,f;ch.bazl.luftfahrthindernis,f;ch.bazl.einschraenkungen-drohnen,f;ch.bazl.uas-aktivitaetszonen,f;KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?". $parameterset . "'' width='250' height='" . $PicHeight1 . "' frameborder='0' style='border:0'></iframe >";
+													$rkrkMapSrc = "rkrk_map.php?FFilter=" . rawurlencode((string)$Feld["FeldID"]) . "&Reg=ALL&Strt=on&Cntr=off&Area=on&Pfad=on&GDE=off&JGG=off&Poi=off&HSP=on&FLP=on&Label=off&EX=NO&KA=M&MAP=1&Zoom=0.8&MenuOn=off&MapButtons=off&FeldFill=1";
+													$rkrkPicSide = (int)$PicHeight1;
+													$TempContent .= "<iframe class=\"rkrk-feldkarte\" title=\"Flugplan\" src='" . htmlspecialchars($rkrkMapSrc, ENT_QUOTES, "UTF-8") . "' width='" . $rkrkPicSide . "' height='" . $rkrkPicSide . "' frameborder='0' style='border:0;width:" . $rkrkPicSide . "px;height:" . $rkrkPicSide . "px'></iframe>";
 												}
 												
 											}
 										}
 										// Output
 										echo $TempContent . chr(10);
-										echo "</td>";
+										if (!empty($rkrkThirdCell)) {
+											echo "</td>";
+										}
 										echo "</tr>" .chr(10);
 									}
 								}	
@@ -2035,15 +2464,18 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 							echo "</tr>" .chr(10);
 							$changeinfo = "<span style='fontsize=7'><i>" .chr(10);
 							//echo date("Y-m-d",strtotime($KatalogBaseline)) . "  " . date("Y-m-d", strtotime($Feld["Aenderung"])) . "  " . (strtotime($KatalogBaseline)<strtotime($Feld["Aenderung"])) .  "<br>";
-							if (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($Feld["Aenderung"])))
+							$feldAenderung = (string)($Feld["Aenderung"] ?? '');
+							$feldUpdate = (string)($Feld["Update"] ?? '');
+							$feldErstellt = (string)($Feld["Erstellt"] ?? '');
+							if (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($feldAenderung)))
 								$ChangeColor = $colorTransparent;
 							else
 								$ChangeColor = $colorSIM;  
-							if (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($Feld["Update"])))
+							if (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($feldUpdate)))
 								$UpdateColor = $colorTransparent;
 							else
 								$UpdateColor = $colorSIM;  
-							if (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($Feld["Erstellt"])))
+							if (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($feldErstellt)))
 								$EstColor = $colorTransparent;
 							else
 								$EstColor = $colorSIM;  
@@ -2051,9 +2483,9 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 							//echo $KatalogBaseline . "<br>";
 							$BaseDate= date($KatalogBaseline ) . "<br>";
 							//echo date("d.m.Y") . "<br>";
-							$changeinfo .= "<span style='background-color:".$ChangeColor.";'>Geändert:" . $Feld["Aenderung"] . "</span>";
-							$changeinfo .= " - " ."<span style='background-color:".$UpdateColor.";'>JasonUpdate:" . $Feld["Update"] . "</span>";
-							$changeinfo .= " - " ."<span style='background-color:".$EstColor.";'>Erstellt:" . $Feld["Erstellt"] . "</span>";
+							$changeinfo .= "<span style='background-color:".$ChangeColor.";'>Geändert:" . $feldAenderung . "</span>";
+							$changeinfo .= " - " ."<span style='background-color:".$UpdateColor.";'>JasonUpdate:" . $feldUpdate . "</span>";
+							$changeinfo .= " - " ."<span style='background-color:".$EstColor.";'>Erstellt:" . $feldErstellt . "</span>";
 							// -----------
 							// Ende Liste
 							// -----------
@@ -2128,7 +2560,17 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 					echo "  <label for='Region'>Region wählen </label>" . chr(10);
 					echo "</td>" . chr(10);
 					echo "<td>" .chr(10);
-					echo SelectFieldMultiOptArr("Region", $Region ,$RegionSettings );
+					$rkrkNewRegion = '26';
+					if (isset($_GET['Reg']) && trim((string)$_GET['Reg']) !== '') {
+						$rkrkNewRegion = trim((string)$_GET['Reg']);
+					}
+					if (isset($_GET['Region']) && trim((string)$_GET['Region']) !== '') {
+						$rkrkNewRegion = trim((string)$_GET['Region']);
+					}
+					if (isset($_POST['Region']) && trim((string)$_POST['Region']) !== '') {
+						$rkrkNewRegion = trim((string)$_POST['Region']);
+					}
+					echo SelectFieldMultiOptArr("Region", $rkrkNewRegion, $RegionSettings);
 					echo "</td>";
 					echo "</tr>";
 					echo "<tr class='rkrkedit'>" .chr(10);
@@ -2156,7 +2598,14 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 					echo "</td>";
 					echo "</tr>";
 					echo "</table>" .chr(10);
-					echo '<input type="submit" name="NeuEinlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?NeuesFeld=Y">' .chr(10);
+					$rkrkNeuQs = 'NeuesFeld=Y';
+					if (isset($_GET['GA']) && trim((string)$_GET['GA']) !== '') {
+						$rkrkNeuQs .= '&GA=' . rawurlencode(trim((string)$_GET['GA']));
+					}
+					if (isset($_GET['MDB']) && trim((string)$_GET['MDB']) !== '') {
+						$rkrkNeuQs .= '&MDB=' . rawurlencode(trim((string)$_GET['MDB']));
+					}
+					echo '<input type="submit" name="NeuEinlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?' . htmlspecialchars($rkrkNeuQs, ENT_QUOTES, 'UTF-8') . '">' .chr(10);
 					echo "<h3>JSON Dateinamendefinition</h3>";
 					echo "<i>Bitte prüfe, dass dein JSON Dateiname folgender Konvention folgt, so dass die Felddaten korrekt eingelesen werden können.</i><br><br>";
 					echo FilenameDefinition ();
@@ -2226,6 +2675,147 @@ function CheckWarnEntry(inputtxt)
 	echo "<br>". chr(10);
 	Legends();
 echo "</br>";
+	include_once('scripts/rkrk_catalog_shot.php');
+	echo "<script>\n";
+	echo "(function(){\n";
+	echo "  var btn = document.getElementById('rkrkRenewPicsBtn');\n";
+	echo "  if (!btn) return;\n";
+	echo "  var note = document.getElementById('rkrkRenewPicsNote');\n";
+	echo "  var job = null;\n";
+	echo "  try { job = JSON.parse(btn.getAttribute('data-job') || 'null'); } catch (e) { job = null; }\n";
+	echo "  function paint(text){ if (note) note.textContent = text; }\n";
+	echo "  function fileUrl(rel, bust){\n";
+	echo "    var base = String((job && job.fileBase) || '');\n";
+	echo "    var url = base + String(rel || '');\n";
+	echo "    if (!bust) return url;\n";
+	echo "    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();\n";
+	echo "  }\n";
+	echo "  function showPic(kind, rel){\n";
+	echo "    if (!rel) return;\n";
+	echo "    var name = String(rel).split('/').pop();\n";
+	echo "    var names = document.querySelectorAll('[data-rkrk-picname=\"' + kind + '\"]');\n";
+	echo "    if (names.length) {\n";
+	echo "      names[0].textContent = name;\n";
+	echo "      for (var i = 1; i < names.length; i++) names[i].style.display = 'none';\n";
+	echo "    }\n";
+	echo "    var img = document.querySelector('[data-rkrk-picimg=\"' + kind + '\"]');\n";
+	echo "    var link = document.querySelector('[data-rkrk-piclink=\"' + kind + '\"]');\n";
+	echo "    var plain = fileUrl(rel, false);\n";
+	echo "    var shown = fileUrl(rel, true);\n";
+	echo "    if (img) {\n";
+	echo "      img.src = shown;\n";
+	echo "      if (link) link.href = plain;\n";
+	echo "      return;\n";
+	echo "    }\n";
+	echo "    var cell = document.querySelector('[data-rkrk-piccell=\"' + kind + '\"]');\n";
+	echo "    if (!cell) return;\n";
+	echo "    var a = document.createElement('a');\n";
+	echo "    a.href = plain;\n";
+	echo "    a.target = 'blank';\n";
+	echo "    a.setAttribute('data-rkrk-piclink', kind);\n";
+	echo "    var im = document.createElement('img');\n";
+	echo "    im.setAttribute('data-rkrk-picimg', kind);\n";
+	echo "    im.height = 250;\n";
+	echo "    im.style.objectFit = 'cover';\n";
+	echo "    im.alt = kind === 'such' ? 'Suchfeld' : 'Flugplan';\n";
+	echo "    im.src = shown;\n";
+	echo "    a.appendChild(im);\n";
+	echo "    cell.appendChild(a);\n";
+	echo "  }\n";
+	echo "  btn.addEventListener('click', function(ev){\n";
+	echo "    ev.preventDefault();\n";
+	echo "    if (!job || !job.feld_id || !/^[A-Za-z0-9]+-\\d+$/.test(String(job.feld_id))) {\n";
+	echo "      paint('Für dieses Feld können Suchfeld- und Flugplanbild nicht erzeugt werden.');\n";
+	echo "      return;\n";
+	echo "    }\n";
+	echo "    if (typeof window.rkrkStoreCatalogPictures !== 'function') {\n";
+	echo "      paint('Suchfeld- und Flugplanbild konnten nicht erzeugt werden.');\n";
+	echo "      return;\n";
+	echo "    }\n";
+	echo "    btn.disabled = true;\n";
+	echo "    paint('Suchfeld- und Flugplanbild werden erneuert …');\n";
+	echo "    window.rkrkStoreCatalogPictures(job).then(function(res){\n";
+	echo "      if (!(res && res.ok)) {\n";
+	echo "        paint('Suchfeld- und Flugplanbild konnten nicht erzeugt werden.');\n";
+	echo "        return;\n";
+	echo "      }\n";
+	echo "      showPic('such', res.suchfeld_bild || '');\n";
+	echo "      showPic('flug', res.flugplan_bild || '');\n";
+	echo "      paint('Suchfeld- und Flugplanbild wurden erneuert.');\n";
+	echo "    }).catch(function(){\n";
+	echo "      paint('Suchfeld- und Flugplanbild konnten nicht erzeugt werden.');\n";
+	echo "    }).then(function(){\n";
+	echo "      btn.disabled = false;\n";
+	echo "    });\n";
+	echo "  });\n";
+	echo "})();\n";
+	echo "</script>\n";
+	if (!empty($rkrkJsonShot) && is_array($rkrkJsonShot)) {
+		$rkrkShotJson = json_encode($rkrkJsonShot, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+		echo "<div id='rkrkJsonShotNote'>Suchfeld- und Flugplanbild werden erzeugt …</div>\n";
+		echo "<script>\n";
+		echo "(function(){\n";
+		echo "  var job = " . $rkrkShotJson . ";\n";
+		echo "  var note = document.getElementById('rkrkJsonShotNote');\n";
+		echo "  function paint(text){ if (note) note.textContent = text; }\n";
+		echo "  if (!job || !job.id || !/^[A-Za-z0-9]+-\\d+$/.test(String(job.feld_id || ''))) { paint(''); return; }\n";
+		echo "  if (typeof window.rkrkStoreCatalogPictures !== 'function') { paint('Feld ist gespeichert. Suchfeld- und Flugplanbild konnten nicht erzeugt werden.'); return; }\n";
+		echo "  window.rkrkStoreCatalogPictures(job).then(function(res){\n";
+		echo "    if (!(res && res.ok)) { paint('Feld ist gespeichert. Suchfeld- und Flugplanbild konnten nicht erzeugt werden.'); return; }\n";
+		echo "    paint('Suchfeld- und Flugplanbild wurden am Feld gespeichert.');\n";
+		echo "    var base = String(job.fileBase || '');\n";
+		echo "    var box = document.getElementById('rkrkJsonShotPics');\n";
+		echo "    if (!box) { box = document.createElement('div'); box.id = 'rkrkJsonShotPics'; if (note && note.parentNode) note.parentNode.insertBefore(box, note.nextSibling); }\n";
+		echo "    function addPic(rel, label){\n";
+		echo "      if (!rel || !box) return;\n";
+		echo "      var img = document.createElement('img');\n";
+		echo "      img.alt = label;\n";
+		echo "      img.height = 220;\n";
+		echo "      img.style.objectFit = 'cover';\n";
+		echo "      img.style.margin = '8px 8px 0 0';\n";
+		echo "      img.src = base + rel + (String(rel).indexOf('?') >= 0 ? '&' : '?') + 'v=' + Date.now();\n";
+		echo "      box.appendChild(img);\n";
+		echo "    }\n";
+		echo "    addPic(res.suchfeld_bild, 'Suchfeld');\n";
+		echo "    addPic(res.flugplan_bild, 'Flugplan');\n";
+		echo "  }).catch(function(){\n";
+		echo "    paint('Feld ist gespeichert. Suchfeld- und Flugplanbild konnten nicht erzeugt werden.');\n";
+		echo "  });\n";
+		echo "})();\n";
+		echo "</script>\n";
+	}
+	echo "<script>\n";
+	echo "(function(){\n";
+	echo "  function missionPics(){\n";
+	echo "    return Array.prototype.filter.call(document.querySelectorAll('img'), function(img){\n";
+	echo "      var h = parseInt(img.getAttribute('height') || '0', 10);\n";
+	echo "      var src = img.getAttribute('src') || '';\n";
+	echo "      return h >= 200 && /\\.(jpe?g|png|webp)(\\?|$)/i.test(src);\n";
+	echo "    });\n";
+	echo "  }\n";
+	echo "  function syncFeldkarte(){\n";
+	echo "    var frames = document.querySelectorAll('iframe.rkrk-feldkarte');\n";
+	echo "    var images = missionPics();\n";
+	echo "    for (var i = 0; i < frames.length; i++) {\n";
+	echo "      var frame = frames[i];\n";
+	echo "      var pic = null;\n";
+	echo "      for (var j = 0; j < images.length; j++) {\n";
+	echo "        if (frame.compareDocumentPosition(images[j]) & Node.DOCUMENT_POSITION_PRECEDING) pic = images[j];\n";
+	echo "      }\n";
+	echo "      if (!pic) continue;\n";
+	echo "      var w = pic.offsetWidth;\n";
+	echo "      var h = pic.offsetHeight;\n";
+	echo "      if (!(w >= 40 && h >= 40)) continue;\n";
+	echo "      frame.style.width = w + 'px';\n";
+	echo "      frame.style.height = h + 'px';\n";
+	echo "      frame.setAttribute('width', String(w));\n";
+	echo "      frame.setAttribute('height', String(h));\n";
+	echo "    }\n";
+	echo "  }\n";
+	echo "  if (document.readyState === 'complete') syncFeldkarte();\n";
+	echo "  else window.addEventListener('load', syncFeldkarte);\n";
+	echo "})();\n";
+	echo "</script>\n";
 	echo "</div>" . chr(10);
 ?>
 

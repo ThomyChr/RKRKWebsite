@@ -169,7 +169,9 @@ if ($AppendTitle!="") {
     $this->Cell(30,8,trim($Filter) ,0,0, 'C');    // Line break
     $this->Ln(12);
 	$this->Cell(120,6);
-	$this->Image($WebLink_intern.$IconLoc.'/startpnt.jpg',$this->GetX()+2, $this->GetY(), 5,0,'');	
+	if (is_file($IconLoc.'/startpnt.jpg')) {
+		$this->Image($IconLoc.'/startpnt.jpg',$this->GetX()+2, $this->GetY(), 5,0,'');
+	}
     $this->Cell(7,6);
 	$this->SetFont('Arial','',6);
     $this->Cell(15,6,"Link zu Startpunkt auf Google Map",0,0, 'L');    // Line break

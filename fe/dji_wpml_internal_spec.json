@@ -420,7 +420,7 @@
         {
           "wpml": "manual",
           "de": "Manuell",
-          "de_help": "Pilot kann Pitch manuell steuern; ohne Eingabe bleibt der Pitch beim Verlassen des Wegpunkts.",
+          "de_help": "Pilot steuert den Pitch. JSON djiPilot2.gimbalControl manuel und gimbalAngle -90. wpml:gimbalPitchAngle wird nicht geschrieben.",
           "default": true,
           "aliases": ["manuell"],
           "match_contains": ["manuel"]
@@ -428,7 +428,7 @@
         {
           "wpml": "usePointSetting",
           "de": "Jeden Wegpunkt festlegen",
-          "de_help": "Pitch geht gleichmaessig auf den Pitch des naechsten Wegpunkts.",
+          "de_help": "Flag Neigungswinkel setzen schaltet nur den Pitch frei und rechnet den Flugpfad nicht neu. JSON djiPilot2.gimbalControl setEachWaypoint und gimbalAngle je Wegpunkt, -90 bis 30. KMZ wpml:gimbalPitchMode usePointSetting und wpml:gimbalPitchAngle. Flag aus: gimbalPitchMode manual, kein gimbalPitchAngle.",
           "aliases": ["usepointsetting"],
           "match_contains": ["wegpunkt", "punkt", "usepoint"]
         }
@@ -436,7 +436,7 @@
     },
     "wpml:waypointHeadingMode": {
       "de_name": "Gierrichtung des Fluggeraetes",
-      "de_help": "Nasenrichtung zum naechsten Wegpunkt.",
+      "de_help": "KMZ-Namen sind nicht die JSON-Namen. followWayline bleibt followWayline. Definiert (JSON customised) ist smoothTransition. Schwenkachse (JSON fixed) bleibt fixed, ohne Winkel. Fokus POI (JSON smoothTransition) ist towardPOI mit waypointPoiPoint.",
       "parent": "wpml:globalWaypointHeadingParam / wpml:waypointHeadingParam",
       "files": ["template.kml", "waylines.wpml"],
       "type": "enum",
@@ -460,33 +460,33 @@
           "match_contains": ["richtung", "flugroute", "followwayline"]
         },
         {
-          "wpml": "smoothTransition",
+          "wpml": "fixed",
           "de": "Schenkachse sperren",
-          "de_help": "Gleichmaessiger Uebergang auf waypointHeadingAngle. Pflichtfeld Winkel.",
-          "aliases": ["smoothtransition"],
-          "match_contains": ["schenk"],
-          "extra": { "wpml:waypointHeadingAngle": true }
+          "de_help": "JSON yawDirection fixed. Winkel gesperrt, rotes X, kein waypointHeadingAngle.",
+          "aliases": ["fixed", "lock"],
+          "match_contains": ["schenk", "schwenk"]
         },
         {
           "wpml": "towardPOI",
           "de": "Fokus POI",
-          "de_help": "Nase zeigt auf den Interest-Punkt (Lat,Lng,Alt). Ohne POI intern auf followWayline zurueckfallen.",
+          "de_help": "JSON yawDirection smoothTransition. Mit POI: towardPOI und waypointPoiPoint Breite,Laenge,Hoehe. Ohne POI kein towardPOI, dann followWayline, kein erfundener Winkel.",
           "aliases": ["towardpoi"],
           "match_contains": ["poi", "fokus"],
           "extra": { "wpml:waypointPoiPoint": true }
         },
         {
-          "wpml": "fixed",
+          "wpml": "smoothTransition",
           "de": "Definiert",
-          "de_help": "Nase haelt den Gierwinkel nach der Wegpunktaktion bis zum naechsten Punkt.",
-          "aliases": ["fixed"],
-          "match_contains": ["definiert"]
+          "de_help": "JSON yawDirection customised. Der Richtungswinkel ist die Gierrichtung. waypointHeadingAngle nur wenn direction gesetzt ist, sonst leer, nicht 0. waypointHeadingYawPathMode aus alignmentAircraft.",
+          "aliases": ["customised", "customized"],
+          "match_contains": ["definiert"],
+          "extra": { "wpml:waypointHeadingAngle": true }
         }
       ]
     },
     "wpml:waypointHeadingPathMode": {
       "de_name": "Gier-Drehrichtung",
-      "de_help": "Kuerzester Weg oder fest Uhrzeigersinn / Gegen.",
+      "de_help": "RC-Datei schreibt wpml:waypointHeadingYawPathMode. Automatisch ist followBadArc.",
       "parent": "wpml:waypointHeadingParam",
       "files": ["template.kml", "waylines.wpml"],
       "type": "enum",
@@ -494,7 +494,7 @@
       "values": [
         {
           "wpml": "followBadArc",
-          "de": "Kuerzester Drehweg",
+          "de": "Automatisch",
           "default": true
         },
         { "wpml": "clockwise", "de": "Uhrzeigersinn" },
@@ -503,7 +503,7 @@
     },
     "wpml:globalWaypointTurnMode": {
       "de_name": "Wegpunkt Typ",
-      "de_help": "Kurvenverhalten am Wegpunkt. Pilot 2: «Wendet vor dem Wegpunkt» = toPointAndPassWithContinuityCurvature + useStraightLine 1.",
+      "de_help": "Kurvenverhalten am Wegpunkt. Wendet vor dem Wegpunkt ist toPointAndPassWithContinuityCurvature2 und useStraightLine 1.",
       "parent": "Folder",
       "files": ["template.kml"],
       "type": "enum",
@@ -550,9 +550,9 @@
           "match_contains": ["gekrümmte route. fluggeraet stoppt", "gekruemmte route. fluggeraet stoppt"]
         },
         {
-          "wpml": "toPointAndPassWithContinuityCurvature",
+          "wpml": "toPointAndPassWithContinuityCurvature2",
           "de": "Wendet vor dem Wegpunkt. Fliegt durch",
-          "de_help": "Pilot-2-Modus: Kurve + useStraightLine=1 (so nah wie moeglich an der Geraden, wendet vor dem Punkt).",
+          "de_help": "RC schreibt toPointAndPassWithContinuityCurvature2 und useStraightLine 1.",
           "path_mode": "curve",
           "use_straight_line": 1,
           "ch_waypoint_type": "toPointAndPassWithContinuityCurvature2",

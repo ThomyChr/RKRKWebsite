@@ -393,8 +393,30 @@
       .overlay-box .overlay-option .overlay-opacity { display: inline-flex !important; align-items: center !important; gap: 6px !important; flex: 0 0 auto !important; justify-content: flex-end !important; margin-left: 4px !important; }
       .overlay-box .overlay-option .overlay-opacity input[type="range"] { width: 78px !important; padding: 0 !important; accent-color: #48673A !important; }
       .overlay-box .overlay-option .overlay-opacity span { min-width: 30px !important; text-align: right !important; font-size: 11px !important; color: #4b5563 !important; }
-      #objSidebarResizeHandle { position: fixed; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 1900; background: transparent; }
-      #objSidebarResizeHandle:hover { background: rgba(90,110,140,0.12); }
+      #objSidebarResizeHandle { position: fixed; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 1900; background: rgba(72,103,58,0.18); }
+      #objSidebarResizeHandle:hover { background: rgba(72,103,58,0.45); }
+      #objSidebarSizeBtns {
+        position: fixed;
+        top: calc(50% + 28px);
+        z-index: 1901;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      #objSidebarSizeBtns button {
+        width: 20px !important;
+        min-width: 20px !important;
+        max-width: 20px !important;
+        height: 22px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
       #objSidebarToggleBtn {
         position: fixed;
         top: 50%;
@@ -487,8 +509,8 @@
         list-style: none;
         margin: 0;
         padding: 0;
-        max-height: 180px;
-        overflow-y: auto;
+        max-height: none;
+        overflow: visible;
       }
       #objManagedList li {
         display: flex;
@@ -573,6 +595,36 @@
       }
       #objManagedList li.obj-list-drag-over {
         border-top: 2px solid #2563eb;
+        background: #e8f0e4;
+      }
+      body.rkrk-obj-drag #objManagedList button,
+      body.rkrk-obj-drag #objManagedList input,
+      body.rkrk-obj-drag #objManagedList .obj-group-opacity,
+      body.rkrk-obj-drag #objManagedList .obj-list-actions,
+      body.rkrk-obj-drag #objManagedList .obj-group-collapse {
+        pointer-events: none;
+      }
+      body.rkrk-obj-drag #objManagedList li.obj-list-group {
+        outline: 1px dashed #48673A;
+        outline-offset: -1px;
+      }
+      body.rkrk-obj-drag #objManagedList li.obj-list-group.obj-list-collapsed {
+        background: #eef6ea;
+      }
+      #objManagedList li.obj-list-ungroup-drop {
+        justify-content: center;
+        margin-top: 4px;
+        padding: 6px 4px;
+        border: 1px dashed #94a3b8;
+        border-radius: 4px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 10px;
+      }
+      #objManagedList li.obj-list-ungroup-drop.obj-list-drag-over {
+        background: #e8f0e4;
+        border-color: #48673A;
+        color: #3d5632;
       }
       #objManagedList .obj-list-meta {
         display: flex;
@@ -797,7 +849,9 @@
       if (fillSec) fillSec.hidden = true;
     }
     window.__rkrkHideObjectContextMenu = hideMenu;
+    let contextMenuOpenedAt = 0;
     window.__rkrkShowObjectContextMenu = function (clientX, clientY, objectId, fillTarget) {
+      contextMenuOpenedAt = Date.now();
       contextMenuTargetObjectId = objectId;
       contextMenuFillTarget = fillTarget || null;
       const fillSec = document.getElementById("objCtxFillSection");
@@ -892,6 +946,7 @@
       hideMenu();
     });
     document.addEventListener("click", (evt) => {
+      if (Date.now() - contextMenuOpenedAt < 250) return;
       if (!menu.contains(evt.target)) {
         hideMenu();
       }
@@ -1279,19 +1334,36 @@
     const STORAGE_WIDTH = "obj_sidebar_width_px_v1";
     const STORAGE_COLLAPSED = "obj_sidebar_collapsed_v1";
     const minW = 260;
-    const maxW = 680;
     const defaultW = 360;
     const handle = document.createElement("div");
     handle.id = "objSidebarResizeHandle";
+    handle.title = "Objektfenster breiter oder schmaler ziehen";
     document.body.appendChild(handle);
     const toggleBtn = document.createElement("button");
     toggleBtn.id = "objSidebarToggleBtn";
     toggleBtn.type = "button";
     document.body.appendChild(toggleBtn);
+    const sizeBox = document.createElement("div");
+    sizeBox.id = "objSidebarSizeBtns";
+    const smallerBtn = document.createElement("button");
+    smallerBtn.type = "button";
+    smallerBtn.textContent = "–";
+    smallerBtn.title = "Objektfenster schmaler";
+    const largerBtn = document.createElement("button");
+    largerBtn.type = "button";
+    largerBtn.textContent = "+";
+    largerBtn.title = "Objektfenster breiter";
+    sizeBox.appendChild(largerBtn);
+    sizeBox.appendChild(smallerBtn);
+    document.body.appendChild(sizeBox);
+    function maxSidebarWidth() {
+      const vw = (typeof window.innerWidth === "number") ? window.innerWidth : 1200;
+      return Math.max(minW + 40, Math.min(1200, vw - 220));
+    }
     function clamp(v) {
       const n = Number(v);
       if (!Number.isFinite(n)) return defaultW;
-      return Math.max(minW, Math.min(maxW, Math.round(n)));
+      return Math.max(minW, Math.min(maxSidebarWidth(), Math.round(n)));
     }
     function refreshMapSizeWithRetry(retry = 0) {
       if (typeof map !== "undefined" && map && typeof map.updateSize === "function") {
@@ -1324,6 +1396,7 @@
         handle.style.left = "0px";
         toggleBtn.textContent = ">>";
         toggleBtn.style.left = "0px";
+        sizeBox.style.display = "none";
       } else {
         bodyEl.style.gridTemplateColumns = `${w}px 1fr`;
         panel.style.display = "";
@@ -1335,6 +1408,8 @@
         handle.style.left = `${w - 4}px`;
         toggleBtn.textContent = "<<";
         toggleBtn.style.left = `${w - 8}px`;
+        sizeBox.style.display = "flex";
+        sizeBox.style.left = `${w - 8}px`;
       }
       // OpenLayers needs explicit resize after layout changes, including
       // the case where the sidebar is already collapsed during startup.
@@ -1374,6 +1449,14 @@
       }
       applyLayout(width, collapsed);
     });
+    function nudgeSidebar(delta) {
+      if (collapsed) return;
+      width = clamp(width + delta);
+      localStorage.setItem(STORAGE_WIDTH, String(width));
+      applyLayout(width, false);
+    }
+    smallerBtn.addEventListener("click", () => nudgeSidebar(-48));
+    largerBtn.addEventListener("click", () => nudgeSidebar(48));
     window.addEventListener("resize", () => applyLayout(width, collapsed));
   }
 
@@ -3703,8 +3786,10 @@
   }
 
   function ensureGridResultFillsVisible(obj) {
-    if (!obj || obj.type !== "grid" || obj.showResultFills !== false) return;
-    setGridResultFillsVisible(true, { skipList: false });
+    if (!obj || obj.type !== "grid") return;
+    obj.showResultFills = true;
+    const el = document.getElementById("objGridShowResultFills");
+    if (el && !el.checked) el.checked = true;
   }
 
   function polygonFillVisibleFromUi() {
@@ -3831,7 +3916,9 @@
           lineColor: String(polygonStyle.lineColor || "#ff8c00"),
           lineWidth: Number(polygonStyle.lineWidth) || 2,
           fillColor: String(polygonStyle.fillColor || "#ff8c00"),
-          fillOpacity: Number(polygonStyle.fillOpacity) || 0.1,
+          fillOpacity: (Number.isFinite(Number(polygonStyle.fillOpacity))
+            ? Math.max(0, Math.min(1, Number(polygonStyle.fillOpacity)))
+            : 0.1),
           labelColor: String(polygonStyle.labelColor || "#0000ff"),
           fontSize: Number(polygonStyle.fontSize) || 12
         }
@@ -4417,50 +4504,97 @@
     }
 
     if (drag.kind === "object" && target.kind === "group") {
-      // Objekt auf Gruppe: in die Gruppe aufnehmen
       const obj = managedObjects.find((o) => o && Number(o.id) === drag.id);
-      const g = getManagedObjectGroup(target.id);
-      if (!obj || !g) return false;
-      rememberFixedHistory();
-      obj.groupId = Number(target.id);
-      touchManagedObjectSyncMeta(obj);
-      syncManagedListOrder();
-      syncManagedObjectsOrderFromListOrder();
-      markFixedHistoryCursor();
-      renderManagedObjects();
-      try { refreshManagedObjectList(); } catch (_) { /* noop */ }
-      try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
-      managedStatusText(`«${managedObjectDisplayName(obj)}» → Gruppe «${g.name}».`);
-      return true;
+      return placeManagedObjectInGroup(obj, target.id, null);
+    }
+
+    if (drag.kind === "object" && target.kind === "ungrouped") {
+      const obj = managedObjects.find((o) => o && Number(o.id) === drag.id);
+      return takeManagedObjectOutOfGroup(obj, null);
     }
 
     if (drag.kind === "object" && target.kind === "object") {
       const dragObj = managedObjects.find((o) => o && Number(o.id) === drag.id);
       const targetObj = managedObjects.find((o) => o && Number(o.id) === target.id);
       if (!dragObj || !targetObj) return false;
-      const sameGroup = dragObj.groupId != null
-        && Number(dragObj.groupId) === Number(targetObj.groupId)
-        && getManagedObjectGroup(dragObj.groupId);
-      if (sameGroup) {
-        const fromIdx = managedObjects.findIndex((o) => Number(o.id) === drag.id);
-        const toIdx = managedObjects.findIndex((o) => Number(o.id) === target.id);
-        if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return false;
-        reorderManagedObject(fromIdx, toIdx);
-        managedStatusText("Reihenfolge geändert.");
-        return true;
+      const targetGroup = (targetObj.groupId != null) ? getManagedObjectGroup(targetObj.groupId) : null;
+      if (targetGroup) {
+        return placeManagedObjectInGroup(dragObj, targetGroup.id, targetObj.id);
       }
-      // Aus Gruppe heraus / zwischen ungruppierten: Listenreihenfolge
-      if (dragObj.groupId != null) {
-        rememberFixedHistory();
-        delete dragObj.groupId;
-        touchManagedObjectSyncMeta(dragObj);
-      }
-      const t = resolveListDropTarget("object", target.id);
-      const ok = moveManagedListOrderBefore("object", drag.id, t.kind, t.id);
-      if (ok) managedStatusText("Reihenfolge geändert.");
-      return ok;
+      return takeManagedObjectOutOfGroup(dragObj, targetObj.id);
     }
     return false;
+  }
+
+  function commitManagedListChange() {
+    syncManagedListOrder();
+    syncManagedObjectsOrderFromListOrder();
+    markFixedHistoryCursor();
+    renderManagedObjects();
+    try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+    try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+  }
+
+  function placeManagedObjectInGroup(obj, groupId, beforeId) {
+    const g = getManagedObjectGroup(groupId);
+    if (!obj || !g) return false;
+    const same = Number(obj.groupId) === Number(g.id);
+    if (same && (beforeId == null || Number(beforeId) === Number(obj.id))) return false;
+    if (same) {
+      const fromIdx = managedObjects.findIndex((o) => Number(o.id) === Number(obj.id));
+      const toIdx = managedObjects.findIndex((o) => Number(o.id) === Number(beforeId));
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return false;
+      reorderManagedObject(fromIdx, toIdx);
+      managedStatusText("Reihenfolge in der Gruppe geändert.");
+      return true;
+    }
+    rememberFixedHistory();
+    obj.groupId = Number(g.id);
+    touchManagedObjectSyncMeta(obj);
+    g.collapsed = false;
+    if (beforeId != null && Number(beforeId) !== Number(obj.id)) {
+      const fromIdx = managedObjects.findIndex((o) => Number(o.id) === Number(obj.id));
+      if (fromIdx >= 0) {
+        const [item] = managedObjects.splice(fromIdx, 1);
+        let toIdx = managedObjects.findIndex((o) => Number(o.id) === Number(beforeId));
+        if (toIdx < 0) toIdx = managedObjects.length;
+        managedObjects.splice(toIdx, 0, item);
+      }
+    }
+    commitManagedListChange();
+    managedStatusText("«" + managedObjectDisplayName(obj) + "» in Gruppe «" + g.name + "».");
+    return true;
+  }
+
+  function takeManagedObjectOutOfGroup(obj, beforeObjectId) {
+    if (!obj) return false;
+    const grouped = obj.groupId != null && !!getManagedObjectGroup(obj.groupId);
+    if (!grouped && beforeObjectId == null) return false;
+    if (!grouped && beforeObjectId != null && Number(beforeObjectId) === Number(obj.id)) return false;
+    rememberFixedHistory();
+    if (grouped) {
+      delete obj.groupId;
+      touchManagedObjectSyncMeta(obj);
+    }
+    syncManagedListOrder();
+    if (beforeObjectId != null && Number(beforeObjectId) !== Number(obj.id)) {
+      const fromIdx = managedListOrder.findIndex((e) => e && e.kind === "object" && Number(e.id) === Number(obj.id));
+      if (fromIdx >= 0) {
+        const [item] = managedListOrder.splice(fromIdx, 1);
+        let toIdx = managedListOrder.findIndex((e) => e && e.kind === "object" && Number(e.id) === Number(beforeObjectId));
+        if (toIdx < 0) toIdx = managedListOrder.length;
+        managedListOrder.splice(toIdx, 0, item);
+      }
+    }
+    syncManagedObjectsOrderFromListOrder();
+    markFixedHistoryCursor();
+    renderManagedObjects();
+    try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+    try { if (typeof notifyLiveShareChange === "function") notifyLiveShareChange(); } catch (_) { /* noop */ }
+    managedStatusText(grouped
+      ? ("«" + managedObjectDisplayName(obj) + "» aus der Gruppe genommen.")
+      : "Reihenfolge geändert.");
+    return true;
   }
 
 
@@ -4654,8 +4788,185 @@
   }
 
 
+  function hasStoredCircleGeometry(obj) {
+    if (!obj || !obj.circleStyle || typeof obj.circleStyle !== "object") return false;
+    const anchor = obj.anchor;
+    const radius = Number(obj.r);
+    return Array.isArray(anchor) && anchor.length >= 2
+      && Number.isFinite(Number(anchor[0])) && Number.isFinite(Number(anchor[1]))
+      && Number.isFinite(radius) && radius >= 1;
+  }
+
+  function circleNameOf(obj) {
+    return String((obj && obj.name) || "").trim();
+  }
+
+  function nameLooksLikeCircle(obj) {
+    return /\d+\s*m\b/i.test(circleNameOf(obj));
+  }
+
+  /** Kreis, der beim Fixieren zum Punkt wurde: wieder als Kreis zeichnen. */
+  function repairCirclesStoredAsPoints() {
+    if (!Array.isArray(managedObjects) || !managedObjects.length) return false;
+    let changed = false;
+    const spawned = [];
+    managedObjects.forEach((obj) => {
+      if (!hasStoredCircleGeometry(obj)) return;
+      const keepAsCircle = obj.type === "circle" || nameLooksLikeCircle(obj)
+        || !Array.isArray(obj.labels) || obj.labels.length === 0;
+      if (!keepAsCircle) {
+        if (obj.type === "points" || obj.type === "textfields") {
+          delete obj.anchor;
+          delete obj.r;
+          delete obj.diameter;
+          delete obj.circleStyle;
+          changed = true;
+        }
+        return;
+      }
+      const labels = Array.isArray(obj.labels) ? obj.labels.filter((lp) => lp && Number.isFinite(Number(lp.lon))) : [];
+      labels.forEach((lp) => {
+        const same = managedObjects.concat(spawned).some((other) => {
+          if (!other || other === obj) return false;
+          if (other.type !== "points" && other.type !== "textfields") return false;
+          const one = other.labels && other.labels[0];
+          if (!one) return false;
+          return Math.abs(Number(one.lon) - Number(lp.lon)) < 0.00015
+            && Math.abs(Number(one.lat) - Number(lp.lat)) < 0.00015
+            && String(one.text || "") === String(lp.text || "");
+        });
+        if (same) return;
+        const newId = managedObjectIdSeq++;
+        const label = (typeof buildManagedLabelFromPoint === "function") ? buildManagedLabelFromPoint(lp) : lp;
+        const point = {
+          id: newId,
+          fixed: true,
+          type: "points",
+          labels: [label],
+          name: String(lp.text || "").trim() || ("Punkt " + newId)
+        };
+        const startGroup = Array.isArray(managedObjectGroups)
+          ? managedObjectGroups.find((g) => g && /start/i.test(String(g.name || "")))
+          : null;
+        if (String(lp.type || "") === "start" && startGroup) point.groupId = startGroup.id;
+        else if (obj.groupId != null) point.groupId = obj.groupId;
+        spawned.push(point);
+      });
+      if (obj.type !== "circle") {
+        obj.type = "circle";
+        changed = true;
+      }
+      if (Array.isArray(obj.labels)) {
+        delete obj.labels;
+        changed = true;
+      }
+      const title = circleNameOf(obj);
+      if (title && obj.circleStyle && (!obj.circleStyle.labelText || obj.circleStyle.labelText === "Kreis")) {
+        obj.circleStyle.labelText = title;
+        changed = true;
+      }
+    });
+    if (spawned.length) {
+      spawned.forEach((p) => managedObjects.push(p));
+      changed = true;
+    }
+    return changed;
+  }
+
+  const viewerGridFillOverrides = {};
+  function noteViewerGridFill(objectId, key, value) {
+    const id = String(objectId);
+    if (!viewerGridFillOverrides[id]) viewerGridFillOverrides[id] = {};
+    viewerGridFillOverrides[id][key] = { value: value, at: Date.now() };
+  }
+  function applyViewerGridFillOverrides() {
+    Object.keys(viewerGridFillOverrides).forEach((id) => {
+      const obj = managedObjects.find((o) => o && String(o.id) === id && o.type === "grid");
+      if (!obj) return;
+      if (!obj.cellFills || typeof obj.cellFills !== "object") obj.cellFills = {};
+      const bag = viewerGridFillOverrides[id];
+      Object.keys(bag).forEach((key) => {
+        const note = bag[key];
+        const value = (note && typeof note === "object" && Object.prototype.hasOwnProperty.call(note, "value"))
+          ? note.value
+          : note;
+        if (value === "neutral") delete obj.cellFills[key];
+        else obj.cellFills[key] = value;
+      });
+      obj.showResultFills = true;
+    });
+  }
+
+  function nearestGridCellLabel(pixel) {
+    if (!map || !pixel || typeof map.getPixelFromCoordinate !== "function") return null;
+    const sources = [];
+    if (managedObjectSource) sources.push(managedObjectSource);
+    try {
+      if (typeof previewSource !== "undefined" && previewSource) sources.push(previewSource);
+    } catch (_) { /* noop */ }
+    let best = null;
+    let bestDist = Infinity;
+    const max = 48;
+    sources.forEach((source) => {
+      const feats = (source && typeof source.getFeatures === "function") ? source.getFeatures() : [];
+      feats.forEach((feature) => {
+        if (!feature || String(feature.get("previewType") || "") !== "grid-cell-label") return;
+        const geom = feature.getGeometry && feature.getGeometry();
+        const c = geom && typeof geom.getCoordinates === "function" ? geom.getCoordinates() : null;
+        if (!c) return;
+        const px = map.getPixelFromCoordinate(c);
+        if (!px) return;
+        const dx = Number(px[0]) - Number(pixel[0]);
+        const dy = Number(px[1]) - Number(pixel[1]);
+        const dist = (dx * dx) + (dy * dy);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = feature;
+        }
+      });
+    });
+    if (!best || bestDist > (max * max)) return null;
+    return best;
+  }
+
+  function cycleFixedGridCellNow(mObj, n, e) {
+    if (!map || !mObj || mObj.type !== "grid" || !Number.isInteger(n) || !Number.isInteger(e)) return false;
+    if (gridRulerActive) return false;
+    if (Date.now() - (map.__rkrkCellColorAt || 0) < 280) return true;
+    map.__rkrkCellColorAt = Date.now();
+    try { rememberFixedHistory(); } catch (_) { /* noop */ }
+    if (!mObj.cellFills || typeof mObj.cellFills !== "object") mObj.cellFills = {};
+    const key = `${n},${e}`;
+    const curRaw = mObj.cellFills[key];
+    const cur = Number.isInteger(curRaw) ? curRaw : (Number.isFinite(Number(curRaw)) ? Number(curRaw) : undefined);
+    const pal = (typeof getGridCellFillPaletteForKml === "function") ? getGridCellFillPaletteForKml() : null;
+    const palLen = (Array.isArray(pal) && pal.length) ? pal.length
+      : ((typeof GRID_CELL_FILL_PALETTE !== "undefined" && Array.isArray(GRID_CELL_FILL_PALETTE))
+        ? GRID_CELL_FILL_PALETTE.length : 5);
+    const cycleLen = (typeof GRID_CELL_FILL_CYCLE_LEN === "number" && GRID_CELL_FILL_CYCLE_LEN > 0)
+      ? Math.min(GRID_CELL_FILL_CYCLE_LEN, palLen)
+      : palLen;
+    if (cur === undefined || !Number.isInteger(cur) || cur < 0) mObj.cellFills[key] = 0;
+    else if (cur >= cycleLen - 1) delete mObj.cellFills[key];
+    else mObj.cellFills[key] = cur + 1;
+    noteViewerGridFill(mObj.id, key, Object.prototype.hasOwnProperty.call(mObj.cellFills, key) ? mObj.cellFills[key] : "neutral");
+    if (Number(mObj.id) === Number(selectedManagedObjectId) && typeof gridCellFillCycleMap !== "undefined" && gridCellFillCycleMap) {
+      if (Object.prototype.hasOwnProperty.call(mObj.cellFills, key)) gridCellFillCycleMap[key] = mObj.cellFills[key];
+      else delete gridCellFillCycleMap[key];
+    }
+    try { touchManagedObjectSyncMeta(mObj); } catch (_) { /* noop */ }
+    ensureGridResultFillsVisible(mObj);
+    renderManagedObjects();
+    try { markFixedHistoryCursor(); } catch (_) { /* noop */ }
+    try { if (typeof window.notifyLiveShareChange === "function") window.notifyLiveShareChange(); } catch (_) { /* noop */ }
+    managedStatusText(`Kachel ${eastLabel(e)}${n + 1}: Farbe gewechselt.`);
+    return true;
+  }
+
   function renderManagedObjects() {
     if (!managedObjectSource) return;
+    try { repairCirclesStoredAsPoints(); } catch (_) { /* noop */ }
+    try { applyViewerGridFillOverrides(); } catch (_) { /* noop */ }
     managedObjectSource.clear();
     const styles = (typeof getEditorStyles === "function") ? getEditorStyles() : null;
     managedObjects.forEach((obj, objIdx) => {
@@ -4960,23 +5271,30 @@
   }
 
   function pickManagedGridCellLabelAtPixel(pixel) {
-    if (!map || !managedObjectSource || !pixel) return null;
+    return nearestGridCellLabel(pixel);
+  }
+
+  /** Zelle, in der der Punkt wirklich liegt — nicht die Nachbarbeschriftung. */
+  function pickGridCellContaining(pixel, coordinate, source) {
+    if (!map || !source || !pixel) return null;
+    const coord = coordinate || (typeof map.getCoordinateFromPixel === "function" ? map.getCoordinateFromPixel(pixel) : null);
+    if (!coord) return null;
     let best = null;
     let bestZ = -Infinity;
     map.forEachFeatureAtPixel(pixel, (feature) => {
-      if (String(feature.get("previewType") || "") !== "grid-cell-label") return undefined;
-      const id = Number(feature.get("managedObjectId"));
-      if (!Number.isInteger(id)) return undefined;
-      let z = Number(feature.get("managedZIndex"));
-      if (!Number.isFinite(z)) z = 0;
-      if (z >= bestZ) {
-        bestZ = z;
+      if (String(feature.get("previewType") || "") !== "grid-cell") return undefined;
+      const geom = feature.getGeometry && feature.getGeometry();
+      if (!geom || typeof geom.intersectsCoordinate !== "function" || !geom.intersectsCoordinate(coord)) return undefined;
+      const z = Number(feature.get("managedZIndex"));
+      const zz = Number.isFinite(z) ? z : 0;
+      if (zz >= bestZ) {
+        bestZ = zz;
         best = feature;
       }
       return undefined;
     }, {
-      hitTolerance: 18,
-      layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === managedObjectSource
+      hitTolerance: 0,
+      layerFilter: (layer) => layer && typeof layer.getSource === "function" && layer.getSource() === source
     });
     return best;
   }
@@ -5490,9 +5808,14 @@
     const viewport = map.getViewport();
     if (viewport) {
       viewport.addEventListener("contextmenu", (evt) => {
-        if (typeof liveShareViewerMode !== "undefined" && liveShareViewerMode) return;
         const pixel = map.getEventPixel(evt);
-        const f = pickManagedFeatureAtPixel(pixel);
+        const labelHit = pickManagedGridCellLabelAtPixel(pixel);
+        const containedCell = pickGridCellContaining(
+          pixel,
+          (typeof map.getEventCoordinate === "function") ? map.getEventCoordinate(evt) : null,
+          managedObjectSource
+        );
+        const f = labelHit || containedCell || pickManagedFeatureAtPixel(pixel);
         if (!f) return;
         const hitType = String(f.get("previewType") || "");
         const mid = f.get("managedObjectId");
@@ -5530,7 +5853,38 @@
           menu.style.left = `${Math.min(window.innerWidth - 210, Math.max(8, evt.clientX))}px`;
           menu.style.top = `${Math.min(window.innerHeight - 160, Math.max(8, evt.clientY))}px`;
         }
-      });
+      }, true);
+      if (!viewport.__rkrkLabelColorTap) {
+        viewport.__rkrkLabelColorTap = true;
+        viewport.addEventListener("pointerup", (ev) => {
+          if (ev && ev.button != null && ev.button !== 0) return;
+          if (gridRulerActive) return;
+          let pixel = null;
+          try { pixel = map.getEventPixel(ev); } catch (_) { pixel = null; }
+          if (!pixel) return;
+          const now = Date.now();
+          const prev = viewport.__rkrkLabelTap;
+          viewport.__rkrkLabelTap = { t: now, x: Number(pixel[0]), y: Number(pixel[1]) };
+          if (!prev) return;
+          const dt = now - prev.t;
+          if (dt < 40 || dt > 520) return;
+          const dx = Number(pixel[0]) - prev.x;
+          const dy = Number(pixel[1]) - prev.y;
+          if ((dx * dx) + (dy * dy) > (28 * 28)) return;
+          const label = nearestGridCellLabel(pixel);
+          if (!label) return;
+          const n = Number(label.get("gridCellN"));
+          const e = Number(label.get("gridCellE"));
+          const mid = Number(label.get("managedObjectId"));
+          const mObj = managedObjects.find((o) => Number(o.id) === mid);
+          if (!mObj || mObj.type !== "grid") return;
+          if (!cycleFixedGridCellNow(mObj, n, e)) return;
+          try { clearTimeout(map.__objManagedClickTimer); } catch (_) {}
+          map.__objManagedClickTimer = null;
+          ev.preventDefault();
+          ev.stopPropagation();
+        }, true);
+      }
     }
     map.on("dblclick", (evt) => {
       if (gridRulerActive) return;
@@ -5574,12 +5928,25 @@
         }
       } catch (_) { /* noop */ }
       const cyclePreviewCell = (n, e) => {
+        if (Date.now() - (map.__rkrkCellColorAt || 0) < 280) {
+          stopEvt();
+          return true;
+        }
         if (typeof isSubEditorSession === "function" && isSubEditorSession()) {
           stopEvt();
           return true;
         }
         if (typeof window.cycleGridCellFill !== "function") return false;
+        map.__rkrkCellColorAt = Date.now();
         window.cycleGridCellFill(n, e);
+        const paintedKey = `${n},${e}`;
+        const painted = (typeof gridCellFillCycleMap !== "undefined" && gridCellFillCycleMap
+          && Object.prototype.hasOwnProperty.call(gridCellFillCycleMap, paintedKey))
+          ? gridCellFillCycleMap[paintedKey]
+          : "neutral";
+        if (typeof window.__rkrkPaintManagedGridCellFromMenu === "function") {
+          window.__rkrkPaintManagedGridCellFromMenu(n, e, painted);
+        }
         try { if (typeof drawPreview === "function") drawPreview(); } catch (_) { /* noop */ }
         try { syncEditingObjectFromUi(); } catch (_) { /* noop */ }
         try {
@@ -5592,10 +5959,52 @@
         stopEvt();
         return true;
       };
-      // Farbe NUR bei Doppelklick auf die Kachel-Beschriftung (nicht auf die Flaeche)
-      // Sub-Editor: Doppelklick auf Schrift = kein Effekt
+      // Farbe der Zelle unter dem Cursor (Fläche oder Beschriftung). Nachbarschrift nicht mitfärben.
       const subNoLabelFx = (typeof isSubEditorSession === "function") && isSubEditorSession();
-      // 1) Vorschau-Raster (auch wenn Typ kurz anders steht — Label-Hit entscheidet)
+      const cycleFixedManagedCell = (mObj, n, e) => {
+        const ok = cycleFixedGridCellNow(mObj, n, e);
+        if (ok) stopEvt();
+        return ok;
+      };
+      const cycleCellOnObject = (mObj, n, e) => {
+        if (!mObj || mObj.type !== "grid" || !Number.isInteger(n) || !Number.isInteger(e)) return false;
+        if (subNoLabelFx) return stopEvt();
+        if (!mObj.fixed && Number(mObj.id) === Number(selectedManagedObjectId)
+            && typeof window.cycleGridCellFill === "function") {
+          return cyclePreviewCell(n, e);
+        }
+        if (mObj.fixed) return cycleFixedManagedCell(mObj, n, e);
+        if (typeof window.cycleGridCellFill === "function") return cyclePreviewCell(n, e);
+        return stopEvt();
+      };
+      if (evt && evt.pixel) {
+        const labelFirst = pickManagedGridCellLabelAtPixel(evt.pixel);
+        if (labelFirst) {
+          const n = Number(labelFirst.get("gridCellN"));
+          const e = Number(labelFirst.get("gridCellE"));
+          const mid = Number(labelFirst.get("managedObjectId"));
+          const mObj = managedObjects.find((o) => Number(o.id) === mid);
+          if (cycleCellOnObject(mObj, n, e)) return false;
+        }
+        const managedCell = pickGridCellContaining(evt.pixel, evt.coordinate, managedObjectSource);
+        if (managedCell) {
+          const n = Number(managedCell.get("gridCellN"));
+          const e = Number(managedCell.get("gridCellE"));
+          const mid = Number(managedCell.get("managedObjectId"));
+          const mObj = managedObjects.find((o) => Number(o.id) === mid);
+          if (cycleCellOnObject(mObj, n, e)) return false;
+        }
+        const previewCell = (typeof previewSource !== "undefined")
+          ? pickGridCellContaining(evt.pixel, evt.coordinate, previewSource)
+          : null;
+        if (previewCell && typeof parseGridCellIndicesFromFeature === "function") {
+          const ix = parseGridCellIndicesFromFeature(previewCell);
+          if (ix && Number.isInteger(ix.n) && Number.isInteger(ix.e)) {
+            if (cyclePreviewCell(ix.n, ix.e)) return false;
+          }
+        }
+      }
+      // 1) Vorschau-Raster (Beschriftung, falls der Klick neben der Fläche liegt)
       if (evt && evt.pixel) {
         const labelFeat = (typeof getGridCellLabelFeatureAtPixel === "function")
           ? getGridCellLabelFeatureAtPixel(evt.pixel)
@@ -5609,12 +6018,14 @@
         }
       }
       if (evt && evt.pixel && (!exportTypeEl || exportTypeEl.value === "grid")) {
-        // Doppelklick auf Kachelflaeche: weder Farbe noch Bearbeiten
         if (typeof getGridCellFeatureAtPixel === "function") {
           const cellFeat = getGridCellFeatureAtPixel(evt.pixel);
-          if (cellFeat && parseGridCellIndicesFromFeature(cellFeat)
+          const ix = cellFeat && typeof parseGridCellIndicesFromFeature === "function"
+            ? parseGridCellIndicesFromFeature(cellFeat)
+            : null;
+          if (ix && Number.isInteger(ix.n) && Number.isInteger(ix.e)
               && !(typeof getGridCellLabelFeatureAtPixel === "function" && getGridCellLabelFeatureAtPixel(evt.pixel))) {
-            return stopEvt();
+            if (cyclePreviewCell(ix.n, ix.e)) return false;
           }
         }
       }
@@ -5624,56 +6035,13 @@
         : null;
       const managedHit = managedLabelHit || pickManagedFeatureAtPixel(evt.pixel, { hitTolerance: 16 });
       const hitType = managedHit ? String(managedHit.get("previewType") || "") : "";
-      if (managedHit && hitType === "grid-cell-label") {
-        if (subNoLabelFx) return stopEvt();
+      if (managedHit && (hitType === "grid-cell-label" || hitType === "grid-cell")) {
         const mid = Number(managedHit.get("managedObjectId"));
         const mObj = managedObjects.find((o) => Number(o.id) === mid);
-        if (mObj && mObj.type === "grid") {
-          const n = Number(managedHit.get("gridCellN"));
-          const e = Number(managedHit.get("gridCellE"));
-          if (Number.isInteger(n) && Number.isInteger(e)) {
-            if (!mObj.fixed && Number(mObj.id) === Number(selectedManagedObjectId)
-                && typeof window.cycleGridCellFill === "function") {
-              if (cyclePreviewCell(n, e)) return false;
-            }
-            if (mObj.fixed) {
-              if (typeof isSubEditorSession === "function" && isSubEditorSession()) return stopEvt();
-              rememberFixedHistory();
-              if (!mObj.cellFills || typeof mObj.cellFills !== "object") mObj.cellFills = {};
-              const key = `${n},${e}`;
-              const cur = mObj.cellFills[key];
-              const pal = (typeof getGridCellFillPaletteForKml === "function")
-                ? getGridCellFillPaletteForKml()
-                : null;
-              const palLen = (Array.isArray(pal) && pal.length) ? pal.length
-                : ((typeof GRID_CELL_FILL_PALETTE !== "undefined" && Array.isArray(GRID_CELL_FILL_PALETTE))
-                  ? GRID_CELL_FILL_PALETTE.length : 5);
-              const cycleLen = (typeof GRID_CELL_FILL_CYCLE_LEN === "number" && GRID_CELL_FILL_CYCLE_LEN > 0)
-                ? Math.min(GRID_CELL_FILL_CYCLE_LEN, palLen)
-                : palLen;
-              if (cur === undefined || !Number.isInteger(cur) || cur < 0) mObj.cellFills[key] = 0;
-              else if (cur >= cycleLen - 1) delete mObj.cellFills[key];
-              else mObj.cellFills[key] = cur + 1;
-              try { touchManagedObjectSyncMeta(mObj); } catch (_) { /* noop */ }
-              ensureGridResultFillsVisible(mObj);
-              renderManagedObjects();
-              markFixedHistoryCursor();
-              try { if (typeof window.notifyLiveShareChange === "function") window.notifyLiveShareChange(); } catch (_) { /* noop */ }
-              managedStatusText(`Kachel ${eastLabel(e)}${n + 1}: Farbe gewechselt.`);
-              return stopEvt();
-            }
-            if (typeof window.cycleGridCellFill === "function") {
-              if (cyclePreviewCell(n, e)) return false;
-            }
-            return stopEvt();
-          }
-        }
+        const n = Number(managedHit.get("gridCellN"));
+        const e = Number(managedHit.get("gridCellE"));
+        if (cycleCellOnObject(mObj, n, e)) return false;
         return stopEvt();
-      }
-      // Doppelklick auf Kachelflaeche (managed): nicht bearbeiten
-      if (managedHit && hitType === "grid-cell") {
-        stopEvt();
-        return false;
       }
       const ok = (typeof finalizeCurrentObjectAsFixedRef === "function")
         ? finalizeCurrentObjectAsFixedRef()
@@ -5698,6 +6066,41 @@
         beginEditManagedObject(id);
         if (evt && typeof evt.preventDefault === "function") evt.preventDefault();
       }
+    });
+    let lastGridPointerUp = null;
+    map.on("pointerup", (evt) => {
+      if (!evt || !evt.pixel || evt.dragging) {
+        lastGridPointerUp = null;
+        return;
+      }
+      const now = Date.now();
+      const prev = lastGridPointerUp;
+      lastGridPointerUp = { t: now, x: Number(evt.pixel[0]), y: Number(evt.pixel[1]) };
+      if (!prev || (now - prev.t) > 520 || (now - prev.t) < 40) return;
+      const dx = Number(evt.pixel[0]) - prev.x;
+      const dy = Number(evt.pixel[1]) - prev.y;
+      if ((dx * dx) + (dy * dy) > 196) return;
+      if (Date.now() - (map.__rkrkCellColorAt || 0) < 280) return;
+      const labelHit = pickManagedGridCellLabelAtPixel(evt.pixel);
+      const managedCell = pickGridCellContaining(evt.pixel, evt.coordinate, managedObjectSource);
+      const previewCell = (typeof previewSource !== "undefined")
+        ? pickGridCellContaining(evt.pixel, evt.coordinate, previewSource)
+        : null;
+      if (!labelHit && !managedCell && !previewCell) return;
+      if (labelHit) {
+        const n = Number(labelHit.get("gridCellN"));
+        const e = Number(labelHit.get("gridCellE"));
+        const mid = Number(labelHit.get("managedObjectId"));
+        const mObj = managedObjects.find((o) => Number(o.id) === mid);
+        if (mObj && mObj.type === "grid" && cycleFixedGridCellNow(mObj, n, e)) return;
+      }
+      try {
+        const dom = evt.originalEvent || new MouseEvent("dblclick", { bubbles: true, cancelable: true });
+        const mev = new ol.MapBrowserEvent("dblclick", map, dom);
+        mev.pixel = evt.pixel.slice();
+        if (evt.coordinate) mev.coordinate = evt.coordinate.slice();
+        map.dispatchEvent(mev);
+      } catch (_) { /* noop */ }
     });
   }
 
@@ -5741,10 +6144,29 @@
       const idx = Number(value);
       if (Number.isInteger(idx) && idx >= 0) mObj.cellFills[key] = idx;
     }
+    noteViewerGridFill(mObj.id, key, Object.prototype.hasOwnProperty.call(mObj.cellFills, key) ? mObj.cellFills[key] : "neutral");
     notifyAfterManagedColorChange();
     if (typeof eastLabel === "function" && Number.isInteger(n) && Number.isInteger(e)) {
       managedStatusText(`Kachel ${eastLabel(e)}${n + 1}: Farbe gesetzt.`);
     }
+  };
+
+  window.__rkrkPaintManagedGridCellFromMenu = function (n, e, value) {
+    const selId = selectedManagedObjectId;
+    let target = managedObjects.find((o) => o && o.type === "grid" && Number(o.id) === Number(selId));
+    if (!target) {
+      target = managedObjects.find((o) => o && o.type === "grid" && !isManagedObjectMapHidden(o));
+    }
+    if (target) {
+      window.__rkrkApplyManagedGridCellFill(target.id, n, e, value);
+      if (typeof gridCellFillCycleMap !== "undefined" && gridCellFillCycleMap) {
+        const key = `${n},${e}`;
+        if (value === "neutral") delete gridCellFillCycleMap[key];
+        else if (Number.isInteger(Number(value))) gridCellFillCycleMap[key] = Number(value);
+      }
+      return;
+    }
+    try { if (typeof drawPreview === "function") drawPreview(); } catch (_) { /* noop */ }
   };
 
   window.__rkrkApplyManagedPolygonFill = function (objectId, value) {
@@ -6120,7 +6542,16 @@
         } else if (idxSel >= 0 && selObj && !selObj.fixed) {
           rememberFixedHistory();
           const payload = currentObjectPayloadFromUi();
-          if (payload && (payload.type === "points" || payload.type === "textfields")
+          const keepCircle = hasStoredCircleGeometry(selObj)
+            && (selObj.type === "circle" || nameLooksLikeCircle(selObj))
+            && payload && (payload.type === "points" || payload.type === "textfields");
+          if (keepCircle) {
+            selObj.type = "circle";
+            delete selObj.labels;
+            selObj.fixed = true;
+            if (selObj.circleStyle && circleNameOf(selObj)) selObj.circleStyle.labelText = circleNameOf(selObj);
+            touchManagedObjectSyncMeta(selObj);
+          } else if (payload && (payload.type === "points" || payload.type === "textfields")
               && Array.isArray(payload.labels) && payload.labels.length) {
             const keep = payload.labels[0];
             const extras = payload.labels.slice(1);
@@ -7774,7 +8205,7 @@
         kml += `
     <Style id="${polyStyleId}">
       <LineStyle><color>${hexToKmlColor(polyStyle.lineColor || "#ff8c00", "ff")}</color><width>${Number(polyStyle.lineWidth) || 2}</width></LineStyle>
-      ${kmlPolyStyleXmlLocal(polyStyle.fillColor || "#ff8c00", opacityToAlphaHex(Number(polyStyle.fillOpacity) || 0.1), (Number(polyStyle.fillOpacity) || 0.1) > 0)}
+      ${kmlPolyStyleXmlLocal(polyStyle.fillColor || "#ff8c00", opacityToAlphaHex(Number.isFinite(Number(polyStyle.fillOpacity)) ? Number(polyStyle.fillOpacity) : 0.1), (Number.isFinite(Number(polyStyle.fillOpacity)) ? Number(polyStyle.fillOpacity) : 0.1) > 0)}
     </Style>`;
         const ring = [...obj.polygonVertices, obj.polygonVertices[0]].map((p) => [Number(p[0]), Number(p[1]), 0]);
         kml += `
@@ -8345,6 +8776,26 @@ ${kmlFooter()}`;
       items.push({ kind: "point", lon: ll[0], lat: ll[1], style: style || {}, text: text || "" });
     };
 
+    const savedOpacity = (value, fallback) => {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.max(0, Math.min(1, n));
+    };
+    const groupAlpha = (obj) => {
+      try {
+        if (typeof getManagedObjectGroupOpacity === "function") {
+          const a = Number(getManagedObjectGroupOpacity(obj));
+          if (Number.isFinite(a)) return Math.max(0, Math.min(1, a));
+        }
+      } catch (_) { /* noop */ }
+      return 1;
+    };
+    const withAlpha = (style, obj) => {
+      const out = style || {};
+      out.alpha = groupAlpha(obj);
+      return out;
+    };
+
     (managedObjects || []).forEach((obj) => {
       if (!obj) return;
       try {
@@ -8356,34 +8807,34 @@ ${kmlFooter()}`;
       const fh = (obj.freehandStyle && typeof obj.freehandStyle === "object") ? obj.freehandStyle : {};
       if (obj.type === "polygon" && Array.isArray(obj.polygonVertices)) {
         const polyFillOn = obj.showFill !== false;
-        addRing(obj.polygonVertices, {
+        addRing(obj.polygonVertices, withAlpha({
           stroke: ps.lineColor || "#ff8c00",
           width: Number(ps.lineWidth) || 2,
           fill: ps.fillColor || "#ff8c00",
-          fillA: polyFillOn ? Math.max(0.15, Number(ps.fillOpacity) || 0.25) : 0
-        });
+          fillA: polyFillOn ? savedOpacity(ps.fillOpacity, 0.25) : 0
+        }, obj));
       } else if (obj.type === "circle" && obj.anchor && typeof createCircleCoordinates === "function") {
         const coords = createCircleCoordinates(Number(obj.anchor[1]), Number(obj.anchor[0]), Math.max(1, Number(obj.r) || 1), 64);
-        addRing(coords, {
+        addRing(coords, withAlpha({
           stroke: cs.lineColor || "#ff0000",
           width: Number(cs.lineWidth) || 2,
           fill: cs.fillColor || "#ff0000",
-          fillA: Math.max(0.08, Number(cs.fillOpacity) || 0.15)
-        });
+          fillA: savedOpacity(cs.fillOpacity, 0.15)
+        }, obj));
         const label = (cs.labelText || obj.labelText || managedObjectDisplayName(obj) || "").slice(0, 40);
-        addPoint(obj.anchor[0], obj.anchor[1], { color: cs.labelColor || "#0000ff" }, label);
+        addPoint(obj.anchor[0], obj.anchor[1], withAlpha({ color: cs.labelColor || "#0000ff" }, obj), label);
       } else if (obj.type === "circles" && obj.anchor && typeof createCircleCoordinates === "function") {
         const styles = Array.isArray(obj.circlesStyles) ? obj.circlesStyles : [];
         [obj.r1, obj.r2, obj.r3].forEach((r, i) => {
           if (!Number.isFinite(Number(r)) || Number(r) <= 0) return;
           const s = styles[i] || styles[0] || {};
           const coords = createCircleCoordinates(Number(obj.anchor[1]), Number(obj.anchor[0]), Number(r), 64);
-          addRing(coords, {
+          addRing(coords, withAlpha({
             stroke: s.lineColor || "#ffcc00",
             width: Number(s.lineWidth) || 2,
             fill: s.fillColor || "#ffcc00",
-            fillA: Math.max(0.05, Number(s.fillOpacity) || 0.1)
-          });
+            fillA: savedOpacity(s.fillOpacity, 0.1)
+          }, obj));
         });
       } else if (obj.type === "grid" && obj.anchor && typeof rotatedOffsetLatLon === "function") {
         const lat = Number(obj.anchor[1]);
@@ -8415,16 +8866,16 @@ ${kmlFooter()}`;
                 fillA = Number(gs.fillOpacity) || 0.1;
               }
             }
-            addRing(ring, {
+            addRing(ring, withAlpha({
               stroke: gs.lineColor || "#ffd400",
               width: Number(gs.lineWidth) || 2,
               fill,
-              fillA
-            });
+              fillA: savedOpacity(fillA, 0)
+            }, obj));
             const cellName = (typeof eastLabel === "function")
               ? (eastLabel(e) + String(n + 1))
               : (String.fromCharCode(65 + (e % 26)) + String(n + 1));
-            addPoint(center[1], center[0], { color: gs.labelColor || "#0000ff", font: Number(gs.fontSize) || 11 }, cellName);
+            addPoint(center[1], center[0], withAlpha({ color: gs.labelColor || "#0000ff", font: Number(gs.fontSize) || 11 }, obj), cellName);
           }
         }
         const gridMapTitle = customManagedObjectMapLabel(obj);
@@ -8436,37 +8887,163 @@ ${kmlFooter()}`;
             (ec * sp) / 2,
             rot
           );
-          addPoint(titlePos[1], titlePos[0], {
+          addPoint(titlePos[1], titlePos[0], withAlpha({
             color: gs.labelColor || "#111827",
             font: Math.max(13, (Number(gs.fontSize) || 11) + 3)
-          }, gridMapTitle);
+          }, obj), gridMapTitle);
         }
-      } else if ((obj.type === "freehand" || obj.type === "pfeil") && Array.isArray(obj.freehandCoords)) {
-        addLine(obj.freehandCoords, {
-          stroke: fh.lineColor || obj.lineColor || "#e11d48",
-          width: Number(fh.lineWidth || obj.lineWidth) || 3
-        });
+      } else if (obj.type === "freehand" || obj.type === "pfeil") {
+        const linePts = Array.isArray(obj.coordinates) ? obj.coordinates
+          : (Array.isArray(obj.freehandCoords) ? obj.freehandCoords : null);
+        if (linePts && linePts.length >= 2) {
+          const lineStyle = withAlpha({
+            stroke: fh.lineColor || obj.lineColor || "#e11d48",
+            width: Number(fh.lineWidth || obj.lineWidth) || 3,
+            fillA: 0
+          }, obj);
+          addLine(linePts, lineStyle);
+          if (obj.type === "pfeil" && typeof kmlArrowHeadRing === "function") {
+            const a = linePts[0];
+            const b = linePts[linePts.length - 1];
+            const tipM = Math.max(12, (Number(lineStyle.width) || 3) * 6);
+            const es = (typeof normalizePfeilEndStyle === "function") ? normalizePfeilEndStyle(obj.endStyle) : "arrow";
+            const tips = [];
+            if (es === "dots" && typeof kmlDotRing === "function") {
+              tips.push(kmlDotRing(a, tipM * 0.35), kmlDotRing(b, tipM * 0.35));
+            } else if (es === "arrows") {
+              tips.push(kmlArrowHeadRing(b, a, tipM), kmlArrowHeadRing(a, b, tipM));
+            } else {
+              tips.push(kmlArrowHeadRing(a, b, tipM));
+            }
+            tips.forEach((ring) => {
+              addRing(ring, withAlpha({
+                stroke: lineStyle.stroke,
+                width: 1,
+                fill: lineStyle.stroke,
+                fillA: 1
+              }, obj));
+            });
+          }
+        }
       } else if ((obj.type === "points" || obj.type === "textfields") && Array.isArray(obj.labels)) {
         obj.labels.forEach((lp) => {
-          if (!lp || !Array.isArray(lp.lonLat)) return;
-          addPoint(lp.lonLat[0], lp.lonLat[1], {
+          if (!lp) return;
+          const lon = Array.isArray(lp.lonLat) ? lp.lonLat[0] : lp.lon;
+          const lat = Array.isArray(lp.lonLat) ? lp.lonLat[1] : lp.lat;
+          if (!Number.isFinite(Number(lon)) || !Number.isFinite(Number(lat))) return;
+          addPoint(lon, lat, withAlpha({
             color: lp.textColor || lp.color || "#ff8c00",
             font: Number(lp.fontSize) || 12,
-            pointColor: lp.color || "#ff8c00"
-          }, String(lp.text || "").slice(0, 48));
+            pointColor: lp.color || "#ff8c00",
+            pointRadius: Number(lp.pointRadius)
+          }, obj), String(lp.text || "").slice(0, 48));
         });
       }
     });
 
+    const addLooseLabel = (lp) => {
+      if (!lp || !Number.isFinite(Number(lp.lon)) || !Number.isFinite(Number(lp.lat))) return;
+      addPoint(lp.lon, lp.lat, {
+        color: lp.textColor || lp.color || "#ff8c00",
+        font: Number(lp.fontSize) || 12,
+        pointColor: lp.color || "#ff8c00",
+        pointRadius: Number(lp.pointRadius),
+        alpha: 1
+      }, String(lp.text || "").slice(0, 48));
+    };
+    try {
+      const editingPoints = !!(selectedManagedObjectId && (managedObjects || []).some((o) =>
+        o && o.id === selectedManagedObjectId && (o.type === "points" || o.type === "textfields")));
+      const mode = (typeof normalizeObjectType === "function" && typeof exportTypeEl !== "undefined" && exportTypeEl)
+        ? normalizeObjectType(exportTypeEl.value) : "";
+      const draftIsPoints = !selectedManagedObjectId && (mode === "points" || mode === "textfields");
+      if (!editingPoints && !draftIsPoints && typeof labeledPoints !== "undefined" && Array.isArray(labeledPoints)) {
+        labeledPoints.forEach(addLooseLabel);
+      }
+    } catch (_) { /* noop */ }
+
     // Unfixed drafts
     try {
       if (typeof polygonVertices !== "undefined" && Array.isArray(polygonVertices) && polygonVertices.length >= 3) {
-        addRing(polygonVertices, { stroke: "#ff8c00", width: 2, fill: "#ff8c00", fillA: 0.2 });
+        const already = (managedObjects || []).some((o) => o && o.type === "polygon" && o.polygonVertices === polygonVertices);
+        if (!already) addRing(polygonVertices, { stroke: "#ff8c00", width: 2, fill: "#ff8c00", fillA: 0.2, alpha: 1 });
       }
     } catch (_) { /* noop */ }
     try {
       if (typeof freehandDraftCoords !== "undefined" && Array.isArray(freehandDraftCoords) && freehandDraftCoords.length >= 2) {
-        addLine(freehandDraftCoords, { stroke: "#e11d48", width: 3 });
+        addLine(freehandDraftCoords, { stroke: "#e11d48", width: 3, alpha: 1 });
+      }
+    } catch (_) { /* noop */ }
+    try {
+      if (typeof flightPathPoints !== "undefined" && Array.isArray(flightPathPoints) && flightPathPoints.length >= 2) {
+        addLine(flightPathPoints, { stroke: "#1e90ff", width: 2.4, alpha: 1 });
+      }
+    } catch (_) { /* noop */ }
+    try {
+      if (typeof importedKmlLayers !== "undefined" && Array.isArray(importedKmlLayers) && typeof ol !== "undefined" && ol.proj) {
+        const toLl = (coord) => {
+          if (!coord || coord.length < 2) return null;
+          try {
+            const ll = ol.proj.toLonLat(coord, "EPSG:3857");
+            return mbtilesNormLonLatPair(ll[0], ll[1]);
+          } catch (_) { return null; }
+        };
+        const addGeom = (geom, style) => {
+          if (!geom || typeof geom.getType !== "function") return;
+          const t = geom.getType();
+          if (t === "Point") {
+            const ll = toLl(geom.getCoordinates());
+            if (ll) addPoint(ll[0], ll[1], style, style.text || "");
+          } else if (t === "LineString") {
+            addLine((geom.getCoordinates() || []).map(toLl).filter(Boolean), style);
+          } else if (t === "Polygon") {
+            const rings = geom.getCoordinates() || [];
+            if (rings[0]) addRing(rings[0].map(toLl).filter(Boolean), style);
+          } else if (t === "MultiPoint" || t === "MultiLineString" || t === "MultiPolygon") {
+            (geom.getCoordinates() || []).forEach((part) => {
+              if (t === "MultiPoint") {
+                const ll = toLl(part);
+                if (ll) addPoint(ll[0], ll[1], style, "");
+              } else if (t === "MultiLineString") {
+                addLine((part || []).map(toLl).filter(Boolean), style);
+              } else if (part && part[0]) {
+                addRing(part[0].map(toLl).filter(Boolean), style);
+              }
+            });
+          } else if (t === "GeometryCollection" && typeof geom.getGeometries === "function") {
+            geom.getGeometries().forEach((g) => addGeom(g, style));
+          }
+        };
+        importedKmlLayers.forEach((entry) => {
+          if (!entry || entry.visible === false || !entry.layer || typeof entry.layer.getSource !== "function") return;
+          const src = entry.layer.getSource();
+          if (!src || typeof src.getFeatures !== "function") return;
+          const alpha = savedOpacity(entry.opacity, 1);
+          if (alpha <= 0) return;
+          src.getFeatures().forEach((feature) => {
+            if (!feature || typeof feature.getGeometry !== "function") return;
+            let stroke = "#ff8c00";
+            let width = 2;
+            let fill = "#ff8c00";
+            let fillA = 0;
+            try {
+              let st = feature.getStyle && feature.getStyle();
+              if (typeof st === "function") st = st(feature, 1);
+              if (Array.isArray(st)) st = st[0];
+              if (st && st.getStroke && st.getStroke()) {
+                const s = st.getStroke();
+                if (s.getColor()) stroke = s.getColor();
+                if (Number(s.getWidth()) > 0) width = Number(s.getWidth());
+              }
+              if (st && st.getFill && st.getFill() && st.getFill().getColor()) {
+                fill = st.getFill().getColor();
+                fillA = 1;
+              }
+            } catch (_) { /* default style */ }
+            const name = String((feature.get && (feature.get("name") || feature.get("Name"))) || "").slice(0, 48);
+            addGeom(feature.getGeometry(), { stroke, width, fill, fillA, alpha, color: stroke, text: name });
+          });
+        });
       }
     } catch (_) { /* noop */ }
 
@@ -8515,29 +9092,29 @@ ${kmlFooter()}`;
    * Schrift (px) und Punkt-Radius (px) pro Zoom — direkt steuerbar.
    * z10 wie z11, falls der Export so weit rausgeht.
    */
-  /** Rasterlinie (px) bei Editor-Dicke 2. Freihand skaliert proportional. */
+  /** Faktor gegenüber der gespeicherten Linienstärke. Referenz ist z15 = 1. */
   const MBTILES_LINE_WIDTH_BY_Z = {
-    10: 0.25,
-    11: 0.25,
-    12: 0.25,
-    13: 0.50,
-    14: 0.75,
+    10: 0.28,
+    11: 0.36,
+    12: 0.48,
+    13: 0.64,
+    14: 0.82,
     15: 1.00,
-    16: 1.00,
-    17: 1.00,
-    18: 1.00,
-    19: 1.00,
-    20: 1.00
+    16: 1.28,
+    17: 1.64,
+    18: 2.10,
+    19: 2.68,
+    20: 3.40
   };
 
   function mbtilesLineWidthPx(z, styleWidth, fallbackWidth) {
     const zz = Math.round(Number(z));
     const base = Number(MBTILES_LINE_WIDTH_BY_Z[zz]);
-    const gridPx = (Number.isFinite(base) && base > 0) ? base : 2;
+    const zoomFactor = (Number.isFinite(base) && base > 0) ? base : 1;
     const sw = Number(styleWidth);
     const fw = Number(fallbackWidth) || 2;
     const style = (Number.isFinite(sw) && sw > 0) ? sw : fw;
-    return Math.max(0.2, gridPx * (style / 2));
+    return Math.max(0.35, Math.min(style * 8, style * zoomFactor));
   }
 
   const MBTILES_LABEL_SIZE_BY_Z = {
@@ -8622,6 +9199,14 @@ ${kmlFooter()}`;
       return [w[0] - originX, w[1] - originY];
     };
     items.forEach((it) => {
+      const layerA = Number(it.style && it.style.alpha);
+      const objectA = Number.isFinite(layerA) ? Math.max(0, Math.min(1, layerA)) : 1;
+      if (objectA <= 0) return;
+      const paintA = (extra) => {
+        const e = Number(extra);
+        const v = objectA * (Number.isFinite(e) ? Math.max(0, Math.min(1, e)) : 1);
+        ctx.globalAlpha = Math.max(0, Math.min(1, v));
+      };
       if (it.kind === "poly" && it.ring && it.ring.length >= 3) {
         ctx.beginPath();
         it.ring.forEach((ll, i) => {
@@ -8633,13 +9218,14 @@ ${kmlFooter()}`;
         const fa = Number(it.style.fillA);
         if (Number.isFinite(fa) && fa > 0) {
           ctx.fillStyle = it.style.fill || "#ffcc00";
-          ctx.globalAlpha = Math.max(0.05, Math.min(0.85, fa));
+          paintA(fa);
           ctx.fill();
-          ctx.globalAlpha = 1;
         }
         ctx.strokeStyle = it.style.stroke || "#ffcc00";
         ctx.lineWidth = mbtilesLineWidthPx(z, it.style.width, 2);
+        paintA(1);
         ctx.stroke();
+        ctx.globalAlpha = 1;
       } else if (it.kind === "line" && it.pts && it.pts.length >= 2) {
         ctx.beginPath();
         it.pts.forEach((ll, i) => {
@@ -8651,17 +9237,27 @@ ${kmlFooter()}`;
         ctx.lineWidth = mbtilesLineWidthPx(z, it.style.width, 3);
         ctx.lineJoin = "round";
         ctx.lineCap = "round";
+        paintA(1);
         ctx.stroke();
+        ctx.globalAlpha = 1;
       } else if (it.kind === "point") {
         const p = toPx(it.lon, it.lat);
         if (p[0] < -40 || p[0] > 296 || p[1] < -40 || p[1] > 296) return;
         const text = String(it.text || "").trim();
         const lowZ = Number.isFinite(Number(minZ)) ? (z <= Number(minZ) + 1) : (z <= 13);
         const pc = it.style.pointColor || it.style.color || "#ff8c00";
+        const savedR = Number(it.style.pointRadius);
+        const zoomR = mbtilesLineWidthPx(z, 1, 1);
+        const radius = (Number.isFinite(savedR) && savedR > 0)
+          ? Math.max(0.6, Math.min(18, savedR * zoomR))
+          : Math.max(labelSize.pointPx, 0.8 * zoomR);
         ctx.fillStyle = pc;
-        ctx.beginPath();
-        ctx.arc(p[0], p[1], labelSize.pointPx, 0, Math.PI * 2);
-        ctx.fill();
+        paintA(1);
+        if (!(Number.isFinite(savedR) && savedR <= 0)) {
+          ctx.beginPath();
+          ctx.arc(p[0], p[1], radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
         if (text && labelSize.fontPx > 0) {
           const fs = labelSize.fontPx;
           ctx.font = "600 " + fs + "px Arial,Helvetica,sans-serif";
@@ -8682,6 +9278,7 @@ ${kmlFooter()}`;
             ctx.fillText(text, p[0] + ox, p[1] - oy);
           }
         }
+        ctx.globalAlpha = 1;
       }
     });
     if (!mbtilesTileHasContent(ctx)) return null;
@@ -11943,7 +12540,7 @@ ${kmlFooter()}`;
       hint = document.createElement("p");
       hint.className = "small";
       hint.id = "objManagedListHint";
-      hint.textContent = "Checkbox → Gruppieren. Gruppen per Drag zwischen Objekte sortieren; ein/aus + Transparenz.";
+      hint.textContent = "Checkbox → Gruppieren. Objekt auf eine Gruppe ziehen = hinein, auf «Ohne Gruppe» oder ein Objekt ohne Gruppe = heraus.";
       const list = document.getElementById("objManagedList");
       if (list) content.insertBefore(hint, list);
       else content.appendChild(hint);
@@ -12084,6 +12681,7 @@ ${kmlFooter()}`;
         return;
       }
       li.classList.add("obj-list-dragging");
+      document.body.classList.add("rkrk-obj-drag");
       try {
         ev.dataTransfer.effectAllowed = "move";
         ev.dataTransfer.setData("text/plain", "group:" + String(group.id));
@@ -12093,11 +12691,13 @@ ${kmlFooter()}`;
     });
     li.addEventListener("dragend", () => {
       li.classList.remove("obj-list-dragging");
+      document.body.classList.remove("rkrk-obj-drag");
       window.__rkrkObjListDrag = null;
       window.__rkrkObjListDragId = null;
       const listEl = document.getElementById("objManagedList");
       if (listEl) listEl.querySelectorAll("li.obj-list-drag-over").forEach((el) => el.classList.remove("obj-list-drag-over"));
     });
+    li.title = "Objekt hier ablegen, auch wenn die Gruppe eingeklappt ist";
     li.addEventListener("dragover", (ev) => {
       ev.preventDefault();
       try { ev.dataTransfer.dropEffect = "move"; } catch (_) { /* noop */ }
@@ -12108,7 +12708,7 @@ ${kmlFooter()}`;
         });
       }
       li.classList.add("obj-list-drag-over");
-    });
+    }, true);
     li.addEventListener("dragleave", () => { li.classList.remove("obj-list-drag-over"); });
     li.addEventListener("drop", (ev) => {
       ev.preventDefault();
@@ -12124,7 +12724,7 @@ ${kmlFooter()}`;
       if (!drag && window.__rkrkObjListDragId != null) drag = { kind: "object", id: Number(window.__rkrkObjListDragId) };
       if (!drag) return;
       handleManagedListDrop(drag.kind, drag.id, "group", group.id);
-    });
+    }, true);
 
     li.appendChild(collapseBtn);
     li.appendChild(meta);
@@ -12151,7 +12751,7 @@ ${kmlFooter()}`;
       + "  <button type='button' id='objGroupClearSelBtn' title='Auswahl leeren'>Auswahl leeren</button>"
       + "</div>"
       + "<p class='small' id='objManagedListEmpty'>Noch keine Objekte. Zeichnen und «Objekt fixieren».</p>"
-      + "<p class='small' id='objManagedListHint'>Checkbox → Gruppieren. Gruppen per Drag zwischen Objekte sortieren; ein/aus + Transparenz.</p>"
+      + "<p class='small' id='objManagedListHint'>Checkbox → Gruppieren. Objekt auf eine Gruppe ziehen = hinein, auf «Ohne Gruppe» oder ein Objekt ohne Gruppe = heraus.</p>"
       + "<ul id='objManagedList'></ul>"
       + "</div>";
     panel.appendChild(box);
@@ -12229,6 +12829,7 @@ ${kmlFooter()}`;
           return;
         }
         li.classList.add("obj-list-dragging");
+        document.body.classList.add("rkrk-obj-drag");
         try {
           ev.dataTransfer.effectAllowed = "move";
           ev.dataTransfer.setData("text/plain", "object:" + String(obj.id));
@@ -12238,6 +12839,7 @@ ${kmlFooter()}`;
       });
       li.addEventListener("dragend", () => {
         li.classList.remove("obj-list-dragging");
+        document.body.classList.remove("rkrk-obj-drag");
         window.__rkrkObjListDrag = null;
         window.__rkrkObjListDragId = null;
         list.querySelectorAll("li.obj-list-drag-over").forEach((el) => el.classList.remove("obj-list-drag-over"));
@@ -12556,6 +13158,37 @@ ${kmlFooter()}`;
       if (obj.groupId != null && getManagedObjectGroup(obj.groupId)) return;
       appendObjRow(obj, false);
     });
+    if (Array.isArray(managedObjectGroups) && managedObjectGroups.some((g) => g)) {
+      const dropLi = document.createElement("li");
+      dropLi.className = "obj-list-ungroup-drop";
+      dropLi.textContent = "Ohne Gruppe";
+      dropLi.title = "Objekt hier ablegen, um es aus der Gruppe zu nehmen";
+      const markOver = (on) => dropLi.classList.toggle("obj-list-drag-over", !!on);
+      dropLi.addEventListener("dragover", (ev) => {
+        const drag = window.__rkrkObjListDrag;
+        if (!drag || drag.kind !== "object") return;
+        ev.preventDefault();
+        try { ev.dataTransfer.dropEffect = "move"; } catch (_) { /* noop */ }
+        list.querySelectorAll("li.obj-list-drag-over").forEach((el) => {
+          if (el !== dropLi) el.classList.remove("obj-list-drag-over");
+        });
+        markOver(true);
+      });
+      dropLi.addEventListener("dragleave", () => { markOver(false); });
+      dropLi.addEventListener("drop", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        markOver(false);
+        let drag = window.__rkrkObjListDrag;
+        try {
+          const raw = String(ev.dataTransfer.getData("text/plain") || "");
+          if (raw.indexOf("object:") === 0) drag = { kind: "object", id: Number(raw.slice(7)) };
+        } catch (_) { /* noop */ }
+        if (!drag || drag.kind !== "object") return;
+        handleManagedListDrop(drag.kind, drag.id, "ungrouped", 0);
+      });
+      list.appendChild(dropLi);
+    }
   };
   syncEditingObjectFromUi = function () {
     if (!selectedManagedObjectId) return false;
@@ -12567,6 +13200,12 @@ ${kmlFooter()}`;
     if (prev && prev.fixed) return false;
     const payload = currentObjectPayloadFromUi();
     if (!payload) return false;
+    if (hasStoredCircleGeometry(prev) && (prev.type === "circle" || nameLooksLikeCircle(prev))
+        && (payload.type === "points" || payload.type === "textfields")) {
+      prev.type = "circle";
+      delete prev.labels;
+      return false;
+    }
     if (payload.type === "polygon" && (!payload.polygonVertices || payload.polygonVertices.length < 3)) return false;
     if ((payload.type === "points" || payload.type === "textfields") && (!payload.labels || !payload.labels.length)) return false;
     if ((payload.type === "freehand" || payload.type === "pfeil") && (!payload.coordinates || payload.coordinates.length < 2)) return false;
@@ -13028,7 +13667,6 @@ ${kmlFooter()}`;
           } else {
             try { window.__rkrkDeferFitToManaged = true; } catch (_) { /* noop */ }
           }
-          try { seedDrawingStateFormFromObjects(state); } catch (_) { /* noop */ }
           originalApply(state);
           if (state && state.projectTitle && typeof setProjectTitle === "function") {
             setProjectTitle(state.projectTitle);
@@ -13066,30 +13704,23 @@ ${kmlFooter()}`;
           syncManagedListOrder();
           selectedManagedObjectId = null;
           managedEditPaused = false;
-          const formObj = fillObjectFormFromDrawing(state);
-          try { scheduleFormSyncFromDrawing(state); } catch (_) { /* noop */ }
-          if (formObj) {
-            selectedManagedObjectId = formObj.id;
-            if (formObj.fixed === false) {
-              if (typeof previewActive !== "undefined") previewActive = true;
-              if ((formObj.type === "grid" || formObj.type === "circles" || formObj.type === "circle")
-                  && typeof drawPreview === "function"
-                  && Array.isArray(selectedLonLat) && selectedLonLat.length === 2) {
-                drawPreview();
-              }
-            } else {
-              if (typeof previewActive !== "undefined") previewActive = false;
-              if (typeof clearPreview === "function") {
-                try { clearPreview(); } catch (_) { /* noop */ }
-              }
+          editBaselineSnapshot = null;
+          managedObjects.forEach((o) => {
+            if (o && o.fixed === false) o.fixed = true;
+          });
+          try { if (typeof previewActive !== "undefined") previewActive = false; } catch (_) { /* noop */ }
+          try { if (typeof drawingArmed !== "undefined") drawingArmed = false; } catch (_) { /* noop */ }
+          try { if (typeof selectedLonLat !== "undefined") selectedLonLat = null; } catch (_) { /* noop */ }
+          try { if (typeof clearPreview === "function") clearPreview(); } catch (_) { /* noop */ }
+          try {
+            if (typeof markerSource !== "undefined" && markerSource && typeof markerSource.clear === "function") {
+              markerSource.clear();
             }
-          } else if (typeof previewActive !== "undefined" && state && state.previewActive
-            && Array.isArray(selectedLonLat) && selectedLonLat.length === 2
-            && typeof drawPreview === "function"
-            && exportTypeEl && (exportTypeEl.value === "grid" || exportTypeEl.value === "circles" || exportTypeEl.value === "circle")) {
-            previewActive = true;
-            drawPreview();
-          }
+          } catch (_) { /* noop */ }
+          try {
+            const coord = document.getElementById("coordDisplay");
+            if (coord) coord.textContent = "Kein Punkt ausgewählt.";
+          } catch (_) { /* noop */ }
           renderManagedObjects();
           try { refreshManagedObjectList(); } catch (_) { /* noop */ }
           try { refreshObjectActionButtons(); } catch (_) { /* noop */ }
@@ -13544,8 +14175,6 @@ ${kmlFooter()}`;
       + "body.rkrk-share-viewer #objManagedListPanel,"
       + "body.rkrk-share-viewer #sharePanelDetails,"
       + "body.rkrk-share-viewer #objManagedToolsTop,"
-      + "body.rkrk-share-viewer #gridCellFillMenu,"
-      + "body.rkrk-share-viewer #objObjectContextMenu,"
       + "body.rkrk-share-viewer #basemapTopBar,"
       + "body.rkrk-share-viewer .ol-zoom,"
       + "body.rkrk-share-viewer .ol-attribution,"
@@ -13852,7 +14481,9 @@ ${kmlFooter()}`;
           mapEl.style.inset = "";
         }
       } else {
-        const w = Math.max(260, Math.min(680, Number(localStorage.getItem("obj_sidebar_width_px_v1")) || 360));
+        const vw = (typeof window.innerWidth === "number") ? window.innerWidth : 1200;
+        const maxW = Math.max(300, Math.min(1200, vw - 220));
+        const w = Math.max(260, Math.min(maxW, Number(localStorage.getItem("obj_sidebar_width_px_v1")) || 360));
         document.body.style.gridTemplateColumns = w + "px 1fr";
         if (panel) panel.style.display = "";
         if (mapEl) {
@@ -14801,7 +15432,6 @@ function stopLiveShareViewerPoll() {
       if (typeof applyDrawingState === "function") {
         applyDrawingState(draft.drawing);
       }
-      try { scheduleFormSyncFromDrawing(draft.drawing); } catch (_) { /* noop */ }
       if (typeof applySharedMapView === "function") {
         applySharedMapView(draft.drawing);
       }

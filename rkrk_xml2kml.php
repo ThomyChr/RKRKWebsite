@@ -1,5 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="de" >
 <?php
 	// ===========================================
 	// Paramter
@@ -33,6 +31,8 @@
 */
 	$DataOutput = "";
 	$debugoutput = true;
+	$FileName = "";
+	$SaveFile = false;
 
 	// ===========================================
 	// check input paramter
@@ -43,10 +43,9 @@
 		$RegionSelected =htmlspecialchars($_GET["Reg"]);
 	}
 	if (empty($_GET["File"])) {
-		$RegionSelected = "ALL";
 		$SaveFile = false;
 	} else {
-		$FileName =htmlspecialchars($_GET["File"]);
+		$FileName = htmlspecialchars($_GET["File"]);
 		$SaveFile = true;
 	}
 	if (empty($_GET["Deb"])) {
@@ -62,9 +61,32 @@
 	
 
 
-headerpage(false);
-GetPoiKML($RegionSelected, $SaveFile, $debugoutput, $FileName);
-
-
-//GetPoiKML($RegionSelected, $SaveFile, $debugoutput, $xmlMissionLocation, $xml_poifile, $kmlFilelocations);
-?>
+headerpage("KML", false);
+$ListOfStylesUsed = array();
+GetPoiKML(
+	$RegionSelected,
+	$SaveFile,
+	$debugoutput,
+	true,
+	true,
+	true,
+	true,
+	true,
+	true,
+	true,
+	true,
+	true,
+	true,
+	false,
+	true,
+	true,
+	$FileName,
+	$ListOfStylesUsed
+);
+if (!$debugoutput) {
+	if ($SaveFile) {
+		echo "<p>KML gespeichert: " . htmlspecialchars($kmlFilelocations . $FileName . ".kml", ENT_QUOTES, "UTF-8") . "</p>";
+	} else {
+		echo "<p>Kein Dateiname. Aufruf mit ?File=26_Felder</p>";
+	}
+}

@@ -35,6 +35,7 @@
 	include_once('rkrk_access_control.php'); 
 	include_once('scripts/rkrk_jsonfiles.php');
 	include_once('scripts/rkrk_kmz.php');
+	include_once('scripts/rkrk_einsatz_shared.php');
 
 	//check impropriate IP addresses accessing page
 	CheckIPandExit();
@@ -44,6 +45,13 @@
 	GrantAccess();
 	CreateTopMenu();
 	PrintRKRKHeader($pagetitle);
+	$droneName = (string)($MissionDroneTypes[$RKRKMissionSelected]['Name'] ?? $RKRKMissionSelected);
+	$droneBtn = (string)($MissionDroneTypes[$RKRKMissionSelected]['button'] ?? '');
+	echo "<div style='display:flex;justify-content:flex-end;align-items:center;margin:4px 12px 0;' title='" . htmlspecialchars($droneName, ENT_QUOTES, 'UTF-8') . "'>";
+	if ($droneBtn !== '') {
+		echo "<img src='" . htmlspecialchars($IconLoc . '/' . $droneBtn, ENT_QUOTES, 'UTF-8') . "' alt='' height='28'>";
+	}
+	echo "</div>\n";
 echo "<script>
 function StartPilotDownloads(urls){
 	if (!Array.isArray(urls) || urls.length === 0) {
@@ -55,7 +63,9 @@ function StartPilotDownloads(urls){
 		if (i >= urls.length) return;
 		const a = document.createElement('a');
 		a.href = urls[i];
-		a.setAttribute('download', '');
+		if (String(urls[i]).indexOf('kml=1') === -1) {
+			a.setAttribute('download', '');
+		}
 		a.style.display = 'none';
 		document.body.appendChild(a);
 		a.click();
@@ -66,6 +76,13 @@ function StartPilotDownloads(urls){
 	next();
 	return false;
 }
+document.addEventListener('click', function (ev) {
+	var a = ev.target.closest('a[data-kml]');
+	if (!a) return;
+	var kml = a.getAttribute('data-kml');
+	if (!kml) return;
+	setTimeout(function () { StartPilotDownloads([kml]); }, 250);
+});
 </script>";
 echo "<style>
 .rkrk-flight-controls-wrap,
@@ -128,12 +145,15 @@ echo "<style>
     max-width:16em;
   }
 }
-@media (min-width: 1301px) and (max-width: 1680px){
-  .rkrk-flight-main .rkrk-col-meta{
+@media (min-width: 1301px){
+  .rkrk-flight-main.rkrk-meta-collapsed .rkrk-col-meta{
     display:none;
   }
-  .rkrk-flight-main tr.rkrk-row-manual .rkrk-col-meta{
+  .rkrk-flight-main.rkrk-meta-collapsed tr.rkrk-row-manual .rkrk-col-meta{
     display:table-cell;
+  }
+  .rkrk-flight-main.rkrk-meta-collapsed .rkrk-meta-toggle{
+    transform:rotate(-90deg);
   }
   .rkrk-flight-main input[id^='Felder-'],
   .rkrk-flight-main input[id^='Kontaktnummer-'],
@@ -141,7 +161,8 @@ echo "<style>
     max-width:12em;
   }
 }
-.rkrk-files-toggle{
+.rkrk-files-toggle,
+.rkrk-meta-toggle{
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -158,10 +179,12 @@ echo "<style>
   line-height:1;
   vertical-align:middle;
 }
-.rkrk-files-toggle:hover{
+.rkrk-files-toggle:hover,
+.rkrk-meta-toggle:hover{
   background:#e6efe4;
 }
-.rkrk-col-files-toggle{
+.rkrk-col-files-toggle,
+.rkrk-col-meta-toggle{
   width:1.6em;
   text-align:center;
   white-space:nowrap;
@@ -999,6 +1022,7 @@ window.addEventListener('DOMContentLoaded', function(){
   rkrkMarkSaveSticky();
   rkrkApplyDesktopTableScroll();
   rkrkInitFilesCollapse();
+  rkrkInitMetaCollapse();
 });
 window.addEventListener('resize', function(){
   if (!window.matchMedia('(max-width: 1300px)').matches) rkrkCloseFlightEdit();
@@ -1026,11 +1050,35 @@ function rkrkInitFilesCollapse(){
       ev.preventDefault();
       rkrkSetFilesCollapsed(!table.classList.contains('rkrk-files-collapsed'));
     }
+    if (t && t.classList && t.classList.contains('rkrk-meta-toggle')) {
+      ev.preventDefault();
+      rkrkSetMetaCollapsed(!table.classList.contains('rkrk-meta-collapsed'));
+    }
   });
+}
+function rkrkSetMetaCollapsed(collapsed){
+  var table = document.querySelector('.rkrk-flight-main');
+  if (!table) return;
+  table.classList.toggle('rkrk-meta-collapsed', !!collapsed);
+  try { localStorage.setItem('rkrk-fluege-meta-collapsed', collapsed ? '1' : '0'); } catch (e) {}
+  var btns = table.querySelectorAll('.rkrk-meta-toggle');
+  for (var bi = 0; bi < btns.length; bi++) {
+    btns[bi].setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+}
+function rkrkInitMetaCollapse(){
+  var table = document.querySelector('.rkrk-flight-main');
+  if (!table) return;
+  var stored = null;
+  try { stored = localStorage.getItem('rkrk-fluege-meta-collapsed'); } catch (e) {}
+  rkrkSetMetaCollapsed(stored === null ? true : stored === '1');
 }
 </script>";
 
 	SetMissionLocation();
+	if (function_exists('rkrk_apply_m3t_catalog_paths')) {
+		rkrk_apply_m3t_catalog_paths();
+	}
 	$MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 	$FluegeFileSettings = rkrk_fluege_mission_file_settings();
 	//echo "Loc: " . $RKRKMissionSelected . " - MDB: " .$csvDocLocation . "<br>";
@@ -1083,7 +1131,7 @@ function rkrkInitFilesCollapse(){
 	}
 
 	$Pilots = rkrk_pilot_select_codes('assign', date('Y-m-d'), '', false);
-	$OptControlFlight = Array("", "Ja", "Nein");
+	$OptControlFlight = rkrk_einsatz_yn_options();
 
     //pre_R($Pilots);
 
@@ -1162,256 +1210,6 @@ function rkrkInitFilesCollapse(){
 		return $links;
 	}
 
-	function rkrk_fluege_looks_corrupt_json($text) {
-		$text = ltrim((string)$text);
-		return ($text !== '' && ($text[0] === '{' || $text[0] === '[') && strpos($text, '"0"') !== false);
-	}
-
-	function rkrk_fluege_repair_display_text($text) {
-		$text = trim((string)$text);
-		if ($text === '' || !rkrk_fluege_looks_corrupt_json($text)) {
-			return $text;
-		}
-		for ($i = 0; $i < 6; $i++) {
-			if (!rkrk_fluege_looks_corrupt_json($text)) {
-				return $text;
-			}
-			$decoded = json_decode($text, true);
-			if (!is_array($decoded)) {
-				return $text;
-			}
-			$next = '';
-			foreach ($decoded as $part) {
-				if (is_string($part) && trim($part) !== '') {
-					$next = trim($part);
-					break;
-				}
-			}
-			if ($next === '') {
-				if (preg_match('/(?:\\\\"|")0(?:\\\\"|")\s*:\s*(?:\\\\"|")([^"\\\\]+)/u', $text, $m)) {
-					return trim($m[1]);
-				}
-				return $text;
-			}
-			$text = $next;
-		}
-		return $text;
-	}
-
-	function rkrk_fluege_scalar_text($value) {
-		if (is_array($value)) {
-			foreach ($value as $part) {
-				$flat = rkrk_fluege_scalar_text($part);
-				if ($flat !== '') {
-					return $flat;
-				}
-			}
-			return '';
-		}
-		$text = trim(rkrk_fluege_repair_display_text($value));
-		if ($text === '{}' || $text === '[]') {
-			return '';
-		}
-		return $text;
-	}
-
-	function rkrk_fluege_clean_felder_text($text) {
-		$text = rkrk_fluege_scalar_text($text);
-		$text = preg_replace('/\s*\{\}\s*/u', ' ', $text);
-		$text = preg_replace('/\s+/u', ' ', $text);
-		return trim($text);
-	}
-
-	function rkrk_fluege_build_field_text($field) {
-		if (!is_array($field)) {
-			return rkrk_fluege_clean_felder_text($field);
-		}
-		$text = rkrk_fluege_scalar_text($field['Feldname'] ?? '');
-		$flurname = rkrk_fluege_scalar_text($field['Flurname'] ?? '');
-		if ($flurname !== '') {
-			$text .= ($text !== '' ? ' ' : '') . $flurname;
-		}
-		$gstk = rkrk_fluege_scalar_text($field['GrundstueckID'] ?? '');
-		if ($gstk !== '') {
-			$text .= ($text !== '' ? ' ' : '') . $gstk;
-		}
-		return trim($text);
-	}
-
-	function rkrk_fluege_format_bauer_phone($phoneRaw) {
-		$phoneRaw = trim((string)$phoneRaw);
-		if ($phoneRaw === '') {
-			return '';
-		}
-		$digits = preg_replace('/\D+/', '', $phoneRaw);
-		if (strlen($digits) < 9) {
-			return '';
-		}
-		if (strpos($digits, '41') === 0 && strlen($digits) > 2) {
-			$digits = '0' . substr($digits, 2);
-		}
-		if (strlen($digits) === 9 && $digits[0] === '7') {
-			$digits = '0' . $digits;
-		}
-		if (strlen($digits) < 10) {
-			return '';
-		}
-		$display = preg_replace('/^\+41\s*/', '0', $phoneRaw);
-		return trim($display);
-	}
-
-	function rkrk_fluege_extract_bauer_phone($line) {
-		$line = trim((string)$line);
-		if ($line === '' || stripos($line, 'T:') !== 0) {
-			return '';
-		}
-		return rkrk_fluege_format_bauer_phone(trim(substr($line, 2)));
-	}
-
-	function rkrk_fluege_landwirt_is_invalid($text) {
-		$text = trim((string)$text);
-		if ($text === '') {
-			return false;
-		}
-		if (preg_match('/^(A:|T:|M:|E:)/i', $text)) {
-			return true;
-		}
-		if (preg_match('/^A:\s*[\+]?\s*$/u', $text)) {
-			return true;
-		}
-		if (preg_match('/^[\+\s\d\(\)\/-]+$/u', $text) && !preg_match('/\d{9,}/', preg_replace('/\D+/', '', $text))) {
-			return true;
-		}
-		return false;
-	}
-
-	function rkrk_fluege_clean_landwirt_text($text) {
-		$text = rkrk_fluege_scalar_text($text);
-		if ($text === '') {
-			return '';
-		}
-		if (strpos($text, "\n") !== false || preg_match('/^(A:|T:|M:|E:)/im', $text)) {
-			return rkrk_fluege_build_bauer_text($text);
-		}
-		if (rkrk_fluege_landwirt_is_invalid($text)) {
-			return '';
-		}
-		return $text;
-	}
-
-	function rkrk_fluege_build_bauer_text($bauerRaw) {
-		$bauerRaw = rkrk_fluege_scalar_text($bauerRaw);
-		if ($bauerRaw === '') {
-			return '';
-		}
-		$lines = preg_split('/\R/u', $bauerRaw);
-		$name = '';
-		$phone = '';
-		foreach ($lines as $line) {
-			$line = trim((string)$line);
-			if ($line === '') {
-				continue;
-			}
-			if (stripos($line, 'T:') === 0) {
-				if ($phone === '') {
-					$phone = rkrk_fluege_extract_bauer_phone($line);
-				}
-				continue;
-			}
-			if (preg_match('/^(A:|M:|E:)/i', $line)) {
-				continue;
-			}
-			if ($name === '') {
-				$name = $line;
-			}
-		}
-		$name = trim($name);
-		if ($name === '' || preg_match('/^(A:|T:|M:|E:)/i', $name)) {
-			return '';
-		}
-		return $phone !== '' ? ($name . ' ' . $phone) : $name;
-	}
-
-	function rkrk_fluege_lookup_field_meta($fieldDataArray, $fid) {
-		$fid = trim((string)$fid);
-		if ($fid === '' || !is_array($fieldDataArray)) {
-			return null;
-		}
-		if (isset($fieldDataArray[$fid]) && is_array($fieldDataArray[$fid])) {
-			return $fieldDataArray[$fid];
-		}
-		$fidUp = strtoupper($fid);
-		foreach ($fieldDataArray as $key => $meta) {
-			if (strtoupper((string)$key) === $fidUp && is_array($meta)) {
-				return $meta;
-			}
-		}
-		return null;
-	}
-
-	function rkrk_fluege_sync_row_from_catalog(&$row, $fieldDataArray) {
-		global $ManualFieldLabel;
-
-		$row['Gde'] = rkrk_fluege_scalar_text($row['Gde'] ?? '');
-		$row['Landwirt'] = rkrk_fluege_clean_landwirt_text($row['Landwirt'] ?? '');
-		$row['Felder'] = rkrk_fluege_clean_felder_text($row['Felder'] ?? '');
-		$row['Kontaktnummer'] = rkrk_fluege_scalar_text($row['Kontaktnummer'] ?? '');
-		$row['Bemerkung'] = rkrk_fluege_scalar_text($row['Bemerkung'] ?? '');
-
-		$fid = trim((string)($row['Feld'] ?? ''));
-		if ($fid === '' || $fid === $ManualFieldLabel) {
-			return;
-		}
-		$meta = rkrk_fluege_lookup_field_meta($fieldDataArray, $fid);
-		if ($meta === null) {
-			return;
-		}
-		$catFelder = rkrk_fluege_clean_felder_text($meta['Text'] ?? '');
-		if ($row['Gde'] === '' || rkrk_fluege_looks_corrupt_json($row['Gde'])) {
-			$row['Gde'] = rkrk_fluege_scalar_text($meta['Gemeinde'] ?? '');
-		}
-		$catLandwirt = rkrk_fluege_clean_landwirt_text($meta['Bauer'] ?? '');
-		if ($row['Landwirt'] === '' || rkrk_fluege_looks_corrupt_json($row['Landwirt']) || rkrk_fluege_landwirt_is_invalid($row['Landwirt'])) {
-			if ($catLandwirt !== '') {
-				$row['Landwirt'] = $catLandwirt;
-			}
-		}
-		if ($catFelder !== '' && (
-			$row['Felder'] === ''
-			|| rkrk_fluege_looks_corrupt_json($row['Felder'])
-			|| strpos((string)$row['Felder'], '{}') !== false
-			|| $row['Felder'] !== $catFelder
-		)) {
-			$row['Felder'] = $catFelder;
-		}
-		if (trim((string)($row['GrundstückID'] ?? '')) === '') {
-			$row['GrundstückID'] = rkrk_fluege_scalar_text($meta['GrundstueckID'] ?? '');
-		}
-		if (trim((string)($row['JG'] ?? '')) === '') {
-			$row['JG'] = rkrk_fluege_scalar_text($meta['JG'] ?? '');
-		}
-		if (trim((string)($row['Flaeche'] ?? '')) === '') {
-			$row['Flaeche'] = rkrk_fluege_scalar_text($meta['Flaeche'] ?? '');
-		}
-		if (trim((string)($row['Warnung'] ?? '')) === '') {
-			$row['Warnung'] = rkrk_fluege_scalar_text($meta['Warnung'] ?? '');
-		}
-		if (trim((string)($row['Jaeger'] ?? '')) === '') {
-			$row['Jaeger'] = rkrk_fluege_scalar_text($meta['Jaeger'] ?? '');
-		}
-	}
-
-	function rkrk_fluege_repair_all_flight_data(&$data, $fieldDataArray) {
-		if (!is_array($data)) {
-			return;
-		}
-		foreach ($data as $flugId => $row) {
-			if (!is_array($row)) {
-				continue;
-			}
-			rkrk_fluege_sync_row_from_catalog($data[$flugId], $fieldDataArray);
-		}
-	}
 
 	function GetNewLine() {
 		global $MaxEntry, $EnableDelete, $debugmode, $debugfieldshow, $ActDate, $MinDate, $MaxDate, $PrevPilot ,$Pilots,$FeldListe,$OptControlFlight,$OptionJaeger, $ButtonHeight ,$IconLoc, $i, $FromDate,$ToDate, $MissionSelectionParameter, $EnableDeleteSet, $EnableNeuSet, $EnableConSet, $EnableCon, $MissionDroneTypes, $RKRKMissionSelected;
@@ -1466,6 +1264,7 @@ function rkrkInitFilesCollapse(){
 						}
 					}
 				}
+				echo '<td class="rkrk-col-secondary rkrk-col-meta-toggle"></td>' .chr(10);
 				echo '<td class="rkrk-col-secondary rkrk-col-meta">' .chr(10);
 				echo InputField("Flugzeit-" . $i, "", 2, "right", "", "", "readonly='readonly'");
 				echo "</td>" .chr(10);
@@ -1543,106 +1342,6 @@ function rkrkInitFilesCollapse(){
 			}
 			$i++;
 		}
-	}
-
-	function ChecklistPilotName($pilotCode) {
-		$map = array(
-			"TC" => "Thomy",
-			"CH" => "Chris",
-			"AC" => "Armon",
-			"NC" => "Nando",
-			"MF" => "Marina",
-			"LF" => "Lars",
-			"VP" => "Vesa",
-			"MB" => "Marc",
-		);
-		$code = strtoupper(trim((string)$pilotCode));
-		return $map[$code] ?? $pilotCode;
-	}
-
-	function BuildChecklistLink($params) {
-		// Template pfadfrei bestimmen (kein fester Dateisystempfad):
-		// 1) optional per URL, 2) bewährtes Standard-Template.
-		$template = trim((string)($_GET["ChecklistTemplate"] ?? ""));
-		if ($template === "") {
-			$template = "rkrk_rehkitzsuche.json";
-		}
-
-		$base = "rkrk_checklist.php";
-		$q = array(
-			"mode" => "form",
-			"file" => basename($template),
-		);
-		foreach ($params as $k => $v) {
-			if ($v === null) continue;
-			$val = trim((string)$v);
-			if ($val === "") continue;
-			$q[$k] = $val;
-		}
-		return $base . "?" . http_build_query($q);
-	}
-
-	function NormalizeChecklistFlugort($ort, $jg = '') {
-		global $RegionSettings;
-
-		$jgKey = trim((string)$jg);
-		if ($jgKey !== '' && isset($RegionSettings[$jgKey]["Text"])) {
-			$txt = trim((string)$RegionSettings[$jgKey]["Text"]);
-			// remove leading number/code prefix like "25-" / "25_" / "25 "
-			$txt = preg_replace('/^\s*\d+\s*[-_ ]\s*/u', '', $txt);
-			// normalize underscores in region names
-			$txt = str_replace('_', ' ', $txt);
-			$txt = trim(preg_replace('/\s+/u', ' ', $txt));
-			if ($txt !== '') return $txt;
-		}
-
-		$val = trim((string)$ort);
-		$val = str_replace('_', ' ', $val);
-		return trim(preg_replace('/\s+/u', ' ', $val));
-	}
-
-	function CollectPilotFlightPlanLinks($data, $pilotCode, $date, $feldkatalog, $xmlLabelFilter = null) {
-		global $FlyFileSetting;
-		$links = array();
-		foreach ($data as $dl) {
-			if (($dl['Pilot'] ?? '') !== $pilotCode) continue;
-			if (($dl['Datum'] ?? '') !== $date) continue;
-			$fieldId = trim((string)($dl['Feld'] ?? ''));
-			if ($fieldId === '' || strpos($fieldId, '-') === false) continue;
-			$jg = explode('-', $fieldId)[0];
-			if (!isset($feldkatalog[$jg][$fieldId])) continue;
-			foreach ($FlyFileSetting as $fileType) {
-				$label = (string)($fileType["XMLLabel"] ?? '');
-				if ($label !== "JasonFile" && $label !== "KMZFile") continue;
-				if ($xmlLabelFilter !== null && $label !== $xmlLabelFilter) continue;
-				$linkData = explode(",", (string)($feldkatalog[$jg][$fieldId][$label] ?? ''));
-				foreach ($linkData as $link) {
-					$link = trim((string)$link);
-					if ($link === '') continue;
-					$links[$link] = $link;
-				}
-			}
-		}
-		return array_values($links);
-	}
-
-	function BuildPilotDownloadJsonOnClick($data, $pilotCode, $date, $feldkatalog, $baseMissionPath) {
-		$links = CollectPilotFlightPlanLinks($data, $pilotCode, $date, $feldkatalog, "JasonFile");
-		$urls = array();
-		foreach ($links as $rel) {
-			$urls[] = $baseMissionPath . $rel;
-		}
-		$jsonUrls = json_encode($urls, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-		return "return StartPilotDownloads(" . $jsonUrls . ");";
-	}
-	function BuildPilotDownloadKMZOnClick($data, $pilotCode, $date, $feldkatalog, $baseMissionPath) {
-		$links = CollectPilotFlightPlanLinks($data, $pilotCode, $date, $feldkatalog, "KMZFile");
-		$urls = array();
-		foreach ($links as $rel) {
-			$urls[] = $baseMissionPath . $rel;
-		}
-		$jsonUrls = json_encode($urls, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-		return "return StartPilotDownloads(" . $jsonUrls . ");";
 	}
 
 
@@ -1882,67 +1581,67 @@ rkrk_fluege_repair_all_flight_data($data, $FieldDataArray);
 		//behandeln von Fluglisten
 		$AddFlugIDList = explode(" " ,$AddFlugIDs);
 		Foreach ($AddFlugIDList as $AddFlugID) {
-			//echo "MaxFlugID " . $MaxFlugID . "<br>";
-			//echo "Flugbuffer: " . $FluzeitStartUndLandung . " - " . $Feldkatalog[$JG][$AddFlugID]["Flugzeit"] . "<br>";
-			$JG=substr($AddFlugID,0,strpos($AddFlugID,"-"));
-			// add new line based on 
-			// https://tchr-frog.synology.me:5682/rkropen/test/rkrk_fluege.php?add=Y&AddFlugID=21-001&AddFlugToDate=2022-05-03&MDB=M3T
-			$MaxFlugID++;
-			$FlugID = "FID" .sprintf("%06d", $MaxFlugID);
-			$data[$FlugID]["FlugID"] = $FlugID;
-			$data[$FlugID]["Datum"] = $AddFlugToDate;
-			$data[$FlugID]["Zeit"] = "";
-			$data[$FlugID]["Pilot"] = $PilotDataArray[$JG]['Pilot'];
-			$data[$FlugID]["Feld"] = $AddFlugID;
-			$data[$FlugID]["Kontrollflug"] = $_POST["Kontrollflug-" . $i];
-			$data[$FlugID]["Geflogen"] = "";
-			$data[$FlugID]["Fund"] = "";
-			$data[$FlugID]["UAV#"] = "";
-			$data[$FlugID]["Felder"] = rkrk_fluege_build_field_text($Feldkatalog[$JG][$AddFlugID] ?? array());
-			$data[$FlugID]["Jaeger"] = $Feldkatalog[$JG][$AddFlugID]["Jaeger"];
-			$data[$FlugID]["Kontaktnummer"] = $AdressDataArray[$Feldkatalog[$JG][$AddFlugID]["Jaeger"]]['Text'];
-			$data[$FlugID]["Landwirt"] = $FieldDataArray[$AddFlugID]["Bauer"];
-			$data[$FlugID]["Bemerkung"] = "";
-			//if ($dataline['Flugzeit']>$FlugzeitTreshold) {
-				// Zeit in Sekunden
-			//	$data[$FlugID]["Flugzeit"] = $Feldkatalog[$JG][$AddFlugID]["Flugzeit"];
-			//} else {
-			// Zeit in Minuten
-			//echo "Flugzeit: " . $JG . " / " .$AddFlugID . " / " .$FluzeitStartUndLandung+$Feldkatalog[$JG][$AddFlugID]["Flugzeit"] . "<br>";
-			$data[$FlugID]["Flugzeit"] = $FluzeitStartUndLandung+$Feldkatalog[$JG][$AddFlugID]["Flugzeit"];
-			//}
-			$data[$FlugID]["AnzFelder"] = 1;
-			$data[$FlugID]["#Funde"] = "";
-			$data[$FlugID]["Einsatztag"] = $AddFlugToDate;
-			$data[$FlugID]["GrundstückID"] = $Feldkatalog[$JG][$AddFlugID]["GrundstueckID"];
-			$data[$FlugID]["Gde"] = $Feldkatalog[$JG][$AddFlugID]["Gemeinde"];
-			$data[$FlugID]["JG"] = $Feldkatalog[$JG][$AddFlugID]["JG"];
-			$data[$FlugID]["Warnung"] = $Feldkatalog[$JG][$AddFlugID]["Warnung"];
-			$data[$FlugID]["Reg"] = $RegDataArray[$Feldkatalog[$JG][$AddFlugID]["JG"]]['RegUp'];
-			$data[$FlugID]["Flaeche"] = $Feldkatalog[$JG][$AddFlugID]["Flaeche"];
-			$data[$FlugID]["Status"] = "locked";
-			//echo "added Flug " . $AddFlugID . " to date " . $AddFlugToDate . "<br>";
-			//pre_r($data[$FlugID]);
+			rkrk_einsatz_append_catalog_flight($data, $AddFlugID, $AddFlugToDate);
 		}
 	}
 
 /// POST
 	//echo "SaveLine: " . $SaveLine . "<br>";
+	$hasPostFlightRows = false;
+	$postedFlightIndexMax = 0;
+	if (($_SERVER["REQUEST_METHOD"] ?? "") == "POST") {
+		foreach (array_keys($_POST) as $postKey) {
+			if (preg_match('/^(?:FlugID|Feld|UAV#|Bemerkung)-(\d+)$/', (string)$postKey, $postIndexMatch)) {
+				$hasPostFlightRows = true;
+				$postedIndex = (int)$postIndexMatch[1];
+				if ($postedIndex > $postedFlightIndexMax) {
+					$postedFlightIndexMax = $postedIndex;
+				}
+			}
+		}
+	}
+	if ($dodelete && !$hasPostFlightRows) {
+		$dodelete = false;
+		$dosafe = false;
+	}
 	if (
 		($_SERVER["REQUEST_METHOD"] == "POST")
-		 and $dosafe) {
+		 and $dosafe
+		 and $hasPostFlightRows
+		 and isset($_POST["NumEntries"])) {
 					
 		//echo "MaxFlugID: " . $MaxFlugID . "<br>";
-		for ($i = 1; $i <= $_POST["NumEntries"]; $i++) {
+		$numEntries = (int)$_POST["NumEntries"];
+		if ($postedFlightIndexMax > $numEntries) {
+			$numEntries = $postedFlightIndexMax;
+		}
+		for ($i = 1; $i <= $numEntries; $i++) {
 		//echo $i . " " . $_POST["Initialen-" . $i] . " -  " . $_POST["FlugID-" . $i] . "<br>";
 		//Initialen,JG,Jagdgebiet,Name,Kontaktnummer,P Telefon,Mail,Adresse,RKRS,Bemerkung
+			$postFlugKey = "FlugID-" . $i;
+			$postFeldKey = "Feld-" . $i;
+			$postUavKey = "UAV#-" . $i;
+			$postBemKey = "Bemerkung-" . $i;
 			if (
-				($_POST["FlugID-" . $i]!="") &&
-				($_POST["Feld-" . $i]!="")
+				!isset($_POST[$postFlugKey])
+				&& !isset($_POST[$postFeldKey])
+				&& !isset($_POST[$postUavKey])
+				&& !isset($_POST[$postBemKey])
+			) {
+				// Zeilen ausserhalb des Datumsfensters/der Seite fehlen im Formular.
+				// Luecke ueberspringen, sonst werden alle folgenden Aenderungen verworfen.
+				continue;
+			}
+			$postFlugId = $_POST[$postFlugKey] ?? "";
+			$postFeld = $_POST[$postFeldKey] ?? "";
+			$postUav = $_POST[$postUavKey] ?? "";
+			$postBem = $_POST[$postBemKey] ?? "";
+			if (
+				($postFlugId != "") &&
+				($postFeld != "")
 				) {
-				$FlugID = $_POST["FlugID-" . $i];
+				$FlugID = $postFlugId;
 			} else {
-				"FlugID: " . $_POST["FlugID-" . $i] . "Feld-". $i . ": " . $_POST["Feld-" . $i] . "UAV#-". $i . ": " . $_POST["UAV#-" . $i]. "Bemerkung-". $i . ": " . $_POST["Bemerkung-" . $i]. "<br>";
 				$MaxFlugID++;
 				$FlugID = "FID".sprintf("%06d", $MaxFlugID);
 				//echo "NewFlugID: " . $FlugID . "<br>";
@@ -1950,9 +1649,9 @@ rkrk_fluege_repair_all_flight_data($data, $FieldDataArray);
 			//echo "FlugID: " . $FlugID . " Saveline " . $SaveLine." line " . $i."<br>";
 			if (
 				 (
-				   ($_POST["Feld-" . $i] <>"") or 
-			       ($_POST["UAV#-" . $i] <>"") or 
-				   ($_POST["Bemerkung-" . $i] <>"")
+				   ($postFeld <> "") or 
+			       ($postUav <> "") or 
+				   ($postBem <> "")
 				  ) and (
 				   ($SaveLine=="")
 				   or (strpos(" ".$SaveLine, "FID") and ($SaveLine==$FlugID))
@@ -1966,12 +1665,16 @@ rkrk_fluege_repair_all_flight_data($data, $FieldDataArray);
 				$data[$FlugID]["Datum"] = $_POST["Datum-" . $i];
 				$data[$FlugID]["Zeit"] = $_POST["Zeit-" . $i];
 				$data[$FlugID]["Pilot"] = $_POST["Pilot-" . $i];
-				$data[$FlugID]["Feld"] = str_replace($searchSD, $replaceSD, $_POST["Feld-" . $i]);
+				$data[$FlugID]["Feld"] = str_replace($searchSD, $replaceSD, $postFeld);
 				//$data[$FlugID]["Feld"] = cleanString(str_replace($searchSDZ, $replaceSDZ, $_POST["Feld-" . $i]));
-				$data[$FlugID]["Kontrollflug"] = $_POST["Kontrollflug-" . $i];
-				$data[$FlugID]["Geflogen"] = $_POST["Geflogen-" . $i];
-				$data[$FlugID]["Fund"] = $_POST["Fund-" . $i];
-				$data[$FlugID]["UAV#"] = $_POST["UAV#-" . $i];
+				rkrk_einsatz_apply_result_fields(
+					$data[$FlugID],
+					$_POST["Geflogen-" . $i] ?? "",
+					$_POST["Kontrollflug-" . $i] ?? "",
+					$_POST["Fund-" . $i] ?? "",
+					$postBem
+				);
+				$data[$FlugID]["UAV#"] = $postUav;
 				$data[$FlugID]["Felder"] = rkrk_fluege_clean_felder_text($_POST["Felder-" . $i]);
 				//if ($_POST["Jaeger-" . $i]!="") 
 					$data[$FlugID]["Jaeger"] = $_POST["Jaeger-" . $i];
@@ -1988,8 +1691,7 @@ rkrk_fluege_repair_all_flight_data($data, $FieldDataArray);
 					$data[$FlugID]["Landwirt"] = rkrk_fluege_clean_landwirt_text(cleanString(str_replace($searchSD, $replaceSD, $_POST["Landwirt-" . $i])));
 				//else
 				//	$data[$FlugID]["Landwirt"] = $Feldkatalog[$_POST["JG-" . $i]][$_POST["Feld-" . $i]]["Bauer"];
-				//$data[$FlugID]["Bemerkung"] = str_replace($searchSDZ, $replaceSDZ, $_POST["Bemerkung-" . $i]);
-				$data[$FlugID]["Bemerkung"] = cleanString(str_replace($searchSD, $replaceSD, $_POST["Bemerkung-" . $i]));
+				// Bemerkung, Geflogen, Kontrollflug und Fund setzt rkrk_einsatz_apply_result_fields.
 				//if ($_POST["Flugzeit-" . $i]!="")
 					//echo "Post Flugzeit: " . $i . "/ " . round($_POST["Flugzeit-" . $i],1) . "<br>";
 					$data[$FlugID]["Flugzeit"] = round($_POST["Flugzeit-" . $i],1);
@@ -2081,16 +1783,16 @@ if (($ConFile!="") and ($ConTo!="")) {
 
 		$filecontent = "";
 		//$filecontent = chr(34) .'Initialen,JG,Jagdgebiet,Name,Kontaktnummer,P Telefon,Mail,Adresse,RKRS,Bemerkung' . chr(34) . chr(13) . chr(10);
-		$filecontent = str_replace(";",$csv_deliminator ,'FlugID;Datum;Zeit;Pilot;Feld;Kontrollflug;Geflogen;Fund;UAV#;Felder;Jaeger;Kontaktnummer;Landwirt;Bemerkung;Flugzeit;AnzFelder;#Funde;Einsatztag;GrundstückID;Gde;JG;Warnung;Reg;Flaeche;Status') . chr(13) . chr(10);
+		$filecontent = implode($csv_deliminator, rkrk_einsatz_flight_csv_header()) . chr(13) . chr(10);
 		foreach ($data as $entry) {
 		//	echo $i . " " . $_POST["Initialen-" . $i];
 		//Initialen,JG,Jagdgebiet,Name,Kontaktnummer,P Telefon,Mail,Adresse,RKRS,Bemerkung
 	
-			IF ($entry[FlugID]!="") {
+			IF (($entry["FlugID"] ?? "") != "") {
 			
 				//$rowcontent = chr(34);
 				$rowcontent = "";
-				$FlugID = $entry[FlugID]; 
+				$FlugID = $entry["FlugID"]; 
 				$rowcontent .= $data[$FlugID]["FlugID"] . $csv_deliminator;
 				$rowcontent .= $data[$FlugID]["Datum"] . $csv_deliminator;
 				$rowcontent .= $data[$FlugID]["Zeit"] . $csv_deliminator;
@@ -2113,7 +1815,18 @@ if (($ConFile!="") and ($ConTo!="")) {
 				$rowcontent .= $data[$FlugID]["Gde"] . $csv_deliminator;
 				$rowcontent .= $data[$FlugID]["JG"] . $csv_deliminator;
 				// adding history data to the log
-				$rowcontent .= $Feldkatalog[$data[$FlugID]["JG"]][$data[$FlugID]["Feld"]]["Warnung"] . $csv_deliminator;
+				$warnungOut = $data[$FlugID]["Warnung"] ?? "";
+				$warnJg = $data[$FlugID]["JG"] ?? "";
+				$warnFeld = $data[$FlugID]["Feld"] ?? "";
+				if (
+					is_string($warnJg) && $warnJg !== ""
+					&& is_string($warnFeld) && $warnFeld !== ""
+					&& isset($Feldkatalog[$warnJg]) && is_array($Feldkatalog[$warnJg])
+					&& isset($Feldkatalog[$warnJg][$warnFeld]) && is_array($Feldkatalog[$warnJg][$warnFeld])
+				) {
+					$warnungOut = $Feldkatalog[$warnJg][$warnFeld]["Warnung"] ?? $warnungOut;
+				}
+				$rowcontent .= $warnungOut . $csv_deliminator;
 				//$rowcontent .= $data[$FlugID]["Warnung"] . $csv_deliminator;
 				$rowcontent .= $data[$FlugID]["Reg"] . $csv_deliminator;
 				$rowcontent .= $data[$FlugID]["Flaeche"]. $csv_deliminator;;
@@ -2451,7 +2164,7 @@ echo "</div>";
 	echo "<br>" .chr(10);
 	//form to change setting
 echo "<div class='rkrk-flight-table-wrap'>" . chr(10);
-echo "<table class='rkrk-flight-main'>" .chr(10);
+echo "<table class='rkrk-flight-main rkrk-files-collapsed rkrk-meta-collapsed'>" .chr(10);
 	echo "<tr >" .chr(10);
 	echo "<th class='rkrk-flight-summary-th'></th>" .chr(10);
 	if ($EnableDelete) {
@@ -2492,6 +2205,7 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 		}
 	}
 
+	echo "<th class='rkrk-col-meta-toggle'><button type='button' class='rkrk-meta-toggle' title='Flugzeit, Fläche, Jagdgebiet und Gemeinde ein- oder ausblenden' aria-expanded='false' aria-label='Zusatzspalten'>&#9662;</button></th>" .chr(10);
 	echo "<th class='rkrk-col-meta'>FZeit min</th>" .chr(10);
 	//Manuelle Flug-Felder
 	echo "<th class='rkrk-col-meta'><span id='L_Flaeche'>Fläche</span></th>" .chr(10);
@@ -2686,7 +2400,7 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 				echo '<td class="rkrk-col-action">' .chr(10);
 				// delete
 				if (GetAccess("DeleteData")) {
-					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?DelFlugID=" . $dataline["FlugID"] . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "&" . $EnableConSet . "&" .$EnableNeuSet ."&DBW=" . $_GET["DBW"]. "' height='" . $ButtonHeightSmall . "' title='Flug " . $dataline["FlugID"] . " löschen'>" .chr(10);
+					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?DelFlugID=" . $dataline["FlugID"] . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "&" . $EnableConSet . "&" .$EnableNeuSet ."&DBW=" . ($_GET["DBW"] ?? "") . "' height='" . $ButtonHeightSmall . "' title='Flug " . $dataline["FlugID"] . " löschen'>" .chr(10);
 				} else {
 					echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?Line=" . $i . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "&" . $EnableConSet . "&" .$EnableNeuSet . "' height='" . $ButtonHeightSmall . "'  title='Linie " . $i . " löschen'>" .chr(10);
 				}
@@ -2711,7 +2425,19 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 			echo '</td>' .chr(10);
 			echo '<td class="rkrk-col-secondary">' .chr(10);
 			//Flugwarnung Nacht-/Sperrzonen
-				$Warning = $Feldkatalog[explode("-",$dataline['Feld'])[0]][$dataline['Feld']]["Warnung"];
+				$warnFeldId = (string)($dataline['Feld'] ?? '');
+				$warnJgId = explode('-', $warnFeldId)[0] ?? '';
+				$Warning = '';
+				if (
+					$warnJgId !== '' && $warnFeldId !== ''
+					&& isset($Feldkatalog[$warnJgId]) && is_array($Feldkatalog[$warnJgId])
+					&& isset($Feldkatalog[$warnJgId][$warnFeldId]) && is_array($Feldkatalog[$warnJgId][$warnFeldId])
+				) {
+					$Warning = (string)($Feldkatalog[$warnJgId][$warnFeldId]['Warnung'] ?? '');
+				}
+				if ($Warning === '') {
+					$Warning = (string)($dataline['Warnung'] ?? '');
+				}
 				//echo $Warning;
 				$CheckWarnings = Array("NGT1", "NGT2", "STP");
 				foreach ($CheckWarnings as $CheckWarning) {
@@ -2740,7 +2466,12 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 			echo "<td class='rkrk-col-secondary rkrk-col-files' data-summary-action='1'>" .chr(10);
 			if (GetAccess("GoogleMapLocation")){
 				//Zeig Parkplatz an falls definiert, ansonsten den Startpunkt)
-				$gs = $Feldkatalog[explode("-",$dataline['Feld'])[0]][$dataline['Feld']]["Grundstueckdaten"] ?? array();
+				$gs = array();
+				$gsFeld = (string)($dataline['Feld'] ?? '');
+				$gsJg = ($gsFeld !== '' && strpos($gsFeld, '-') !== false) ? explode('-', $gsFeld, 2)[0] : '';
+				if ($gsJg !== '' && isset($Feldkatalog[$gsJg][$gsFeld]['Grundstueckdaten']) && is_array($Feldkatalog[$gsJg][$gsFeld]['Grundstueckdaten'])) {
+					$gs = $Feldkatalog[$gsJg][$gsFeld]['Grundstueckdaten'];
+				}
 				if (($gs["Parkplatz"] ?? '') != "") {
 					$Location = explode("," ,$gs["Parkplatz"]);
 				} else {
@@ -2769,7 +2500,16 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 						if (!file_exists($iconPath)) {
 							$iconPath = $IconLoc . "/" . $iconBase . "xx.png";
 						}
-						echo "<a href='" . htmlspecialchars($RKRKLocalLoactionMissionFiles . $Link, ENT_QUOTES, 'UTF-8') . "' download><img src='" . htmlspecialchars($iconPath, ENT_QUOTES, 'UTF-8') . "' height='" . (int)$ButtonHeight . "' title='" . htmlspecialchars($FileType["Text"] . " " . $dataline['Feld'] . " - " . $Link, ENT_QUOTES, 'UTF-8') . "' ></a> <wbr>" . chr(10);
+						$fileHref = $RKRKLocalLoactionMissionFiles . $Link;
+						$convHref = '';
+						if (($xmlLabel === 'JasonFile' || $xmlLabel === 'KMZFile') && function_exists('rkrk_file_convert_download_href')) {
+							$convHref = rkrk_file_convert_download_href($Link);
+							if ($convHref !== '') {
+								$fileHref = $convHref;
+							}
+						}
+						$kmlHref = ($xmlLabel === 'KMZFile' && function_exists('rkrk_debug_kml_href')) ? rkrk_debug_kml_href($Link) : '';
+						echo "<a href='" . htmlspecialchars($fileHref, ENT_QUOTES, 'UTF-8') . "'" . ($kmlHref !== '' ? " data-kml='" . htmlspecialchars($kmlHref, ENT_QUOTES, 'UTF-8') . "'" : "") . ($convHref === '' ? " download" : "") . "><img src='" . htmlspecialchars($iconPath, ENT_QUOTES, 'UTF-8') . "' height='" . (int)$ButtonHeight . "' title='" . htmlspecialchars($FileType["Text"] . " " . $dataline['Feld'] . " - " . $Link, ENT_QUOTES, 'UTF-8') . "' ></a> <wbr>" . chr(10);
 						if ($xmlLabel === "JasonFile") {
 							$JsonFileList[] = $Link;
 						}
@@ -2860,6 +2600,7 @@ echo "<table class='rkrk-flight-main'>" .chr(10);
 				$ManualFieldshow = "hidden";
 			    $manuelaction = "readonly='readonly'";
 			}	
+			echo '<td class="rkrk-col-secondary rkrk-col-meta-toggle"></td>' .chr(10);
 			echo '<td class="rkrk-col-secondary rkrk-col-meta">' .chr(10);
 			echo InputField("Flugzeit-" . $i, round($dataline['Flugzeit'],1), 2, "right", "", "", $manuelaction);
 

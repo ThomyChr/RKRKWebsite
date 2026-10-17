@@ -36,7 +36,7 @@ $brandLabel = htmlspecialchars((string)($mapllBrand['label'] ?? 'RKRK'), ENT_QUO
     <div class="hero">
       <h1 class="rkr-brand-header title"><?php echo mapll_favicon_mark_html($mapllBrand); ?>Geführte Startseite</h1>
       <p class="muted">Systematische Rehkitz-Feldanalyse mit XML-Basisdaten und Vergleich manueller vs. algorithmischer Flugpfade.</p>
-      <?php echo mapll_nav_toplinks(['analyse', 'editor', 'requirements', 'steps', 'mapping', 'layers', 'colors', 'api_fields', 'api_status']); ?>
+      <?php echo mapll_nav_toplinks(['analyse', 'editor', 'requirements', 'spec', 'steps', 'mapping', 'layers', 'colors', 'api_fields', 'api_status']); ?>
     </div>
 
     <div class="grid">

@@ -72,14 +72,14 @@ window.RKRK_HELP_CATALOG = {
         { icon: "draw", name: "Zeichnen", text: "Einschalten, danach ein Klick setzt die Südwest-Ecke." },
         { icon: "stop", name: "Stop", text: "Zeichnen aus — Karte wieder verschieben und zoomen." },
         { icon: "fix", name: "Fixieren", text: "Bearbeitung abschliessen. Danach Badge «fix»; Winkel und Rahmen sind nicht mehr aktiv." },
-        { icon: "color", name: "Kachelfarbe", text: "Doppelklick oder Rechtsklick auf die Beschriftung: grün → rot → orange → gelb → grau → durchsichtig." },
+        { icon: "color", name: "Kachelfarbe", text: "Doppelklick auf die Kachelschrift (z. B. B2): grün → rot → orange → gelb → grau → durchsichtig. Rechtsklick auf die Schrift öffnet das Farbmenü. Geht auch am fixierten Raster und in der geteilten Ansicht. Die Farbe bleibt stehen." },
         { icon: "fills", name: "Resultatflächen", text: "Häkchen «Resultatflächen anzeigen» oder Farb-Icon in der Objektliste blendet die Kachelfarben ein/aus. Die Farben bleiben gespeichert." },
         { icon: "ruler", name: "Lineal / Winkel", text: "Nur während der Bearbeitung: Rand greifen oder Lineal drehen. Am fixierten Raster ist der Winkel ausgeblendet." }
       ],
       steps: [
         { icon: "draw", text: "Zeichnen starten." },
         { icon: "grid", text: "Klick auf die Karte = Südwest-Ecke. Ausserhalb einer Zelle erneut klicken zum Neu-Setzen." },
-        { icon: "color", text: "Kacheln einfärben per Doppelklick oder Rechtsklick-Menü." },
+        { icon: "color", text: "Doppelklick auf die Kachelschrift färbt diese Kachel. Rechtsklick öffnet Grün, Rot, Orange, Gelb, Grau oder Durchsichtig." },
         { icon: "fix", text: "Fixieren, wenn Abstand und Drehung stimmen." }
       ]
     },
@@ -264,9 +264,10 @@ window.RKRK_HELP_CATALOG = {
       page: "map",
       title: "Sync-Gerät (Zuschauen)",
       icon: "show",
-      use: "Sie sehen die Live-Karte. Zeichnen ist aus. Oben rechts: Hilfe (?) ganz aussen, daneben «Folge dem Master».",
+      use: "Sie sehen die Live-Karte. Zeichnen ist aus. Oben rechts: Hilfe (?) ganz aussen, daneben «Folge dem Master». Kachelfarben ändern Sie direkt auf der Karte.",
       tools: [
         { icon: "show", name: "Folge dem Master ◎", text: "Weiss: folgt dem Ausschnitt. Klick → eigener Zoom (rot ●). Nochmal → wieder folgen." },
+        { icon: "color", name: "Kachelfarbe", text: "Doppelklick auf die Kachelschrift wechselt die Farbe. Rechtsklick öffnet Grün, Rot, Orange, Gelb, Grau oder Durchsichtig. Die Farbe bleibt auf diesem Gerät stehen." },
         { icon: "live", name: "Hilfe ?", text: "Immer ganz rechts oben — erklärt die aktuelle Sicht." },
         { icon: "map", name: "Karte", text: "Verschieben/zoomen löst das Folgen (rot), bis Sie wieder folgen." }
       ],
@@ -326,9 +327,13 @@ window.RKRK_HELP_CATALOG = {
       views: [],
       roles: ["editor", "kos"],
       icon: "draw",
-      title: "Seitenleiste ein-/ausklappen",
-      what: "Schmaler Knopf am Rand der linken Leiste (<< / >>). Breite per Ziehen am Rand.",
-      tools: [{ icon: "draw", name: "<< / >>", text: "Leiste verstecken oder wieder einblenden." }]
+      title: "Seitenleiste und Objektfenster",
+      what: "Schmaler Knopf am Rand der linken Leiste (<< / >>) klappt sie ein. + und − machen das Objektfenster breiter oder schmaler. Der grüne Rand lässt sich ziehen.",
+      tools: [
+        { icon: "draw", name: "<< / >>", text: "Leiste verstecken oder wieder einblenden." },
+        { icon: "draw", name: "+ / −", text: "Objektfenster in Schritten breiter oder schmaler." },
+        { icon: "ruler", name: "Grüner Rand", text: "Ziehen stellt die Breite stufenlos ein." }
+      ]
     },
     {
       id: "map.search",
@@ -350,7 +355,7 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "fix",
       title: "Fixieren, verwerfen, Undo",
-      what: "Fixieren schliesst die Bearbeitung ab: das Objekt steht danach fest in der Liste (Badge «fix») und ändert sich nicht mehr versehentlich. Nur ein Objekt gleichzeitig in Bearbeitung. Ein fixiertes Objekt öffnen Sie wieder mit Bearbeiten.",
+      what: "Fixieren schliesst die Bearbeitung ab: das Objekt steht danach fest in der Liste (Badge «fix») und ändert sich nicht mehr versehentlich. Nach dem Laden oder Neuladen ist kein Objekt vorausgewählt. Nur ein Objekt gleichzeitig in Bearbeitung. Ein fixiertes Objekt öffnen Sie wieder mit Bearbeiten oder per Klick auf der Karte.",
       tools: [
         { icon: "fix", name: "Fixieren", text: "Bearbeitung beenden und Objekt festschreiben. Doppelklick auf der Karte kann dasselbe tun." },
         { icon: "discard", name: "Verwerfen", text: "Letzte Änderungen am aktuellen Objekt rückgängig." },
@@ -397,10 +402,10 @@ window.RKRK_HELP_CATALOG = {
       roles: ["editor", "kos"],
       icon: "draw",
       title: "Kontextmenü auf der Karte",
-      what: "Rechtsklick auf ein Objekt: Ebene nach vorne/hinten, bearbeiten, löschen, bei Raster Farben.",
+      what: "Rechtsklick auf ein Objekt: Ebene nach vorne/hinten, bearbeiten, löschen. Am Raster: Rechtsklick auf die Kachelschrift öffnet die Kachelfarbe.",
       tools: [
         { icon: "draw", name: "Ebene vor/zurück", text: "Zeichnungsreihenfolge ändern." },
-        { icon: "color", name: "Rasterfarbe", text: "Am Raster auch Doppelklick auf die Kachel-Beschriftung." }
+        { icon: "color", name: "Kachelfarbe", text: "Doppelklick auf die Schrift wechselt die Farbe. Rechtsklick wählt Grün, Rot, Orange, Gelb, Grau oder Durchsichtig. Auch in der geteilten Ansicht, und die Farbe bleibt stehen." }
       ]
     },
     {
@@ -417,13 +422,13 @@ window.RKRK_HELP_CATALOG = {
       id: "map.grid_color",
       pages: ["map"],
       views: ["map.grid", "map.draw_grid", "map.overview"],
-      roles: ["editor", "kos"],
+      roles: ["editor", "kos", "viewer"],
       icon: "color",
       title: "Rasterkacheln einfärben",
-      what: "Farbe bleibt nach Fixieren und im geo.admin-Export erhalten. Im Raster-Formular oder in der Objektliste können die Resultatflächen ein- und ausgeblendet werden; die Farben bleiben gespeichert.",
+      what: "Doppelklick auf die Kachelschrift färbt genau diese Kachel. Rechtsklick auf die Schrift öffnet das Farbmenü. Das geht am fixierten Raster, ohne es zuerst zu bearbeiten, und auch in der geteilten Ansicht. Die gesetzte Farbe bleibt stehen, auch wenn die Karte nachlädt. Resultatflächen können ein- und ausgeblendet werden; die Farben bleiben gespeichert und gehen in den geo.admin-Export.",
       tools: [
-        { icon: "color", name: "Doppelklick", text: "grün → rot → orange → gelb → grau → durchsichtig." },
-        { icon: "color", name: "Rechtsklick", text: "Farbmenü direkt wählen." },
+        { icon: "color", name: "Doppelklick auf die Schrift", text: "grün → rot → orange → gelb → grau → durchsichtig. Beispiel: Doppelklick auf «B2»." },
+        { icon: "color", name: "Rechtsklick", text: "Menü: Grün, Rot, Orange, Gelb, Grau oder Durchsichtig. Auch in der geteilten Kartenansicht." },
         { icon: "fills", name: "Resultatflächen", text: "Häkchen beim Raster oder Farb-Icon in der Objektliste blendet die Kachelfarben ein/aus." }
       ]
     },
@@ -584,9 +589,10 @@ window.RKRK_HELP_CATALOG = {
       roles: ["viewer"],
       icon: "show",
       title: "Zuschauen ohne Menü",
-      what: "Keine Seitenleiste. Karte vollflächig. Hilfe ? ganz rechts, Follow links daneben.",
+      what: "Keine Seitenleiste. Karte vollflächig. Hilfe ? ganz rechts, Follow links daneben. Kachelfarbe: Doppelklick auf die Schrift, Rechtsklick für das Farbmenü. Die Farbe bleibt stehen.",
       tools: [
         { icon: "show", name: "Folge dem Master", text: "Ausschnitt der Leitung folgen oder eigenen Zoom." },
+        { icon: "color", name: "Kachelfarbe", text: "Doppelklick auf die Kachelschrift oder Rechtsklick: Grün, Rot, Orange, Gelb, Grau, Durchsichtig." },
         { icon: "live", name: "Nachrichten", text: "Eingehende Broadcast-Texte bestätigen." }
       ]
     },

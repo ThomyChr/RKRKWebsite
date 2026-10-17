@@ -5,13 +5,25 @@
    WITH CORRECT AUTO-DETECTED UPLOAD URL
    =========================================================================== */
 
-$uploadURL = dirname($_SERVER["SCRIPT_NAME"]) . "/scripts/upload_snapshot.php";
-$uploadURL = str_replace("\\", "/", $uploadURL); // Windows fix
+$snapScript = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? ''));
+$snapDir = rtrim(dirname($snapScript), '/');
+if (strtolower(basename($snapDir)) === 'fe') {
+    $snapDir = rtrim(dirname($snapDir), '/');
+}
+if ($snapDir === '' || $snapDir === '.' || $snapDir === '/') {
+    $snapshotMap = 'rkrk_map.php';
+    $snapshotCall = 'rkrk_edit_felddaten.php';
+    $uploadURL = 'scripts/upload_snapshot.php';
+} else {
+    $snapshotMap = $snapDir . '/rkrk_map.php';
+    $snapshotCall = $snapDir . '/rkrk_edit_felddaten.php';
+    $uploadURL = $snapDir . '/scripts/upload_snapshot.php';
+}
 ?>
 
 <script>
-const BASE_URL = "rkrk_map.php";
-const CALL_URL = "rkrk_edit_felddaten.php";
+const BASE_URL = "<?php echo htmlspecialchars($snapshotMap, ENT_QUOTES, 'UTF-8'); ?>";
+const CALL_URL = "<?php echo htmlspecialchars($snapshotCall, ENT_QUOTES, 'UTF-8'); ?>";
 
 // AUTO-INJECTED ABSOLUTE UPLOAD URL FROM PHP
 const SNAPSHOT_UPLOAD_URL = "<?php echo $uploadURL; ?>";
@@ -20,16 +32,10 @@ const SNAPSHOT_UPLOAD_URL = "<?php echo $uploadURL; ?>";
    URL Builder
 --------------------------------------------------------- */
 function buildURL(ffilter, mode) {
-    const common =
-        "&Reg=ALL&Strt=on&Area=on&Cntr=off&Label=off&GDE=off&JGG=off&Poi=off&EX=NO&KA=M&MAP=1&MenuOn=off";
-
-    if (mode === "suchfeld") {
-        return BASE_URL + "?FFilter=" + encodeURIComponent(ffilter)
-            + common + "&Pfad=off&HSP=off&OVR=on";
-    } else {
-        return BASE_URL + "?FFilter=" + encodeURIComponent(ffilter)
-            + common + "&Pfad=on&HSP=on&FLP=on";
-    }
+    const such = "Reg=ALL&Strt=on&Cntr=off&Area=on&Pfad=off&GDE=off&JGG=off&Poi=off&HSP=on&OVR=on&Label=off&EX=NO&KA=M&MAP=1&Zoom=0.6";
+    const flug = "Reg=ALL&Strt=on&Cntr=off&Area=on&Pfad=on&GDE=off&JGG=off&Poi=off&HSP=on&FLP=on&Label=off&EX=NO&KA=M&MAP=1&Zoom=0.8";
+    const query = (mode === "suchfeld") ? such : flug;
+    return BASE_URL + "?FFilter=" + encodeURIComponent(ffilter) + "&" + query;
 
 /*
     const common =

@@ -29,6 +29,7 @@
 	$BBoxZoom = '';
 
 	$MenuOn = GetURLtoFalseTrue('MenuOn', 'MenuOn', '', true);
+	$TopMenuOn = GetURLtoFalseTrue('Top', 'Top', '', true);
 $isEmbeddedMap = isset($_GET['Embed']) && (trim((string)$_GET['Embed']) === '1' || strtolower(trim((string)$_GET['Embed'])) === 'on');
 if ($isEmbeddedMap) {
 	$MenuOn = false;
@@ -38,6 +39,25 @@ if ($isEmbeddedMap) {
 GrantAccess();
 
 SetMissionLocation();
+	if (function_exists('rkrk_mission_location_dir_exists')
+		&& isset($MissionDroneTypes[$RKRKMissionSelected]['MissionLocation'])
+		&& !rkrk_mission_location_dir_exists($MissionDroneTypes[$RKRKMissionSelected]['MissionLocation'])
+	) {
+		$RKRKMissionSelected = '3T';
+		if (isset($SessNme_MissionDBSetting)) {
+			$storedMission = $_SESSION[$SessNme_MissionDBSetting] ?? null;
+			if (!isset($_SESSION[$SessNme_MissionDBSetting]) || is_string($storedMission)) {
+				$_SESSION[$SessNme_MissionDBSetting] = '3T';
+			}
+		}
+		if (isset($_GET['MDB'])) {
+			$_GET['MDB'] = '3T';
+		}
+		if (isset($SecParamters) && is_array($SecParamters)) {
+			$SecParamters['MDB'] = '3T';
+		}
+		SetMissionLocation();
+	}
 	$MissionSelectionParameter = '&MDB=' . $RKRKMissionSelected;
 
 	$EXselect = GetURLwDefault_Lower('EX', 'EX', 'EXselect', 'no');
@@ -272,8 +292,33 @@ if ($selectAllRegions) {
 }
 
 	$MissionSelectionParameter = '&MDB=' . $RKRKMissionSelected;
-	$ParameterSet = 'Reg=' . $RegionSelected . $MapParameter . '&KA=' . $MapType . '&Zoom=' . $SelectedZoom . '&FFilter=' . $FFilter . '&SFilter=' . $Suche . $SpecialOptions . $MissionSelectionParameter . $GuestAccessParamter;
+	if (!function_exists('ref_layers_alert_kml_catalog')) {
+		include_once(__DIR__ . '/scripts/rkrk_ref_layers_lib.php');
+	}
+	$AlertKmlSelected = array();
+	if (function_exists('ref_layers_alert_kml_selection')) {
+		$AlertKmlSelected = ref_layers_alert_kml_selection(GetURLwDefault('AlertKml', 'AlertKml', '', ''));
+	}
+	$AlertKmlParameter = '';
+	if ($AlertKmlSelected !== array()) {
+		$AlertKmlParameter = '&AlertKml=' . implode(',', $AlertKmlSelected);
+	}
+	$alertDateRaw = (string)GetURLwDefault('Stichtag', 'Stichtag', '', '');
+	if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $alertDateRaw)) {
+		$alertDateRaw = (string)GetURLwDefault('AlertDate', 'AlertDate', '', '');
+	}
+	if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $alertDateRaw)) {
+		$AlertKmlParameter .= '&Stichtag=' . $alertDateRaw . '&AlertDate=' . $alertDateRaw;
+	}
+	$ParameterSet = 'Reg=' . $RegionSelected . $MapParameter . '&KA=' . $MapType . '&Zoom=' . $SelectedZoom . '&FFilter=' . $FFilter . '&SFilter=' . $Suche . $SpecialOptions . $MissionSelectionParameter . $GuestAccessParamter . $AlertKmlParameter;
 	$MinimalMapParameter = 'Reg=' . $RegionSelected . $MinimalMapParameter . '&KA=' . $MapType . '&Zoom=' . $SelectedZoom . '&FFilter=' . $FFilter . '&SFilter=' . $Suche . $SpecialOptions . $MissionSelectionParameter . $GuestAccessParamter;
+	if (GetURLtoFalseTrue('AreaOnly', 'AreaOnly')) {
+		$areaIdsPass = trim((string)GetURLwDefault('AreaIds', 'AreaIds', '', ''));
+		$areaIdsPass = preg_replace('/[\s,;+|]+/', '+', $areaIdsPass);
+		$areaIdsPass = trim((string)$areaIdsPass, '+');
+		$ParameterSet .= '&AreaOnly=on&AreaIds=' . $areaIdsPass;
+		$MinimalMapParameter .= '&AreaOnly=on&AreaIds=' . $areaIdsPass;
+	}
 
 KartenSettings($MapType, $KaType, $KaLayer, $KaVisLayer, $KaOpacity);
 
@@ -469,7 +514,22 @@ if (!empty($isEmbeddedMap)) {
 	$QRCode = $WebLink_public . $selfFile . '?' . str_replace(array('&', ' ', '&EX=NO', '&EX=no'), array('%26', '%2B', '', ''), $ParameterSet);
 	$qrcode1 .= '<img src="https://api.qrserver.com/v1/create-qr-code/?color=000000&amp;bgcolor=FFFFFF&amp;data=' . $h($QRCode) . '&amp;qzone=1&amp;margin=0&amp;size=300x300&amp;ecc=M" alt="QR-Code" title="Link auf Map Ansicht"/>';
 
-	$keepKeys = array('MDB', 'GA', 'Color', 'MenuOn', 'MapButtons', 'FDY', 'FZO', 'OVR', 'FLP', 'SCOL', 'MAP', 'MapZoomOut', 'Suche', 'UseKmlFile', 'UseFile');
+	$keepKeys = array('MDB', 'GA', 'Color', 'MenuOn', 'Top', 'Side', 'MapButtons', 'FDY', 'FZO', 'OVR', 'FLP', 'SCOL', 'MAP', 'MapZoomOut', 'Suche', 'UseKmlFile', 'UseFile', 'Stichtag', 'AlertDate', 'AlertKml');
+	$mapMdbAdd = '';
+	$mapQs = (string)($_SERVER['QUERY_STRING'] ?? '');
+	if ($mapQs !== '') {
+		$mapQsKeep = array();
+		foreach (explode('&', $mapQs) as $mapQsPart) {
+			if ($mapQsPart === '' || stripos($mapQsPart, 'MDB=') === 0) {
+				continue;
+			}
+			$mapQsKeep[] = $mapQsPart;
+		}
+		if ($mapQsKeep !== array()) {
+			$mapMdbAdd = '&' . implode('&', $mapQsKeep);
+		}
+	}
+	$mapMdbName = (string)($MissionDroneTypes[$RKRKMissionSelected]['Name'] ?? $RKRKMissionSelected);
 	$internOk = ($EX == 'no') && GetAccess('InternPilots');
 	$legendHtml = '';
 	if ((!$SingleColor) && $MenuOn) {
@@ -498,6 +558,7 @@ if (!empty($isEmbeddedMap)) {
 
 	if ($MenuOn) {
 		echo '<script>document.documentElement.classList.add("rkrk-map27");</script>';
+		if ($TopMenuOn) {
 		CreateTopMenu();
 		echo "<style>#navDemo{display:none !important;}#navDemo.show{display:block !important;}</style>";
 		echo "<script>
@@ -513,14 +574,15 @@ if (!empty($isEmbeddedMap)) {
 	  });
 	})();
 	</script>";
+		}
 	}
 
 	echo '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@7.5.2/ol.css" />' . "\n";
 	if ($MenuOn) {
-		echo '<link rel="stylesheet" href="mapII/rkrk_layout.css?v=20260905narrow" />' . "\n";
+		echo '<link rel="stylesheet" href="fe/rkrk_layout.css?v=20260905narrow" />' . "\n";
 		echo '<link rel="stylesheet" href="template/rkrk_reg_pills.css?v=20260907nodbl" />' . "\n";
 	}
-	echo '<link rel="stylesheet" href="template/rkrk_map.css?v=20260930xprint" />' . "\n";
+	echo '<link rel="stylesheet" href="template/rkrk_map.css?v=20261013picker" />' . "\n";
 	echo '<script>document.documentElement.classList.add(' . ($MenuOn ? '"rkrk-map27"' : '"rkrk-map27","rkrk-map27-embed"') . ');';
 	if (!$MenuOn) {
 		echo 'document.documentElement.setAttribute("data-rkrk-layout","off");';
@@ -552,6 +614,13 @@ if (!empty($isEmbeddedMap)) {
           <div class="sub">Karte 27 · SwissTopo + Felder-KML</div>
         </div>
       </div>
+      <details open>
+        <summary>Missionskatalog</summary>
+        <div class="panel-body">
+          <?php echo MissionLibraryButtons($mapMdbAdd, false); ?>
+          <div class="sub"><?php echo $h($mapMdbName); ?></div>
+        </div>
+      </details>
 
       <details open>
         <summary>Regionen</summary>
@@ -753,8 +822,8 @@ window.RKRK_MAP27 = <?php
 </script>
 <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
 <?php if ($MenuOn) { ?>
-<script src="mapII/rkrk_layout.js?v=20260905narrow"></script>
+<script src="fe/rkrk_layout.js?v=20261015side"></script>
 <?php } ?>
 <script src="scripts/rkrk_swiss_overlays.js?v=20260917dabs1"></script>
-<script src="scripts/rkrk_map27.js?v=20261001jglabel"></script>
+<script src="scripts/rkrk_map27.js?v=20261013picker"></script>
 <?php

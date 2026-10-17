@@ -19,8 +19,44 @@
 	PrintRKRKHeader($pagetitle);
 
 // ===========================================
-// Konversion
+// Konversion nur zwischen aktiven Feldkatalogen.
+// Der Debug-Katalog baut auf der Mavic 3T auf und ist kein eigenes Ziel.
 // ===========================================
+
+function rkrk_convert_mission_active($key) {
+	global $MissionDroneTypes;
+	$key = (string)$key;
+	if ($key === '' || !isset($MissionDroneTypes[$key]) || !is_array($MissionDroneTypes[$key])) {
+		return false;
+	}
+	return !empty($MissionDroneTypes[$key]['active']);
+}
+
+function rkrk_convert_basis_key($key) {
+	$key = (string)$key;
+	return $key === 'D' || $key === '4CX' ? '3T' : $key;
+}
+
+function rkrk_convert_active_targets($selected) {
+	global $MissionDroneTypes;
+	$basis = rkrk_convert_basis_key($selected);
+	$out = array();
+	foreach ($MissionDroneTypes as $key => $row) {
+		$key = (string)$key;
+		if ($key === 'D' || $key === $basis || $key === (string)$selected || !rkrk_convert_mission_active($key)) {
+			continue;
+		}
+		if (trim((string)($row['MissionLocation'] ?? '')) === '' || trim((string)($row['kmzConvertTo'] ?? '')) !== '') {
+			continue;
+		}
+		$out[] = $key;
+	}
+	return $out;
+}
+
+function rkrk_convert_target_allowed($selected, $target) {
+	return in_array((string)$target, rkrk_convert_active_targets($selected), true);
+}
 
 
 //Convert to other Drone
@@ -60,15 +96,16 @@ if (isset($_POST["Reg"])) {
 ///////////////////////////////////////
 // Conversion to other Drone
 ///////////////////////////////////////
-if (($ConFile!="") and ($ConTo!="")) {
+if (($ConFile!="") and ($ConTo!="") and rkrk_convert_target_allowed($RKRKMissionSelected, $ConTo)) {
 	//echo $ConFile . " transfered from " . $RKRKMissionSelected . " to " . $ConTo . "<br>";
 	$ext = pathinfo($ConFile, PATHINFO_EXTENSION);
+	$specFrom = rkrk_convert_basis_key($RKRKMissionSelected);
 	if ($ext=="json") {
 		//echo "JSON Konvertieren: " . $ConFile . "<br>";
-		CreateJSONforNewDrone($ConFile, $RKRKMissionSelected, $ConTo);
+		CreateJSONforNewDrone($ConFile, $specFrom, $ConTo);
 	} else {
 		//echo "KMZ Konvertieren: " . $ConFile . "<br>";
-		CreateKMZforNewDrone($ConFile, $RKRKMissionSelected, $ConTo);
+		CreateKMZforNewDrone($ConFile, $specFrom, $ConTo);
 	}
 	//readfile($RKRKRelWebLocation. $MissionDroneTypes[$RKRKMissionSelected]["MissionLocation"].$ConFile); 
 }
@@ -77,7 +114,7 @@ if (($ConFile!="") and ($ConTo!="")) {
 ///////////////////////////////////////
 // Update Daten in xml		
 ///////////////////////////////////////
-if ($UpdFeld!=""){
+if ($UpdFeld!="" && rkrk_convert_target_allowed($RKRKMissionSelected, $ConTo)){
 	$Feldkatalog = GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
 	//echo "Update " . $UpdFeld . " in " . $ConTo . "<br>";
 	UpdateXMLDateInOtherMission(multiexplode(array("_","-"), $UpdFeld)[0], $UpdFeld, $Feldkatalog, "", $RKRKMissionSelected, $ConTo, true);
@@ -86,7 +123,7 @@ if ($UpdFeld!=""){
 ///////////////////////////////////////
 // Löschen von Daten in xml	und im Drive
 ///////////////////////////////////////
-if ($DelFeld!=""){
+if ($DelFeld!="" && rkrk_convert_target_allowed($RKRKMissionSelected, $ConTo)){
 	$Feldkatalog = GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
 	//echo "Delete " . $DelFeld . " in " . $ConTo . "<br>";
 	DeleteXMLDateInOtherMission(multiexplode(array("_","-"), $DelFeld)[0], $DelFeld, $Feldkatalog, "", $RKRKMissionSelected, $ConTo, true);
@@ -101,11 +138,9 @@ if ($DelFeld!=""){
 SetMissionLocation();
 $MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 $TargetFeldkatalog = array();
-$depRaw = '';
-if (isset($MissionDroneTypes[$RKRKMissionSelected]["dependantMissions"])) {
-	$depRaw = (string)$MissionDroneTypes[$RKRKMissionSelected]["dependantMissions"];
-}
-$TargetMissionsArray = array_values(array_filter(array_map('trim', explode(',', $depRaw))));
+$TargetMissionsArray = rkrk_convert_mission_active($RKRKMissionSelected)
+	? rkrk_convert_active_targets($RKRKMissionSelected)
+	: array();
 foreach ($TargetMissionsArray as $TargetMission) {
 	if ($TargetMission === '' || !isset($MissionDroneTypes[$TargetMission]["MissionLocation"])) {
 		continue;
@@ -116,6 +151,22 @@ foreach ($TargetMissionsArray as $TargetMission) {
 }	
 //pre_R($TargetMissionsArray);
 //pre_r($TargetFeldkatalog);
+
+function rkrk_convert_katalog_feld($katalog, $mission, $jg, $feldId) {
+	if (!is_array($katalog) || $mission === null || $mission === '') {
+		return array();
+	}
+	if (!isset($katalog[$mission]) || !is_array($katalog[$mission])) {
+		return array();
+	}
+	if ($jg === null || $jg === '' || !isset($katalog[$mission][$jg]) || !is_array($katalog[$mission][$jg])) {
+		return array();
+	}
+	if ($feldId === null || $feldId === '' || !isset($katalog[$mission][$jg][$feldId]) || !is_array($katalog[$mission][$jg][$feldId])) {
+		return array();
+	}
+	return $katalog[$mission][$jg][$feldId];
+}
 
 function DoConvertDataList ($FilterJG, $Stop=0) {
 global 	$RKRKRelWebLocation,
@@ -135,27 +186,36 @@ global 	$RKRKRelWebLocation,
 	//pre_r ($TargetFeldkatalog);
 	foreach ($Feldkatalog as $JKey => $JRegion) {
 		$i=0;
-		if (in_array($JKey,$FilterJG)) {
+		if (in_array($JKey,$FilterJG) && is_array($JRegion)) {
 			foreach ($JRegion as $Field) {
-				$ConData[$Field["FeldID"]]["FeldID"] = $Field["FeldID"];
+				if (!is_array($Field)) {
+					continue;
+				}
+				$feldId = isset($Field["FeldID"]) ? (string)$Field["FeldID"] : '';
+				if ($feldId === '') {
+					continue;
+				}
+				$feldJg = array_key_exists("JG", $Field) ? $Field["JG"] : $JKey;
+				$ConData[$feldId]["FeldID"] = $feldId;
 				//$ConData[$Field["FeldID"]]["RefPoint"] = $Field["Grundstueckdaten"]["Zentrum"];
-				$ConData[$Field["FeldID"]]["JG"] = $Field["JG"];
-				$ConData[$Field["FeldID"]]["Feldname"] = $Field["Feldname"];
-				$ConData[$Field["FeldID"]]["GrundstueckID"] = $Field["GrundstueckID"];
+				$ConData[$feldId]["JG"] = $feldJg;
+				$ConData[$feldId]["Feldname"] = isset($Field["Feldname"]) ? $Field["Feldname"] : '';
+				$ConData[$feldId]["GrundstueckID"] = isset($Field["GrundstueckID"]) ? $Field["GrundstueckID"] : '';
 				//echo "Zentrum: " . $Field["Grundstueckdaten"]["Zentrum"];
-				$ConData[$Field["FeldID"]]["Warnung"] = $Field["Warnung"];
+				$ConData[$feldId]["Warnung"] = isset($Field["Warnung"]) ? $Field["Warnung"] : '';
 	
 				foreach($TargetMissionsArray as $TargetMission) {
 					if ($TargetMission!="") {
 						//echo "TargetMission: " . $TargetMission . " JG " . $JKey . " FeldID " . $Field["FeldID"] . "<br>";
-						$TargetField = $TargetFeldkatalog[$TargetMission][$Field["JG"]][$Field["FeldID"]];
-						$SourceField = $ConData[$Field["FeldID"]];
+						$TargetField = rkrk_convert_katalog_feld($TargetFeldkatalog, $TargetMission, $feldJg, $feldId);
+						$SourceField = $ConData[$feldId];
 						//if ($Field["FeldID"]=="21-014") {
 							//pre_r($TargetFeldkatalog[$TargetMission][$JKey][$Field["FeldID"]]);
 							//pre_r($TargetField);
 							//pre_R($SourceField );
 						//}
-						if (VergleicheFeldDaten($ConData[$Field["FeldID"]], $TargetFeldkatalog[$TargetMission][$JKey][$Field["FeldID"]])) {
+						$TargetFieldByRegion = rkrk_convert_katalog_feld($TargetFeldkatalog, $TargetMission, $JKey, $feldId);
+						if (VergleicheFeldDaten($SourceField, $TargetFieldByRegion)) {
 						//if (VergleicheFeldDaten($SourceField, $TargetField)) {
 							$ConData[$Field["FeldID"]]["upd"][$TargetMission]["Icon"] = $IconLoc . "/allok.png";
 							//$ConData[$Field["FeldID"]]["upd"][$TargetMission]["Link"] = htmlspecialchars($_SERVER["PHP_SELF"]). "?" . "Reg=" . $RegList;
@@ -170,7 +230,7 @@ global 	$RKRKRelWebLocation,
 						}
 						$JsonFileList= explode(",",$Field["JasonFile"]);
 						foreach($JsonFileList as $FileLink) {
-							$NewHeight = GetFlightHeightForAltDrone($RKRKMissionSelected, $TargetMission, GetMeaningFilename($FileLink)[4], "IRCamAngle_H", 5);
+							$NewHeight = GetFlightHeightForAltDrone(rkrk_convert_basis_key($RKRKMissionSelected), $TargetMission, GetMeaningFilename($FileLink)[4], "IRCamAngle_H", 5);
 							$NewDroneFilename = ChangeHeightInFilename($FileLink, $NewHeight, $TargetMission, false).".json";
 							$FullFileLink = $RKRKRelWebLocation. $MissionDroneTypes[$TargetMission]["MissionLocation"].$RegionSettings[$Field['JG']]["Dir"]."/".$NewDroneFilename;
 							$ConData[$Field["FeldID"]]["Files"][$TargetMission]["JSON"][$FileLink]["Filename"]=$FileLink;
@@ -191,7 +251,7 @@ global 	$RKRKRelWebLocation,
 						}
 						$KMZFileList= explode(",",$Field["KMZFile"]);
 						foreach($KMZFileList as $FileLink) {
-							$NewHeight = GetFlightHeightForAltDrone($RKRKMissionSelected, $TargetMission, GetMeaningFilename($FileLink)[4], "IRCamAngle_H", 5);
+							$NewHeight = GetFlightHeightForAltDrone(rkrk_convert_basis_key($RKRKMissionSelected), $TargetMission, GetMeaningFilename($FileLink)[4], "IRCamAngle_H", 5);
 							$NewDroneFilename = ChangeHeightInFilename($FileLink, $NewHeight, $TargetMission, false).".kmz";
 							$FullFileLink = $RKRKRelWebLocation. $MissionDroneTypes[$TargetMission]["MissionLocation"].$RegionSettings[$Field['JG']]["Dir"]."/".$NewDroneFilename;
 							$ConData[$Field["FeldID"]]["Files"][$TargetMission]["KMZ"][$FileLink]["Filename"]=$FileLink;

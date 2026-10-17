@@ -387,7 +387,7 @@ function rkrk_felddaten_json_import_apply_metrics($jsonFilePath, &$JsonData) {
 }
 
 
-function GetFeldkatalog($catalogPath) {
+function GetFeldkatalog($catalogPath, $forceReload = false) {
 	global $EnabledRegion, $OptionJaeger, $MaxSelectedEntries;
 	if (function_exists('rkrk_log_data_access')) {
 		rkrk_log_data_access('Missionenkatalog', basename((string)$catalogPath));
@@ -396,7 +396,7 @@ function GetFeldkatalog($catalogPath) {
 		$EnabledRegion = array();
 	}
 	if (function_exists('rkrk_feldkatalog_load')) {
-		return rkrk_feldkatalog_load($catalogPath);
+		return rkrk_feldkatalog_load($catalogPath, $forceReload);
 	}
 	$xml_felder = array();
 	if (function_exists('rkrk_catalog_load_simplexml')) {
@@ -477,8 +477,27 @@ Return $Feldkatalog;
 }
 
 
-function ReadMissionFiles ($RegionSettings, $EnabledRegion) {
+function ReadMissionFiles ($RegionSettings, $EnabledRegion, $onlyFeldIds = null) {
     global $RKRKLocalLoactionMissionFiles,$OptionFlughoehe;
+	$onlySet = null;
+	if (is_array($onlyFeldIds)) {
+		$onlySet = array();
+		foreach ($onlyFeldIds as $onlyId) {
+			$onlyId = trim((string)$onlyId);
+			if ($onlyId !== '') {
+				$onlySet[$onlyId] = true;
+			}
+		}
+		if ($onlySet === array()) {
+			return array();
+		}
+	}
+	$FlightHeights = array();
+	if (isset($OptionFlughoehe) && is_array($OptionFlughoehe)) {
+		$FlightHeights = array_keys($OptionFlughoehe);
+	}
+	$FlightHeights[] = 00;
+	asort($FlightHeights);
 	
 	// ===========================================
 	// File Liste einlesen
@@ -530,9 +549,16 @@ function ReadMissionFiles ($RegionSettings, $EnabledRegion) {
 					//echo $singlefile;
 					$filenamelen = strlen($singlefile);
 					$EndKatID = strpos($singlefile, "_");
+					if ($EndKatID === false) {
+						continue;
+					}
 					//echo " - ";
 					$StartFileType =  strpos($singlefile,".",$filenamelen-8)+1;
 					$FeldID = substr($singlefile, 0, $EndKatID);
+					$KatFileList[$Reg["Reg"]]["__hasfiles"] = true;
+					if ($onlySet !== null && !isset($onlySet[$FeldID])) {
+						continue;
+					}
 					//echo " " . $Reg["Reg"] . " / ";
 					$FileType = substr($singlefile, $StartFileType ,$filenamelen-$StartFileType);
 					$KatFileList[$Reg["Reg"]][$FeldID]["JG"] = $Reg["Reg"];
@@ -552,11 +578,6 @@ function ReadMissionFiles ($RegionSettings, $EnabledRegion) {
 						//Search for height _40_/_50_/_60_/_70_
 						//$FlightHeights = Array(00,40,50,60,70,80,90,100);
 						//pre_R($FlightHeights);
-						$FlightHeights = array_keys($OptionFlughoehe);
-						$FlightHeights[]=00;
-						asort($FlightHeights);
-						//pre_R($FlightHeights);
-						
 						foreach ($FlightHeights as $Flightheight) {
 						//foreach ($OptionFlughoehe as $Flightheight) {
 							$FlHghtPos = strpos($singlefile,"_".$Flightheight."_");
@@ -567,19 +588,26 @@ function ReadMissionFiles ($RegionSettings, $EnabledRegion) {
 									$FlHghtPos = $NextFlHghtPos;
 								}
 							}
-							if ($FlHghtPos !=false) {
+							if ($FlHghtPos !== false) {
 								$CorFieldName = substr($singlefile, $EndKatID+1,$FlHghtPos-$EndKatID-1);
-								$KatFileList[$Reg["Reg"]][$FeldID]["CorName"] = $CorFieldName;
-								//Split to GrundstueckID and Filename
-								//GrundstueckID starts with last "_"
-								$StrtStr= 0;
-								$StrFnd= strpos($CorFieldName, "_", $StrtStr);
-								while ($StrFnd!= "") {
-									$StrtStr= $StrFnd;
-									$StrFnd= strpos($CorFieldName, "_", $StrtStr+1);
+								$fromJson = (strcasecmp((string)$FileType, 'json') === 0);
+								$haveJson = !empty($KatFileList[$Reg["Reg"]][$FeldID]["NameFromJson"]);
+								if ($fromJson || !$haveJson) {
+									$KatFileList[$Reg["Reg"]][$FeldID]["CorName"] = $CorFieldName;
+									//Split to GrundstueckID and Filename
+									//GrundstueckID starts with last "_"
+									$StrtStr= 0;
+									$StrFnd= strpos($CorFieldName, "_", $StrtStr);
+									while ($StrFnd !== false) {
+										$StrtStr= $StrFnd;
+										$StrFnd= strpos($CorFieldName, "_", $StrtStr+1);
 									}
-								$KatFileList[$Reg["Reg"]][$FeldID]["Feldname"] = substr($CorFieldName,0,$StrtStr);
-								$KatFileList[$Reg["Reg"]][$FeldID]["GrundstueckID"] = substr($CorFieldName,$StrtStr+1,strlen($CorFieldName)-$StrtStr-1);
+									$KatFileList[$Reg["Reg"]][$FeldID]["Feldname"] = substr($CorFieldName,0,$StrtStr);
+									$KatFileList[$Reg["Reg"]][$FeldID]["GrundstueckID"] = substr($CorFieldName,$StrtStr+1,strlen($CorFieldName)-$StrtStr-1);
+									if ($fromJson) {
+										$KatFileList[$Reg["Reg"]][$FeldID]["NameFromJson"] = true;
+									}
+								}
 								break;
 							}	
 							
@@ -837,11 +865,36 @@ Function TransferFeldKatFromListToArr ($FeldList, $EnabledRegion, &$OptionJaeger
 		$MaxSelectedEntries = 1;
 		return array();
 	}
-	//sort
-	array_multisort(array_column($FeldList, 'JG'), SORT_ASC, 
-					array_column($FeldList, 'Feldname'), SORT_ASC,
-					array_column($FeldList, 'Flurname'), SORT_ASC,
-					$FeldList);	
+	// Eine Zeile, drei Spalten: fehlendes oder NULL JG/Feldname/Flurname bleibt leer.
+	// Eine NULL-Regionsliste wird oben zum leeren Array und kuerzt diese Spalten nicht.
+	$FeldList = array_values($FeldList);
+	$sortJg = array();
+	$sortFeldname = array();
+	$sortFlurname = array();
+	$nSort = count($FeldList);
+	for ($i = 0; $i < $nSort; $i++) {
+		$feld = $FeldList[$i];
+		$jg = '';
+		$name = '';
+		$flur = '';
+		if (is_array($feld)) {
+			if (isset($feld['JG']) && !is_array($feld['JG']) && !is_object($feld['JG'])) {
+				$jg = (string)$feld['JG'];
+			}
+			if (isset($feld['Feldname']) && !is_array($feld['Feldname']) && !is_object($feld['Feldname'])) {
+				$name = (string)$feld['Feldname'];
+			}
+			if (isset($feld['Flurname']) && !is_array($feld['Flurname']) && !is_object($feld['Flurname'])) {
+				$flur = (string)$feld['Flurname'];
+			}
+		}
+		$sortJg[$i] = $jg;
+		$sortFeldname[$i] = $name;
+		$sortFlurname[$i] = $flur;
+	}
+	if ($nSort > 0) {
+		array_multisort($sortJg, SORT_ASC, $sortFeldname, SORT_ASC, $sortFlurname, SORT_ASC, $FeldList);
+	}
 
 	$csv_desc = ';';
 	$csv_desc_replace = '/';
@@ -964,6 +1017,9 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 				: rkrk_xml_to_string($v);
 		};
 		foreach ($Feldkatalog as $Key => $Region) {
+			if (!is_array($Region)) {
+				continue;
+			}
 			foreach ($Region as $Key => $Feld) {
 				//echo $i . "<br>";
 				//echo  $Feld["FeldID"] . " " . $Feld["Feldname"] . " " . $Feld["GrundstueckID"] . "<br>";
@@ -971,38 +1027,42 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 				//if ($Feld["FeldID"]=="TF-007") {
 				//	echo $Feld["FeldID"] . " - " . $Feld["Flurname"];
 				//}
-				if ($Feld["FeldID"]!="") {
+				if (!is_array($Feld)) {
+					continue;
+				}
+				$feldId = (isset($Feld["FeldID"]) && !is_array($Feld["FeldID"])) ? trim((string)$Feld["FeldID"]) : '';
+				if ($feldId !== "") {
 					$setcontent = "";
-					$setcontent .= XMLComment("FELD " . $Feld["FeldID"] . " " . $Feld["Feldname"] . " " . $Feld["GrundstueckID"], 0);
+					$setcontent .= XMLComment("FELD " . $feldId . " " . $Feld["Feldname"] . " " . $Feld["GrundstueckID"], 0);
 					$setcontent .= XMLSetStart("Feld", $i , 1);
 					$setcontent .= XMLField("Number", $i , 2);
-					$setcontent .= XMLField("FeldID", $Feld["FeldID"], 2);
-					$setcontent .= XMLField("JG", $Feld["JG"], 2);
-					$setcontent .= XMLField("Feldname", $xmlText($Feld["Feldname"]), 2);
-					$setcontent .= XMLField("Flurname", $xmlText($Feld["Flurname"]), 2);
-					$setcontent .= XMLField("GrundstueckID", $Feld["GrundstueckID"], 2);
-					if ($Feld["Flugzeit"]>$FlugzeitTreshold) {
+					$setcontent .= XMLField("FeldID", $feldId, 2);
+					$setcontent .= XMLField("JG", $Feld["JG"] ?? "", 2);
+					$setcontent .= XMLField("Feldname", $xmlText($Feld["Feldname"] ?? ""), 2);
+					$setcontent .= XMLField("Flurname", $xmlText($Feld["Flurname"] ?? ""), 2);
+					$setcontent .= XMLField("GrundstueckID", $Feld["GrundstueckID"] ?? "", 2);
+					if (($Feld["Flugzeit"] ?? '')>$FlugzeitTreshold) {
 						// Zeit in Sekunden
 						//$setcontent .= XMLField("Flugzeit",round($FluzeitStartUndLandung+($Feld['Flugzeit'])/60,1), 2);
-						$setcontent .= XMLField("Flugzeit",round(($Feld['Flugzeit'])/60,1), 2);
+						$setcontent .= XMLField("Flugzeit",round(($Feld['Flugzeit'] ?? 0)/60,1), 2);
 					} else {
 						// Zeit in Minuten
-						$setcontent .= XMLField("Flugzeit", $Feld["Flugzeit"], 2);
+						$setcontent .= XMLField("Flugzeit", $Feld["Flugzeit"] ?? "", 2);
 					}	
-					$setcontent .= XMLField("Flaeche", $Feld["Flaeche"], 2);
-					$setcontent .= XMLField("Wegpunkte", $Feld["Wegpunkte"], 2);
-					$setcontent .= XMLField("Distanz", $Feld["Distanz"], 2);
-					$setcontent .= XMLField("Gemeinde", $xmlText($Feld["Gemeinde"]), 2);
-					$setcontent .= XMLField("Betrieb", $xmlText($Feld["Betrieb"]), 2);
-					$setcontent .= XMLField("Freigabe", $Feld["Freigabe"], 2);
-					$setcontent .= XMLField("Warnung", $Feld["Warnung"], 2);
-					$setcontent .= XMLField("Jaeger", $xmlText($Feld["Jaeger"]), 2);
-					$setcontent .= XMLField("Bemerkung", $xmlText($Feld["Bemerkung"]), 2);
-					$setcontent .= XMLField("Flug", $Feld["Flug"], 2);
-					$setcontent .= XMLField("Funde", $Feld["Funde"], 2);
+					$setcontent .= XMLField("Flaeche", $Feld["Flaeche"] ?? "", 2);
+					$setcontent .= XMLField("Wegpunkte", $Feld["Wegpunkte"] ?? "", 2);
+					$setcontent .= XMLField("Distanz", $Feld["Distanz"] ?? "", 2);
+					$setcontent .= XMLField("Gemeinde", $xmlText($Feld["Gemeinde"] ?? ""), 2);
+					$setcontent .= XMLField("Betrieb", $xmlText($Feld["Betrieb"] ?? ""), 2);
+					$setcontent .= XMLField("Freigabe", $Feld["Freigabe"] ?? "", 2);
+					$setcontent .= XMLField("Warnung", $Feld["Warnung"] ?? "", 2);
+					$setcontent .= XMLField("Jaeger", $xmlText($Feld["Jaeger"] ?? ""), 2);
+					$setcontent .= XMLField("Bemerkung", $xmlText($Feld["Bemerkung"] ?? ""), 2);
+					$setcontent .= XMLField("Flug", $Feld["Flug"] ?? "", 2);
+					$setcontent .= XMLField("Funde", $Feld["Funde"] ?? "", 2);
 					//temporäres setzen der Standard Flughöhe 28.04.2024
 					//if ($Feld["StdFlughohe"]!="") {
-						$setcontent .= XMLField("StdFlughohe", $Feld["StdFlughohe"], 2);
+						$setcontent .= XMLField("StdFlughohe", $Feld["StdFlughohe"] ?? "", 2);
 					//} elseif (strpos($Feld["JasonFile"], "_70_") !== false) {
 					//	$setcontent .= XMLField("StdFlughohe", "70", 2);
 					//} elseif (strpos($Feld["JasonFile"], "_60_") !== false) {
@@ -1016,23 +1076,24 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 					//} else {
 					//	$setcontent .= XMLField("StdFlughohe", $Feld["StdFlughohe"], 2);
 					//}
-					$setcontent .= XMLField("SuchfeldBild", $xmlText($Feld["SuchfeldBild"]), 2);
-					$setcontent .= XMLField("FlugplanBild", $xmlText($Feld["FlugplanBild"]), 2);
-					$setcontent .= XMLField("JasonFile", $xmlText($Feld["JasonFile"]), 2);
-					$setcontent .= XMLField("KMLFile", $xmlText($Feld["KMLFile"]), 2);
-					$setcontent .= XMLField("KMZFile", $xmlText($Feld["KMZFile"]), 2);
-					$setcontent .= XMLField("LichtiFile", $xmlText($Feld["LichtiFile"]), 2);
-					$setcontent .= XMLField("Bauer", $xmlText($Feld["Bauer"]), 2);
-					$setcontent .= XMLField("Notiz", $xmlText($Feld["Notiz"]), 2);
+					$setcontent .= XMLField("SuchfeldBild", $xmlText($Feld["SuchfeldBild"] ?? ""), 2);
+					$setcontent .= XMLField("FlugplanBild", $xmlText($Feld["FlugplanBild"] ?? ""), 2);
+					$setcontent .= XMLField("JasonFile", $xmlText($Feld["JasonFile"] ?? ""), 2);
+					$setcontent .= XMLField("KMLFile", $xmlText($Feld["KMLFile"] ?? ""), 2);
+					$setcontent .= XMLField("KMZFile", $xmlText($Feld["KMZFile"] ?? ""), 2);
+					$gsDaten = (isset($Feld["Grundstueckdaten"]) && is_array($Feld["Grundstueckdaten"])) ? $Feld["Grundstueckdaten"] : array();
+					$setcontent .= XMLField("LichtiFile", $xmlText($Feld["LichtiFile"] ?? ""), 2);
+					$setcontent .= XMLField("Bauer", $xmlText($Feld["Bauer"] ?? ""), 2);
+					$setcontent .= XMLField("Notiz", $xmlText($Feld["Notiz"] ?? ""), 2);
 					$setcontent .= XMLFolderStart("Grundstueckdaten", 2);
-					$setcontent .= XMLField("Startplatz", $Feld["Grundstueckdaten"]["Startplatz"], 3);
-					if ($Feld["Grundstueckdaten"]["Parkplatz"]<>"")
-						$setcontent .= XMLField("Parkplatz", $Feld["Grundstueckdaten"]["Parkplatz"], 3);
-					$setcontent .= XMLField("Zentrum", $Feld["Grundstueckdaten"]["Zentrum"], 3);
+					$setcontent .= XMLField("Startplatz", $gsDaten["Startplatz"] ?? "", 3);
+					if (($gsDaten["Parkplatz"] ?? "")<>"")
+						$setcontent .= XMLField("Parkplatz", $gsDaten["Parkplatz"], 3);
+					$setcontent .= XMLField("Zentrum", $gsDaten["Zentrum"] ?? "", 3);
 					$setcontent .= XMLFolderEnd("Grundstueckdaten", 2);
-					$setcontent .= XMLField("Flaechendaten", $Feld["Flaechendaten"], 2);
-					$setcontent .= XMLField("Flugweg", $Feld["Flugweg"], 2);
-					$setcontent .= XMLField("Export", $Feld["Export"], 2);
+					$setcontent .= XMLField("Flaechendaten", $Feld["Flaechendaten"] ?? "", 2);
+					$setcontent .= XMLField("Flugweg", $Feld["Flugweg"] ?? "", 2);
+					$setcontent .= XMLField("Export", $Feld["Export"] ?? "", 2);
 					/* first settings */
 					//if ($Feld["Erstellt"]=="") { 
 					//	if (strpos(" " . $Feld["Bemerkung"], "Neu")!=0) {
@@ -1042,7 +1103,7 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 					//	}
 					//	$setcontent .= XMLField("Erstellt", $tmpData, 2);
 					//} else {
-						$setcontent .= XMLField("Erstellt", $Feld["Erstellt"], 2);
+						$setcontent .= XMLField("Erstellt", $Feld["Erstellt"] ?? "", 2);
 					//}
 					//if ($Feld["Aenderung"]=="") { 
 					//	if (strpos(" " . $Feld["Bemerkung"], "Update von Jason ")!=0) {
@@ -1054,7 +1115,7 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 					//	}
 					//	$setcontent .= XMLField("Aenderung", $tmpData, 2);
 					//} else {
-						$setcontent .= XMLField("Aenderung", $Feld["Aenderung"], 2);
+						$setcontent .= XMLField("Aenderung", $Feld["Aenderung"] ?? "", 2);
 					//}
 					//if ($Feld["Update"]=="") { 
 					//	if (strpos(" " . $Feld["Bemerkung"], "Update von Jason ")!=0) {
@@ -1066,9 +1127,9 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 					//	}
 					//	$setcontent .= XMLField("Aenderung", $tmpData, 2);
 					//} else {
-						$setcontent .= XMLField("Update", $Feld["Update"], 2);
+						$setcontent .= XMLField("Update", $Feld["Update"] ?? "", 2);
 					//}
-					$setcontent .= XMLField("Select", $Feld["Select"], 2);
+					$setcontent .= XMLField("Select", $Feld["Select"] ?? "", 2);
 					$setcontent .= XMLSetEnd("Feld", 0);
 					$setcontent .= chr(10). chr(10). chr(10);
 					//echo $setcontent . "<br>";
@@ -1098,14 +1159,18 @@ Function SaveFlugkatalog2XML ($Feldkatalog, $dosafe, $XMLLocation = "") {
 }	
 
 Function SaveFlugkatalog2CSV ($Feldkatalog, $CSVLocation="") {
-	global $csvMissionLocation, $RKRKFelderfileCSV, $historyfilelocation, $FlugzeitTreshold, $csv_desc, $csv_desc_replace;
+	global $csvMissionLocation, $feldkatalogCsvLocation, $RKRKFelderfileCSV, $historyfilelocation, $FlugzeitTreshold, $csv_desc, $csv_desc_replace;
 	
 
 	//$dosafe= true;
 	$changes= 1;
 	$i= 1;
 	if ($CSVLocation=="") {
-		$CSVLocation=$csvMissionLocation;
+		if (!empty($feldkatalogCsvLocation)) {
+			$CSVLocation=$feldkatalogCsvLocation;
+		} else {
+			$CSVLocation=$csvMissionLocation;
+		}
 	}
 
 	
@@ -1114,42 +1179,51 @@ Function SaveFlugkatalog2CSV ($Feldkatalog, $CSVLocation="") {
 		$filecontent = "";
 		$OutputArray =Array();
 		foreach ($Feldkatalog as $Key => $Region) {
+			if (!is_array($Region)) {
+				continue;
+			}
 			foreach ($Region as $Key => $Feld) {
+				if (!is_array($Feld)) {
+					continue;
+				}
+				$feldId = (isset($Feld["FeldID"]) && !is_array($Feld["FeldID"])) ? (string)$Feld["FeldID"] : '';
 				$csvText = function ($v) use ($csv_desc, $csv_desc_replace) {
 					$text = function_exists('rkrk_text_utf8') ? rkrk_text_utf8($v) : (string) $v;
 					return str_replace($csv_desc, $csv_desc_replace, $text);
 				};
-				$OutputArray[$Feld["FeldID"]]["ID"] = $Feld["FeldID"]."A";
-				$OutputArray[$Feld["FeldID"]]["JG"] = $Feld["JG"];
-				$OutputArray[$Feld["FeldID"]]["Name"] = $csvText($Feld["Feldname"]);
-				$OutputArray[$Feld["FeldID"]]["Flurname"] = $csvText($Feld["Flurname"]);
-				$OutputArray[$Feld["FeldID"]]["Grundstück"] = str_replace($csv_desc,$csv_desc_replace, $Feld["GrundstueckID"]);
-				if ($Feld["Flugzeit"]>$FlugzeitTreshold) {
+				$gsDaten = (isset($Feld["Grundstueckdaten"]) && is_array($Feld["Grundstueckdaten"])) ? $Feld["Grundstueckdaten"] : array();
+				$flugzeitRaw = $Feld["Flugzeit"] ?? '';
+				$OutputArray[$feldId]["ID"] = $feldId."A";
+				$OutputArray[$feldId]["JG"] = $Feld["JG"] ?? '';
+				$OutputArray[$feldId]["Name"] = $csvText($Feld["Feldname"] ?? '');
+				$OutputArray[$feldId]["Flurname"] = $csvText($Feld["Flurname"] ?? '');
+				$OutputArray[$feldId]["Grundstück"] = str_replace($csv_desc,$csv_desc_replace, $Feld["GrundstueckID"] ?? '');
+				if ($flugzeitRaw !== '' && $flugzeitRaw>$FlugzeitTreshold) {
 					// Zeit in Sekunden
-					$OutputArray[$Feld["FeldID"]]["Flugzeit"] = round(($Feld['Flugzeit'])/60,1);
+					$OutputArray[$feldId]["Flugzeit"] = round(($flugzeitRaw)/60,1);
 				} else {
 					// Zeit in Minuten
-					$OutputArray[$Feld["FeldID"]]["Flugzeit"] = $Feld["Flugzeit"];
+					$OutputArray[$feldId]["Flugzeit"] = $flugzeitRaw;
 				}							
-				$OutputArray[$Feld["FeldID"]]["Fläche"] = $Feld["Flaeche"];
-				$OutputArray[$Feld["FeldID"]]["Wegpunkte"] = $Feld["Wegpunkte"];
-				$OutputArray[$Feld["FeldID"]]["Distanz"] = $Feld["Distanz"];
-				$OutputArray[$Feld["FeldID"]]["Gemeinde"] = $Feld["Gemeinde"];
-				$OutputArray[$Feld["FeldID"]]["Freigabe"] = $Feld["Freigabe"];
-				$OutputArray[$Feld["FeldID"]]["Warnung"] = $Feld["Warnung"];
-				$OutputArray[$Feld["FeldID"]]["Betrieb"] = $Feld["Betrieb"];
-				$OutputArray[$Feld["FeldID"]]["Jäger"] = $Feld["Jaeger"];
-				$OutputArray[$Feld["FeldID"]]["Bemerkung"] = $csvText($Feld["Bemerkung"]);
-				$OutputArray[$Feld["FeldID"]]["Notiz"] = $csvText($Feld["Notiz"]);
-				$OutputArray[$Feld["FeldID"]]["Flüge"] = $Feld["Flug"];
-				$OutputArray[$Feld["FeldID"]]["Funde"] = $Feld["Funde"];
-				$OutputArray[$Feld["FeldID"]]["Startplatz"] = $Feld["Grundstueckdaten"]["Startplatz"];
-				$OutputArray[$Feld["FeldID"]]["Parkplatz"] = $Feld["Grundstueckdaten"]["Parkplatz"];
-				$OutputArray[$Feld["FeldID"]]["Zentrum"] = $Feld["Grundstueckdaten"]["Zentrum"];
-				if ($Feld["Export"]=="Y") {
-					$OutputArray[$Feld["FeldID"]]["Export"] = "Ja";
+				$OutputArray[$feldId]["Fläche"] = $Feld["Flaeche"] ?? '';
+				$OutputArray[$feldId]["Wegpunkte"] = $Feld["Wegpunkte"] ?? '';
+				$OutputArray[$feldId]["Distanz"] = $Feld["Distanz"] ?? '';
+				$OutputArray[$feldId]["Gemeinde"] = $Feld["Gemeinde"] ?? '';
+				$OutputArray[$feldId]["Freigabe"] = $Feld["Freigabe"] ?? '';
+				$OutputArray[$feldId]["Warnung"] = $Feld["Warnung"] ?? '';
+				$OutputArray[$feldId]["Betrieb"] = $Feld["Betrieb"] ?? '';
+				$OutputArray[$feldId]["Jäger"] = $Feld["Jaeger"] ?? '';
+				$OutputArray[$feldId]["Bemerkung"] = $csvText($Feld["Bemerkung"] ?? '');
+				$OutputArray[$feldId]["Notiz"] = $csvText($Feld["Notiz"] ?? '');
+				$OutputArray[$feldId]["Flüge"] = $Feld["Flug"] ?? '';
+				$OutputArray[$feldId]["Funde"] = $Feld["Funde"] ?? '';
+				$OutputArray[$feldId]["Startplatz"] = $gsDaten["Startplatz"] ?? '';
+				$OutputArray[$feldId]["Parkplatz"] = $gsDaten["Parkplatz"] ?? '';
+				$OutputArray[$feldId]["Zentrum"] = $gsDaten["Zentrum"] ?? '';
+				if (($Feld["Export"] ?? '')=="Y") {
+					$OutputArray[$feldId]["Export"] = "Ja";
 				} else {
-					$OutputArray[$Feld["FeldID"]]["Export"] = "Nein";
+					$OutputArray[$feldId]["Export"] = "Nein";
 				}
 			}
 		}
@@ -1157,11 +1231,14 @@ Function SaveFlugkatalog2CSV ($Feldkatalog, $CSVLocation="") {
 		$file = $RKRKFelderfileCSV;
 		$newfile = $historyfilelocation . date("YmdH") . "00_" . $RKRKFelderfileCSV;
 		//echo "<br>History: " . $file . " to  " . $newfile;
-		if (!copy($CSVLocation . $file, $newfile)) {
+		if (is_file($CSVLocation . $file) && !copy($CSVLocation . $file, $newfile)) {
 			$SystemInfo .= "failed to copy $file...\n";
 		}
 		//echo "CSV save to " .$file . "<br>";
+		$prevCsvMissionLocation = $csvMissionLocation;
+		$csvMissionLocation = $CSVLocation;
 		SaveArrayToCSV ($OutputArray, $file);
+		$csvMissionLocation = $prevCsvMissionLocation;
 	}
 }	
 

@@ -4,7 +4,7 @@
  * actions: groups | settings | save_settings | build_from_kml | geojson | reset_settings
  *          | colors | save_colors | reset_colors
  *          | ui_defaults | save_ui_defaults | reset_ui_defaults
- *          | kml_geojson | save_kml
+ *          | kml_geojson | save_kml | create_alert | delete_layer
  */
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -176,6 +176,7 @@ if ($action === 'save_settings') {
         ref_layers_fail(400, 'files_required');
     }
     $norm = array();
+    $pending = array();
     foreach ($filesIn as $f) {
         if (!is_array($f)) {
             continue;
@@ -192,17 +193,69 @@ if ($action === 'save_settings') {
         if ($region !== '' && substr($region, -1) !== ',') {
             $region .= ',';
         }
+        $sched = function_exists('ref_layers_alert_schedule') ? ref_layers_alert_schedule($f) : array('from' => '', 'to' => '', 'yearly' => false);
         $norm[] = array(
             'name' => $name,
             'region' => $region,
             'kat' => $kat,
             'aktiv' => !empty($f['aktiv']),
+            'from' => $sched['from'],
+            'to' => $sched['to'],
+            'yearly' => $sched['yearly'],
         );
+        $stored = trim((string)($f['stored'] ?? ''));
+        if ($stored !== '' && $stored !== $name) {
+            $pending[] = array('from' => $stored, 'to' => $name, 'at' => count($norm) - 1);
+        }
+    }
+    $applied = array();
+    foreach ($pending as $op) {
+        $renamed = function_exists('ref_layers_rename_layer')
+            ? ref_layers_rename_layer($op['from'], $op['to'])
+            : array('ok' => false, 'error' => 'rename_unavailable', 'message' => 'Umbenennen ist nicht verfügbar.');
+        if (empty($renamed['ok'])) {
+            foreach (array_reverse($applied) as $done) {
+                ref_layers_rename_layer($done['to'], $done['from'], false);
+            }
+            ref_layers_fail(400, $renamed['error'] ?? 'rename_failed', $renamed['message'] ?? 'Der Name konnte nicht gespeichert werden.');
+        }
+        $norm[$op['at']]['name'] = (string)$renamed['name'];
+        $applied[] = array('from' => (string)$op['from'], 'to' => (string)$renamed['name']);
     }
     if (!ref_layers_save_settings($norm)) {
+        foreach (array_reverse($applied) as $done) {
+            ref_layers_rename_layer($done['to'], $done['from'], false);
+        }
         ref_layers_fail(500, 'save_failed', 'rkrk_kmlfile_settings.json konnte nicht geschrieben werden');
     }
     echo json_encode(array('ok' => true, 'files' => ref_layers_load_settings()), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($action === 'delete_layer') {
+    ref_layers_require_write();
+    if (!function_exists('ref_layers_delete_layer')) {
+        ref_layers_fail(500, 'delete_unavailable', 'Löschen ist nicht verfügbar.');
+    }
+    $rawName = (string)($jsonBody['file'] ?? $jsonBody['name'] ?? ($_POST['file'] ?? ''));
+    $result = ref_layers_delete_layer($rawName);
+    if (empty($result['ok'])) {
+        ref_layers_fail(400, $result['error'] ?? 'delete_failed', $result['message'] ?? 'Der Eintrag konnte nicht gelöscht werden.');
+    }
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($action === 'create_alert') {
+    ref_layers_require_write();
+    if (!function_exists('ref_layers_create_alert_zone')) {
+        ref_layers_fail(500, 'create_unavailable', 'Neue Alert-Zone ist nicht verfügbar.');
+    }
+    $result = ref_layers_create_alert_zone(is_array($jsonBody) ? $jsonBody : array());
+    if (empty($result['ok'])) {
+        ref_layers_fail(400, $result['error'] ?? 'create_failed', $result['message'] ?? 'Alert-Zone konnte nicht angelegt werden.');
+    }
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
     exit;
 }
 

@@ -91,18 +91,18 @@
 			//echo "Case1: " .$PhoneWOSpace . "<br>";
 		}
 		// Case 2: 795203625 => +41 79 520 36 25
-		elseif ($PhoneWOSpace[0]=="7") 
+		elseif (strlen((string)$PhoneWOSpace) >= 1 && $PhoneWOSpace[0]=="7") 
 		{
 			$PhoneWOSpace = "+41" . $PhoneWOSpace;
 			//echo "Case2: " .$PhoneWOSpace . "<br>";
 		}
 		// Case 3: 0795203625 => +41 79 520 36 25
-		elseif ($PhoneWOSpace[0]=="0") 
+		elseif (strlen((string)$PhoneWOSpace) >= 1 && $PhoneWOSpace[0]=="0") 
 		{
 			$PhoneWOSpace = "+41" . substr($PhoneWOSpace,1,15);
 			//echo "Case3: " .$PhoneWOSpace . "<br>";
 		}
-		elseif ($PhoneWOSpace[0]!="+") 
+		elseif (strlen((string)$PhoneWOSpace) >= 1 && $PhoneWOSpace[0]!="+") 
 		{
 			$PhoneWOSpace = "+" . $PhoneWOSpace;
 			//echo "Case4: " .$PhoneWOSpace . "<br>";
@@ -180,7 +180,7 @@ function GetJSONData($Filename) {
 	$DataOut["Name"] = $DataA["name"];
 	$DebugInfo .=  "<li> Name: " . $DataOut["Name"] . "</li>" . chr(10);
 
-	$DataOut["GroupAreaName"] = $DataA["pilotGroupAreaName"];
+	$DataOut["GroupAreaName"] = $DataA["pilotGroupAreaName"] ?? "";
 	$DebugInfo .=  "<li> GroupAreaName: " . $DataOut["GroupAreaName"] . "</li>" . chr(10);
 
 	$DataOut["Wegpunkte"] = $DataA["featureCount"]["waypoints"];
@@ -192,14 +192,21 @@ function GetJSONData($Filename) {
 	$DataOut["Flaeche"] = $DataA["area"];
 	$DebugInfo .=  "<li> Fläche: " . $DataOut["Flaeche"] . "</li>" . chr(10);
 
-	$DataOut["Distanz"] = $DataA["flightDistance"];
+	$DataOut["Distanz"] = $DataA["flightDistance"] ?? "";
 	$DebugInfo .=  "<li> Distanz: " . $DataOut["Distanz"] . "</li>" . chr(10);
 
-	$DataOut["Grundstueckdaten"]["Zentrum"] = $DataA["center"]["0"] . ", " . $DataA["center"]["1"];
+	if (isset($DataA["center"]["0"], $DataA["center"]["1"]) && $DataA["center"]["0"] !== "" && $DataA["center"]["1"] !== "") {
+		$DataOut["Grundstueckdaten"]["Zentrum"] = $DataA["center"]["0"] . ", " . $DataA["center"]["1"];
+	} else {
+		$DataOut["Grundstueckdaten"]["Zentrum"] = "";
+	}
 	$DebugInfo .=  "<li> Zentrum: " . $DataOut["Grundstueckdaten"]["Zentrum"] . "</li>" . chr(10);
+	$DataOut["Flaechendaten"] = "";
 	$FirstPoint = "";
+	$LastPoint = "";
+	if (isset($DataA["geojson"]["features"]["0"]["geometry"]["coordinates"]) && is_array($DataA["geojson"]["features"]["0"]["geometry"]["coordinates"])) {
 	foreach ($DataA["geojson"]["features"]["0"]["geometry"]["coordinates"] as &$value) {
-		if ($value["0"]!=""){
+		if (isset($value["0"], $value["1"]) && $value["0"] !== ""){
 			$CurrentPoint = $value["0"] . ", " . $value["1"] . "     ";
 			$DataOut["Flaechendaten"] .=  $CurrentPoint;
 			if ($FirstPoint=="") {
@@ -207,6 +214,7 @@ function GetJSONData($Filename) {
 			}
 			$LastPoint= $CurrentPoint;
 		}
+	}
 	}
 	//Close Polygone
 	if ($FirstPoint<>$LastPoint) {
@@ -225,14 +233,17 @@ function GetJSONData($Filename) {
 // von 16.02.2025
 	$FirstPoint = "";
 	if ($DataOut["Flaechendaten"]=="") {
+		$CurrentPoint = "";
+		if (isset($DataA["geojson"]["features"]["1"]["geometry"]["coordinates"]) && is_array($DataA["geojson"]["features"]["1"]["geometry"]["coordinates"])) {
 		foreach ($DataA["geojson"]["features"]["1"]["geometry"]["coordinates"] as &$value) {
-			if ($value["0"]!="") {
+			if (isset($value["0"], $value["1"]) && $value["0"] !== "") {
 				$CurrentPoint = $value["0"] . ", " . $value["1"] . "     ";
 				$DataOut["Flaechendaten"] .=  $CurrentPoint;
 				if ($FirstPoint=="") {
 					$FirstPoint= $CurrentPoint;
 				}
 			}
+		}
 		}
 		$LastPoint= $CurrentPoint;
 	}
@@ -241,52 +252,75 @@ function GetJSONData($Filename) {
 		$DataOut["Flaechendaten"] .=  $FirstPoint;
 	}
 
+	$DataOut["Grundstueckdaten"]["Startplatz"] = "";
+	$DataOut["Grundstueckdaten"]["Parkplatz"] = "";
+	$DataOut["Flugweg"] = "";
+	if (isset($DataA["geojson"]["features"]) && is_array($DataA["geojson"]["features"])) {
 	foreach ($DataA["geojson"]["features"] as &$value) {
-		if ($value["geometry"]["type"] == "Point") {
-			if (($DataOut["Grundstueckdaten"]["Startplatz"]=="") 
-				and ($value["properties"]["type"] ==6)) {
+		if (isset($value["geometry"]["type"]) && $value["geometry"]["type"] == "Point") {
+			$pointHasCoord = isset($value["geometry"]["coordinates"]["0"], $value["geometry"]["coordinates"]["1"])
+				&& $value["geometry"]["coordinates"]["0"] !== ""
+				&& $value["geometry"]["coordinates"]["1"] !== "";
+			$pointProps = (isset($value["properties"]) && is_array($value["properties"])) ? $value["properties"] : array();
+			$pointType = $pointProps["type"] ?? null;
+			$pointHeight = $pointProps["height"] ?? 0;
+			if ($pointHasCoord
+				&& ($DataOut["Grundstueckdaten"]["Startplatz"]=="") 
+				&& ($pointType ==6)) {
 				// Startpunkt
 				$DataOut["Grundstueckdaten"]["Startplatz"] =  $value["geometry"]["coordinates"]["0"] . ", " . $value["geometry"]["coordinates"]["1"];
 			}
-			if (($DataOut["Grundstueckdaten"]["Parkplatz"]=="")
-				and ($value["properties"]["type"] ==9)) {
+			if ($pointHasCoord
+				&& ($DataOut["Grundstueckdaten"]["Parkplatz"]=="")
+				&& ($pointType ==9)) {
 				// Parkplatz
 				$DataOut["Grundstueckdaten"]["Parkplatz"] =  $value["geometry"]["coordinates"]["0"] . ", " . $value["geometry"]["coordinates"]["1"];
 			}
-			if (($value["properties"]["height"] > 0) 
-				and ($value["properties"]["type"] ==1))
+			if (($pointHeight > 0) 
+				&& ($pointType ==1))
 				// gesetzte POI's (type = 2) für die Kameraausrichtung werden für die Wegpunkte ausgefiltert.
 				{
 				// Wegpunkt
-				$DataOut["Flugweg"].=   $value["geometry"]["coordinates"]["0"] . ", " . $value["geometry"]["coordinates"]["1"] . ", ". $value["properties"]["height"] . "    ";
+				if ($pointHasCoord) {
+					$DataOut["Flugweg"].=   $value["geometry"]["coordinates"]["0"] . ", " . $value["geometry"]["coordinates"]["1"] . ", ". $pointHeight . "    ";
+				}
 				// Wegpunkt (Height above See
 				//$DataOut["Flugweg"].=   $value["properties"]["aboveSea"]["lat"] . ", " . $value["properties"]["aboveSea"]["lng"] . ", ". $value["properties"]["aboveSea"]["value"] + //$value["properties"]["height"]. ", " . "    ";
 			} else {
 				// Startpunkt
-				$DataOut["Grundstueckdaten"]["Startplatz"] =  $value["geometry"]["coordinates"]["0"] . ", " . $value["geometry"]["coordinates"]["1"];
+				if ($pointHasCoord) {
+					$DataOut["Grundstueckdaten"]["Startplatz"] =  $value["geometry"]["coordinates"]["0"] . ", " . $value["geometry"]["coordinates"]["1"];
+				}
 			}
 		}
 	}
+	}
 	//Information Landwirt
+	$owner = (isset($DataA["data"]["owner"]) && is_array($DataA["data"]["owner"])) ? $DataA["data"]["owner"] : array();
+	$ownerFirst = $owner["firstname"] ?? "";
+	$ownerLast = $owner["name"] ?? "";
+	$ownerAddress = (isset($owner["address"]) && is_array($owner["address"])) ? ($owner["address"]["formatted"] ?? "") : "";
+	$ownerPhone = $owner["phone"] ?? "";
+	$ownerEmail = $owner["email"] ?? "";
+	$ownerNotice = $owner["notice"] ?? "";
+	$contributorNotice = (isset($DataA["contributor"]) && is_array($DataA["contributor"])) ? ($DataA["contributor"]["notice"] ?? "") : "";
+	$ownerBlock = $ownerFirst . " " . $ownerLast . chr(10) .
+						"A: ". $ownerAddress . chr(10) .
+						"T: ". FormatPhoneNumber($ownerPhone) . chr(10) .
+						"M: ". $ownerEmail;
 	$DataOut["Bauer"] = function_exists('rkrk_text_utf8')
-		? rkrk_text_utf8($DataA["data"]["owner"]["firstname"] . " " . $DataA["data"]["owner"]["name"] . chr(10) .
-							"A: ". $DataA["data"]["owner"]["address"]["formatted"] . chr(10) .
-							"T: ". FormatPhoneNumber($DataA["data"]["owner"]["phone"]) . chr(10) .
-							"M: ". $DataA["data"]["owner"]["email"])
-		: ($DataA["data"]["owner"]["firstname"] . " " . $DataA["data"]["owner"]["name"] . chr(10) .
-							"A: ". $DataA["data"]["owner"]["address"]["formatted"] . chr(10) .
-							"T: ". FormatPhoneNumber($DataA["data"]["owner"]["phone"]) . chr(10) .
-							"M: ". $DataA["data"]["owner"]["email"]);
-	$DataOut["Bauer Name"] =   $DataA["data"]["owner"]["firstname"] . " " . $DataA["data"]["owner"]["name"]; 
+		? rkrk_text_utf8($ownerBlock)
+		: $ownerBlock;
+	$DataOut["Bauer Name"] =   $ownerFirst . " " . $ownerLast; 
 	$DataOut["Bauer Adresse"] = function_exists('rkrk_text_utf8')
-		? rkrk_text_utf8($DataA["data"]["owner"]["address"]["formatted"])
-		: $DataA["data"]["owner"]["address"]["formatted"];
-	$DataOut["Bauer Telefon"] =  FormatPhoneNumber($DataA["data"]["owner"]["phone"]);
-	$DataOut["Bauer Email"] = $DataA["data"]["owner"]["email"];
+		? rkrk_text_utf8($ownerAddress)
+		: $ownerAddress;
+	$DataOut["Bauer Telefon"] =  FormatPhoneNumber($ownerPhone);
+	$DataOut["Bauer Email"] = $ownerEmail;
 
 	$tmp_str = function_exists('rkrk_text_utf8')
-		? rkrk_text_utf8($DataA["data"]["owner"]["notice"]) . rkrk_text_utf8($DataA["contributor"]["notice"])
-		: ($DataA["data"]["owner"]["notice"] . $DataA["contributor"]["notice"]);
+		? rkrk_text_utf8($ownerNotice) . rkrk_text_utf8($contributorNotice)
+		: ($ownerNotice . $contributorNotice);
 	$prefix=", ";
 	if (substr($tmp_str, 0, strlen($prefix)) == $prefix) 
 	{
@@ -294,11 +328,11 @@ function GetJSONData($Filename) {
 	} 
 	$DataOut["Notiz"] = $tmp_str;
 
-	$DataOut["Bauer Email"] = $DataA["data"]["owner"]["email"];
+	$DataOut["Bauer Email"] = $ownerEmail;
 	
 	//Gruppengebiete (Auftragskoordination)
-	$DataOut["GruppenGebiet"] = $DataA["pilotGroupAreaName"];
-	$DataOut["ZoneID"] = $DataA["data"]["zoneId"];
+	$DataOut["GruppenGebiet"] = $DataA["pilotGroupAreaName"] ?? "";
+	$DataOut["ZoneID"] = (isset($DataA["data"]) && is_array($DataA["data"])) ? ($DataA["data"]["zoneId"] ?? "") : "";
 
 	$DebugInfo .=  "<li> Startplatz: " . $DataOut["Grundstueckdaten"]["Startplatz"] . "</li>" . chr(10);
 	$DebugInfo .=  "<li> Flaechendaten: " . $DataOut["Flaechendaten"] . "</li>" . chr(10);
@@ -516,7 +550,7 @@ Function SetFeldAndFilenameInJson(&$JsonData, $FilenameEntry) {
 	$JsonData["fileNameCompleteForExport"] = $Dateiname;		
 }
 
-function UpdateFilenameAndFeldIDInJson($Filename, $FilenameEntry, $OldJG, $NewJG, $FeldID)
+function UpdateFilenameAndFeldIDInJson($Filename, $FilenameEntry, $OldJG, $NewJG, $FeldID, $absolutePath = '')
 {
 global 	$RKRKLocalLoactionMissionFiles, 
 		$RegionSettings;
@@ -527,7 +561,16 @@ global 	$RKRKLocalLoactionMissionFiles,
 		//echo "JSON FileName: " . $FilenameEntry . "<br>";
 		//echo "OLDJG: " . $OldJG . "<br>";
 		//echo "NEWJG: " . $NewJG . "<br>";
-		$JsonFile = $RKRKLocalLoactionMissionFiles.$RegionSettings[$OldJG]["Dir"]."/".$Filename;
+		$JsonFile = trim((string)$absolutePath);
+		if ($JsonFile === '' || !is_file($JsonFile)) {
+			$JsonFile = $RKRKLocalLoactionMissionFiles.$RegionSettings[$OldJG]["Dir"]."/".$Filename;
+		}
+		if (!is_file($JsonFile)) {
+			$inField = $RKRKLocalLoactionMissionFiles.$RegionSettings[$OldJG]["Dir"]."/".$FeldID."/".$Filename;
+			if (is_file($inField)) {
+				$JsonFile = $inField;
+			}
+		}
 		//echo "JsonFile Location: " . $JsonFile . "<br>";
 		$JsonArray = ReadJsonFile($JsonFile);
 		//pre_r($JsonArray);
@@ -711,12 +754,13 @@ function ChangeJSONforNewDrone(&$JsonArray,$TargetDrone,$SourceHeight,$TargetHei
 	//END Pilot 2 drones
 }	
 
-function CreateJSONforNewDrone($JsonFile, $SourceDrone, $TargetDrone) {
+function CreateJSONforNewDrone($JsonFile, $SourceDrone, $TargetDrone, $persist = true) {
 	global 	$RKRKLocalLoactionMissionFiles,
 			$RKRKRelWebLocation,
 			$RegionSettings, 
 			$MissionDroneTypes, 
-			$MaxFlightHeight;
+			$MaxFlightHeight,
+			$tempfilelocation;
 
 	//Read Soruce JSON File
 	//$RKRKRelWebLocation="../../rkropen/";
@@ -743,11 +787,13 @@ function CreateJSONforNewDrone($JsonFile, $SourceDrone, $TargetDrone) {
 	
 	//Changes JSON Content for New Drone
 	if (($SourceDrone!="M2") and ($TargetDrone!="M2")) {
-		//Only working on Pilot2 drones
 		ChangeJSONforNewDrone($JsonArray,$TargetDrone,$SourceHeight,$TargetHeight,$SourceFilename,$TargetFilename);
 	}
-	//pre_R($JsonArray);
-	//echo "JSON wurde von " . $SourceDrone . " nach " . $TargetDrone . " umgewandelt und in " . $TargetJsonFile . " gespeichert.";
+	if (!$persist) {
+		$out = rtrim(str_replace('\\', '/', (string)$tempfilelocation), '/') . '/' . trim($TargetFilename) . '.json';
+		WriteJsonFile($out, $JsonArray);
+		return $out;
+	}
 	WriteJsonFile ($TargetJsonFile, $JsonArray);
 	return $TargetFilename.".json";
 }

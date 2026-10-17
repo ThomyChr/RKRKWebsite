@@ -21,8 +21,8 @@
 	GrantAccess();
 	CreateTopMenu();
 	PrintRKRKHeader($pagetitle);
-echo "<link rel='stylesheet' href='scripts/rkrk_adr_grid.css?v=20260924feld6'>";
-echo "<script src='scripts/rkrk_adr_grid.js?v=20260924feld6'></script>";
+echo "<link rel='stylesheet' href='scripts/rkrk_adr_grid.css?v=20261012col1'>";
+echo "<script src='scripts/rkrk_adr_grid.js?v=20261012rows1'></script>";
 echo "<style>
 .rkrk-card-table {
   width: 100%;
@@ -312,7 +312,7 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 												"Name" => "GeoID",
 												"Type" => "text",
 												"Sort" => "",
-												"Show" => true),
+												"Show" => false),
 							"Gemeinde" => array ( "Field" => "Gde",
 												"Name" => "Gde",
 												"Type" => "text",
@@ -384,12 +384,8 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 												"Sort" => "",
 												"Show" => false),
 										);
-		if (!$geofence) {
-			//remove geofence entries
-			unset($TableSetup["GeoJG"]);
-			unset($TableSetup["GeoGde"]);
-			unset($TableSetup["GeoWrn"]);
-		}
+		// GeoJG, GeoID, GeoGde und GeoWrn bleiben im Spaltenwähler.
+		// Show=false ist der Default; nachgerechnet wird nur, wenn die Spalte sichtbar ist.
 		$FormSet = Array(
 							"NewOnly" => array ( "Field" => "NewOnly",
 												"Name" => "Nur neue Felder",
@@ -413,6 +409,129 @@ if (!function_exists('rkrk_list_fstr')) {
 	function rkrk_list_fstr($feld, $key) {
 		$v = is_array($feld) ? ($feld[$key] ?? '') : '';
 		return function_exists('rkrk_str') ? rkrk_str($v) : (is_array($v) || is_object($v) ? '' : (string)($v ?? ''));
+	}
+}
+
+if (!function_exists('rkrk_list_is_neu')) {
+	function rkrk_list_is_neu($feld) {
+		$frei = rkrk_list_fstr($feld, 'Freigabe');
+		$parts = preg_split('/[\s,;|]+/', $frei, -1, PREG_SPLIT_NO_EMPTY);
+		if (!is_array($parts)) {
+			return false;
+		}
+		foreach ($parts as $tok) {
+			if (strcasecmp((string)$tok, 'NEU') === 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+if (!function_exists('rkrk_list_ymd')) {
+	function rkrk_list_ymd($year, $month, $day) {
+		$year = (int)$year;
+		$month = (int)$month;
+		$day = (int)$day;
+		if (!checkdate($month, $day, $year)) {
+			return null;
+		}
+		$ts = strtotime(sprintf('%04d-%02d-%02d', $year, $month, $day));
+		return $ts === false ? null : $ts;
+	}
+}
+
+if (!function_exists('rkrk_list_date_ts')) {
+	function rkrk_list_date_ts($value) {
+		$value = trim((string)$value);
+		if ($value === '') {
+			return null;
+		}
+		if (preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:\D|$)/', $value, $m)) {
+			return rkrk_list_ymd((int)$m[1], (int)$m[2], (int)$m[3]);
+		}
+		if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\D|$)/', $value, $m)) {
+			return rkrk_list_ymd((int)$m[3], (int)$m[2], (int)$m[1]);
+		}
+		if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{2})$/', $value, $m)) {
+			$year = (int)$m[3];
+			$year += ($year >= 70) ? 1900 : 2000;
+			return rkrk_list_ymd($year, (int)$m[2], (int)$m[1]);
+		}
+		return null;
+	}
+}
+
+if (!function_exists('rkrk_list_changed_since')) {
+	function rkrk_list_changed_since($feld, $sinceTs) {
+		$sinceTs = (int)$sinceTs;
+		if ($sinceTs < 1) {
+			return false;
+		}
+		$sinceDay = strtotime(date('Y-m-d', $sinceTs));
+		$today = strtotime(date('Y-m-d'));
+		foreach (array('Aenderung', 'Update') as $key) {
+			$ts = rkrk_list_date_ts(rkrk_list_fstr($feld, $key));
+			if ($ts === null) {
+				continue;
+			}
+			$day = strtotime(date('Y-m-d', $ts));
+			if ($day >= $sinceDay && $day <= $today) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+if (!function_exists('rkrk_list_norm_name')) {
+	function rkrk_list_norm_name($value) {
+		$search = array(' ', 'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', '-', '_');
+		$find = array('-', 'a', 'o', 'u', 'A', 'O', 'U', '-', '-');
+		return str_replace($search, $find, trim((string)$value));
+	}
+}
+
+if (!function_exists('rkrk_list_name_matches_file')) {
+	/** Leerer Dateiname ist keine Abweichung. Sonst Name oder Name_Flurname. */
+	function rkrk_list_name_matches_file($fileName, $feldName, $flurName) {
+		$fileName = trim((string)$fileName);
+		if ($fileName === '') {
+			return true;
+		}
+		$fileNorm = rkrk_list_norm_name($fileName);
+		$nameNorm = rkrk_list_norm_name($feldName);
+		$bothNorm = rkrk_list_norm_name($feldName . '_' . $flurName);
+		if ($fileNorm === $nameNorm || $fileNorm === $bothNorm) {
+			return true;
+		}
+		if ($nameNorm !== '' && strpos($fileNorm, $nameNorm . '-') === 0) {
+			return true;
+		}
+		return $bothNorm !== '' && strpos($fileNorm, $bothNorm . '-') === 0;
+	}
+}
+
+if (!function_exists('rkrk_list_kat_row')) {
+	function rkrk_list_kat_row($katFileList, $jg, $feldId) {
+		$jg = trim((string)$jg);
+		$feldId = trim((string)$feldId);
+		if ($feldId === '' || !is_array($katFileList)) {
+			return array();
+		}
+		if ($jg !== '' && isset($katFileList[$jg][$feldId]) && is_array($katFileList[$jg][$feldId])) {
+			return $katFileList[$jg][$feldId];
+		}
+		foreach ($katFileList as $bucket) {
+			if (!is_array($bucket) || !isset($bucket[$feldId]) || !is_array($bucket[$feldId])) {
+				continue;
+			}
+			if (trim((string)($bucket[$feldId]['FeldID'] ?? '')) === '') {
+				continue;
+			}
+			return $bucket[$feldId];
+		}
+		return array();
 	}
 }
 
@@ -446,6 +565,7 @@ IF ($EnableDelete) {
 } else {
 	$EnableDeleteSet = "EnableDelete=off";
 }
+$mdbParam = 'MDB=' . rawurlencode((string)($RKRKMissionSelected ?? ''));
 
 if (isset($_GET["DoSafe"])) { 
 	if ($_GET["DoSafe"]=="Y") {
@@ -499,6 +619,29 @@ if (isset($_GET["Reg"])) {
 	} else {
 		$ActPage= 1;
 	}
+	// max_input_vars ist 1000. Pro Zeile bis zu 18 Felder, deshalb höchstens 30 Zeilen.
+	$AnzLines = array(10, 20, 25, 30);
+	$AnzLinesPPage = (int)$AnzLinesPPage;
+	if ($AnzLinesPPage < 1 || $AnzLinesPPage > 30) {
+		$AnzLinesPPage = 30;
+	}
+	$ActPage = (int)$ActPage;
+	if ($ActPage < 1) {
+		$ActPage = 1;
+	}
+	$regUrl = '';
+	if (trim((string)$RegSelected) !== '') {
+		$regUrl = '&Reg=' . rawurlencode(trim((string)$RegSelected));
+	}
+	$filterNewOnly = isset($_GET['NewOnly']) && (string)$_GET['NewOnly'] !== '' && (string)$_GET['NewOnly'] !== '0';
+	$filterChanged = isset($_GET['Changed']) && (string)$_GET['Changed'] !== '' && (string)$_GET['Changed'] !== '0';
+	$rkrkChangedSince = strtotime('2026-10-05');
+	if ($filterNewOnly) {
+		$regUrl .= '&NewOnly=1';
+	}
+	if ($filterChanged) {
+		$regUrl .= '&Changed=1';
+	}
 	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 		$FontSize= $_POST["FontSize"];
 	}
@@ -527,20 +670,29 @@ function Legends() {
 	echo "<tr valign='top'><td>";
 	echo "<ul>" . chr(10);
 	foreach ($OptionFrei as $Key => $Entry) {
-		echo "<li> <b>" . $Entry["Opt"] . "</b>  -  ". $Entry["Text"] . "</li>";
+		if (!is_array($Entry)) {
+			continue;
+		}
+		echo "<li> <b>" . htmlspecialchars((string)($Entry["Opt"] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>  -  ". htmlspecialchars((string)($Entry["Text"] ?? ''), ENT_QUOTES, 'UTF-8') . "</li>";
 	}
 	echo "</ul>" . chr(10);
 	echo "</td><td>";
 	echo "<ul>" . chr(10);
 	foreach ($OptionWarning as $Key => $Entry) {
-		echo "<li> <b>" . $Entry["Opt"] . "</b>  -  ". $Entry["Text"] . "</li>";
+		if (!is_array($Entry)) {
+			continue;
+		}
+		echo "<li> <b>" . htmlspecialchars((string)($Entry["Opt"] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>  -  ". htmlspecialchars((string)($Entry["Text"] ?? ''), ENT_QUOTES, 'UTF-8') . "</li>";
 	}
-	echo "</td><td>";
 	echo "</ul>" . chr(10);
+	echo "</td><td>";
 	echo "<ul>" . chr(10);
 	$i= 0;
 	foreach ($OptionGemeinde as $Key => $Entry) {
-		echo "<li> <b>" . $Entry["Opt"] . "</b>  -  ". $Entry["Text"] . "</li>";
+		if (!is_array($Entry)) {
+			continue;
+		}
+		echo "<li> <b>" . htmlspecialchars((string)($Entry["Opt"] ?? ''), ENT_QUOTES, 'UTF-8') . "</b>  -  ". htmlspecialchars((string)($Entry["Text"] ?? ''), ENT_QUOTES, 'UTF-8') . "</li>";
 		//echo $i%5 . "<br>";
 		if (($i%6)==5) {
 			echo "</td><td>";
@@ -575,7 +727,26 @@ if (!empty($adrUi['hidden']) && is_array($adrUi['hidden'])) {
 		$hiddenCols[(string)$hiddenKey] = true;
 	}
 }
-echo '<form name="form" method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">';
+$lazyGeoCols = array('GeoJG' => true, 'GrundstueckID' => true, 'GeoGde' => true, 'GeoWrn' => true);
+$geoShown = null;
+if (array_key_exists('rkrk_felder_geo', $_COOKIE)) {
+	$geoShown = array();
+	foreach (explode(',', (string)$_COOKIE['rkrk_felder_geo']) as $geoPart) {
+		$geoPart = trim($geoPart);
+		if (isset($lazyGeoCols[$geoPart])) {
+			$geoShown[$geoPart] = true;
+		}
+	}
+}
+foreach ($lazyGeoCols as $geoKey => $geoFlag) {
+	if (is_array($geoShown) && isset($geoShown[$geoKey])) {
+		unset($hiddenCols[$geoKey]);
+	} else {
+		$hiddenCols[$geoKey] = true;
+	}
+}
+$adrUi['hidden'] = array_keys($hiddenCols);
+echo '<form name="form" method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"] . '?' . $mdbParam . '&ActPage=' . (int)$ActPage . '&' . $EnableDeleteSet . $regUrl, ENT_QUOTES, 'UTF-8') . '">';
 $i= 0;
 $NoSelection = true;
 echo '<div class="rkrk-adr-head">';
@@ -585,13 +756,62 @@ echo '<span class="rkrk-adr-head-label">Region</span>';
 $NoSelection = rkrk_print_region_pills($RegionSettings, $EnabledRegion, (string)$i, $RegSelected, true);
 $i++;
 echo '</div>';
+echo "<script>
+(function(){
+  var root = document.querySelector('[data-adr-filter=\"region\"]');
+  if (!root || root.getAttribute('data-reg-nav') === '1') return;
+  root.setAttribute('data-reg-nav', '1');
+  function labelsFromReg(reg) {
+    reg = String(reg || '').trim();
+    if (reg === '' || /^alle$/i.test(reg) || /^all$/i.test(reg)) return ['alle'];
+    return reg.split(/[\\s,]+/).filter(function(part){ return part !== ''; });
+  }
+  function writeRegions(labels) {
+    try {
+      var key = 'rkrk-adr-filter-felder';
+      var prev = JSON.parse(localStorage.getItem(key) || '{}') || {};
+      prev.regions = labels;
+      localStorage.setItem(key, JSON.stringify(prev));
+    } catch (e) {}
+  }
+  var current = new URLSearchParams(window.location.search);
+  if (current.has('Reg')) writeRegions(labelsFromReg(current.get('Reg')));
+  root.addEventListener('change', function(ev){
+    var cb = ev.target;
+    if (!cb || cb.type !== 'checkbox') return;
+    window.setTimeout(function(){
+      var regs = [];
+      var alle = false;
+      var boxes = root.querySelectorAll('input[type=\"checkbox\"]');
+      for (var n = 0; n < boxes.length; n++) {
+        var box = boxes[n];
+        if (!box.checked) continue;
+        var lab = (box.parentNode && box.parentNode.textContent ? box.parentNode.textContent : '').replace(/\\s+/g, ' ').trim();
+        var isAll = box.getAttribute('data-rkrk-exclusive') === '1' || /^alle$/i.test(lab) || /^all$/i.test(lab);
+        if (isAll) { alle = true; continue; }
+        if (lab) regs.push(lab);
+      }
+      var labels = (alle || regs.length === 0) ? ['alle'] : regs.slice();
+      writeRegions(labels);
+      var url = new URL(window.location.href);
+      url.searchParams.set('Reg', labels[0] === 'alle' && labels.length === 1 ? 'alle' : labels.join(' '));
+      url.searchParams.set('ActPage', '1');
+      window.location.assign(url.toString());
+    }, 30);
+  });
+})();
+</script>\n";
 echo '<div class="rkrk-adr-head-row" data-adr-filter="flags">';
 echo '<span class="rkrk-adr-head-label">Anzeige</span>';
 rkrk_echo_pills_open();
 foreach ($FormSet as $Feld ) {
 	$FormSet[$Feld["Field"]]["Set"] = false;
 	$flag = ($Feld["Field"] === "NewOnly") ? "new" : (($Feld["Field"] === "Changed") ? "changed" : "");
-	rkrk_echo_pill_checkbox($Feld["Field"] . "_en", $Feld["Name"], false, array('attrs' => array('data-flag' => $flag)));
+	$flagOn = ($Feld["Field"] === "NewOnly" && !empty($filterNewOnly)) || ($Feld["Field"] === "Changed" && !empty($filterChanged));
+	if ($flagOn) {
+		$FormSet[$Feld["Field"]]["Set"] = true;
+	}
+	rkrk_echo_pill_checkbox($Feld["Field"] . "_en", $Feld["Name"], $flagOn, array('attrs' => array('data-flag' => $flag)));
 }
 rkrk_echo_pills_close();
 echo '</div></div>';
@@ -607,15 +827,18 @@ if ($Layout!=2023) {
 }
 if (GetAccess("DeleteData")) {
 	if ($EnableDelete) {
-		echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_on.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&EnableDelete=off' height='" . $ButtonHeight . "'  title='Delete Moduls ausschalten'  style='background-color:transparent; border-color:transparent;'>" .chr(10);
+		echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_on.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . $mdbParam . "&ActPage=" . $ActPage . "&EnableDelete=off" . $regUrl . "' height='" . $ButtonHeight . "'  title='Delete Moduls ausschalten'  style='background-color:transparent; border-color:transparent;'>" .chr(10);
 	} else {
-		echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_off.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . "ActPage=" . $ActPage . "&EnableDelete=on' height='" . $ButtonHeight . "'title='Delete Moduls einschalten'  style='background-color:transparent; border-color:transparent;'>" .chr(10);
+		echo "<input type='image' value='EnableDelete' src='" . $IconLoc . "/delete_off.png' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"  . $mdbParam . "&ActPage=" . $ActPage . "&EnableDelete=on" . $regUrl . "' height='" . $ButtonHeight . "'title='Delete Moduls einschalten'  style='background-color:transparent; border-color:transparent;'>" .chr(10);
 	}
 }
 $AddURL = "&" . "ActPage=" . $ActPage . "&" . $EnableDeleteSet;
 echo MissionLibraryButtons($AddURL);
 if (GetAccess("TestOnly")) {
-	echo "<span id='exceldwnld'><a href='" . $csvMissionLocation . $RKRKFelderfileCSV . "' ><image src='" . $IconLoc . "/excel.png' height='" . $ButtonHeight. "'  title='Excel Feldkatalog herunterladen'></a></span> ";
+	$feldCsvHref = (!empty($feldkatalogCsvLocation) ? $feldkatalogCsvLocation : $csvMissionLocation) . $RKRKFelderfileCSV;
+	if (is_file($feldCsvHref)) {
+		echo "<span id='exceldwnld'><a href='" . $feldCsvHref . "' ><image src='" . $IconLoc . "/excel.png' height='" . $ButtonHeight. "'  title='Excel Feldkatalog herunterladen'></a></span> ";
+	}
 }
 echo '</div></div>';
 echo '<input type="hidden" name="Act" id="Act" value="save">'. chr(10);
@@ -633,7 +856,14 @@ $OptionJaeger = Array();
 $Feldkatalog = GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
 $fileloaded = is_array($Feldkatalog) && $Feldkatalog !== array();
 if (!$fileloaded) {
-	echo '        <p>Der Feldkatalog konnte nicht geladen werden</p>';
+	$droneName = (string)($RKRKMissionSelected ?? '');
+	if (isset($MissionDroneTypes[$droneName]["Name"])) {
+		$droneName = (string)$MissionDroneTypes[$droneName]["Name"];
+	}
+	if ($droneName === '') {
+		$droneName = 'diesen Drohnentyp';
+	}
+	echo '        <p>Feldkatalog für ' . htmlspecialchars($droneName, ENT_QUOTES, 'UTF-8') . ' nicht vorhanden.</p>';
 }
 
 ////////////////////////////////////////////////////////////
@@ -666,9 +896,10 @@ if (false) {
 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-	if ($_POST["NumEntries"]>0) {
+	$numEntries = isset($_POST["NumEntries"]) ? (int)$_POST["NumEntries"] : 0;
+	if ($numEntries > 0) {
 		//new configuration, safe configuration file
-		//echo "NumE: " . $_POST["NumEntries"] .  "<br>" . chr(10);
+		//echo "NumE: " . $numEntries .  "<br>" . chr(10);
 
 		// safe history
 		$file = $xmlMissionLocation . $RKRKFelderfileXML;
@@ -681,13 +912,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 		}
 
 		//Write to LOGfile
-		WriteToLog("save", basename($_SERVER['PHP_SELF']), "Felddatenliste ",strval($_POST["JG" . $i]),$RKRKMissionSelected,"");		for ($i = 1; $i < $_POST["NumEntries"]; $i++) {
+		// $i ist hier noch der Zähler aus dem Seitenkopf (1), nicht die Zeilenschleife.
+		// JG1 ist deshalb oft nicht im POST; fehlenden Schlüssel nicht warnen.
+		WriteToLog("save", basename($_SERVER['PHP_SELF']), "Felddatenliste ",strval($_POST["JG" . $i] ?? ''),$RKRKMissionSelected,"");
+		for ($i = 1; $i < $numEntries; $i++) {
 			//echo $i . "<br>";
 			//echo  $i . "  " . $_POST["FeldID" . $i] . " " . $_POST["Feldname" . $i] . " " . $_POST["GrundstueckID" . $i];
 			if (true) {		
 
 
-				$JG = strval($_POST["JG" . $i]);
+				$JG = strval($_POST["JG" . $i] ?? '');
 				$FeldID = strval($_POST["FeldID" . $i]);
 
 
@@ -990,18 +1224,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 $FeldkatalogList = GetFeldKatalogList ($Feldkatalog);
 //pre_r($Feldkatalog);
-aasort($FeldkatalogList, "FeldID");
-aasort($FeldkatalogList, $ColSort);
-//pre_r($FeldkatalogList);
-
 
 	//===========================
 	// Andere Settings einlesen
 	//===========================
 	if ($_SERVER["REQUEST_METHOD"] == "POST") {
 	}
-
-	$KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 
 	// JG/Region selection
 	//pre_r($EnabledRegion);
@@ -1023,6 +1251,67 @@ aasort($FeldkatalogList, $ColSort);
 		}
 	}
 	//pre_R($RegionsSelected);
+	$regionFilterNarrow = false;
+	$activeRegionTotal = 0;
+	$activeRegionOn = 0;
+	if (is_array($RegionSettings)) {
+		foreach ($RegionSettings as $regRow) {
+			if (!is_array($regRow)) {
+				continue;
+			}
+			$rk = (string)($regRow['Reg'] ?? '');
+			if ($rk === '' || $rk === 'NO' || strcasecmp($rk, 'ALL') === 0 || strcasecmp($rk, 'leer') === 0) {
+				continue;
+			}
+			if (empty($regRow['Aktiv'])) {
+				continue;
+			}
+			$activeRegionTotal++;
+			if (!empty($EnabledRegion[$rk])) {
+				$activeRegionOn++;
+			}
+		}
+	}
+	$regionFilterNarrow = ($activeRegionOn > 0 && $activeRegionOn < $activeRegionTotal && count($RegionsSelected) > 0);
+	$regKeep = '';
+	if ($regionFilterNarrow) {
+		$onRegs = array();
+		foreach ($EnabledRegion as $rk => $on) {
+			if (!empty($on)) {
+				$onRegs[] = (string)$rk;
+			}
+		}
+		if ($onRegs !== array()) {
+			$regKeep = '&Reg=' . rawurlencode(implode(' ', $onRegs));
+		}
+	}
+	if (!empty($regionFilterNarrow)) {
+		foreach ($FeldkatalogList as $fid => $Feld) {
+			if (!is_array($Feld) || !isset($RegionsSelected[rkrk_list_fstr($Feld, "JG")])) {
+				unset($FeldkatalogList[$fid]);
+			}
+		}
+	}
+	if (!empty($filterNewOnly) || !empty($filterChanged)) {
+		foreach ($FeldkatalogList as $fid => $Feld) {
+			if (!is_array($Feld)) {
+				unset($FeldkatalogList[$fid]);
+				continue;
+			}
+			$match = false;
+			if (!empty($filterNewOnly) && rkrk_list_is_neu($Feld)) {
+				$match = true;
+			}
+			if (!empty($filterChanged) && rkrk_list_changed_since($Feld, $rkrkChangedSince)) {
+				$match = true;
+			}
+			if (!$match) {
+				unset($FeldkatalogList[$fid]);
+			}
+		}
+	}
+	aasort($FeldkatalogList, "FeldID");
+	aasort($FeldkatalogList, $ColSort);
     //pre_r($Feldkatalog);
 
 	$i=1;
@@ -1054,18 +1343,54 @@ aasort($FeldkatalogList, $ColSort);
 			$OptionGemeinde = array();
 		}
 		$OptionGemeinde[""] = Array("Opt" => "","Kml" => "", "Text" => "");
-		if (count($OptionGemeinde) > 0) {
-			array_multisort($OptionGemeinde, SORT_ASC);
+		$gdeSort = array();
+		foreach ($OptionGemeinde as $gdeKey => $gdeEntry) {
+			$gdeSort[$gdeKey] = is_array($gdeEntry) ? (string)($gdeEntry["Opt"] ?? '') : '';
+		}
+		if (count($OptionGemeinde) > 1) {
+			array_multisort($gdeSort, SORT_ASC, SORT_STRING, $OptionGemeinde);
 		}
 		//pre_r($OptionGemeinde);
 		
-		$i=1;
+			$i=1;
 			$pageline = 1;
-			$AnzLinesPPage = 99999;
-			$MaxPages = 1;
-			$ActPage = 1;
-			$showfrom = -1;
-			$showto = 999999;
+			if ((int)$AnzLinesPPage < 1) {
+				$AnzLinesPPage = 30;
+			}
+			$visibleIds = array();
+			foreach ($FeldkatalogList as $fid => $Feld) {
+				if (!is_array($Feld)) {
+					continue;
+				}
+				$feldJgVis = rkrk_list_fstr($Feld, "JG");
+				if (!empty($regionFilterNarrow) && !isset($RegionsSelected[$feldJgVis])) {
+					continue;
+				}
+				$visibleIds[] = $fid;
+			}
+			$visibleCount = count($visibleIds);
+			$MaxSelectedEntries = $visibleCount;
+			$MaxPages = ($visibleCount > 0) ? (int)ceil($visibleCount / (int)$AnzLinesPPage) : 1;
+			if ((int)$ActPage > $MaxPages) {
+				$ActPage = $MaxPages;
+			}
+			if ((int)$ActPage < 1) {
+				$ActPage = 1;
+			}
+			$showfrom = ((int)$ActPage - 1) * (int)$AnzLinesPPage;
+			$pageIds = array_slice($visibleIds, $showfrom, (int)$AnzLinesPPage);
+			$pageSet = array();
+			foreach ($pageIds as $pageFid) {
+				$pageSet[$pageFid] = true;
+			}
+			$scanRegion = array();
+			foreach ($pageIds as $pageFid) {
+				$pageJg = rkrk_list_fstr($FeldkatalogList[$pageFid] ?? array(), "JG");
+				if ($pageJg !== '') {
+					$scanRegion[$pageJg] = 1;
+				}
+			}
+			$KatFileList = ReadMissionFiles($RegionSettings, $scanRegion, $pageIds);
 			$FontSizeInPoints = 11;
 			if ($FontSize== "") {
 				$FontSize= "100%";
@@ -1080,12 +1405,17 @@ aasort($FeldkatalogList, $ColSort);
 
 			echo "<div id='alle' class='tabcontent'>" . chr(10);
 			foreach ($TableSetup as $setupKey => $Feld) {
-				if (is_array($Feld)) {
-					$TableSetup[$setupKey]["Show"] = true;
+				if (!is_array($Feld)) {
+					continue;
 				}
+				if (isset($lazyGeoCols[$setupKey])) {
+					$TableSetup[$setupKey]["Show"] = !isset($hiddenCols[$setupKey]);
+					continue;
+				}
+				$TableSetup[$setupKey]["Show"] = true;
 			}
 			echo "<div class='rkrk-feld-screen'>";
-			echo "<details class='rkrk-adr-col-vis' open>";
+			echo "<details class='rkrk-adr-col-vis'>";
 			echo "<summary>Spalten ein-/ausblenden</summary>";
 			echo "<p class='rkrk-adr-note'>Nicht angehakt = ausgeblendet. Die Einstellung bleibt gespeichert.</p>";
 			echo "<div class='rkrk-adr-cols'>";
@@ -1106,6 +1436,9 @@ aasort($FeldkatalogList, $ColSort);
 			echo "<th data-col='__nr'>#</th>" .chr(10);
 			//echo "<th>dwld</th>" .chr(10);
 			foreach ($FlyFileSetting as $FileKey => $FileType) {
+				if ((string)$FileKey === 'LCHM') {
+					continue;
+				}
 				$fileShow = function_exists('rkrk_explode_csv')
 					? rkrk_explode_csv($FileType["Show"] ?? '')
 					: explode(",", (string)($FileType["Show"] ?? ''));
@@ -1114,13 +1447,13 @@ aasort($FeldkatalogList, $ColSort);
 				}
 			}
 			foreach ($TableSetup AS $setupKey => $TableEntry) {
-				if (!is_array($TableEntry)) {
+				if (!is_array($TableEntry) || empty($TableEntry["Show"])) {
 					continue;
 				}
 				$sortKey = trim((string)($TableEntry["Sort"] ?? ''));
 				echo "<th class='rkrk-adr-sortable' data-col='" . htmlspecialchars((string)$setupKey, ENT_QUOTES, 'UTF-8') . "' title='Spalte sortieren'>" . htmlspecialchars((string)$TableEntry["Name"]);
 				if ($sortKey !== '') {
-					$sortHref = htmlspecialchars($_SERVER["PHP_SELF"], ENT_QUOTES, 'UTF-8') . "?ActPage=1&Sortieren=" . rawurlencode($sortKey) . "&" . $EnableDeleteSet;
+					$sortHref = htmlspecialchars($_SERVER["PHP_SELF"], ENT_QUOTES, 'UTF-8') . "?" . $mdbParam . "&ActPage=1&Sortieren=" . rawurlencode($sortKey) . "&" . $EnableDeleteSet . $regUrl;
 					echo " <a class='rkrk-adr-sort' href='" . $sortHref . "' title='Ganze Liste nach " . htmlspecialchars((string)$TableEntry["Name"], ENT_QUOTES, 'UTF-8') . " sortieren'>&#8597;</a>";
 				}
 				echo "</th>" .chr(10);
@@ -1129,9 +1462,9 @@ aasort($FeldkatalogList, $ColSort);
 			echo "</tr>" .chr(10);
 
 			//echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">'. chr(10);
-			$showGeoJG = !empty($geofence) && isset($TableSetup["GeoJG"]);
-			$showGeoGde = !empty($geofence) && isset($TableSetup["GeoGde"]);
-			$showGeoWrn = !empty($geofence) && isset($TableSetup["GeoWrn"]);
+			$showGeoJG = !empty($TableSetup["GeoJG"]["Show"]);
+			$showGeoGde = !empty($TableSetup["GeoGde"]["Show"]);
+			$showGeoWrn = !empty($TableSetup["GeoWrn"]["Show"]);
 			//echo $showfrom . ", " . $showto . ", " . $MaxSelectedEntries . ", " . $AnzLinesPPage . ", " . $MaxPages;
 //			foreach ($Feldkatalog as $Key => $Region) {
 			foreach ($FeldkatalogList as $Key => $Feld) {
@@ -1139,6 +1472,12 @@ aasort($FeldkatalogList, $ColSort);
 					continue;
 				}
 				$feldJg = rkrk_list_fstr($Feld, "JG");
+				if (!empty($regionFilterNarrow) && !isset($RegionsSelected[$feldJg])) {
+					continue;
+				}
+				if (!isset($pageSet[$Key])) {
+					continue;
+				}
 				$listNr = $Feld["ListNr"] ?? '';
 				if (is_array($listNr) || is_object($listNr)) {
 					$listNr = '';
@@ -1170,13 +1509,17 @@ aasort($FeldkatalogList, $ColSort);
 							}
 							$CoreFileNameWoULM = str_replace($searchRep, $replaceRep, $CoreFileName);
 							$LenFeldID = strlen($fId);
-							$katRow = array();
-							if (isset($KatFileList[$feldJg]) && is_array($KatFileList[$feldJg]) && isset($KatFileList[$feldJg][$fId]) && is_array($KatFileList[$feldJg][$fId])) {
-								$katRow = $KatFileList[$feldJg][$fId];
-							}
-							$isNew = (rkrk_list_fstr($katRow, "FeldID") !== $fId);
-							$isChanged = (rkrk_list_fstr($katRow, "Feldname") !== $fName) || (rkrk_list_fstr($katRow, "Flurname") !== $fFlur);
-							echo "<tr class='rkrkedit' data-jg='" . htmlspecialchars($feldJg, ENT_QUOTES, 'UTF-8') . "' data-new='" . ($isNew ? '1' : '0') . "' data-changed='" . ($isChanged ? '1' : '0') . "'>" .chr(10);
+							$katRow = rkrk_list_kat_row($KatFileList, $feldJg, $fId);
+							$fileId = rkrk_list_fstr($katRow, "FeldID");
+							$katName = rkrk_list_fstr($katRow, "Feldname");
+							$katGeo = rkrk_list_fstr($katRow, "GrundstueckID");
+							$jgHasFiles = ($feldJg !== '' && !empty($KatFileList[$feldJg]['__hasfiles']));
+							$missingFile = ($fileId === '' && $jgHasFiles);
+							$isNew = rkrk_list_is_neu($Feld);
+							$isChanged = rkrk_list_changed_since($Feld, $rkrkChangedSince);
+							$aendShow = rkrk_list_fstr($Feld, 'Aenderung');
+							$updShow = rkrk_list_fstr($Feld, 'Update');
+							echo "<tr class='rkrkedit' data-jg='" . htmlspecialchars($feldJg, ENT_QUOTES, 'UTF-8') . "' data-new='" . ($isNew ? '1' : '0') . "' data-changed='" . ($isChanged ? '1' : '0') . "' data-aenderung='" . htmlspecialchars($aendShow, ENT_QUOTES, 'UTF-8') . "' data-update='" . htmlspecialchars($updShow, ENT_QUOTES, 'UTF-8') . "'>" .chr(10);
 							// Number
 							echo "<td>" . chr(10);
 							if ($EnableDelete) {
@@ -1184,20 +1527,20 @@ aasort($FeldkatalogList, $ColSort);
 								$enableDelQ = htmlspecialchars((string)($_GET["EnableDelete"] ?? 'off'), ENT_QUOTES, 'UTF-8');
 								$dbwQ = htmlspecialchars((string)($_GET["DBW"] ?? ''), ENT_QUOTES, 'UTF-8');
 								if (GetAccess("DeleteData")) {
-									echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . rawurlencode((string)$Feld["FeldID"]) . "&delete=Y&EnableDelete=" . $enableDelQ . "&DBW=" . $dbwQ . "' height='" . $iconHeight . "' title='Feld " . $Feld["FeldID"] . " löschen'>" .chr(10);
+									echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?" . $mdbParam . "&ActPage=" . $ActPage . "&FeldID=" . rawurlencode((string)$Feld["FeldID"]) . "&delete=Y&EnableDelete=" . $enableDelQ . "&DBW=" . $dbwQ . $regUrl . "' height='" . $iconHeight . "' title='Feld " . htmlspecialchars($fId, ENT_QUOTES, 'UTF-8') . " löschen'>" .chr(10);
 								} else {
-									echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . rawurlencode((string)$Feld["FeldID"]) . "&delete=Y&EnableDelete=" . $enableDelQ . "' height='" . $iconHeight . "'  title='Feld " . $Feld["FeldID"] . " löschen'>" .chr(10);
+									echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?" . $mdbParam . "&ActPage=" . $ActPage . "&FeldID=" . rawurlencode((string)$Feld["FeldID"]) . "&delete=Y&EnableDelete=" . $enableDelQ . $regUrl . "' height='" . $iconHeight . "'  title='Feld " . htmlspecialchars($fId, ENT_QUOTES, 'UTF-8') . " löschen'>" .chr(10);
 								}
 							}
 							$Inputfieldname = "Number".$i;
-							echo $pageline;
+							echo (int)$showfrom + (int)$pageline;
 							echo InputField($Inputfieldname, $i, 0, "left", "hidden");
 							// JG
 							$Inputfieldname = "JG".$i;
 							echo InputField($Inputfieldname, $feldJg, 0, "left", "hidden");
 							echo "</td>";
 							foreach ($FlyFileSetting as $FileKey => $FileType) {
-								if (!is_array($FileType)) {
+								if ((string)$FileKey === 'LCHM' || !is_array($FileType)) {
 									continue;
 								}
 								$fileShow = function_exists('rkrk_explode_csv')
@@ -1221,7 +1564,9 @@ aasort($FeldkatalogList, $ColSort);
 											} else {
 												$Picture= $IconLoc . "/" . $FileType["icon"] . "xx" . ".png";
 											}
-											echo "<a href='" . $RKRKLocalLoactionMissionFiles.$Link . "' download><img src='" . $Picture . "' height='" . $ButtonHeight * .8 ."' title='" .  $FileType["Text"] . " " . $Feld["FeldID"] . " - " . $Link . "'></a> <wbr>" . chr(10);
+											$href = htmlspecialchars($RKRKLocalLoactionMissionFiles . $Link, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+											$title = htmlspecialchars(rkrk_list_fstr($FileType, "Text") . " " . $fId . " - " . $Link, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+											echo "<a href='" . $href . "' download><img src='" . htmlspecialchars($Picture, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "' height='" . $ButtonHeight * .8 ."' title='" . $title . "'></a> <wbr>" . chr(10);
 										}
 									}
 									echo "</td>";
@@ -1266,19 +1611,15 @@ aasort($FeldkatalogList, $ColSort);
 							echo "</td>";
 */
 							
-							$katRow = array();
-							if (isset($KatFileList[$feldJg]) && is_array($KatFileList[$feldJg]) && isset($KatFileList[$feldJg][$fId]) && is_array($KatFileList[$feldJg][$fId])) {
-								$katRow = $KatFileList[$feldJg][$fId];
-							}
 							// FeldID
 							if (!empty($TableSetup["FeldID"]["Show"])) {
-								if (rkrk_list_fstr($katRow, "FeldID") == $fId) {
+								if (!$missingFile && ($fileId === '' || $fileId === $fId)) {
 									echo "<td>" .chr(10);
-									echo $fId;
+									echo htmlspecialchars($fId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 								} else {
 									echo "<td   style='background-color:" . $colorNOK . "'>" .chr(10);
-									echo $fId;
-									echo "<span style='color:" . $colorNOKtext . "'>  (". rkrk_list_fstr($katRow, "FeldID") .") </span>" .chr(10);
+									echo htmlspecialchars($fId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+									echo "<span style='color:" . $colorNOKtext . "'>  (". htmlspecialchars($fileId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .") </span>" .chr(10);
 								}
 								$Inputfieldname = "FeldID".$i;
 								echo InputField($Inputfieldname, $fId, 5, "left", "hidden");
@@ -1294,17 +1635,16 @@ aasort($FeldkatalogList, $ColSort);
 									$GeoJgd = GetJgdOfPOint($zJg);
 									//echo $GeoJgd;
 									//$GeoGde= "Gde";
-									if ($GeoJgd != "") {
-										if (substr($fId, 0, 2) == strval($GeoJgd)) {
-											  echo "<td>";
-											  $textcolor = $colorOKtext;
-										} else {
+									$jgPrefix = $feldJg !== '' ? $feldJg : ((strpos($fId, '-') !== false) ? substr($fId, 0, strpos($fId, '-')) : $fId);
+									if ($GeoJgd != "" && strcasecmp($jgPrefix, (string)$GeoJgd) !== 0) {
 											  echo "<td bgcolor='" . $colorNOK . "'>";
 											  $textcolor = $colorNOKtext;
-										}	  
+									} elseif ($GeoJgd != "") {
+											  echo "<td>";
+											  $textcolor = $colorOKtext;
 									} else {
 										echo "<td>";
-										$textcolor = $colorNOKtext;
+										$textcolor = "#333";
 									}	
 									echo "<span style='color:" . $textcolor . "'>" . $GeoJgd. "</span>";
 									echo "</td>";
@@ -1312,24 +1652,13 @@ aasort($FeldkatalogList, $ColSort);
 							}
 							// Feldname
 							if (!empty($TableSetup["Feldname"]["Show"])) {
-								$SearchA = Array(" ","ä","ö","ü","Ä","Ö","Ü","-"," ","_");
-								$FindA = Array("-","a","o","u","A","O","U","-","-","-");
-								//echo "JG: " . $Feld["JG"] . " FeldID: " . $Feld["FeldID"] . "  ";
-								//echo "Name: " . $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"] . "<br>";
-								//echo " - " .  $Feld["Feldname"] . "<br>";
-								//echo " - " .  str_replace(" ", "-", $Feld["Feldname"] . "_" . $Feld["Flurname"]) . "<br>";
-								//echo str_replace($SearchA, $FindA, $KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"]) . " - " .str_replace($SearchA, $FindA, $Feld["Feldname"]) . "<br>";
-								$katName = rkrk_list_fstr($katRow, "Feldname");
-								if ( 
-									(str_replace($SearchA, $FindA, $katName) == str_replace($SearchA, $FindA, $fName))  
-									or (str_replace($SearchA, $FindA, $katName)  == str_replace($SearchA, $FindA, $fName . "_" . $fFlur))
-									){
+								if (rkrk_list_name_matches_file($katName, $fName, $fFlur)) {
 									echo "<td>" .chr(10);
-									echo $fName;
+									echo htmlspecialchars($fName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 								} else {
 									echo "<td  style='background-color:" . $colorNOK . "'>" .chr(10);
-									echo $fName;
-									echo "<span style='color:" . $colorNOKtext . "'>  (". $katName .") </span>" .chr(10);
+									echo htmlspecialchars($fName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+									echo "<span style='color:" . $colorNOKtext . "'>  (". htmlspecialchars($katName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .") </span>" .chr(10);
 								}
 								$Inputfieldname = "Feldname".$i;
 								echo InputField($Inputfieldname, $fName, 15, "left", "hidden");
@@ -1344,14 +1673,13 @@ aasort($FeldkatalogList, $ColSort);
 							}
 							// GrundstückID
 							if (!empty($TableSetup["GrundstueckID"]["Show"])) {
-								$katGeo = rkrk_list_fstr($katRow, "GrundstueckID");
-								if ($katGeo == $fGeoId) {
+								if ($katGeo === '' || $katGeo === $fGeoId) {
 									echo "<td >" .chr(10);
-									echo $fGeoId;
+									echo htmlspecialchars($fGeoId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 								} else {
 									echo "<td  style='background-color:" . $colorNOK . "'>" .chr(10);
-									echo $fGeoId;
-									echo "<span style='color:" . $colorNOKtext . "'>  (". $katGeo .") </span>" .chr(10);
+									echo htmlspecialchars($fGeoId, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+									echo "<span style='color:" . $colorNOKtext . "'>  (". htmlspecialchars($katGeo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') .") </span>" .chr(10);
 								}
 								$Inputfieldname = "GrundstueckID".$i;
 								echo InputField($Inputfieldname, $fGeoId, 0, "left", "hidden");
@@ -1374,17 +1702,15 @@ aasort($FeldkatalogList, $ColSort);
 									$GeoGde = GetGdeOfPOint($zGeo);
 									//echo $GeoGde;
 									//$GeoGde= "Gde";
-									if ($GeoGde != "") {
-										if ($fGde==$GeoGde) {
-											  echo "<td>";
-											  $textcolor = $colorOKtext;
-										} else {
+									if ($GeoGde != "" && $fGde !== $GeoGde) {
 											  echo "<td bgcolor='" . $colorNOK . "'>";
 											  $textcolor = $colorNOKtext;
-										}	  
+									} elseif ($GeoGde != "") {
+											  echo "<td>";
+											  $textcolor = $colorOKtext;
 									} else {
 										echo "<td>";
-										$textcolor = $colorNOKtext;
+										$textcolor = "#333";
 									}	
 									echo "<span style='color:" . $textcolor . "'>" . $GeoGde. "</span>";
 									echo "</td>";
@@ -1423,17 +1749,15 @@ aasort($FeldkatalogList, $ColSort);
 									}
 									$GeoWarnFlgZ = GetWarnungFlgZOfPOint($zWrn);
 									//echo $GeoWarnFlgZ;
-									if ($GeoWarnFlgZ != "") {
-										if ($fWarn==$GeoWarnFlgZ) {
-											  echo "<td>";
-											  $textcolor = $colorOKtext;
-										} else {
+									if ($GeoWarnFlgZ != "" && $fWarn !== $GeoWarnFlgZ) {
 											  echo "<td bgcolor='" . $colorNOK . "'>";
 											  $textcolor = $colorNOKtext;
-										}	  
+									} elseif ($GeoWarnFlgZ != "") {
+											  echo "<td>";
+											  $textcolor = $colorOKtext;
 									} else {
 										echo "<td>";
-										$textcolor = $colorNOKtext;
+										$textcolor = "#333";
 									}	
 									echo "<span style='color:" . $textcolor . "'>" . $GeoWarnFlgZ. "</span>";
 									echo "</td>";
@@ -1509,10 +1833,11 @@ aasort($FeldkatalogList, $ColSort);
 							}
 							// Edit
 							echo "<td>" .chr(10);
-							echo " <a href='rkrk_fluege.php?add=Y&AddFlugID=" . rawurlencode($fId) . "&AddFlugToDate=" . date("Y-m-d", strtotime('tomorrow')). "' target='_editfluege'><img src='" . $IconLoc . "/addflug.png' height='" . $iconHeight . "px' title='Flugfeld " . $fId . " für Morgen hinzugfügen'></a>";
+							echo " <a href='rkrk_fluege.php?add=Y&AddFlugID=" . rawurlencode($fId) . "&AddFlugToDate=" . date("Y-m-d", strtotime('tomorrow')). "&" . $mdbParam . "' target='_editfluege'><img src='" . $IconLoc . "/addflug.png' height='" . $iconHeight . "px' title='Flugfeld " . htmlspecialchars($fId, ENT_QUOTES, 'UTF-8') . " für Morgen hinzugfügen'></a>";
 							echo "</td>";
 							echo "<td>" .chr(10);
-							echo " <a href='rkrk_edit_felddaten.php?FeldID=" . rawurlencode($fId) . "' target='_editfield'><img src='" . $IconLoc . "/edit.png' height='" . $iconHeight . "px' title='Feld editieren'></a>";
+							echo " <a href='rkrk_edit_felddaten.php?FeldID=" . rawurlencode($fId) . "&" . $mdbParam . "' target='_editfield'><img src='" . $IconLoc . "/edit.png' height='" . $iconHeight . "px' title='Feld editieren'></a>";
+							echo "</td>";
 							echo "</tr>";
 						
 							// -----------
@@ -1523,7 +1848,22 @@ aasort($FeldkatalogList, $ColSort);
 						}
 			}
 			echo "</table></div></div>" .chr(10);
-			echo "<script src='scripts/rkrk_adr_grid.js?v=20260924feld6'></script>" .chr(10);
+			echo "<script>
+(function(){
+  var boxes = document.querySelectorAll('.rkrk-adr-cols input[data-col]');
+  var hidden = [];
+  for (var i = 0; i < boxes.length; i++) {
+    if (!boxes[i].checked) hidden.push(boxes[i].getAttribute('data-col'));
+  }
+  try {
+    var key = 'rkrk-adr-ui-felder';
+    var prev = JSON.parse(localStorage.getItem(key) || '{}') || {};
+    prev.hidden = hidden;
+    localStorage.setItem(key, JSON.stringify(prev));
+  } catch (e) {}
+})();
+</script>" .chr(10);
+			echo "<script src='scripts/rkrk_adr_grid.js?v=20261012rows1'></script>" .chr(10);
 			echo "</div>" . chr(10);
 			echo "<div id='Info' class='tabcontent'>" . chr(10);
 			echo "</div>" . chr(10);
@@ -1535,7 +1875,7 @@ aasort($FeldkatalogList, $ColSort);
 			echo "<tr><td>" .chr(10);
 			
 			echo '<input type="hidden" name="NumEntries" id="NumEntries" value="'. $i. '" />'. chr(10);
-			PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, true, "Speichern", false, "&" . "Sortieren="  . $ColSort);
+			PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, true, "Speichern", false, '&' . $mdbParam . '&Sortieren=' . rawurlencode((string)$ColSort) . $regUrl);
 			echo "</td></tr>" .chr(10);
 			echo "</table>" .chr(10);
 		echo "</form>" .chr(10);

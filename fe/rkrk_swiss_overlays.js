@@ -253,13 +253,23 @@
     return 'DABS ' + parts.join(' ');
   }
 
+  function dabsRemarkText(feature) {
+    var keys = ['remark', 'description', 'bemerkung', 'Bemerkung'];
+    for (var i = 0; i < keys.length; i++) {
+      var value = feature && feature.get ? feature.get(keys[i]) : '';
+      var text = String(value || '').trim();
+      if (text) return text;
+    }
+    return '';
+  }
+
   function dabsPopupHtml(feature, meta) {
     var name = escapeHtml(feature.get('name') || 'DABS');
     var validity = escapeHtml(feature.get('validity') || '');
     var lower = escapeHtml(feature.get('lower') || '');
     var upper = escapeHtml(feature.get('upper') || '');
     var radius = escapeHtml(feature.get('radius') || '');
-    var remark = escapeHtml(feature.get('remark') || feature.get('description') || '');
+    var remark = escapeHtml(dabsRemarkText(feature));
     var notam = escapeHtml(feature.get('notam') || '');
     var html = '<div class="pop-title">' + name + '</div>';
     var bits = [];
@@ -764,7 +774,8 @@
           var f = new ol.Feature({ geometry: geom });
           Object.keys(props).forEach(function (k) { f.set(k, props[k]); });
           f.set('name', props.area || props.notam || props.name || 'DABS');
-          f.set('description', props.remark || '');
+          f.set('remark', props.remark || props.description || props.bemerkung || '');
+          f.set('description', f.get('remark') || '');
           f.set('dabsDate', meta.date || '');
           f.set('dabsVersion', meta.version || '');
           features.push(f);
@@ -791,7 +802,7 @@
       var hit = null;
       map.forEachFeatureAtPixel(evt.pixel, function (f, lyr) {
         if (!hit && lyr && lyr.get && lyr.get('rkrkDabsVector')) hit = f;
-      }, { hitTolerance: 3 });
+      }, { hitTolerance: 8 });
       if (!hit) {
         hidePopup();
         return false;

@@ -12,7 +12,7 @@
   CreateTopMenu();
 ?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@7.5.2/ol.css" />
-<link rel="stylesheet" href="template/rkrk_ref_layers.css?v=20260831a" />
+<link rel="stylesheet" href="template/rkrk_ref_layers.css?v=20261013del" />
 <?php if ($view === 'settings') { ?>
 <link rel="stylesheet" href="template/rkrk_ref_layers_settings.css?v=20260831a" />
 <?php } ?>
@@ -81,7 +81,9 @@ document.body.classList.add('rkrk-page', <?php echo ($view === 'settings') ? "'r
       <button type="button" class="icon-btn btn-ghost" id="resetBtn" title="Aus Mission-XML wiederherstellen">&#8634;</button>
       <button type="button" class="icon-btn btn-ghost" id="reloadBtn" title="Aktualisieren">&#8635;</button>
       <a class="icon-link btn-ghost" href="rkrk_map.php" title="Zur Karte">&#127757;</a>
+      <button type="button" id="newAlertBtn">Neue Alert-Zone</button>
     </div>
+    <div id="newAlertPanel" class="new-alert-panel" hidden></div>
     <div id="status" class="status">Bereit.</div>
     <p id="sourceInfo" class="muted"></p>
     <div id="groupsRoot" class="group"></div>
@@ -95,15 +97,17 @@ document.body.classList.add('rkrk-page', <?php echo ($view === 'settings') ? "'r
         <option value="Polygon">Polygon</option>
         <option value="LineString">Linie</option>
         <option value="Point">Punkt</option>
+        <option value="Circle">Kreis</option>
       </select>
+      <label id="mapRadiusWrap">Radius m<input id="mapRadiusM" type="number" min="1" step="1" value="500" title="Radius in Metern"></label>
       <button type="button" class="icon-btn" id="mapAddBtn" title="Neues Objekt zeichnen">&#10010;</button>
       <button type="button" class="icon-btn btn-danger" id="mapDelBtn" title="Objekt löschen">&#128465;</button>
       <input id="mapFeatName" type="text" placeholder="Name" title="Objektname" />
       <button type="button" class="icon-btn btn-ok" id="mapSaveBtn" title="KML speichern">&#128190;</button>
       <button type="button" class="icon-btn btn-ghost" id="mapCloseBtn" title="Kartenbearbeitung beenden">&#10005;</button>
     </div>
-    <div id="mapHint">Ecken ziehen · Alt-Klick löscht Ecke · Neu zeichnen · Speichern schreibt die KML</div>
+    <div id="mapHint">Ecken ziehen · Alt-Klick löscht Ecke · Kreis: Radius in Metern, ein Klick setzt den Mittelpunkt · Speichern schreibt die KML</div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
-  <script src="scripts/rkrk_ref_layers.js?v=20260831a"></script>
+  <script src="scripts/rkrk_ref_layers.js?v=20261013reload"></script>
 <?php } ?>

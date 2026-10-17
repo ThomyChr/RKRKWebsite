@@ -60,6 +60,195 @@ html {
 	width: 100%;
 	max-width: 100%;
 }
+.rkrk-felddaten tr.rkrk-pilot-row > td {
+	vertical-align: middle;
+}
+.rkrk-felddaten tr.rkrk-pilot-row .rkrk-pilot-cell {
+	white-space: nowrap;
+}
+.rkrk-felddaten tr.rkrk-pilot-row .rkrk-pilot-cell select {
+	width: auto;
+	vertical-align: middle;
+	display: inline-block;
+}
+.rkrk-pilot-tools {
+	display: inline-flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 6px;
+	margin-left: 8px;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+.rkrk-pilot-icons {
+	display: inline-flex;
+	flex: 0 0 auto;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 4px;
+	line-height: 0;
+}
+.rkrk-felddaten .rkrk-pilot-icons input[type="image"],
+.rkrk-felddaten .rkrk-pilot-icons button.rkrk-renew-pics {
+	width: 35px !important;
+	height: 35px !important;
+	min-width: 35px !important;
+	max-width: 35px !important;
+	min-height: 35px !important;
+	max-height: 35px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	line-height: 0 !important;
+	display: block;
+	flex: 0 0 35px;
+	object-fit: contain;
+	vertical-align: middle;
+}
+.rkrk-felddaten button.rkrk-renew-pics {
+	background: transparent !important;
+	border: 0 !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	width: 35px !important;
+	min-width: 35px !important;
+	line-height: 0 !important;
+	box-shadow: none !important;
+	vertical-align: middle;
+	display: inline-block;
+}
+.rkrk-felddaten button.rkrk-renew-pics img,
+.rkrk-felddaten .rkrk-pilot-icons button.rkrk-renew-pics img {
+	height: 35px;
+	width: 35px;
+	max-width: 35px;
+	max-height: 35px;
+	display: block;
+	object-fit: contain;
+	border: 0;
+	margin: 0;
+}
+#rkrkRenewPicsNote {
+	margin-left: 2px;
+	font-size: 12px;
+	font-weight: normal;
+	line-height: 1.3;
+	vertical-align: middle;
+}
+.rkrk-felddaten tr[data-rkrk-picrow] > td {
+	vertical-align: top;
+}
+.rkrk-felddaten td:has(.rkrk-pic-tools) + td[data-rkrk-piccell] {
+	padding-top: 48px;
+}
+.rkrk-felddaten td[data-rkrk-piccell="such"]:has(.rkrk-pilot-above-map) {
+	padding-top: 0;
+}
+.rkrk-pilot-above-map {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 6px;
+	margin: 0 0 6px;
+}
+.rkrk-pic-file {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0 0 8px;
+	max-width: 100%;
+}
+.rkrk-pic-tools {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 6px;
+	margin: 0 0 2px;
+	width: max-content;
+	max-width: 100%;
+}
+.rkrk-pic-line {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 6px;
+	margin: 0;
+	width: max-content;
+	max-width: 100%;
+}
+.rkrk-pic-name {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow-wrap: anywhere;
+	line-height: 1.35;
+}
+.rkrk-pic-actions {
+	display: inline-flex;
+	flex: 0 0 auto;
+	flex-wrap: nowrap;
+	align-items: center;
+	gap: 4px;
+	line-height: 0;
+}
+.rkrk-pic-tools img,
+.rkrk-pic-tools input[type="image"],
+.rkrk-pic-tools a {
+	width: 36px !important;
+	height: 36px !important;
+	max-width: 36px;
+	max-height: 36px;
+	margin: 0;
+	padding: 0;
+	border: 0 !important;
+	border-radius: 0;
+	background: transparent;
+	vertical-align: middle;
+	box-sizing: border-box;
+	object-fit: contain;
+	flex: 0 0 36px;
+	line-height: 0;
+}
+.rkrk-pic-tools a img {
+	width: 36px !important;
+	height: 36px !important;
+	max-width: 36px;
+	max-height: 36px;
+	display: block;
+}
+.rkrk-pic-actions img,
+.rkrk-pic-actions input[type="image"],
+.rkrk-pic-actions a {
+	width: 28px !important;
+	height: 28px !important;
+	max-width: 28px;
+	max-height: 28px;
+	margin: 0;
+	padding: 0;
+	border: 0 !important;
+	border-radius: 0;
+	background: transparent;
+	vertical-align: middle;
+	box-sizing: border-box;
+	object-fit: contain;
+	flex: 0 0 28px;
+	line-height: 0;
+}
+.rkrk-pic-actions a img {
+	width: 28px !important;
+	height: 28px !important;
+	max-width: 28px;
+	max-height: 28px;
+	display: block;
+}
+.rkrk-pic-add {
+	margin-top: 8px;
+}
 
 .rkrk-feldwahl {
 	display: flex;

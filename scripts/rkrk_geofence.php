@@ -1772,27 +1772,31 @@ Function GetSoraOfPOint(&$Feld) {
 // $Area, List of Poiints "Lon, Lat, Space(s)"
 // Rückgabewert d in m
 
-function DiameterOfArea($Centerpoint, $Area) {
-	//echo "CP " . $Centerpoint . "<br>";
-	//echo "AR" . $Area . "<br>";
-	$CPointLatLog =explode(", ", trim($Centerpoint));
-	$AreaPoints = explode("   ",$Area);
-	//pre_R($CPoint);
-	//pre_R($AreaPoints);
-	$MaxDistance = 0;
-	foreach ($AreaPoints as $FPoint) {
-		$FPointLatLon = explode(", ",$FPoint);
-		//pre_r($FPointLatLon);
-		//pre_R(Array("Lon" => $CPointLatLog[0], "Lat" => $CPointLatLog[1]));
-		//pre_R(Array("Lon" => $FPointLatLon[0], "Lat" => $FPointLatLon[1]));
-		$Distance = twopoints_on_earth(Array("Lon" => $CPointLatLog[0], "Lat" => $CPointLatLog[1]),Array("Lon" => $FPointLatLon[0], "Lat" => $FPointLatLon[1]));
-		if ($MaxDistance<$Distance)
-			$MaxDistance=$Distance;
-		//echo "Distance:" . $Distance . "<br>";
+function rkrk_geofence_lonlat_pairs($text) {
+	$pairs = array();
+	if (!preg_match_all('/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/', (string)$text, $matches, PREG_SET_ORDER)) {
+		return $pairs;
 	}
-	$Diameter = 2*$MaxDistance;
-	//echo "Diameter:" . $Distance . "<br>";
-	Return (number_format($Diameter,3));
+	foreach ($matches as $match) {
+		$pairs[] = array('Lon' => (float)$match[1], 'Lat' => (float)$match[2]);
+	}
+	return $pairs;
+}
+
+function DiameterOfArea($Centerpoint, $Area) {
+	$pairs = rkrk_geofence_lonlat_pairs($Centerpoint);
+	$center = $pairs[0] ?? null;
+	if (!is_array($center)) {
+		return 0.0;
+	}
+	$maxDistance = 0.0;
+	foreach (rkrk_geofence_lonlat_pairs($Area) as $point) {
+		$distance = twopoints_on_earth($center, $point);
+		if (is_numeric($distance) && (float)$distance > $maxDistance) {
+			$maxDistance = (float)$distance;
+		}
+	}
+	return 2.0 * $maxDistance;
 }
 
 

@@ -32,15 +32,25 @@ $short = array(
 	'extern' => 'Extern',
 	'partner' => 'Partner',
 );
-$start = function_exists('rkrk_favicon_site_web_prefix') ? rkrk_favicon_site_web_prefix() : '';
+$scope = function_exists('rkrk_favicon_site_web_prefix') ? rkrk_favicon_site_web_prefix() : '';
+$start = $scope;
+$app = trim((string)($_GET['app'] ?? ''));
 if ($start !== '') {
-	$start .= 'rkrk.php';
+	$start .= ($app === 'rc') ? 'rkrk_rc_access.php' : 'rkrk.php';
 } else {
+	$scope = '/';
 	$start = '.';
+}
+if ($app === 'rc' && $scope !== '/') {
+	$names[$slot] = 'RKRK RC';
+	$short[$slot] = 'RC';
+	$scopeId = $start;
+} else {
+	$scopeId = $scope;
 }
 
 $icons = array();
-foreach (array(192, 144, 96, 72, 48, 36) as $sz) {
+foreach (array(512, 192) as $sz) {
 	$icons[] = array(
 		'src' => $dir . 'android-icon-' . $sz . 'x' . $sz . '.png',
 		'sizes' => $sz . 'x' . $sz,
@@ -52,6 +62,8 @@ foreach (array(192, 144, 96, 72, 48, 36) as $sz) {
 $manifest = array(
 	'name' => $names[$slot] ?? 'RKRK',
 	'short_name' => $short[$slot] ?? 'RKRK',
+	'id' => $scopeId,
+	'scope' => $scope,
 	'display' => 'standalone',
 	'start_url' => $start,
 	'theme_color' => '#ffffff',

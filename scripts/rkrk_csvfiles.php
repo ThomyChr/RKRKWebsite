@@ -408,6 +408,21 @@ function SaveArrayToCSV ($data, $csv_file) {
 	if (true) {
 		//echo "FilePath: " . $filepath . " - NumEntries:" . count($data) . "<br>";
 		$filecontent = mb_convert_encoding( $filecontent, 'ASCII', 'UTF-8');
+		$csvDir = dirname($filepath);
+		if (!is_dir($csvDir)) {
+			$csvParent = dirname($csvDir);
+			$csvDirName = strtolower(basename(str_replace('\\', '/', $csvDir)));
+			if ($csvDirName === 'csvfiles' && is_dir($csvParent)) {
+				if (!mkdir($csvDir, 0775) && !is_dir($csvDir)) {
+					return;
+				}
+			} else {
+				return;
+			}
+		}
+		if (!is_dir($csvDir)) {
+			return;
+		}
 		$df = fopen($filepath, 'wb');
 		if ($df !== false) {
 			fwrite($df, $filecontent);

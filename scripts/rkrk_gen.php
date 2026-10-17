@@ -52,6 +52,29 @@ if (function_exists('rkrk_config_branding')) {
 
 
 
+function rkrk_request_flag(string $name): bool {
+	$want = strtoupper($name);
+	foreach (array($_GET, $_POST) as $bag) {
+		if (!is_array($bag)) {
+			continue;
+		}
+		foreach ($bag as $key => $unused) {
+			if (strtoupper((string)$key) === $want) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+function rkrk_catalog_requires_expert(string $key): bool {
+	return $key === '4TD' || $key === '4CX';
+}
+
+function rkrk_expert_catalogs_visible(): bool {
+	return rkrk_request_flag('EXPERT');
+}
+
 Function SetMissionLocation() {
 	global 	//$DebugWork, 
 			$SessNme_MissionDBSetting,
@@ -74,6 +97,8 @@ Function SetMissionLocation() {
 			$jsonMissionLocation,
 			$jsonDocLocation,
 			$jsonFileDirectory,
+			$feldkatalogJsonLocation,
+			$feldkatalogCsvLocation,
 			$tempfilelocation,
 			$WebLocation, 
 			$historyfilelocation, 
@@ -84,28 +109,36 @@ Function SetMissionLocation() {
 			
 	//pre_R($SecParamters); 
 	
+	if (!isset($RKRKMissionSelected) || !is_string($RKRKMissionSelected)) {
+		$RKRKMissionSelected = '';
+	}
 	if ($SecUrl) 
 		$RKRKMissionSelected= $SecParamters["MDB"]??'';
 	elseif (isset($_GET["MDB"])) {
 		$RKRKMissionSelected = $_GET["MDB"];
-	} elseif (isset($_SESSION[$SessNme_MissionDBSetting])) {	
+	} elseif (isset($_SESSION[$SessNme_MissionDBSetting]) && is_string($_SESSION[$SessNme_MissionDBSetting])) {	
 		$RKRKMissionSelected = $_SESSION[$SessNme_MissionDBSetting];
 	}
 
 	//default setting
-	if ($RKRKMissionSelected=="") {
+	if (!is_string($RKRKMissionSelected) || $RKRKMissionSelected=="" || !isset($MissionDroneTypes[$RKRKMissionSelected])) {
+		$RKRKMissionSelected = "3T";
+	}
+	if (rkrk_catalog_requires_expert($RKRKMissionSelected) && !rkrk_expert_catalogs_visible()) {
 		$RKRKMissionSelected = "3T";
 	}
 
-	$_SESSION[$SessNme_MissionDBSetting] = $RKRKMissionSelected;
+	if (!isset($_SESSION[$SessNme_MissionDBSetting]) || is_string($_SESSION[$SessNme_MissionDBSetting])) {
+		$_SESSION[$SessNme_MissionDBSetting] = $RKRKMissionSelected;
+	}
 	
 	//echo "<br><br><br><br>Mission Selected: " . $RKRKMissionSelected;
 	//pre_R($_SESSION);
 
 	// Initialize $Debugoutput
 	$Debugoutput = '';
-	if (isset($_SESSION[$SessNme_MissionDBSetting]))  {
-		$Debugoutput .=  $_SESSION[$SessNme_MissionDBSetting];
+	if (isset($_SESSION[$SessNme_MissionDBSetting]) && is_scalar($_SESSION[$SessNme_MissionDBSetting]))  {
+		$Debugoutput .=  (string)$_SESSION[$SessNme_MissionDBSetting];
 	}
 	
 	//pre_R($MissionDroneTypes);
@@ -171,13 +204,16 @@ Function SetMissionLocation() {
 	$xmlFileDirectory="xmlfiles/";
 	$xmlDocLocation = $RKRKLocalLoactionDocFiles . $xmlFileDirectory;
 	$xmlMissionLocation = $RKRKLocalLoactionMissionFiles . $xmlFileDirectory;
-	// Katalog-JSON (Felder, POI, Layer, Regionen, …) sind RKRK-weit, nicht missionsabhängig.
+	// POI, Layer und Regionen bleiben in rkrk/webdaten.
+	// Der Feldkatalog (RKRKFelder.json/csv) folgt dem MissionLocation-Ordner des Drohnentyps.
 	$jsonFileDirectory = 'webdaten/';
 	$jsonDocLocation = $RKRKRelRKRKDataLocation . $jsonFileDirectory;
 	$jsonMissionLocation = $jsonDocLocation;
 	if ($jsonMissionLocation !== '' && !is_dir($jsonMissionLocation)) {
 		@mkdir($jsonMissionLocation, 0775, true);
 	}
+	$feldkatalogJsonLocation = $RKRKLocalLoactionMissionFiles . 'jsonfiles/';
+	$feldkatalogCsvLocation = $RKRKLocalLoactionMissionFiles . 'csvfiles/';
 	$historyfilelocation = $RKRKLocalLoactionDocFiles . "_history/";
 	$logfilelocation = $RKRKLocalLoactionDocFiles . "_log/";
 	$deletefilelocation = $RKRKLocalLoactionDocFiles . "_deleted/";
@@ -198,7 +234,6 @@ Function SetMissionLocation() {
 					"mavic3E" => "Mavic 3E",
 					"mavic3M" => "Mavic 3M",
 					"mavic3D" => "Mavic 3D",
-					"matrice30T" => "Matrice 30T",
 					"matrice4T" => "Matrice 4T",
 					"matrice4TD" => "Matrice 4TD",
 					//"DJILitchi" => "DJI Litchi"
@@ -210,7 +245,7 @@ Function SetMissionLocation() {
 						"Name" => "Mavic 3T",
 						"img" => "M3T.png",
 						"MissionLocation" => "Missionen/",
-						"dependantMissions" => "4TD,30T",
+						"dependantMissions" => "4TD",
 						"DocLocation" => "Missionen/",
 						"button" => "mavic3t_button.png",
 						"button_orange" => "mavic3t_orange_button.png",
@@ -257,38 +292,22 @@ Function SetMissionLocation() {
 						"DataFile" => "SuchfeldBild,FlugplanBild,JasonFile,KMZFile",
 						"active" => true,
 						),
-					"30T" => array(
-						"Name" => "Matrice 30T",
-						"img" => "M30T.png",
-						"MissionLocation" => "Missionen Matrice 30T/",
-						//"dependantMissions" => "M3T,4TD",
+					"4CX" => array(
+						"Name" => "M4TD aus M3T",
+						"img" => "M4TD.png",
+						"MissionLocation" => "Missionen/",
 						"DocLocation" => "Missionen/",
-						"button" => "matrice30T_button.png",
-						"button_orange" => "matrice30T_orange_button.png",
-						"json_button" => "downloadjsonfrom30t.png",
-						"json_button_orange" => "convertjsonto30t.png",
-						"kmz_button" => "downloadkmzfrom30t.png",
-						"kmz_button_orange" => "convertkmzto30t.png",
+						"catalogFrom" => "3T",
+						"kmzConvertTo" => "4TD",
+						"button" => "matrice4TD_orange_button.png",
+						"button_orange" => "matrice4TD_orange_button.png",
+						"json_button" => "downloadjsonfrom4tD.png",
+						"json_button_orange" => "convertjsonto4tD.png",
+						"kmz_button" => "downloadkmzfrom4tD.png",
+						"kmz_button_orange" => "convertkmzto4tD.png",
 						"release" => "test, intern",
-						"DataFile" => "SuchfeldBild,FlugplanBild,JasonFile,KMLFile,LichtiFile",
-						"active" => false, //Deaktiviert per Jan 2026
-						),
-					"M2" => array(
-						"Name" => "Mavic 2, FB320 50°",
-						"UAVDroneType" => "Litchi",
-						"img" => "flir_wb320.jpg",
-						"MissionLocation" => "Missionen MavicII/",
-						"dependantMissions" => "",
-						"DocLocation" => "Missionen/",
-						"button" => "mavic2_button.png",
-						"button_orange" => "mavic2_orange_button.png",
-						"json_button" => "mavic2_button.png",
-						"json_button_orange" => "mavic2_orange_button.png",
-						"kmz_button" => "mavic2_button.png",
-						"kmz_button_orange" => "mavic2_orange_button.png",
-						"release" => "test",
 						"DataFile" => "SuchfeldBild,FlugplanBild,JasonFile,KMZFile",
-						"active" => false,
+						"active" => true,
 						),
 					"D" => array(
 						"Name" => "Mavic 3T - Debug",
@@ -336,6 +355,8 @@ Function SetMissionLocation() {
 	$RKRKExternalLoactionMissionFiles = "";
 	$RKRKExternalLoactionDocFiles = "";
 	$csvMissionLocation = "";
+	$feldkatalogJsonLocation = "";
+	$feldkatalogCsvLocation = "";
 	$xmlFileDirectory = "";
 	$csvFileDirectory="";
 	$csvDocLocation ="";
@@ -1280,7 +1301,7 @@ Function SetMissionLocation() {
 									"QR" => "nc_easa_qr.png",
 									"RKRS_MA" => "nc_mitgliederausweis_2226.pdf",
 									"Flugberechtigung" => "FGHO_RKRK,RKRS,LSXN",
-									"FlugzonenOption" => "FFHGO-NF2",
+									"FlugzonenOption" => "FHGO-NF2",
 									"titel" => "a2",
 									"country" => "ch",
 									"verfied" => true,
@@ -1782,7 +1803,7 @@ $MaxFlightHeight = 120;
 						),
 			"MapDownloadLitchi" => Array (
 						"title" => "MapDownloadLitchi",
-						"release" => "test, intern, partner",
+						"release" => "",
 						),
 			"MapDownloadKML" => Array (
 						"title" => "MapDownloadKML",
@@ -1916,20 +1937,8 @@ $MaxFlightHeight = 120;
 												"Show" => "edit_felddatenliste,edit_felddaten,felderliste,felddatenliste,map,fluege",
 												"Access" => "MapDownloadKMZ",
 												),
-							"LCHM" => array(	
-												"Type" => "LCHM",
-												"Text" => "LCHM Datei(en)",
-												"Picture" => false,
-												"icon" => "litchi",
-												"allowed" => array('lchm'),
-												"allowedList" => ".lchm",
-												"XMLLabel" => "LichtiFile",
-												"KatField" => "lchm",
-												"FileVar" => "LCHM_File",
-												"HightVar" => "LCHM_Flughoehe",
-												"Show" => "edit_felddatenliste,edit_felddaten,felderliste,felddatenliste,map,fluege",
-												"Access" => "MapDownloadLitchi",
-											)
+							// LCHM/Litchi wird nicht mehr erzeugt oder zum Download angeboten.
+							// Bestehende LichtiFile-Knoten bleiben im Feldkatalog lesbar.
 							);
 
 
@@ -2135,7 +2144,7 @@ function FilenameDefinition () {
 		$output .= "			<li><b>PP</b>: Ersteller (" . implode(", " ,$Pilots) . ")</li>".chr(10); 
 		$output .= "			<li><b>YY</b>: Ersteller Jahr</li>".chr(10); 
 		$output .= "			<li><b>VV</b>: Version (Optional)</li>".chr(10); 
-		$output .= "			<li><b>.xxx</b>: Datei extension (jpg, json, ltchi, kml)</li>".chr(10); 
+		$output .= "			<li><b>.xxx</b>: Datei extension (jpg, json, kmz, kml)</li>".chr(10); 
 		$output .= "		</ul>" .chr(10);
 		return $output;
 
@@ -2376,6 +2385,8 @@ global $RegionSettings;
 			($Region["Aktiv"]) 
 			and (
 				($regions_selected=="") 
+				or (strcasecmp(trim((string)$regions_selected), 'ALL') === 0)
+				or (strcasecmp(trim((string)$regions_selected), 'alle') === 0)
 				or (strpos(" " .$regions_selected, $Region["Opt"])!==false)
 				)
 			and ($key!="NO")
@@ -3272,10 +3283,25 @@ function CheckIPandExit() {
 	$TCPIP =explode(".",$TCPAdress);
 	if (ProtectFromAccess ($TCPAdress)) {
 		WriteToLog("kill", basename($_SERVER['PHP_SELF']), "kill ",$TCPAdress,"","");
-		if (!empty($GLOBALS['RKRK_AJAX_JSON_MODE']) && function_exists('rkrk_checklist_json_response')) {
-			rkrk_checklist_json_response(['ok' => false, 'error' => 'access_denied'], 403);
+		$blockedIp = trim((string)$TCPAdress);
+		if ($blockedIp === '') {
+			$blockedIp = 'unbekannt';
 		}
-		exit('Session killed.');
+		$blockedMsg = 'Zugriff von diesem Rechner ist gesperrt. Die Adresse ' . $blockedIp . ' steht auf der Sperrliste und nicht auf der Whitelist.';
+		if (!empty($GLOBALS['RKRK_AJAX_JSON_MODE']) && function_exists('rkrk_checklist_json_response')) {
+			rkrk_checklist_json_response(['ok' => false, 'error' => 'access_denied', 'detail' => $blockedMsg], 403);
+		}
+		if (!headers_sent()) {
+			http_response_code(403);
+			header('Content-Type: text/html; charset=utf-8');
+		}
+		$ipEsc = htmlspecialchars($blockedIp, ENT_QUOTES, 'UTF-8');
+		echo '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Zugriff gesperrt</title></head><body style="font-family:Arial,sans-serif;margin:48px auto;max-width:560px;color:#253025;">';
+		echo '<h1 style="color:#1f3f1f;font-size:28px;">Zugriff gesperrt</h1>';
+		echo '<p>Dieser Rechner darf die Seite nicht öffnen. Die Adresse <b>' . $ipEsc . '</b> steht auf der Sperrliste und nicht auf der Whitelist.</p>';
+		echo '<p>Die Adresse in die Whitelist aufnehmen und die Seite danach neu laden.</p>';
+		echo '</body></html>';
+		exit;
 	}
 	if (array_key_exists($TCPAdress, $IPUsed)) {
 		//IP identified
@@ -3760,6 +3786,62 @@ function GetFlightHeightForAltDrone($CurDrone, $NewDrone, $Flightheight, $Parame
 	//echo (round(tan($DroneSettings[$CurDrone][$Parameter]/360*pi())/tan($DroneSettings[$NewDrone][$Parameter]/360*pi()),2)) . "  ";
 
 	return $NewFlightHeight;
+}
+
+function rkrk_use_m3t_catalog_for_convert(): bool {
+	global $MissionDroneTypes, $RKRKMissionSelected;
+	$mission = (string)($RKRKMissionSelected ?? '');
+	if ($mission === '4TD' || $mission === '4CX') {
+		return true;
+	}
+	$row = (isset($MissionDroneTypes[$mission]) && is_array($MissionDroneTypes[$mission])) ? $MissionDroneTypes[$mission] : array();
+	return trim((string)($row['kmzConvertTo'] ?? '')) !== '';
+}
+
+function rkrk_apply_m3t_catalog_paths(): void {
+	global $MissionLocation, $RKRKLocalLoactionMissionFiles, $RKRKExternalLoactionMissionFiles, $xmlMissionLocation, $xmlFileDirectory, $WebLocation, $RKRKRelWebLocation, $MissionDroneTypes;
+	if (!rkrk_use_m3t_catalog_for_convert() || !isset($MissionDroneTypes['3T']['MissionLocation'])) {
+		return;
+	}
+	$MissionLocation = (string)$MissionDroneTypes['3T']['MissionLocation'];
+	$RKRKLocalLoactionMissionFiles = $RKRKRelWebLocation . $MissionLocation;
+	$RKRKExternalLoactionMissionFiles = $WebLocation . $MissionLocation;
+	$xmlMissionLocation = $RKRKLocalLoactionMissionFiles . $xmlFileDirectory;
+}
+
+function rkrk_file_convert_download_href($rel) {
+	if (!rkrk_use_m3t_catalog_for_convert()) {
+		return '';
+	}
+	$rel = str_replace('\\', '/', trim((string)$rel));
+	if ($rel === '' || strpos($rel, '..') !== false || !preg_match('/\.(kmz|json)$/i', $rel)) {
+		return '';
+	}
+	return 'rkrk_kmz_convert_dl.php?file=' . rawurlencode($rel) . '&from=3T&to=4TD';
+}
+
+function rkrk_kmz_convert_download_href($rel) {
+	if (!preg_match('/\.kmz$/i', (string)$rel)) {
+		return '';
+	}
+	return rkrk_file_convert_download_href($rel);
+}
+
+function rkrk_debug_kml_href($rel) {
+	if (!array_key_exists('DEBUG', $_GET)) {
+		return '';
+	}
+	$rel = str_replace('\\', '/', trim((string)$rel));
+	if ($rel === '' || strpos($rel, '..') !== false || !preg_match('/\.kmz$/i', $rel)) {
+		return '';
+	}
+	$href = 'rkrk_kmz_convert_dl.php?file=' . rawurlencode($rel) . '&kml=1';
+	if (rkrk_use_m3t_catalog_for_convert()) {
+		return $href . '&from=3T&to=4TD';
+	}
+	global $RKRKMissionSelected;
+	$mdb = trim((string)($RKRKMissionSelected ?? ''));
+	return $mdb === '' ? $href : $href . '&mdb=' . rawurlencode($mdb);
 }
 
 //TstCalcFlightHeight();
@@ -4384,34 +4466,57 @@ function cleanString($text) {
 } 
 
 
+function rkrk_mission_location_dir_exists($missionLocation) {
+	global $RKRKRelWebLocation;
+	$rel = trim(str_replace('\\', '/', (string) $missionLocation), '/');
+	if ($rel === '') {
+		return false;
+	}
+	$root = rtrim(str_replace('\\', '/', (string) $RKRKRelWebLocation), '/');
+	if ($root === '') {
+		$root = '../../rkropen';
+	}
+	return is_dir($root . '/' . $rel);
+}
+
 function MissionLibraryButtons($AddUrl="", $AsForm=true) {
 	global 	$IconLoc,
 			$ButtonHeight,
 			$SessNme_MissionDBSetting,
 			$UseSecUrl,
 			$MissionDroneTypes,
-			$WebFreigabe;
+			$WebFreigabe,
+			$RKRKMissionSelected;
 			
-		$Output ="";	
-
-//echo "Mission stored:" . $_SESSION[$SessNme_MissionDBSetting];
+		$Output ="";
+		$storedMission = '';
+		if (isset($SessNme_MissionDBSetting, $_SESSION[$SessNme_MissionDBSetting]) && is_string($_SESSION[$SessNme_MissionDBSetting])) {
+			$storedMission = $_SESSION[$SessNme_MissionDBSetting];
+		}
+		$CurrentMission = $storedMission !== '' ? $storedMission : (string)($RKRKMissionSelected ?? '');
+		if ($CurrentMission === '' || !isset($MissionDroneTypes[$CurrentMission])) {
+			$CurrentMission = '3T';
+		}
 		
 	if (GetAccess("InternLinks")) {
 		$FirstInRow="";
 		$NextMission="";
 		$ExitNext=false;
-		$CurrentMission=$_SESSION[$SessNme_MissionDBSetting]; 
 
 		//get next Mission according to access rights
+		$expertSuffix = rkrk_expert_catalogs_visible() ? '&EXPERT' : '';
 		foreach ($MissionDroneTypes as $key => $Drone) {
-			if ((strpos(" " . $Drone["release"], $WebFreigabe)!= false) and $FirstInRow=="" and $Drone["active"]) {
+			if (rkrk_catalog_requires_expert($key) && $expertSuffix === '') {
+				continue;
+			}
+			if ((strpos(" " . $Drone["release"], $WebFreigabe)!= false) and $FirstInRow=="" and $Drone["active"] and rkrk_mission_location_dir_exists($Drone["MissionLocation"] ?? "")) {
 				$FirstInRow=$key;
 			}	
-			if ((strpos(" " . $Drone["release"], $WebFreigabe)!= false) and $ExitNext==true  and $Drone["active"]) {
+			if ((strpos(" " . $Drone["release"], $WebFreigabe)!= false) and $ExitNext==true  and $Drone["active"] and rkrk_mission_location_dir_exists($Drone["MissionLocation"] ?? "")) {
 				$NextMission=$key;
 				 break; 
 			}	
-			if ($key==$_SESSION[$SessNme_MissionDBSetting]) {
+			if ($key==$CurrentMission) {
 				$ExitNext=true;
 			}
 		}
@@ -4423,27 +4528,24 @@ function MissionLibraryButtons($AddUrl="", $AsForm=true) {
 		if ($AsForm) {
 			if ($UseSecUrl) {
 				//encripted URL
-				$Output .=  "<input type='image' value='MDB' src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?". base64_encode("MDB=". $NextMission . $AddUrl) ."' height='" . $ButtonHeight . "'  title='Klick zum welchseln der Datenbanken'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
+				$Output .=  "<input type='image' value='MDB' src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?". base64_encode("MDB=". $NextMission . $AddUrl . $expertSuffix) ."' height='" . $ButtonHeight . "'  title='Klick zum welchseln der Datenbanken'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
 			} else {
 				//cleartext URL
-				$Output .=  "<input type='image' value='MDB' src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"."MDB=". $NextMission. $AddUrl ."' height='" . $ButtonHeight . "'  title='Klick zum welchseln der Datenbanken'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
+				$Output .=  "<input type='image' value='MDB' src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"."MDB=". $NextMission. $AddUrl . $expertSuffix ."' height='" . $ButtonHeight . "'  title='Klick zum welchseln der Datenbanken'  style='background-color:transparent; border-color:transparent;vertical-align: middle;'>" .chr(10);
 			}
 		} else {
 			if ($UseSecUrl) {
 				//encripted URL
-				$Output .= "<a href='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?". base64_encode("MDB=". $NextMission . $AddUrl) ."'><image src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' height='" . $ButtonHeight . "' title='Klick zum welchseln der MissionsDatenbank'></a>";
+				$Output .= "<a href='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?". base64_encode("MDB=". $NextMission . $AddUrl . $expertSuffix) ."'><image src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' height='" . $ButtonHeight . "' title='Klick zum welchseln der MissionsDatenbank'></a>";
 			} else {
 				//cleartext URL
-				$Output .= "<a href='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"."MDB=". $NextMission . $AddUrl ."'><image src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' height='" . $ButtonHeight . "' title='Klick zum welchseln der MissionsDatenbank'></a>";
+				$Output .= "<a href='" .htmlspecialchars($_SERVER["PHP_SELF"]). "?"."MDB=". $NextMission . $AddUrl . $expertSuffix ."'><image src='" . $IconLoc . "/" . $MissionDroneTypes[$CurrentMission]["button"]. "' height='" . $ButtonHeight . "' title='Klick zum welchseln der MissionsDatenbank'></a>";
 			}
 		}	
 
 	} else {
 		//only picture w/o link
-		if ($_SESSION[$SessNme_MissionDBSetting]=="M2") {
-			// Mavic II
-			$Output .= "<image src='" . $IconLoc . "/mavic2_button.png' height='" . $ButtonHeight . "' title='MissionsDatenbank'>";
-		} elseif ($_SESSION[$SessNme_MissionDBSetting]=="D") {
+		if ($CurrentMission=="D") {
 			// Debug
 			$Output .= "<image src='" . $IconLoc . "/debug_button.png' height='" . $ButtonHeight . "' title='MissionsDatenbank'>";
 		} else {

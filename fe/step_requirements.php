@@ -42,6 +42,7 @@ $mapllBrand = mapll_favicon_brand();
         <a class="secondary" href="index.php">Startseite</a>
         <a class="secondary" href="analyse_ui.php">Analyse</a>
         <a class="secondary" href="requirements_print.php" target="_blank" rel="noopener">Requirements als PDF/Print</a>
+        <a class="secondary" href="rkrk_feldeditor_spec.php">Spec</a>
       </div>
     </div>
 

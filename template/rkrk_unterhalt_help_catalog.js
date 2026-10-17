@@ -107,7 +107,7 @@ window.RKRK_HELP_CATALOG = {
       use: "Kopiert neue oder neuere Dateien (mtime + SHA1) entlang der Kette. Standard Mirror: Spiegel der gewählten Ordner, Extra-Dateien im Ziel werden gelöscht. Ergänzen kopiert nur. Alle Ebenen | = restliche Stufen ab hier, ohne Kopie auf sich selbst, ohne rkrs. test27 → rkrs nur mit eigener Route und angehaktem Modul.",
       tools: [
         { icon: "sync", name: "Route", text: "Einzelhop oder Alle Ebenen | (| trennt die nicht enthaltene Route test27 → rkrs)." },
-        { icon: "sync", name: "rkrs-Modul", text: "Nur sichtbar bei Route test27 → rkrs: map, mapII, assess oder calc. Assess landet in rkrs/assess/public/. Ohne Auswahl kein Sync." },
+        { icon: "sync", name: "rkrs-Modul", text: "Nur sichtbar bei Route test27 → rkrs: map, fe, assess oder calc. fe/ landet in rkrs/mapII/, Assess in rkrs/assess/public/. Ohne Auswahl kein Sync." },
         { icon: "warn", name: "Mirror", text: "Löscht Dateien, die nur im Ziel existieren (nur Sync-Matrix, nicht Katalog/Missionen)." },
         { icon: "save", name: "Ergänzen", text: "Nur kopieren, nichts löschen." },
         { icon: "overview", name: "Vorschau", text: "Zeigt Kopierliste und — bei Mirror — die Löschliste. Spätere Stufen als Ist-Stand." }

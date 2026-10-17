@@ -1480,17 +1480,41 @@ function build_track_rows(float $minY, float $maxY, float $spacing, float $maxEd
     }
 
     $maxEdgeDist = max(0.0, $maxEdgeDist);
-    $minLanes = max(1, (int)ceil(($span - 2.0 * $maxEdgeDist) / $spacing) + 1);
-    $maxLanes = max(1, (int)floor($span / $spacing) + 1);
-    $lanes = min(max($minLanes, 1), $maxLanes);
-    $covered = ($lanes - 1) * $spacing;
-    $margin = max(0.0, ($span - $covered) / 2.0);
+    // Narrower than two 40% offsets: one centered lane. Closer than 40% only
+    // because the edge strip would otherwise stay open.
+    if ($span <= 2.0 * $maxEdgeDist + 1e-6) {
+        return [($minY + $maxY) / 2.0];
+    }
 
+    // First and last lane stay on the 40% line. Extra lanes lie between them.
+    // Do not slide the outer lanes inward to absorb the remainder.
+    $margin = $maxEdgeDist;
+    $inner = $span - 2.0 * $margin;
+    $gaps = max(1, (int)ceil($inner / $spacing - 1e-9));
+    $pitch = $inner / $gaps;
+    $lanes = $gaps + 1;
     $rows = [];
     for ($i = 0; $i < $lanes; $i++) {
-        $rows[] = $minY + $margin + $i * $spacing;
+        $rows[] = $minY + $margin + $i * $pitch;
     }
     return $rows;
+}
+
+/**
+ * Outer lanes stay on the 40% line from build_track_rows. Do not slide them
+ * inward when a concave corner lies outside the parallel band.
+ */
+function balance_track_rows_to_polygon(
+    array $rotPoly,
+    float $minY,
+    float $maxY,
+    float $spacing,
+    float $maxEdgeDist,
+    array $seedRows,
+    float $minChord
+): array {
+    unset($rotPoly, $minY, $maxY, $spacing, $maxEdgeDist, $minChord);
+    return $seedRows;
 }
 
 function build_lawnmower_points_for_rows(array $rotPoly, array $rows, float $angleDeg, float $endpointInset, bool $rowsForward = true): array
@@ -1515,7 +1539,8 @@ function build_lawnmower_points_for_rows(array $rotPoly, array $rows, float $ang
                 $sx1 = $tmp;
             }
             $segLen = max(0.0, $sx1 - $sx0);
-            // Keep a small safety margin, but never shrink short segments to zero.
+            // Both ends stop at the same along-track margin (40% of swath when
+            // the chord is long enough). Closer only so a short chord does not vanish.
             $localInset = min($endpointInset, max(0.0, 0.5 * $segLen - 0.25));
             $x0 = $sx0 + $localInset;
             $x1 = $sx1 - $localInset;
@@ -1733,7 +1758,18 @@ function plan_lawnmower(
             $inset = max(0.05 * $spanY, min(0.25 * $spanY, 1.0));
             $rows = [$miny + $inset, $maxy - $inset];
         }
-        $endpointInset = max(0.0, min($edge_margin, $S * 0.5));
+        $endpointInset = $edge_margin;
+        if (!$ultraNarrow && !($isNarrowField && count($rows) < 2)) {
+            $rows = balance_track_rows_to_polygon(
+                $rot_poly,
+                $miny,
+                $maxy,
+                $S,
+                $edge_margin,
+                $rows,
+                2.0 * $endpointInset + 1.0
+            );
+        }
         // Try both stripe orders so the leg from the configured start to the first in-field
         // waypoint is as short as practical (same coverage, less deadhead / edge overlap).
         $bestPointsThisAngle = [];
@@ -1745,81 +1781,6 @@ function plan_lawnmower(
             if ($isNarrowField && count($points) < 4 && $spanY > 1e-6) {
                 $fallbackRows = [$miny + 0.2 * $spanY, $miny + 0.8 * $spanY];
                 $points = build_lawnmower_points_for_rows($rot_poly, $fallbackRows, $angle, $endpointInset, $rowsForward);
-            }
-
-            // Moderate endpoint extension inside each segment:
-            // helps close uncovered edge zones without aggressive path distortion.
-            if (!empty($points)) {
-                $extendedPoints = [];
-                $extendByM = max(0.0, min(6.0, 0.35 * $S));
-                $nPts = count($points);
-                for ($i = 0; $i + 1 < $nPts; $i += 2) {
-                    $aXY = rotate_xy($points[$i], -$angle);
-                    $bXY = rotate_xy($points[$i + 1], -$angle);
-                    $rowY = 0.5 * (floatval($aXY[1]) + floatval($bXY[1]));
-                    $segments = horizontal_intersections($rot_poly, $rowY);
-                    if (empty($segments)) {
-                        $extendedPoints[] = $points[$i];
-                        $extendedPoints[] = $points[$i + 1];
-                        continue;
-                    }
-                    $aX = floatval($aXY[0]);
-                    $bX = floatval($bXY[0]);
-                    $midX = 0.5 * ($aX + $bX);
-                    $bestSeg = null;
-                    $bestDist = INF;
-                    foreach ($segments as $seg) {
-                        $sx0 = floatval($seg[0]);
-                        $sx1 = floatval($seg[1]);
-                        if ($sx1 < $sx0) {
-                            $tmp = $sx0;
-                            $sx0 = $sx1;
-                            $sx1 = $tmp;
-                        }
-                        if ($midX < $sx0 - 1e-9 || $midX > $sx1 + 1e-9) {
-                            continue;
-                        }
-                        $dist = abs($midX - 0.5 * ($sx0 + $sx1));
-                        if ($dist < $bestDist) {
-                            $bestDist = $dist;
-                            $bestSeg = [$sx0, $sx1];
-                        }
-                    }
-                    if ($bestSeg === null) {
-                        $extendedPoints[] = $points[$i];
-                        $extendedPoints[] = $points[$i + 1];
-                        continue;
-                    }
-                    $sx0 = $bestSeg[0];
-                    $sx1 = $bestSeg[1];
-                    $left = min($aX, $bX);
-                    $right = max($aX, $bX);
-                    // Last traverse only: modest extra reach toward polygon span on that row
-                    // (extending the first strip as well distorted many fields vs. benefit).
-                    $isLastStrip = ($i + 2 >= $nPts);
-                    $ex = $extendByM;
-                    if ($isLastStrip) {
-                        $ex = max($extendByM, min(0.45 * $S, 10.0));
-                    }
-                    $newLeft = max($sx0, $left - $ex);
-                    $newRight = min($sx1, $right + $ex);
-                    if ($newRight <= $newLeft + 1e-9) {
-                        $newLeft = $left;
-                        $newRight = $right;
-                    }
-                    if ($aX <= $bX) {
-                        $aNew = [$newLeft, $rowY];
-                        $bNew = [$newRight, $rowY];
-                    } else {
-                        $aNew = [$newRight, $rowY];
-                        $bNew = [$newLeft, $rowY];
-                    }
-                    $extendedPoints[] = rotate_xy($aNew, $angle);
-                    $extendedPoints[] = rotate_xy($bNew, $angle);
-                }
-                if (count($extendedPoints) >= 2) {
-                    $points = $extendedPoints;
-                }
             }
 
             if (empty($points)) {
@@ -1862,6 +1823,11 @@ function plan_lawnmower(
     }
 
     $out = [];
+    if (!empty($best['points']) && count($poly_xy) >= 4) {
+        $allow = floatval($best['S'] ?? $S);
+        // Eck-Sporne (Fuss, Spitze, Fuss) nicht in den Flugweg. Eine Bahnecke bleibt ein Wegpunkt.
+        $best['points'] = clip_polyline_outside_overhang($best['points'], $poly_xy, $allow);
+    }
     foreach ($best['points'] as $p) {
         $ll = xy_to_lonlat($p, $lon0, $lat0);
         $out[] = [$ll[0], $ll[1], $agl_m];
@@ -1878,6 +1844,189 @@ function plan_lawnmower(
         'endpoint_inset' => $best['endpoint_inset'] ?? 0.0
         ,'curve_waypoint_angle_step_deg' => max(1.0, $curveWaypointAngleStepDeg)
     ];
+}
+
+/**
+ * Cut a lane where it leaves the field. A short overhang of about one swath
+ * width may remain for edge coverage. Long runs outside the polygon are removed.
+ * Points already inside, including the 40% edge inset, stay where they are.
+ */
+function clip_polyline_outside_overhang(array $points, array $poly, float $maxOutsideM): array
+{
+    $n = count($points);
+    if ($n < 2 || count($poly) < 4) {
+        return $points;
+    }
+    $maxOutsideM = max(0.0, $maxOutsideM);
+    $anchor = find_inside_anchor_xy($poly);
+    $out = [];
+    $push = static function (array $p) use (&$out): void {
+        if ($out === []) {
+            $out[] = $p;
+            return;
+        }
+        $last = $out[count($out) - 1];
+        if (hypot(floatval($p[0]) - floatval($last[0]), floatval($p[1]) - floatval($last[1])) > 0.4) {
+            $out[] = $p;
+        }
+    };
+    $outsideM = static function (array $p) use ($poly, $anchor): float {
+        if (point_in_polygon_xy($p, $poly)) {
+            return 0.0;
+        }
+        $inside = clamp_point_inside_polygon_xy($p, $anchor, $poly);
+        return hypot(floatval($p[0]) - floatval($inside[0]), floatval($p[1]) - floatval($inside[1]));
+    };
+    $limit = static function (array $p) use ($outsideM, $anchor, $poly, $maxOutsideM): array {
+        $d = $outsideM($p);
+        if ($d <= $maxOutsideM + 1e-6) {
+            return $p;
+        }
+        $inside = clamp_point_inside_polygon_xy($p, $anchor, $poly);
+        $t = $maxOutsideM / $d;
+        return [
+            floatval($inside[0]) + (floatval($p[0]) - floatval($inside[0])) * $t,
+            floatval($inside[1]) + (floatval($p[1]) - floatval($inside[1])) * $t,
+        ];
+    };
+    $push($limit($points[0]));
+    for ($i = 0; $i + 1 < $n; $i++) {
+        $a = $points[$i];
+        $b = $points[$i + 1];
+        $len = hypot(floatval($b[0]) - floatval($a[0]), floatval($b[1]) - floatval($a[1]));
+        $steps = max(1, (int)ceil($len / 8.0));
+        $skipping = false;
+        for ($s = 1; $s <= $steps; $s++) {
+            $t = $s / $steps;
+            $p = [
+                floatval($a[0]) + (floatval($b[0]) - floatval($a[0])) * $t,
+                floatval($a[1]) + (floatval($b[1]) - floatval($a[1])) * $t,
+            ];
+            $far = $outsideM($p) > $maxOutsideM + 1.0;
+            if ($far && !$skipping) {
+                $tp = ($s - 1) / $steps;
+                $q = [
+                    floatval($a[0]) + (floatval($b[0]) - floatval($a[0])) * $tp,
+                    floatval($a[1]) + (floatval($b[1]) - floatval($a[1])) * $tp,
+                ];
+                $push($limit($q));
+                $skipping = true;
+            } elseif (!$far && $skipping) {
+                $push($limit($p));
+                $skipping = false;
+            }
+        }
+        if (!$skipping) {
+            $push($limit($b));
+        }
+    }
+    return count($out) >= 2 ? $out : $points;
+}
+
+/**
+ * Where the field stays farther than the 40% margin from every lane, step
+ * closer with a short spur. The spur stops inside the field, or at most one
+ * swath outside. It does not continue as a long flight beyond the polygon.
+ */
+function extend_lanes_toward_open_convex_corners(array $points, array $poly, float $maxEdgeDist, float $maxOutsideM): array
+{
+    $nu = count($poly) - 1;
+    if ($nu < 3 || count($points) < 2) {
+        return $points;
+    }
+    $maxEdgeDist = max(0.0, $maxEdgeDist);
+    $maxOutsideM = max(0.0, $maxOutsideM);
+    $anchor = find_inside_anchor_xy($poly);
+    $outsideM = static function (array $p) use ($poly, $anchor): float {
+        if (point_in_polygon_xy($p, $poly)) {
+            return 0.0;
+        }
+        $inside = clamp_point_inside_polygon_xy($p, $anchor, $poly);
+        return hypot(floatval($p[0]) - floatval($inside[0]), floatval($p[1]) - floatval($inside[1]));
+    };
+    $targets = [];
+    for ($i = 0; $i < $nu; $i++) {
+        $targets[] = [floatval($poly[$i][0]), floatval($poly[$i][1])];
+        $targets[] = [
+            0.5 * (floatval($poly[$i][0]) + floatval($poly[$i + 1][0])),
+            0.5 * (floatval($poly[$i][1]) + floatval($poly[$i + 1][1])),
+        ];
+    }
+    $spurs = [];
+    foreach ($targets as $v) {
+        $bestD = INF;
+        $bestSeg = -1;
+        $bestT = 0.0;
+        $bestP = null;
+        $nPts = count($points);
+        for ($s = 0; $s + 1 < $nPts; $s++) {
+            $a = $points[$s];
+            $b = $points[$s + 1];
+            $vx = floatval($b[0]) - floatval($a[0]);
+            $vy = floatval($b[1]) - floatval($a[1]);
+            $l2 = $vx * $vx + $vy * $vy;
+            $t = $l2 < 1e-9 ? 0.0 : ((floatval($v[0]) - floatval($a[0])) * $vx + (floatval($v[1]) - floatval($a[1])) * $vy) / $l2;
+            $t = max(0.0, min(1.0, $t));
+            $px = floatval($a[0]) + $vx * $t;
+            $py = floatval($a[1]) + $vy * $t;
+            $d = hypot(floatval($v[0]) - $px, floatval($v[1]) - $py);
+            if ($d < $bestD) {
+                $bestD = $d;
+                $bestSeg = $s;
+                $bestT = $t;
+                $bestP = [$px, $py];
+            }
+        }
+        if ($bestSeg < 0 || $bestP === null || $bestD <= $maxEdgeDist + 0.5) {
+            continue;
+        }
+        $move = $bestD - $maxEdgeDist;
+        $dx = floatval($v[0]) - floatval($bestP[0]);
+        $dy = floatval($v[1]) - floatval($bestP[1]);
+        $tip = [floatval($bestP[0]) + $dx / $bestD * $move, floatval($bestP[1]) + $dy / $bestD * $move];
+        $steps = max(1, (int)ceil($move / 4.0));
+        for ($k = 1; $k <= $steps; $k++) {
+            $tt = $k / $steps;
+            $probe = [
+                floatval($bestP[0]) + ($tip[0] - floatval($bestP[0])) * $tt,
+                floatval($bestP[1]) + ($tip[1] - floatval($bestP[1])) * $tt,
+            ];
+            if ($outsideM($probe) > $maxOutsideM + 1e-6) {
+                $tt = ($k - 1) / $steps;
+                $tip = [
+                    floatval($bestP[0]) + ($tip[0] - floatval($bestP[0])) * $tt,
+                    floatval($bestP[1]) + ($tip[1] - floatval($bestP[1])) * $tt,
+                ];
+                break;
+            }
+        }
+        if (hypot(floatval($tip[0]) - floatval($bestP[0]), floatval($tip[1]) - floatval($bestP[1])) < 1.0) {
+            continue;
+        }
+        $spurs[$bestSeg][] = ['t' => $bestT, 'at' => $bestP, 'tip' => $tip];
+    }
+    if ($spurs === []) {
+        return $points;
+    }
+    $out = [];
+    $nPts = count($points);
+    for ($s = 0; $s + 1 < $nPts; $s++) {
+        $out[] = $points[$s];
+        if (!isset($spurs[$s])) {
+            continue;
+        }
+        $list = $spurs[$s];
+        usort($list, static function (array $a, array $b): int {
+            return $a['t'] <=> $b['t'];
+        });
+        foreach ($list as $spur) {
+            $out[] = $spur['at'];
+            $out[] = $spur['tip'];
+            $out[] = $spur['at'];
+        }
+    }
+    $out[] = $points[$nPts - 1];
+    return $out;
 }
 
 function derive_direction_from_height_points(array $heightPoints): array
@@ -2179,8 +2328,8 @@ function path_start_prefix_len(array $path, array $startLonLat): int
 }
 
 /**
- * If a start point exists: path begins there at relative 0 m, climbs vertically
- * to cruise AGL, then flies to the nearest first in-field waypoint.
+ * Startpunkt ist der erste Wegpunkt und liegt auf der Missionsflughöhe.
+ * Danach fliegt die Route zum nächsten Wegpunkt im Feld.
  */
 function ensure_start_point_first(array $path, array $startLonLat, float $cruiseAlt, float $takeoffAlt = 0.0): array
 {
@@ -2188,21 +2337,14 @@ function ensure_start_point_first(array $path, array $startLonLat, float $cruise
         return $path;
     }
     $cruiseAlt = floatval($cruiseAlt);
-    $takeoffAlt = floatval($takeoffAlt);
-    if ($takeoffAlt > $cruiseAlt) {
-        $takeoffAlt = 0.0;
-    }
+    unset($takeoffAlt);
     $startLon = floatval($startLonLat[0]);
     $startLat = floatval($startLonLat[1]);
     $startLL = [$startLon, $startLat];
-    $ground = [$startLon, $startLat, $takeoffAlt];
     $atCruise = [$startLon, $startLat, $cruiseAlt];
 
     if (empty($path)) {
-        if (abs($cruiseAlt - $takeoffAlt) < 1e-6) {
-            return [$atCruise];
-        }
-        return [$ground, $atCruise];
+        return [$atCruise];
     }
 
     // Choose the path direction whose first in-field waypoint is nearest to start.
@@ -2223,12 +2365,7 @@ function ensure_start_point_first(array $path, array $startLonLat, float $cruise
         array_shift($path);
     }
 
-    if (abs($cruiseAlt - $takeoffAlt) < 1e-6) {
-        array_unshift($path, $atCruise);
-        return $path;
-    }
     array_unshift($path, $atCruise);
-    array_unshift($path, $ground);
     return $path;
 }
 

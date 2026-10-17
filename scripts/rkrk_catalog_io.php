@@ -1,7 +1,9 @@
 <?php
 /**
- * Catalog I/O. JSON in rkrk/webdaten/ is the source of truth.
- * XML is only a last-resort fallback while $RKRKXmlCatalogSupport is true.
+ * Catalog I/O.
+ * Feldkatalog (RKRKFelder.*) folgt dem MissionLocation-Ordner des Drohnentyps.
+ * POI, Layer und Regionen bleiben in rkrk/webdaten.
+ * XML ist nur Fallback, solange $RKRKXmlCatalogSupport true ist.
  */
 
 include_once(__DIR__ . '/rkrk_encoding.php');
@@ -101,14 +103,166 @@ if (!function_exists('rkrk_is_list_array')) {
 	}
 }
 
+if (!function_exists('rkrk_feldkatalog_min_bytes')) {
+	function rkrk_feldkatalog_min_bytes() {
+		// Der 4TD-XML-Stub hat ca. 11 KB und ist kein Feldkatalog.
+		return 20480;
+	}
+}
+
+if (!function_exists('rkrk_catalog_is_feldkatalog_basename')) {
+	function rkrk_catalog_is_feldkatalog_basename($path) {
+		$base = strtolower(basename(str_replace('\\', '/', (string) $path)));
+		return $base === 'rkrkfelder.xml' || $base === 'rkrkfelder.json' || $base === 'rkrkfelder.csv' || $base === 'rkrkfelder';
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_file_complete')) {
+	function rkrk_feldkatalog_file_complete($path) {
+		if (!is_string($path) || $path === '' || !is_file($path)) {
+			return false;
+		}
+		$size = @filesize($path);
+		if ($size === false || $size < 32) {
+			return false;
+		}
+		$ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+		if ($ext === 'json') {
+			if ($size >= rkrk_feldkatalog_min_bytes()) {
+				return true;
+			}
+			$head = @file_get_contents($path, false, null, 0, 512);
+			return is_string($head)
+				&& strpos($head, 'rkrk-feldkatalog') !== false
+				&& strpos($head, '"fields"') !== false;
+		}
+		// XML-Stub (ca. 11 KB) bleibt unter der Mindestgrösse und ist kein Katalog.
+		return $size >= rkrk_feldkatalog_min_bytes();
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_cross_drone_pages')) {
+	function rkrk_feldkatalog_cross_drone_pages() {
+		return array(
+			'rkrk_planning.php',
+			'rkrk_fluege.php',
+			'rkrk_flugstatistik.php',
+			'rkrk_flugflaechen_karte.php',
+			'rkrk_flugliste.php',
+		);
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_request_is_cross_drone')) {
+	function rkrk_feldkatalog_request_is_cross_drone() {
+		$page = strtolower(basename(str_replace('\\', '/', (string) ($_SERVER['PHP_SELF'] ?? $_SERVER['SCRIPT_NAME'] ?? ''))));
+		return in_array($page, rkrk_feldkatalog_cross_drone_pages(), true);
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_data_root')) {
+	function rkrk_feldkatalog_data_root() {
+		global $RKRKRelWebLocation;
+		$root = rtrim(str_replace('\\', '/', (string) $RKRKRelWebLocation), '/');
+		if ($root === '') {
+			$root = '../../rkropen';
+		}
+		return $root;
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_cross_drone_xml_path')) {
+	function rkrk_feldkatalog_cross_drone_xml_path() {
+		global $RKRKFelderfileXML;
+		$name = !empty($RKRKFelderfileXML) ? $RKRKFelderfileXML : 'RKRKFelder.xml';
+		return rkrk_feldkatalog_data_root() . '/Missionen/xmlfiles/' . $name;
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_webdaten_json_path')) {
+	function rkrk_feldkatalog_webdaten_json_path() {
+		global $jsonDocLocation, $RKRKRelRKRKDataLocation;
+		if (!empty($jsonDocLocation)) {
+			$dir = $jsonDocLocation;
+		} elseif (!empty($RKRKRelRKRKDataLocation)) {
+			$dir = $RKRKRelRKRKDataLocation . 'webdaten/';
+		} else {
+			$dir = rkrk_feldkatalog_data_root() . '/rkrk/webdaten/';
+		}
+		return rtrim(str_replace('\\', '/', (string) $dir), '/') . '/RKRKFelder.json';
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_path_is_mavic3t')) {
+	function rkrk_feldkatalog_path_is_mavic3t($path) {
+		$p = str_replace('\\', '/', (string) $path);
+		if (!preg_match('#/Missionen/(?:xmlfiles|jsonfiles|csvfiles)(?:/|$)#i', $p)) {
+			return false;
+		}
+		return !preg_match('#/Missionen [^/]+/#', $p);
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_json_dir_for')) {
+	function rkrk_feldkatalog_json_dir_for($xmlFileOrDir) {
+		global $feldkatalogJsonLocation, $RKRKLocalLoactionMissionFiles;
+		$path = str_replace('\\', '/', (string) $xmlFileOrDir);
+		if (preg_match('#^(.*?)/(xmlfiles|jsonfiles|csvfiles|webdaten)(?:/|$)#i', $path, $m)) {
+			if (strtolower($m[2]) === 'webdaten') {
+				return rtrim($m[1], '/') . '/webdaten/';
+			}
+			return rtrim($m[1], '/') . '/jsonfiles/';
+		}
+		if (!empty($feldkatalogJsonLocation)) {
+			return rtrim(str_replace('\\', '/', $feldkatalogJsonLocation), '/') . '/';
+		}
+		if (!empty($RKRKLocalLoactionMissionFiles)) {
+			return rtrim(str_replace('\\', '/', $RKRKLocalLoactionMissionFiles), '/') . '/jsonfiles/';
+		}
+		return '';
+	}
+}
+
+if (!function_exists('rkrk_feldkatalog_resolve_source')) {
+	function rkrk_feldkatalog_resolve_source($xmlFilePath) {
+		if (rkrk_feldkatalog_request_is_cross_drone()) {
+			$shared = rkrk_feldkatalog_cross_drone_xml_path();
+			if ($shared !== '') {
+				$xmlFilePath = $shared;
+			}
+		}
+		$jsonPath = rkrk_catalog_json_path($xmlFilePath);
+		if (rkrk_feldkatalog_file_complete($jsonPath)) {
+			return array('json' => $jsonPath, 'xml' => $xmlFilePath);
+		}
+		if (rkrk_feldkatalog_file_complete($xmlFilePath)) {
+			return array('json' => '', 'xml' => $xmlFilePath);
+		}
+		if (rkrk_feldkatalog_request_is_cross_drone() || rkrk_feldkatalog_path_is_mavic3t($xmlFilePath)) {
+			$legacy = rkrk_feldkatalog_webdaten_json_path();
+			if (rkrk_feldkatalog_file_complete($legacy)) {
+				return array('json' => $legacy, 'xml' => $xmlFilePath);
+			}
+		}
+		return array('json' => '', 'xml' => '');
+	}
+}
+
 if (!function_exists('rkrk_catalog_json_dir')) {
 	function rkrk_catalog_json_dir($xmlFileOrDir) {
 		global $jsonMissionLocation, $jsonFileDirectory, $xmlFileDirectory;
+		$path = str_replace('\\', '/', (string) $xmlFileOrDir);
+		$looksLikeFile = ($path !== '' && (substr($path, -4) === '.xml' || substr($path, -5) === '.json' || is_file($xmlFileOrDir)));
+		if ($looksLikeFile && rkrk_catalog_is_feldkatalog_basename($path)) {
+			$feldDir = rkrk_feldkatalog_json_dir_for($xmlFileOrDir);
+			if ($feldDir !== '') {
+				return $feldDir;
+			}
+		}
 		$shared = '';
 		if (!empty($jsonMissionLocation)) {
 			$shared = rtrim(str_replace('\\', '/', $jsonMissionLocation), '/') . '/';
 		}
-		$path = str_replace('\\', '/', (string) $xmlFileOrDir);
 		if ($shared !== '') {
 			if ($path === '') {
 				return $shared;
@@ -189,8 +343,23 @@ if (!function_exists('rkrk_catalog_write_json')) {
 		if ($jsonPath === '') {
 			return false;
 		}
+		$encoded = null;
+		if (rkrk_catalog_is_feldkatalog_basename($jsonPath) && is_file($jsonPath)) {
+			$oldSize = @filesize($jsonPath);
+			$encoded = function_exists('rkrk_json_encode_utf8') ? rkrk_json_encode_utf8($data) : json_encode($data);
+			if ($encoded === false) {
+				return false;
+			}
+			$newSize = strlen($encoded) + 1;
+			if ($oldSize !== false && $oldSize >= rkrk_feldkatalog_min_bytes() && $newSize < (int) floor($oldSize * 0.5)) {
+				return false;
+			}
+		}
 		if (is_file($jsonPath)) {
 			rkrk_catalog_history_copy($jsonPath);
+		}
+		if ($encoded !== null) {
+			return rkrk_write_utf8_file($jsonPath, $encoded . "\n");
 		}
 		return rkrk_write_json_file($jsonPath, $data);
 	}
@@ -325,6 +494,9 @@ if (!function_exists('rkrk_catalog_sync_json')) {
 		if (!is_string($xmlPath) || $xmlPath === '' || !is_file($xmlPath)) {
 			return false;
 		}
+		if (rkrk_catalog_is_feldkatalog_basename($xmlPath) && !rkrk_feldkatalog_file_complete($xmlPath)) {
+			return false;
+		}
 		if (function_exists('rkrk_load_xml_file_safe')) {
 			$xml = rkrk_load_xml_file_safe($xmlPath);
 		} else {
@@ -344,6 +516,10 @@ if (!function_exists('rkrk_catalog_sync_json')) {
 
 if (!function_exists('rkrk_catalog_exists')) {
 	function rkrk_catalog_exists($xmlFilePath) {
+		if (rkrk_catalog_is_feldkatalog_basename($xmlFilePath)) {
+			$jsonPath = rkrk_catalog_json_path($xmlFilePath);
+			return rkrk_feldkatalog_file_complete($jsonPath) || rkrk_feldkatalog_file_complete($xmlFilePath);
+		}
 		$jsonPath = rkrk_catalog_json_path($xmlFilePath);
 		if ($jsonPath !== '' && is_file($jsonPath)) {
 			return true;
@@ -391,8 +567,10 @@ if (!function_exists('rkrk_catalog_payload_to_xml_parts')) {
 
 if (!function_exists('rkrk_catalog_load_simplexml')) {
 	function rkrk_catalog_load_simplexml($xmlPath) {
+		$isFeld = rkrk_catalog_is_feldkatalog_basename($xmlPath);
 		$jsonPath = rkrk_catalog_json_path($xmlPath);
-		if ($jsonPath !== '' && is_file($jsonPath)) {
+		$jsonOk = ($jsonPath !== '' && is_file($jsonPath) && (!$isFeld || rkrk_feldkatalog_file_complete($jsonPath)));
+		if ($jsonOk) {
 			$payload = rkrk_read_json_file($jsonPath);
 			if (is_array($payload) && $payload !== array()) {
 				list($root, $data) = rkrk_catalog_payload_to_xml_parts($payload);
@@ -407,6 +585,9 @@ if (!function_exists('rkrk_catalog_load_simplexml')) {
 		if (!rkrk_xml_catalog_support() || !is_file($xmlPath)) {
 			return false;
 		}
+		if ($isFeld && !rkrk_feldkatalog_file_complete($xmlPath)) {
+			return false;
+		}
 		if (function_exists('rkrk_load_xml_file_safe')) {
 			$xml = rkrk_load_xml_file_safe($xmlPath);
 		} else {
@@ -416,7 +597,9 @@ if (!function_exists('rkrk_catalog_load_simplexml')) {
 				: false;
 		}
 		if ($xml instanceof SimpleXMLElement) {
-			rkrk_catalog_seed_json_from_simplexml($xmlPath, $xml, false);
+			if (!$isFeld) {
+				rkrk_catalog_seed_json_from_simplexml($xmlPath, $xml, false);
+			}
 			return $xml;
 		}
 		return false;
@@ -584,6 +767,9 @@ if (!function_exists('rkrk_feldkatalog_save_json')) {
 if (!function_exists('rkrk_feldkatalog_save_json_from_xml')) {
 	function rkrk_feldkatalog_save_json_from_xml($xmlPath, $xml) {
 		global $EnabledRegion, $OptionJaeger, $MaxSelectedEntries;
+		if (rkrk_catalog_is_feldkatalog_basename($xmlPath) && !rkrk_feldkatalog_file_complete($xmlPath)) {
+			return false;
+		}
 		if (!function_exists('TransferFeldKatFromXMLtoArr')) {
 			return rkrk_catalog_seed_json_from_simplexml($xmlPath, $xml, true);
 		}
@@ -598,8 +784,16 @@ if (!function_exists('rkrk_feldkatalog_save_json_from_xml')) {
 }
 
 if (!function_exists('rkrk_feldkatalog_load')) {
-	function rkrk_feldkatalog_load($xmlFilePath) {
+	function rkrk_feldkatalog_load($xmlFilePath, $forceReload = false) {
 		global $EnabledRegion, $OptionJaeger, $MaxSelectedEntries;
+		static $requestCache = array();
+		if ($forceReload) {
+			$requestCache = array();
+		}
+		$source = rkrk_feldkatalog_resolve_source($xmlFilePath);
+		if ($source['xml'] !== '') {
+			$xmlFilePath = $source['xml'];
+		}
 		if (function_exists('rkrk_log_data_access')) {
 			rkrk_log_data_access('Missionenkatalog', basename((string)$xmlFilePath));
 		}
@@ -609,28 +803,36 @@ if (!function_exists('rkrk_feldkatalog_load')) {
 		if (!isset($OptionJaeger) || !is_array($OptionJaeger)) {
 			$OptionJaeger = array();
 		}
-		$jsonPath = rkrk_catalog_json_path($xmlFilePath);
+		$jsonPath = $source['json'];
+		$cacheKey = $jsonPath !== '' ? $jsonPath : (string)($source['xml'] ?? '');
+		if ($cacheKey !== '' && array_key_exists($cacheKey, $requestCache)) {
+			return $requestCache[$cacheKey];
+		}
 		$fields = array();
-		if ($jsonPath !== '' && is_file($jsonPath)) {
+		if ($jsonPath !== '' && rkrk_feldkatalog_file_complete($jsonPath)) {
 			$fields = rkrk_feldkatalog_fields_from_payload(rkrk_read_json_file($jsonPath));
 		}
 		if ($fields !== array()) {
 			if (function_exists('TransferFeldKatFromListToArr')) {
-				return TransferFeldKatFromListToArr($fields, $EnabledRegion, $OptionJaeger, $MaxSelectedEntries);
-			}
-			$kat = array();
-			foreach ($fields as $row) {
-				$jg = trim((string) ($row['JG'] ?? ''));
-				$id = trim((string) ($row['FeldID'] ?? ''));
-				if ($jg === '' || $id === '') {
-					continue;
+				$kat = TransferFeldKatFromListToArr($fields, $EnabledRegion, $OptionJaeger, $MaxSelectedEntries);
+			} else {
+				$kat = array();
+				foreach ($fields as $row) {
+					$jg = trim((string) ($row['JG'] ?? ''));
+					$id = trim((string) ($row['FeldID'] ?? ''));
+					if ($jg === '' || $id === '') {
+						continue;
+					}
+					$kat[$jg][$id] = $row;
 				}
-				$kat[$jg][$id] = $row;
 			}
-			return $kat;
+			if ($cacheKey !== '' && is_array($kat)) {
+				$requestCache[$cacheKey] = $kat;
+			}
+			return is_array($kat) ? $kat : array();
 		}
 
-		if (!rkrk_xml_catalog_support() || !is_file($xmlFilePath) || !function_exists('TransferFeldKatFromXMLtoArr')) {
+		if (!rkrk_xml_catalog_support() || !rkrk_feldkatalog_file_complete($xmlFilePath) || !function_exists('TransferFeldKatFromXMLtoArr')) {
 			return array();
 		}
 		$xml = function_exists('rkrk_load_xml_file_safe')
@@ -643,10 +845,7 @@ if (!function_exists('rkrk_feldkatalog_load')) {
 			}
 		}
 		$kat = TransferFeldKatFromXMLtoArr($xml ? $xml : array(), $EnabledRegion, $OptionJaeger, $MaxSelectedEntries);
-		if (is_array($kat) && $kat !== array()) {
-			rkrk_feldkatalog_save_json($xmlFilePath, $kat);
-		}
-		return $kat;
+		return is_array($kat) ? $kat : array();
 	}
 }
 
@@ -842,5 +1041,36 @@ if (!function_exists('rkrk_regional_apply_json')) {
 			}
 		}
 		return true;
+	}
+}
+
+if (!function_exists('rkrk_mission_field_rel_dir')) {
+	/**
+	 * Flacher Gebietsordner. JSON und KMZ liegen direkt darin, nicht in einem Unterordner der Katalognummer.
+	 * TF_Testfelder oder TF_Testfelder/TF-065 wird TF_Testfelder.
+	 */
+	function rkrk_mission_field_rel_dir($regionDir, $feldId) {
+		$regionDir = trim(str_replace('\\', '/', (string)$regionDir), '/');
+		$feldId = trim(str_replace('\\', '/', (string)$feldId), '/');
+		$feldId = str_replace(array('/', '..'), '', $feldId);
+		if ($regionDir !== '' && $feldId !== '') {
+			$suffix = '/' . $feldId;
+			$tail = substr($regionDir, -strlen($suffix));
+			if (strcasecmp((string)$tail, $suffix) === 0) {
+				$regionDir = substr($regionDir, 0, -strlen($suffix));
+			}
+		}
+		return $regionDir;
+	}
+}
+
+if (!function_exists('rkrk_mission_field_file_rel')) {
+	function rkrk_mission_field_file_rel($regionDir, $feldId, $filename) {
+		$dir = rkrk_mission_field_rel_dir($regionDir, $feldId);
+		$name = basename(str_replace('\\', '/', (string)$filename));
+		if ($name === '' || $name === '.' || $name === '..') {
+			return $dir;
+		}
+		return ($dir === '' ? '' : $dir . '/') . $name;
 	}
 }

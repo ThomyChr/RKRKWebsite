@@ -669,6 +669,25 @@ function JGMapButtons2023($PicWidth) {
 }
 
 
+function rkrk_jgmap_scaled_coords($coords, $width, $picwidth) {
+	$picwidth = (float)$picwidth;
+	if ($picwidth <= 0) {
+		return '';
+	}
+	$points = array();
+	foreach (explode(',', (string)$coords) as $point) {
+		$point = trim($point);
+		if ($point === '' || !is_numeric($point)) {
+			continue;
+		}
+		$points[] = (string)round((float)$point * (float)$width / $picwidth);
+	}
+	if (count($points) < 6) {
+		return '';
+	}
+	return implode(',', $points);
+}
+
 function JGMapButtons2022($width) {
 	global $ThisPage, $MapIntern, $MapExtern, $JGMap2022, $UseSecUrl;
 	
@@ -694,14 +713,10 @@ function JGMapButtons2022($width) {
 	$output .= '<map name="jgmap">' .chr(10);
 
 	foreach ($JGMap2022 as $map) {
-		$coords=   $map["coords"];
-		$coords = explode(",", $coords);
-		$i=0;
-		foreach ($coords as $key => $point) {
-			$coords[$key] = round($point * $width/$picwidth);
-			$i++;
+		$coords = rkrk_jgmap_scaled_coords($map["coords"] ?? '', $width, $picwidth);
+		if ($coords === '') {
+			continue;
 		}
-		$coords=  implode("," ,$coords);
 		$hoverSrc = $imgDir . basename(str_replace('\\', '/', (string)$map["image"]));
 		$functionlink = "SetPicture('" . $hoverSrc . "')";
 		if ($UseSecUrl) {
@@ -738,21 +753,10 @@ function JGMapSelection($width) {
 	$output .= '<map name="jgmap">' .chr(10);
 
 	foreach ($JGMap2022 as $map) {
-		$coords=   $map["coords"];
-		$coords = explode(",", $coords);
-		$i=0;
-		foreach ($coords as $key => $point) {
-			$coords[$key] = round($point * $width/$picwidth);
-			//if($i%2==0) {
-				//even
-			//	$coords[$key] = round($point * $width/$picwidth)+32;
-			//} else {
-				//odd
-			//	$coords[$key] = round($point * $width/$picwidth)+20;
-			//}
-			$i++;
+		$coords = rkrk_jgmap_scaled_coords($map["coords"] ?? '', $width, $picwidth);
+		if ($coords === '') {
+			continue;
 		}
-		$coords=  implode("," ,$coords);
 		//echo $map["name"]. ":  " . $coords . "<br>"; 
 		$functionlink = "SetSelection('". $map["JG"] . "','" . $map["image"] . "')";
 		$output .= '<area shape="poly" coords="' . $coords .'" alt="' . $map["name"] .'" title="' . $map["name"] .'" href="' . $PageRef1 . $map["JG"] . $PageRef2 . '" onmouseover="' . $functionlink . '"  target="_geomap">' . chr(10);

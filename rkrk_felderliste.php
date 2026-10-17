@@ -93,6 +93,7 @@
 
 
 	$MenuOn = GetURLtoFalseTrue("MenuOn", "MenuOn", "", true);
+	$TopMenuOn = GetURLtoFalseTrue("Top", "Top", "", true);
 /*
 	if (empty($_GET["MenuOn"])) {
 		$MenuOn = true;
@@ -126,7 +127,9 @@ $MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 	$pagetitle="Feldlisten";
 	headerpage($pagetitle, false);
 	GrantAccess();
-	CreateTopMenu();
+	if ($TopMenuOn) {
+		CreateTopMenu();
+	}
 	
 	PrintRKRKHeader($pagetitle);
 	//$MenuTree = CreateMenuTree("");
@@ -141,6 +144,7 @@ $MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 
 	$OptionJaeger = Array();
 	$Feldkatalog= GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
+	$FeldkatalogVorhanden = is_array($Feldkatalog) && $Feldkatalog !== array();
 	//pre_r($Feldkatalog);
 	$FeldkatalogList = GetFeldKatalogList ($Feldkatalog);
 	aasort($FeldkatalogList, "FeldID");
@@ -188,7 +192,7 @@ $MissionSelectionParameter = "MDB=" . $RKRKMissionSelected;
 
 
 Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data") {
-	global $FlugzeitTreshold, $FluzeitStartUndLandung, $ScreenTableSetup, $MainMenu, $RKRKLocalLoactionMissionFiles, $ImageHeight,$OptionFrei,$OptionWarning,$IconLoc,$GenIconLoc, $Flughoehe, $OptionFlughoehe, $ButtonHeightSmall,$Adresskatalog,$FlyFileSetting, $RegionSelected;
+	global $FlugzeitTreshold, $FluzeitStartUndLandung, $ScreenTableSetup, $MainMenu, $RKRKLocalLoactionMissionFiles, $ImageHeight,$OptionFrei,$OptionWarning,$IconLoc,$GenIconLoc, $Flughoehe, $OptionFlughoehe, $ButtonHeightSmall,$Adresskatalog,$FlyFileSetting, $RegionSelected, $searchUML, $replaceUML, $ListType, $TopMenuOn;
 	$FonzSize2 = $FonzSize2 ?? '';
 	$FonzSize3 = $FonzSize3 ?? '';
 	$FonzSize4 = $FonzSize4 ?? '';
@@ -289,7 +293,7 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 		}
 		if ($StartLat != "" && $StartLon !='') {
 			echo "<!--startpunkt--><a href='https://maps.google.ch/?q=". trim($StartLon) . " ," . trim($StartLat) . "&t=k'><img src='" . $IconLoc . "\startpnt.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
-			echo "<!--geomap--><a href='rkrk_map.php?Reg=" . $RegionSelected . "&Strt=on&Cntr=off&Area=on&Pfad=on&Poi=off&EX=NO&KA=S&MAP=1&Zoom=0.8&LAT=" . trim($StartLat) . "&LON=" . trim($StartLon) ."&MAP=9' target='_geomap'><!--Start auf MAPGEO--><img src='" . $IconLoc . "\geomappos.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
+			echo "<!--geomap--><a href='rkrk_map.php?Reg=" . $RegionSelected . "&Strt=on&Cntr=off&Area=on&Pfad=on&Poi=off&EX=NO&KA=S&MAP=1&Zoom=0.8&LAT=" . trim($StartLat) . "&LON=" . trim($StartLon) ."&MAP=9" . ($TopMenuOn ? "" : "&Top=off&Side=off") . "' target='_geomap'><!--Start auf MAPGEO--><img src='" . $IconLoc . "\geomappos.png' height='" . $ButtonHeightSmall ."'></a> " . chr(10);
 		}
 		echo "<p>" . chr(10);
 		echo "</p>" . chr(10);
@@ -317,7 +321,14 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 					}
 */
 					if ($Link !="") {
-						echo "<a href='" . $RKRKLocalLoactionMissionFiles.$Link . "' download><img src='" . $Picture . "' height='" . $ButtonHeightSmall ."' title='" .  $FileType["Text"] . " " . $dataline["FeldID"] . " - " . $Link . "'></a> <wbr>" . chr(10);
+						$href = $RKRKLocalLoactionMissionFiles.$Link;
+						if (($FileType["XMLLabel"] ?? '') === "KMZFile") {
+							$convHref = rkrk_kmz_convert_download_href($Link);
+							if ($convHref !== '') {
+								$href = $convHref;
+							}
+						}
+						echo "<a href='" . $href . "' download><img src='" . $Picture . "' height='" . $ButtonHeightSmall ."' title='" .  $FileType["Text"] . " " . $dataline["FeldID"] . " - " . $Link . "'></a> <wbr>" . chr(10);
 					}
 				}
 			}
@@ -593,7 +604,11 @@ UpdateFlightsAndSaveKatalog(strval($Year));
 $EnabledRegion = Array();
 
 //form to change setting
-echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">';
+$formAction = htmlspecialchars($_SERVER["PHP_SELF"], ENT_QUOTES, 'UTF-8');
+if (!$TopMenuOn) {
+	$formAction .= '?Top=off';
+}
+echo '<form method="post" action="'. $formAction . '">';
 
 
 $i= 0;
@@ -653,6 +668,7 @@ if ($MenuOn) {
 	//process Regions form
 	//pre_r($RegionSettings);
 	$ListOfRegions = "";
+	$activeRegCount = 0;
 	Foreach ($RegionSettings as $Reg) {
 		if ($Reg["Aktiv"]) {
 			$RegOptions[$Reg["Reg"]]["Text"]= $Reg["Reg"];
@@ -665,12 +681,26 @@ if ($MenuOn) {
 			} else
 				$RegOptions[$Reg["Reg"]]["Value"]= false;
 			$i++;
+			$activeRegCount++;
 		}	
 	}
 	$ListOfRegions = substr($ListOfRegions,0, -1);
+	$leerOptIndex = $Gruppe + $activeRegCount;
+	$leerOn = false;
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+		$leerOn = isset($_POST[$GrpName . '-' . $leerOptIndex]) && strcasecmp((string)$_POST[$GrpName . '-' . $leerOptIndex], 'leer') === 0;
+	} else {
+		$regTrim = trim((string)$RegionSelected);
+		$leerOn = (strcasecmp($regTrim, 'leer') === 0 || strcasecmp($regTrim, 'NO') === 0);
+	}
+	$RegOptions['leer'] = array('Text' => 'leer', 'Value' => $leerOn ? 1 : false);
 	$EnabledOptions["Regions"] = PrintSelection($RegOptions , $GrpName ,$Gruppe, true);
 	// JG/Region selection
+	if ($ListOfRegions !== '' && $ListOfRegions !== false) {
 	foreach (explode(",",$ListOfRegions) as $Reg) {
+		if (!isset($RegionSettings[$Reg]["JGList"])) {
+			continue;
+		}
 		$JGs2Select = explode(",", $RegionSettings[$Reg]["JGList"]);
 		foreach ($JGs2Select as $JGtoSelect)
 		{
@@ -678,6 +708,7 @@ if ($MenuOn) {
 			$RegOptions[$JGtoSelect]["Value"]=1;
 			//$EnabledOptions["Regions"]["List"][$JGtoSelect] =$JGtoSelect;
 		}
+	}
 	}
 	echo '<br>'. chr(10);
 	$i=1;
@@ -768,7 +799,7 @@ if ($MenuOn) {
 	$TableColor =  GetTableColor ($BaseColor);
 	AlternateLineTable($TableColor['even'], $FontSize, 12, $TableColor['odd']);
 
-	echo "<input type='submit' name='Einlesen' value='Einlesen' formaction='" .htmlspecialchars($_SERVER["PHP_SELF"]). "'> ". chr(10);
+	echo "<input type='submit' name='Einlesen' value='Einlesen' formaction='" . $formAction . "'> ". chr(10);
 	echo "<br>";
 	echo "</span>" .chr(10);
 
@@ -782,7 +813,7 @@ if ($MenuOn) {
 	//echo "AnzLinesPPage: " .$AnzLinesPPage . "<br>";
 	//echo "Show: " .$showfrom . " - " . $showto ."<br>";
 
-	echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">'. chr(10);
+	echo '<form method="post" action="'. $formAction . '">'. chr(10);
 	echo "<br>" . chr(10);
 	// page control disabled
 	//if ($TableType=="Table") {
@@ -792,7 +823,7 @@ if ($MenuOn) {
 	//	echo $ScreenTableSetup["</div>"].chr(10);
 	//}
 	//echo "<div class='container content line-left padding-8' style='max-width:100%' id='table'>".chr(10);
-	echo $ScreenTableSetup["<table line>"];
+	echo ($ScreenTableSetup["<table line>"] ?? '');
 	//echo  "<div class='container content center padding-16'>";
 	//echo $ScreenTableSetup["<table>"] .chr(10);
 
@@ -809,6 +840,16 @@ if ($MenuOn) {
 	
 	//form to change setting
 	echo "<table id='myTB'>";
+	if (empty($FeldkatalogVorhanden)) {
+		$droneName = (string)($RKRKMissionSelected ?? '');
+		if (isset($MissionDroneTypes[$droneName]["Name"])) {
+			$droneName = (string)$MissionDroneTypes[$droneName]["Name"];
+		}
+		if ($droneName === '') {
+			$droneName = 'diesen Drohnentyp';
+		}
+		echo "<p>Feldkatalog für " . htmlspecialchars($droneName, ENT_QUOTES, 'UTF-8') . " nicht vorhanden.</p>" . chr(10);
+	}
 	//echo $ScreenTableSetup["<table>"] .chr(10);
 	CreateTitleLine(array());
 
@@ -926,7 +967,7 @@ if ($MenuOn) {
 		echo $ScreenTableSetup["</div>"].chr(10);
 	}
 	//echo "<div class='container content line-left padding-8' style='max-width:100%' id='table'>".chr(10);
-	echo $ScreenTableSetup["<table line>"];
+	echo ($ScreenTableSetup["<table line>"] ?? '');
 	//echo  "<div class='container content center padding-16'>";
 	//echo $ScreenTableSetup["<table>"] .chr(10);
 	

@@ -2,7 +2,7 @@
     "meta": {
         "title": "Algorithmische Requirements Rehkitzsuche",
         "version": "2.4",
-        "last_updated": "2026-04-27"
+        "last_updated": "2026-10-15"
     },
     "core_parameters": [
         {
@@ -42,10 +42,10 @@
         },
         {
             "key": "edge_factor",
-            "label": "Randfaktor",
-            "value": 0.3,
+            "label": "Randfaktor (max. Anteil der Bahnbreite)",
+            "value": 0.4,
             "unit": "-",
-            "description": "Randbedingung: d_rand <= edge_factor * S."
+            "description": "40 Prozent der Bahnbreite S vom Feldrand, seitlich und an den Bahnenden, wenn dabei keine ungedeckte Flaeche entsteht. Entsteht eine Luecke, wird der Abstand kleiner, bis die Flaeche gedeckt ist. Nicht mit langen Bahnen weit ausserhalb des Feldes decken. Kurzer Ueberstand hoechstens eine Bahnbreite."
         },
         {
             "key": "agl_tolerance_m",
@@ -53,6 +53,13 @@
             "value": 10,
             "unit": "m",
             "description": "Harte maximal zulässige Abweichung entlang linearer WP-Verbindung."
+        },
+        {
+            "key": "agl_display_deviation_m",
+            "label": "Reale Flughöhenabweichung",
+            "value": 10,
+            "unit": "m",
+            "description": "Anzeige in DESK und MOB: roter Punkt, sobald die reale Flughöhe über Grund von der Sollflughöhe um mehr als ± diesen Wert abweicht."
         },
         {
             "key": "speed_m_s",
@@ -194,8 +201,8 @@
             "id": "R-003",
             "name": "Randabdeckung",
             "priority": "must",
-            "formula": "d_rand_max <= edge_factor * S und d_outside_max <= edge_factor * S",
-            "description": "Die Flugbahnen duerfen den Feldrand nur innerhalb des Max.-Randfaktors verlassen: maximaler Innenabstand zum Rand und maximaler Aussenabstand muessen jeweils <= edge_factor * S bleiben."
+            "formula": "d = edge_factor * S mit edge_factor = 0.40, seitlich und an den Enden, wenn keine Luecke; sonst d kleiner bis gedeckt; Ueberstand ausserhalb <= S",
+            "description": "40 Prozent der Bahnbreite vom Feldrand einhalten, seitlich und an den Bahnenden, wenn dabei keine ungedeckte Flaeche entsteht. Entsteht eine Luecke, wird der Abstand kleiner, bis die Flaeche gedeckt ist, auch an einer bisher offenen Ecke. Nicht mit langen Bahnen weit ausserhalb des Feldes decken. Ein kurzer Ueberstand hoechstens in der Groesse einer Bahnbreite ist erlaubt. Dieselbe Rechnung gilt auf DESK und MOB, auch nach einem Richtungswechsel."
         },
         {
             "id": "R-004",
@@ -397,16 +404,16 @@
             "id": "R-031",
             "name": "Pfadabdeckung ohne Leerflaechen",
             "priority": "must",
-            "formula": "coverage = moving_band(W, VFOV_forward) union start_rect(W,VFOV) union end_half_rect(W,VFOV) union turn_circles(D); coverage >= min_path_coverage_ratio",
-            "description": "Die Abdeckung wird ab Startpunkt entlang des gesamten Flugpfads berechnet: entlang der Strecke mit W (HFOV) und VFOV-Vorblick, am Start mit vollem VFOV-Rechteck, am Ende mit halbem VFOV-Vorblick und an Drehpunkten mit D (DFOV)."
+            "formula": "display_width = S + (W-S)/2; look_L = 2*h*tan(VFOV/2); band along path; start_end_cap = L/2; turn = exterior sector radius display_width/2",
+            "description": "Anzeige der Suchabdeckung: Bandbreite ist das Mittel aus Bahnbreite S und Sichtbreite W. Start und Ende werden um die halbe Sichttiefe L/2 verlaengert. An Drehungen schliesst ein Kreisausschnitt mit Radius der halben Bandbreite tangential an die Bandkanten an. Vorwaertsflug, Gimbal -90 Grad."
         },
         {
             "id": "R-032",
-            "name": "Drehpunkt-Kreis mit DFOV",
+            "name": "Drehpunkt als tangentialer Kreisausschnitt",
             "priority": "must",
             "status": "valid",
-            "formula": "turn_circle_diameter D = 2*h*tan(DFOV/2); turning-point circles use D (not W)",
-            "description": "Fuer die Abdeckung an Drehpunkten ist der Kreis mit DFOV (diagonalem Oeffnungswinkel) zu berechnen; dadurch kann der Drehpunkt-Kreis groesser als bei HFOV sein."
+            "formula": "sector if abs(heading_change) > 4 deg and (display_width/2)*abs(sweep) > 0.8 m; radius = display_width/2; exterior side only; omit band if both ends turn >= 35 deg and segment <= 6 m",
+            "description": "Auch kleinere Richtungswechsel am Wegpunkt bekommen einen aeusseren Kreisausschnitt, sobald der Winkel etwa 4 Grad uebersteigt und die Luecke auf der halben Bandbreite sichtbar ist (Bogen laenger als 0.8 m). Der Radius ist die halbe Anzeigebandbreite, der Bogen liegt aussen und tangential zu den Bandkanten. Volle Scheiben und der DFOV-Kreis werden nicht gezeichnet. Ein kurzes Stueck bis 6 m zwischen zwei scharfen Drehungen ab 35 Grad wird nicht zusaetzlich als Band gezeichnet."
         },
         {
             "id": "R-033",
@@ -418,11 +425,11 @@
         },
         {
             "id": "R-034",
-            "name": "HFOV/DFOV klar getrennt darstellen",
+            "name": "Bandbreite und Sichttiefe getrennt darstellen",
             "priority": "must",
             "status": "valid",
-            "formula": "forward_path_width = W(HFOV), forward_length = L(VFOV), turning_diameter = D(DFOV)",
-            "description": "Entlang des Vorwaertsflugs gilt W aus HFOV (Breite) und L aus VFOV (Vorblick). An Drehpunkten ist der groessere Kreis mit D aus DFOV zu verwenden und klar getrennt darzustellen."
+            "formula": "W = 2*h*tan(HFOV/2); S = (1-overlap)*W; display_width = S+(W-S)/2; L = 2*h*tan(VFOV/2)",
+            "description": "Die Anzeigebandbreite ist das Mittel aus Spurabstand S und Sichtbreite W. Die Sichttiefe L aus dem vertikalen Oeffnungswinkel verlaengert nur Start und Ende um L/2. Der DFOV-Kreis bleibt ausserhalb der Anzeige."
         },
         {
             "id": "R-035",

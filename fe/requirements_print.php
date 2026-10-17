@@ -8,7 +8,7 @@ if (!is_array($step)) { $step = []; }
 
 $calcUsedCoreParamKeys = [
     'HFOV_deg', 'DFOV_deg', 'target_agl_m', 'overlap', 'edge_factor', 'speed_m_s',
-    'turn_delay_s', 'agl_tolerance_m', 'angle_step_deg', 'target_step_m', 'max_nb_points',
+    'turn_delay_s', 'agl_tolerance_m', 'agl_display_deviation_m', 'angle_step_deg', 'target_step_m', 'max_nb_points',
     'min_delay_s', 'low_relief_height_threshold_m', 'min_path_coverage_ratio', 'curve_waypoint_angle_step_deg',
 ];
 $calcUsedCoreParamKeyMap = array_fill_keys($calcUsedCoreParamKeys, true);

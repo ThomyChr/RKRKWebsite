@@ -220,8 +220,27 @@
       refreshMapSize(0);
     }
 
+    function isMapPage() {
+      try {
+        return /rkrk_map\.php$/i.test(String((location && location.pathname) || ''));
+      } catch (_) {
+        return false;
+      }
+    }
+    function sideStartsCollapsed() {
+      if (!isMapPage()) return false;
+      try {
+        const side = new URLSearchParams(window.location.search).get('Side') || '';
+        return /^(off|0|false|no)$/i.test(side);
+      } catch (_) {
+        return false;
+      }
+    }
+
     let width = clamp(localStorage.getItem(STORAGE_WIDTH) || defaultW);
-    let collapsed = isNarrow() || localStorage.getItem(STORAGE_COLLAPSED) === '1';
+    let collapsed = isMapPage()
+      ? (sideStartsCollapsed() || isNarrow())
+      : (isNarrow() || localStorage.getItem(STORAGE_COLLAPSED) === '1');
     let wasNarrow = isNarrow();
     applyLayout(width, collapsed);
 
@@ -249,7 +268,7 @@
     });
     toggleBtn.addEventListener('click', () => {
       collapsed = !collapsed;
-      if (!isNarrow()) {
+      if (!isNarrow() && !isMapPage()) {
         try { localStorage.setItem(STORAGE_COLLAPSED, collapsed ? '1' : '0'); } catch (_) { /* noop */ }
       }
       if (!collapsed) {
@@ -260,7 +279,11 @@
     window.addEventListener('resize', () => {
       const narrow = isNarrow();
       if (narrow && !wasNarrow) collapsed = true;
-      if (!narrow) collapsed = localStorage.getItem(STORAGE_COLLAPSED) === '1';
+      if (!narrow && wasNarrow) {
+        collapsed = isMapPage() ? sideStartsCollapsed() : localStorage.getItem(STORAGE_COLLAPSED) === '1';
+      } else if (!narrow && !isMapPage()) {
+        collapsed = localStorage.getItem(STORAGE_COLLAPSED) === '1';
+      }
       wasNarrow = narrow;
       applyLayout(width, collapsed);
     });

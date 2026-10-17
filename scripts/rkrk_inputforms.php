@@ -67,6 +67,9 @@ function InputField($FieldName, $Value ,$Size=10, $align="left", $type="", $clas
 		$Value = '';
 	}
 	$output = "";
+	$Value = str_replace(array("\r\n", "\r", "\n"), ' ', $Value);
+	$Value = htmlspecialchars($Value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+	$FieldName = htmlspecialchars($FieldName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	$output .= "<input " . $show;
 	if ($type=="") {
 		$output .= " type= 'text' ";
@@ -160,7 +163,7 @@ function InputTextarea($FieldName, $Value ,$Size=10, $Rows=3, $Colums=50, $align
 		$output .= " class='" . $class . "' ";
 	}
 	$output .= " >" .chr(10);
-	$output .= $Value;
+	$output .= htmlspecialchars($Value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 	$output .= "</textarea>" .chr(10);
 	Return $output;
 }
@@ -255,6 +258,29 @@ function SelectJSFunctionField ($FieldName, $Value, $Options, $JSFunction, $JSVa
 	Return $output;
 }	
 
+if (!function_exists('rkrk_option_is_selected')) {
+	/**
+	 * Exakte Übereinstimmung oder Komma-Token.
+	 * like() sucht auch umgekehrt (Kürzel steckt in der Option): "MA" trifft dann "MET".
+	 */
+	function rkrk_option_is_selected($value, $optVal) {
+		$value = strtolower(trim(function_exists('rkrk_str') ? rkrk_str($value) : (string)$value));
+		$optVal = strtolower(trim(function_exists('rkrk_str') ? rkrk_str($optVal) : (string)$optVal));
+		if ($value === '' || $optVal === '') {
+			return false;
+		}
+		if ($value === $optVal) {
+			return true;
+		}
+		foreach (preg_split('/\s*,\s*/', $value) as $part) {
+			if ($part === $optVal) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
 function SelectFieldMultiOptArr ($FieldName, $Value ,$Options, $align="left", $class="", $emptyLabel="") {
 /*
 				$output .= "<select type='text' id='". $Inputfieldname . "' name='" . $Inputfieldname ."'>";
@@ -292,12 +318,14 @@ function SelectFieldMultiOptArr ($FieldName, $Value ,$Options, $align="left", $c
 			$valueEmpty = trim($Value) === '';
 			$optEmpty = trim($optVal) === '';
 			$selected = ($valueEmpty && $optEmpty)
-				|| (!$valueEmpty && !$optEmpty && like($Value, $optVal));
+				|| (!$valueEmpty && !$optEmpty && rkrk_option_is_selected($Value, $optVal));
 			$label = ($optEmpty && $emptyLabel !== '') ? $emptyLabel : $optVal;
+			$optHtml = htmlspecialchars($optVal, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+			$labelHtml = htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 			if ($selected) {
-				$output .= "<option value='". $optVal . "' selected>". $label . "</option>".chr(10);
+				$output .= "<option value='". $optHtml . "' selected>". $labelHtml . "</option>".chr(10);
 			} else {
-				$output .= "<option value='". $optVal . "'>". $label . "</option>".chr(10);
+				$output .= "<option value='". $optHtml . "'>". $labelHtml . "</option>".chr(10);
 			}
 		}
 	$output .= "</select>" . chr(10);
@@ -508,8 +536,7 @@ function SetTableWidth($width) {
 			}	
 		}
 		if ($Einlesen) {
-			echo '<input type="button" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). $DebugParamter1 .$UrlParamter .'" class="button buttonG"> '. chr(10);
-			//echo '<input type="submit" name="Einlesen" value="Einlesen" src="' . $GenIconLoc . '/einlesen.png" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). $DebugParamter1 .'"> '. chr(10);
+			echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). $DebugParamter1 .$UrlParamter .'" class="button buttonG"> '. chr(10);
 		}
 
 		

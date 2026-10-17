@@ -49,7 +49,9 @@ body {font-family: Arial;}
 	include_once('scripts/rkrk_gen.php');
 	include_once('scripts/rkrk_csvfiles.php');
 	include_once('scripts/rkrk_menu.php');
-	include_once('rkrk_access_control.php'); 
+	include_once('rkrk_access_control.php');
+	include_once('scripts/rkrk_jg_komm.php');
+	include_once('scripts/rkrk_flugflaechen.php'); 
 
 /*
 	if (isset($_GET["Reg"])) {
@@ -77,6 +79,11 @@ body {font-family: Arial;}
 	}
 	if ($MenuOn) {
 		CreateTopMenu();
+	}
+	$JgkPreview = rkrk_jg_komm_is_preview();
+	if ($JgkPreview) {
+		$JgkPreviewDate = (isset($_GET['PreviewDate']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$_GET['PreviewDate'])) ? (string)$_GET['PreviewDate'] : date('Y-m-d');
+		echo "<div style='background:#f59e0b;color:#1a1a1a;padding:10px;font-weight:bold'>Interne Vorschau für " . htmlspecialchars($JgkPreviewDate, ENT_QUOTES, 'UTF-8') . " – nicht nach aussen sichtbar</div>";
 	}
 	echo "<style>
 .tab button, .tab button:hover, .tab button.active, .tab button.tablinks {
@@ -112,8 +119,6 @@ body {font-family: Arial;}
 	
 	$csv_desc = ';';
 	$csv_file= $RKRKContactFile;
-	$csv_file_LWB = $RKRK_LWB_ContactFile;
-
 	//read file (again after writing to file
 	//Adressen Piloten, Jäger
 	//transferGoogleSheetToCSV($csvDocLocation.$csv_file);
@@ -235,18 +240,68 @@ body {font-family: Arial;}
 
 	//*******************************
 
+	$JgkStore = rkrk_jg_komm_effective();
+	$JgkOnDate = date('Y-m-d');
+	if ($JgkPreview && isset($JgkPreviewDate)) {
+		$JgkOnDate = $JgkPreviewDate;
+	}
+	$JgkRegs = array_values(array_filter(array_map('trim', explode(',', str_replace(' ', ',', (string)$JG)))));
+	$JgkKey = rkrk_jg_komm_norm_reg($JG);
+	$JgkArea = rkrk_jg_komm_area($JgkStore, $JgkKey);
+	if (!is_array($JgkArea) && count($JgkRegs) === 1) {
+		$JgkArea = rkrk_jg_komm_area($JgkStore, $JgkRegs[0]);
+	}
+	$JgkShowMap = true;
+	$JgkShowPhones = true;
+	$JgkShowGeflogen = true;
+	$JgkSms = false;
+	$JgkWa = false;
+	if (is_array($JgkArea)) {
+		$JgkPeopleRegs = count($JgkRegs) > 1 ? $JgkRegs : array($JgkKey);
+		$JaegerListe = rkrk_jg_komm_rows_for_regs($data, $JgkStore, $JgkPeopleRegs, 'jaeger');
+		$PilotenListe = rkrk_jg_komm_rows_for_regs($data, $JgkStore, $JgkPeopleRegs, 'pilot');
+		$JgkShowMap = !isset($JgkArea['show_map']) || !empty($JgkArea['show_map']);
+		$JgkShowPhones = !isset($JgkArea['show_phones']) || !empty($JgkArea['show_phones']);
+		$JgkShowGeflogen = !isset($JgkArea['show_geflogen']) || !empty($JgkArea['show_geflogen']);
+		$JgkSms = !empty($JgkArea['sms']);
+		$JgkWa = !empty($JgkArea['whatsapp']);
+		if (trim((string)($JgkArea['title'] ?? '')) !== '') {
+			echo "<h1>" . htmlspecialchars((string)$JgkArea['title'], ENT_QUOTES, 'UTF-8') . "</h1>";
+		}
+		if (trim((string)($JgkArea['subtitle'] ?? '')) !== '') {
+			echo "<p><b>" . htmlspecialchars((string)$JgkArea['subtitle'], ENT_QUOTES, 'UTF-8') . "</b></p>";
+		}
+		if (trim((string)($JgkArea['info'] ?? '')) !== '') {
+			echo "<p>" . nl2br(htmlspecialchars((string)$JgkArea['info'], ENT_QUOTES, 'UTF-8')) . "</p>";
+		}
+	} else {
+		$JgkPeopleRegs = count($JgkRegs) > 1 ? $JgkRegs : array($JgkKey);
+		$JaegerListe = rkrk_jg_komm_apply_public_stv($JaegerListe, $data, $JgkStore, $JgkPeopleRegs, 'jaeger');
+		$PilotenListe = rkrk_jg_komm_apply_public_stv($PilotenListe, $data, $JgkStore, $JgkPeopleRegs, 'pilot');
+	}
 	echo "<table style='width: 700; text-align: left; vertical-align: left;'>";
 	foreach ($JaegerListe as $Person) {
 		echo "<tr><td>";
 		echo "Jäger";
 		if ($IsCollection) {
 			echo "</td><td>";
-			echo "<b>" . $Person["JG"] . "</b>";
+			$JgkJgCell = (string)($Person["JG"] ?? '');
+			if (!empty($Person['stv'])) {
+				$JgkJgCell = htmlspecialchars(rkrk_jg_komm_public_jg($Person), ENT_QUOTES, 'UTF-8');
+			}
+			echo "<b>" . $JgkJgCell . "</b>";
 		}
 		echo "</td><td>";
-		echo "<b>" . $Person["Name"] . "</b>";
+		echo "<b>" . $Person["Name"];
+		if (!$IsCollection && !empty($Person['stv'])) {
+			$JgkParen = htmlspecialchars(rkrk_jg_komm_public_jg($Person), ENT_QUOTES, 'UTF-8');
+			if ($JgkParen !== '') {
+				echo " " . $JgkParen;
+			}
+		}
+		echo "</b>";
 		echo "</td><td>";
-		echo "<b>" . $Person["Kontaktnummer"] . "</b>";
+		echo rkrk_jg_komm_person_links($Person, $JgkShowPhones, $JgkSms, $JgkWa);
 		echo "</td></tr>";
 	}
 	foreach ($PilotenListe as $Person) {
@@ -254,12 +309,23 @@ body {font-family: Arial;}
 		echo "Pilot";
 		if ($IsCollection) {
 			echo "</td><td>";
-			echo "<b>" . $Person["Jagdgebiet"] . "</b>";
+			$JgkJgCell = (string)($Person["Jagdgebiet"] ?? '');
+			if (!empty($Person['stv'])) {
+				$JgkJgCell = htmlspecialchars(rkrk_jg_komm_public_jg($Person), ENT_QUOTES, 'UTF-8');
+			}
+			echo "<b>" . $JgkJgCell . "</b>";
 		}
 		echo "</td><td>";
-		echo "<b>" . $Person["Name"] . "</b>";
+		echo "<b>" . $Person["Name"];
+		if (!$IsCollection && !empty($Person['stv'])) {
+			$JgkParen = htmlspecialchars(rkrk_jg_komm_public_jg($Person), ENT_QUOTES, 'UTF-8');
+			if ($JgkParen !== '') {
+				echo " " . $JgkParen;
+			}
+		}
+		echo "</b>";
 		echo "</td><td>";
-		echo "<b>" . $Person["Kontaktnummer"] . "</b>";
+		echo rkrk_jg_komm_person_links($Person, $JgkShowPhones, $JgkSms, $JgkWa);
 		echo "</td></tr>";
 	}
 	echo "</table>";
@@ -269,114 +335,68 @@ body {font-family: Arial;}
 	
 	//multi color
 
-	// alert off
-	  $Alert = "Alert=off&";
-	  $AlertMessage = "";
-	  $InfoMessage = "";
-	  $GreenMessage="";
-	  $OrangeMessage="";
-
-	
-	//Nachrichtern:
-	// 1. August bis 1. April
-	if  (
-			(($Today >= date("Y")."-07-15") and ($Today < date("Y")+1 ."-04-1")) 
-			or
-			(($Today >= date("Y")-1 ."-07-15") and ($Today < date("Y")."-04-1")) 
-		){
-	//if  (($Today >= "2025-07-15") and ($Today <= "2026-04-01")){
-		$InfoMessage = "<br><br>Die Rehkitzrettungsaison geht von Ende April bis Mitte Juli, zur Zeit werden keine Suchflüge angeboten.Für Fragen stehen wir aber gerne zur Verfügung. -> <a href='mailto:thomas.christen@drohnenrehkitzrettung.ch?subject=Fragen zur Rehkitzrettung mit Drohnen'>Anfrage schicken</a><br>";
+	// Page checkboxes still use the layer window. A displayed notice draws its alert anyway.
+	$Alert = "Alert=off&";
+	$JgkAlertZones = array();
+	if (is_array($JgkArea) && function_exists('rkrk_jg_komm_active_alert_zones')) {
+		$JgkAlertZones = rkrk_jg_komm_active_alert_zones($JgkArea, $JgkOnDate);
+		if (!is_array($JgkAlertZones)) {
+			$JgkAlertZones = array();
+		}
 	}
-
-	// 1. April bis 15. April
-	if  (($Today >= date("Y")."-04-01") and ($Today < date("Y")."-04-20")) {
-	//if  (($Today >= "2026-04-01") and ($Today <= "2026-04-20")){
-		$InfoMessage = "<br><br><b>Bald geht es los!</b><br>Die Rehkitzrettungsaison geht von Ende April bis Mitte Juli. Für Fragen stehen wir aber gerne zur Verfügung. -> <a href='mailto:thomas.christen@drohnenrehkitzrettung.ch?subject=Fragen zur Rehkitzrettung mit Drohnen'>Anfrage schicken</a><br>";
-	}
-	// 17. Juni bis 25. Juni
-	if  (($Today >= date("Y")."-06-17") and ($Today <= date("Y")."-06-25")) {
-	//if  (($Today >= "2026-06-17") and ($Today <= "2026-06-25")){
-		$OrangeMessage = "<br>Der grosse Schnitt vom 15. ist gemacht. <br><b>Für die bestehenden Felder lohnt sich eine Meldung immer noch</b>. Im letzten Jahr wurde uns im unserem Gebiet sogar am 15. Juli ein junges Rehkitz als vermäht gemeldet.<br>";
-	}
-	// 25. Juni bis 5. Juli
-	if  (($Today >= date("Y")."-06-25") and ($Today < date("Y")."-07-15")) {
-	//if  (($Today >= "2025-06-25") and ($Today <= "2025-07-15")){
-		$InfoMessage = "<br><br><b>Herzlichen Dank</b><br>Die Rehkitzrettungssaison mit Drohnen ist in unseren Regionen grossmehrheitlich vorbei. Die jungen Rehkitze sind meist mobile und stark genug. Für die tolle Zusammenarbeit in der Saison ".date("Y").". Wir hoffen, dass wir einen guten Service liefern konnten. Rückmeldungen sind herzlich Willkommen. -> <a href='mailto:thomas.christen@drohnenrehkitzrettung.ch?subject=Rehkitzrettung mit Drohnen - Rückmeldung Saison ".date("Y")."'>Mail schicken</a><br>";
-	}
-	
-	//Alerthandling:
-		// Spezifisch Do 18. Juni 2026 bis Sa 20. Juni 2026
-	if  ((($Today >= "2026-06-15") and ($Today <= "2026-06-22"))
-		 //and (in_array($JG, array("21","24","25","26","27","28","32","AZ","136","143","148","145","ZG1","ZG2","ZG3","ZG4","ZG5","ZG6","LU","LME","SZ")))
-		 and (ElementOfArrayInArray(explode(",",str_replace(" ", ",",$JG)), Array("21","24","25","26","27","28","32","AZ","136","143","148","145","ZG1","ZG2","ZG3","ZG4","ZG5","ZG6","LU","LME","SZ")))
-		){
-			if (false) {
-			// alert on
-				$Alert = "Alert=on&";
-				//$AlertMessage = "<br>Aufgrund des internationalen Treffens auf dem Bürgenstock können Luftraumeinschränkungen <b>vom 18. Juni 2026 und 20. Juni 2026</b> im Umkreis von 25 NM/46.3km um den Bürgenstock angekündigt werden (Entscheid des Bundesrates vom 17. Juni 2026)</b>. Details über die konkrete Einschränkungen für den Drohnenflug werden in den <a href='https://www.skybriefing.com/de/dabs' target='_blank'>NOTAM</a> jeweils um 0900, 1300, 1600 Lokalzeit publiziert.<br>";
-				$AlertMessage = "<br>Aufgrund des internationalen Treffens auf dem Bürgenstock können Luftraumeinschränkungen <b>vom 18. Juni 2026 und 20. Juni 2026</b> im Umkreis von 25 NM/46.3km um den Bürgenstock angekündigt werden (Gelber Kreis/Entscheid des Bundesrates vom 17. Juni 2026).<br>";
-				//$GreenMessage= "Rehkitzrettung Schweiz hat mit den entsprechenden Kantonspolizeien abgesprochen, dass alle Drohnenflüge von Mitgliedern von Rehkitzrettung Schweiz, die zwischen 04:00 und eine halbe Stunde nach Sonnenaufgang stattfinden, ohne weitere Bewilligungen stattfinden können.<br></br><b>Falls ihr Flugbedürfnisse habt, bitte normal anmelden.</b></br><br>";
-				$InfoMessage= "Das DABS 2026 JUN 20 Version 3 aktivert die Flugverbotszone ab 20.06.2026 08:00 - 22:00h CET. In dieser Zeit sind Drohnenflüge untersagt. Dies Betrifft den Einsatz der Rehktizrettung nicht. <br><b>Die Flüge können wie geplant durchgeführt werden.</b><br><i>TC 19.06.2026 16:30h</i><br>";				
-			} else {
-				$Alert = "";
-				//$AlertMessage = "<br><br><b>Flugeinschränkung sind aufgehoben!</b><br>Wir danken für das Verständnis und entschuldigen uns für die Aufregung.</br>";
-				$InfoMessage= "Im DABS 2026 JUN 22 Version 1 ist die Flugverbotszone 46.3km um den Bürgenstock aktiv, betrifft den Drohnenflug unsere Jagdgebiete jedoch nicht.<br><b>Die Flüge können wie geplant durchgeführt werden.</b><br><i>TC 21.06.2026 16:30h</i><br>";				
+	if (function_exists('rkrk_jg_komm_notice_alert_zones')) {
+		$JgkNoticeZones = rkrk_jg_komm_notice_alert_zones(isset($JgkStore) ? $JgkStore : array(), $JgkKey, $JgkOnDate);
+		if (is_array($JgkNoticeZones)) {
+			$JgkAlertHave = array();
+			foreach ($JgkAlertZones as $JgkAlertZone) {
+				$JgkHaveName = is_array($JgkAlertZone) ? (string)($JgkAlertZone['name'] ?? '') : '';
+				if ($JgkHaveName !== '') {
+					$JgkAlertHave[$JgkHaveName] = true;
+				}
 			}
-		} 
+			foreach ($JgkNoticeZones as $JgkNoticeZone) {
+				$JgkHaveName = is_array($JgkNoticeZone) ? (string)($JgkNoticeZone['name'] ?? '') : '';
+				if ($JgkHaveName !== '' && !isset($JgkAlertHave[$JgkHaveName])) {
+					$JgkAlertHave[$JgkHaveName] = true;
+					$JgkAlertZones[] = $JgkNoticeZone;
+				}
+			}
+		}
+	}
+	if ($JgkAlertZones !== array()) {
+		$JgkAlertNames = array();
+		foreach ($JgkAlertZones as $JgkAlertZone) {
+			$JgkAlertName = is_array($JgkAlertZone) ? (string)($JgkAlertZone['name'] ?? '') : '';
+			if ($JgkAlertName !== '') {
+				$JgkAlertNames[] = $JgkAlertName;
+			}
+		}
+		if ($JgkAlertNames !== array()) {
+			$Alert = 'Alert=on&AlertKml=' . implode(',', $JgkAlertNames) . '&Stichtag=' . $JgkOnDate . '&AlertDate=' . $JgkOnDate . '&';
+		}
+	}
 
-	
-	// Spezifisch 24. Mai 2024 bis 27. Mai 2024 oder 12. Juni 2024 bis 17. Juni 2024
-	if  ((($Today >= "2024-05-24") and ($Today <= "2024-05-27") or
-		($Today >= "2024-06-12") and ($Today <= "2024-06-17"))
-		 //and (in_array($JG, array("25","26","27","28","136","143","148","145","ZG1","ZG2","ZG3","ZG4","ZG5","ZG6")))
-		 and (ElementOfArrayInArray(explode(",",str_replace(" ", ",",$JG)), Array("25","26","27","28","136","143","148","145","ZG1","ZG2","ZG3","ZG4","ZG5","ZG6")))
-		){
-			if (false) {
-			// alert on
-			  $Alert = "Alert=on&";
-			  $AlertMessage = "<br><br><b>Beachte:</b> Aufgrund der Friedenskonferenz auf dem Bürgenstock ist der Luftraum 15 NM/27.8km um den Bürgenstock <b>vom 13. Juni 2024 und 17. Juni 2024 für sämtliche zivilen Drohnenflüge voraussichtlich gesperrt</b>. Darum können während dieser Zeit keine Drohnenrehkitzrettungsflüge mit Drohnen angeboten werden. <br><br>
-	<!--
-				Verbindliche Sperrzeiten werden im <a href='https://www.skybriefing.com/de/dabs' target='_blank'>NOTAM</a>  jeweils bis 1600h am Vortag publiziert.<br><br>Wir danken für das Verständnis. Bis am 13. Juni und vom 18. Juni stehen wir gerne zur Verfügung.<a href='https://www.drohnenrehkitzrettung.ch/blog/flugeinschr%C3%A4nkung-w%C3%A4hrend-wichtige-information-friedenskonferenz-auf-dem-b%C3%BCrgenstock-nw' target='_blank'> ...mehr</a><br><br>
-			  <b>AKTUELLE SPERRZEITEN<br>
-
-			  - 13. Juni 2024 von 13:30h bis 17:00h,<br>
-			  - 14. Juni 2024 von 12:00h bis 23:59h,<br>
-			  - 15. Juni 2024 von 00:00h bis 23:59h<br>
-			  - 16. Juni 2024 von 00:00h bis 23:59h<br>
-			  - 17. Juni 2024 von 00:00h bis 20:00h<br></b><br><br>
-	-->
-				<b>Leider ist der Luftraum am 17. Juni erst wieder ab 20:00h.</b> Flüge können ab Dienstag 18. Juni 2024 weider wie gewohnt ausgeführt werden. Wir freuen uns auf den Normalbetrieb! <br><br>
-			  Die Flüge der letzten Tage haben gezeigt, dass wir im Unterland immernoch Runde Geissen und frisch Kitze haben. Ein <b>Abfliegen der Felder lohnt sich </b> also immernoch.
-			  
-	<!--
-			  an anderen Zeiten können Flüge in Absprache mit unserer Gruppe in Betracht gezogen werden.
-	-->
-				";
-			} else {
-				$Alert = "";
-				$AlertMessage = "<br><br><b>Flugeinschränkung seit 17. Juni 00:00h aufgehoben!</b> <a href= 'https://www.bazl.admin.ch/bazl/de/home/infrastruktur/flugsicherung-und-luftraum/ukraine_conference_buergenstock.html'>...mehr</a> <br>Wir danken für das Verständnis und euren Einsatz über die letzten Tage. <br><br>Ab diesem Zeitpunkt können wir den Flubetrieb wieder wie gewohnt aufnehmen. Wir danken für die Frühzeitige Meldung der Felder, die am nächsten Tag zu fliegen sind.</br><br>
-			  Die Flüge der letzten Tage haben gezeigt, dass wir im Unterland immernoch Runde Geissen und frisch Kitze haben. Ein <b>Abfliegen der Felder lohnt sich </b> also immernoch.
-				<i>Eure Drohnenrehkitzrettungsteam</i>
-				";
-			}	
-		} 
-	if ( $AlertMessage!="") {
-		echo "<p style='color:#D11111'>" . $AlertMessage . "</p>";
-	}
-	if ( $GreenMessage!="") {
-		echo "<p style='color:#419043'>" . $GreenMessage . "</p>";
-	}
-	if ( $OrangeMessage!="") {
-		echo "<p style='color:#FF7F50'>" . $OrangeMessage . "</p>";
-	}
-	if ( $InfoMessage!="") {
-		echo "<p style='color:#527642'>" . $InfoMessage . "</p>";
+	$JgkSeen = array();
+	foreach ((isset($JgkStore['notices']) && is_array($JgkStore['notices'])) ? $JgkStore['notices'] : array() as $JgkNotice) {
+		if (is_array($JgkNotice) && !rkrk_jg_komm_notice_enabled($JgkNotice)) {
+			continue;
+		}
+		if (!rkrk_jg_komm_notice_matches($JgkNotice, $JgkKey, $JgkOnDate)) {
+			continue;
+		}
+		$JgkId = (string)($JgkNotice['id'] ?? md5((string)($JgkNotice['text'] ?? '')));
+		if (isset($JgkSeen[$JgkId])) {
+			continue;
+		}
+		$JgkSeen[$JgkId] = true;
+		echo rkrk_jg_komm_notice_html($JgkNotice);
 	}
 	//$MapSetting=$UrlOffset.'rkrk_map.php?Reg='.$Jagdgebiet.'&Strt=on&Cntr=off&Area=on&Pfad=on&EX=NO&Poi=on&KA='.$Karte.'&MAP=1&Zoom=0.6&MapZoomOut=1.2&MenuOn=off&GA=gast&Color=white';
+	$MapQuery = 'Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&Label=on&JGLabel=off&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white';
 	if ($UseSecUrl) {
-		$MapSetting=$UrlOffset.'rkrk_map.php?'.base64_encode('Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&Label=on&JGLabel=off&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white');
+		$MapSetting=$UrlOffset.'rkrk_map.php?'.base64_encode($MapQuery);
 	} else {
-		$MapSetting=$UrlOffset.'rkrk_map.php?'.'Reg='.$Jagdgebiet.'&Strt=off&Cntr=off&Area=on&Pfad=off&SCOL=on&JGG=on&Label=on&JGLabel=off&'.$Alert.'KA='.$Karte.'&MAP=1&Zoom=0.9&MapZoomOut=1.2&MenuOn=off&MapButtons=off&Fit=on&GA=gast&Color=white';
+		$MapSetting=$UrlOffset.'rkrk_map.php?'.$MapQuery;
 	}
 	
 	$ListSetting=$UrlOffset.'rkrk_felderliste.php?Reg='.$Jagdgebiet.'&MenuOn=off&GA=gast&Color=white';
@@ -390,8 +410,8 @@ body {font-family: Arial;}
 	$StatHeight="1300";
 	//$StatHeight="5000";		
 
-	$FlightListSettingTodayAndTomorrow=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$Today.'&SelTo='.$FormatedTomorrow.'&MenuOn=off&Color='.$BaseColor.'&GA=gast';
-	$FlightListSettingTodayToDayAfterTomorrow=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$Today.'&SelTo='.$DayAfterTomorrow.'&MenuOn=off&Color='.$BaseColor.'&GA=gast';
+	$FlightListSettingTodayAndTomorrow=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$Today.'&SelTo='.$FormatedTomorrow.'&MenuOn=off&Color='.$BaseColor.'&GA=gast&HideZeit=1';
+	$FlightListSettingTodayToDayAfterTomorrow=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$Today.'&SelTo='.$DayAfterTomorrow.'&MenuOn=off&Color='.$BaseColor.'&GA=gast&HideZeit=1';
 	//$FlightListSettingToday=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$Today.'&SelTo='.$Today.'&MenuOn=off&Color=white&GA=gast';
 	//$FlightListSettingTomorrow=$UrlOffset.'rkrk_flugliste.php?&Mode=J&Reg='.$Jagdgebiet.'&SelFrom='.$FormatedTomorrow.'&SelTo='.$FormatedTomorrow.'&MenuOn=off&Color=white&GA=gast';
 	$FlightListHeight="1500";
@@ -401,6 +421,30 @@ body {font-family: Arial;}
 	$TabKey2 = '"today"';
 	$TabKey3 = '"tomorrow"';
 	$TabKey4 = '"dayaftertomorrow"';
+	$TabKey5 = '"geflogen"';
+	$SeasonFeldIds = array();
+	$SeasonFlightCount = 0;
+	$SeasonFromLabel = '';
+	$SeasonToLabel = '';
+	if ($JgkShowGeflogen) {
+		$SeasonYear = date('Y', strtotime($Today));
+		$SeasonFrom = GetSasionStartDate($SeasonYear);
+		$SeasonTo = GetSasionEndDate($SeasonYear);
+		$SeasonFromLabel = date('d.m.Y', strtotime($SeasonFrom));
+		$SeasonToLabel = date('d.m.Y', strtotime($SeasonTo));
+		$SeasonRegs = rkrk_flugflaechen_flightlog_regions($JG);
+		$SeasonFlights = rkrk_flugflaechen_load_flights($SeasonFrom, $SeasonTo);
+		$SeasonFiltered = rkrk_flugflaechen_filter_flightlog($SeasonFlights, $SeasonFrom, $SeasonTo, $SeasonRegs);
+		$SeasonDrawn = rkrk_flugflaechen_drawn_stats($SeasonFiltered);
+		$SeasonFeldIds = (isset($SeasonDrawn['feldIds']) && is_array($SeasonDrawn['feldIds'])) ? $SeasonDrawn['feldIds'] : array();
+		$SeasonFlightCount = (int)($SeasonDrawn['flights'] ?? 0);
+		$GeflogenQuery = $MapQuery . '&AreaOnly=on&AreaIds=' . rawurlencode(implode(' ', $SeasonFeldIds));
+		if ($UseSecUrl) {
+			$GeflogenMapSetting = $UrlOffset.'rkrk_map.php?'.base64_encode($GeflogenQuery);
+		} else {
+			$GeflogenMapSetting = $UrlOffset.'rkrk_map.php?'.$GeflogenQuery;
+		}
+	}
 	$ColorJG = "#FF9033";
 	$ColorFeld = "#67b516";
 	$legendMap = 'Legende: <span style="color: '.$ColorFeld.'">Flugfeld <span><span style="color: '.$ColorJG.'">Jagdbebietsgrenze <span>';
@@ -416,10 +460,14 @@ body {font-family: Arial;}
 		echo "  <button class='tablinks' onclick='openCity(event, ".$TabKey3.")'>Flüge morgen</button>";
 	if ($DayAfterTomorrowFieldList!="keine")
 		echo "  <button class='tablinks' onclick='openCity(event, ".$TabKey4.")'>Flüge übermorgen</button>";
+	if ($JgkShowGeflogen)
+		echo "  <button class='tablinks' onclick='openCity(event, ".$TabKey5.")'>Geflogene Felder</button>";
 	echo "</div>";
 
 	echo "<div id='region' class='tabcontent' style='display:block'>";
-	echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.htmlspecialchars($MapSetting, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	if ($JgkShowMap) {
+		echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="'.htmlspecialchars($MapSetting, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	}
 	echo "</div>";
 
 	$todayMap = $MapSetting . '&FDY=' . rawurlencode($Today);
@@ -427,7 +475,9 @@ body {font-family: Arial;}
 		$todayMap .= '&FFilter=' . rawurlencode($TodaysFieldList);
 	}
 	echo "<div id='today' class='tabcontent'>";
-	echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($todayMap, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	if ($JgkShowMap) {
+		echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($todayMap, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	}
 	echo "</div>";
 
 	$tomorrowMap = $MapSetting . '&FDY=' . rawurlencode($Tomorrow);
@@ -435,7 +485,9 @@ body {font-family: Arial;}
 		$tomorrowMap .= '&FFilter=' . rawurlencode($TomorrowFieldList);
 	}
 	echo "<div id='tomorrow' class='tabcontent'>";
-	echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($tomorrowMap, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	if ($JgkShowMap) {
+		echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($tomorrowMap, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	}
 	echo "</div>";
 
 	$dayAfterMap = $MapSetting . '&FDY=' . rawurlencode($DayAfterTomorrow);
@@ -443,8 +495,23 @@ body {font-family: Arial;}
 		$dayAfterMap .= '&FFilter=' . rawurlencode($DayAfterTomorrowFieldList);
 	}
 	echo "<div id='dayaftertomorrow' class='tabcontent'>";
-	echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($dayAfterMap, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	if ($JgkShowMap) {
+		echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($dayAfterMap, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+	}
 	echo "</div>";
+	if ($JgkShowGeflogen) {
+		echo "<div id='geflogen' class='tabcontent'>";
+		echo "<p>Geflogene Felder dieser Saison (" . htmlspecialchars($SeasonFromLabel, ENT_QUOTES, 'UTF-8') . " bis " . htmlspecialchars($SeasonToLabel, ENT_QUOTES, 'UTF-8') . "), Geflogen = Ja.";
+		if (count($SeasonFeldIds) === 0) {
+			echo " In diesem Jagdgebiet wurden in dieser Saison noch keine Felder geflogen.</p>";
+		} else {
+			echo " " . count($SeasonFeldIds) . " Felder, " . (int)$SeasonFlightCount . " Flüge.</p>";
+		}
+		if ($JgkShowMap) {
+			echo '<p><iframe width="'.$Width.'" height="'.$MapHeight.'" seamless frameborder="0" scrolling="no" src="about:blank" data-map-src="'.htmlspecialchars($GeflogenMapSetting, ENT_QUOTES, 'UTF-8').'"></iframe><br>'.$legendMap.'</p>'.chr(10);
+		}
+		echo "</div>";
+	}
 	echo "<br>";
 	
 

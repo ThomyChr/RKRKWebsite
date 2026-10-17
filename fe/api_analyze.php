@@ -7,7 +7,7 @@ $hfov = isset($_GET['hfov']) ? floatval($_GET['hfov']) : 48.0;
 $dfov = isset($_GET['dfov']) ? floatval($_GET['dfov']) : 61.0;
 $agl = isset($_GET['agl']) ? floatval($_GET['agl']) : 50.0;
 $overlap = isset($_GET['overlap']) ? floatval($_GET['overlap']) : 0.15;
-$edgeFactor = isset($_GET['edge_factor']) ? floatval($_GET['edge_factor']) : 0.30;
+$edgeFactor = isset($_GET['edge_factor']) ? floatval($_GET['edge_factor']) : 0.40;
 $speed = isset($_GET['speed']) ? floatval($_GET['speed']) : 5.0;
 $turnDelayS = isset($_GET['turn_delay_s']) ? floatval($_GET['turn_delay_s']) : 1.5;
 $waypointType = isset($_GET['waypoint_type']) ? trim((string)$_GET['waypoint_type']) : '';
@@ -653,7 +653,7 @@ if ($planner === 'python') {
     $planned['section_guidance_theta_deg'] = $guidanceTheta;
 }
 
-// Basisrequirement: start point from field is always first, defines relative 0 height.
+// Startpunkt ist der erste Wegpunkt und liegt auf der Missionsflughöhe.
 $pathAlt0 = !empty($planned['path']) ? floatval($planned['path'][0][2] ?? $agl) : $agl;
 $planned['path'] = ensure_start_point_first($planned['path'], $selected['start'], $pathAlt0);
 $plannedMaxOutsideM = max(0.0, $edgeFactor * floatval($planned['S'] ?? 0.0));

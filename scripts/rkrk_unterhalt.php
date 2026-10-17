@@ -70,9 +70,9 @@ if (!function_exists('rkrk_unterhalt_defaults')) {
 					'active' => true,
 				),
 				'mapII' => array(
-					'label' => 'mapII/',
+					'label' => 'fe/',
 					'kind' => 'dir',
-					'rel' => 'mapII',
+					'rel' => 'fe',
 					'rkrs_dest' => 'mapII',
 					'targets' => $both_map,
 					'rkrs_source' => '',

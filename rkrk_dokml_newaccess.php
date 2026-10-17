@@ -439,13 +439,6 @@ if ($fileloaded == true) {
 						}
 					}
 				}
-				if (GetAccess("MapDownloadLitchi")){
-					foreach (explode(",", $feld->LichtiFile) as $key => $file) {
-						if ($file<>"") {
-							$Hotlinkinfo .=  '<br><br><a href="' .$RKRKExternalLoactionMissionFiles.$file . '" download> ' . $file  . ' <img src="' . $weblocation ."/".$IconLoc . '/dwnld_litchi_35.png" height="' . $ButtonHeight .'" title="Lichi File herunterladen"></a>';
-						}
-					}
-				}
 		//		if (GetAccess("MapDownloadKML")){
 		//			foreach (explode(",", $feld->KMLFile) as $key => $file) {
 		//				if ($file<>"") {

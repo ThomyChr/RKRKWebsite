@@ -155,12 +155,17 @@ aside.panel button.btn-ghost:hover, aside.panel a.btn-ghost:hover { background: 
 }
 .file-table th.col-n,
 .file-table td.col-n { text-align: right; width: 44px; }
-.file-table .col-name { width: 18%; }
+.file-table .col-name { width: 12rem; }
 .file-table .col-kml { width: 72px; }
 .file-table .col-kat { width: 86px; }
 .file-table .col-aktiv { width: 48px; }
 .file-table .col-edit { width: 44px; }
 .file-table .col-map { width: 44px; }
+.file-table .col-del { width: 36px; }
+.file-table .zone-name {
+  width: 100%; box-sizing: border-box;
+  font-weight: 600; font-size: 12px; padding: 2px 4px;
+}
 .file-table .col-regs { width: auto; }
 .reg-chips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
 .reg-chip {
@@ -187,8 +192,16 @@ body.is-map-open .file-table .col-name { width: auto; }
   padding: 5px 8px; border-bottom: 1px solid #edf1f5; vertical-align: middle;
 }
 .file-table .file-name {
-  font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600; white-space: normal; overflow: visible; word-break: break-word;
 }
+.alert-window { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-end; margin-top: 4px; }
+.alert-window label { display: flex; flex-direction: column; gap: 1px; margin: 0; font-size: 10px; font-weight: 600; color: var(--muted); }
+.alert-window input, .alert-window select { font-size: 11px; padding: 2px 4px; width: auto; max-width: 9.2rem; }
+.new-alert-panel { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 8px 10px; margin: 0 0 10px; }
+.new-alert-panel h2 { margin: 0 0 6px; font-size: 15px; }
+.new-alert-panel .new-alert-name { display: block; font-weight: 700; margin: 6px 0; }
+.new-alert-panel .new-alert-name input { display: block; width: 100%; margin-top: 2px; }
+.new-alert-panel .reg-chips { margin: 8px 0; }
 .file-row.is-editing td, .file-row.is-on-map td { background: #f4f8fb; }
 .file-row.is-on-map td { box-shadow: inset 3px 0 0 var(--accent-dark); }
 .file-edit-row { display: none; }
@@ -232,6 +245,9 @@ body.is-map-editing #mapEditBar { display: flex; }
   border: 1px solid #c8c8c8; font-size: 12px; font-family: inherit;
 }
 #mapFeatName { min-width: 140px; }
+#mapRadiusWrap { display: none; align-items: center; gap: 4px; margin: 0; font-weight: 600; }
+#mapEditBar.is-circle #mapRadiusWrap { display: inline-flex; }
+#mapRadiusM { width: 5.2rem; }
 #mapHint {
   position: absolute; bottom: 10px; left: 10px; z-index: 20;
   display: none; max-width: 420px; padding: 6px 10px; border-radius: 6px;

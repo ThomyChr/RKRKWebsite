@@ -364,6 +364,22 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"activ" => true,
 						"securl" => false,
 						),
+			"RcEinsatz" => Array (
+						"title" => "RC Einsatz",
+						"site" => "fe/rkrk_rc_einsatz.php",
+						"parameter" => "",
+						"target" => "_rceinsatz",
+						"image" => "/edit_fluege.png",
+						"image_small" => "/edit_fluege_small.png",
+						"desc_short" => "RC Einsatz",
+						"desc_long" => "<b>RC Einsatz</b></br>Gebuchte Felder auf der Fernsteuerung. Feld aus dem Katalog, Geflogen, Fund, Bemerkung und Kontrollflug in dieselbe Flugdatei. KMZ und Checkliste für den Pilotentag.",
+						"main_menu" => "Einsätze",
+						"release" => "",
+						"users" => "Thomas Christen",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
 			"Flugliste" => Array (
 						"title" => "Einsatzliste",
 						"site" => "rkrk_flugliste.php",
@@ -787,6 +803,21 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"activ" => true,
 						"securl" => false,
 						),
+			"Jagdgebietsseite" => Array (
+						"title" => "Jagdgebietsseite",
+						"site" => "rkrk_jg_komm.php",
+						"parameter" => "",
+						"target" => "_self",
+						"image" => "/settings.png",
+						"image_small" => "/settings.png",
+						"desc_short" => "Infoseite eines Jagdgebiets intern vorbereiten und publizieren",
+						"desc_long" => "<b>Jagdgebietsseite</b></br>Texte, Kontakte und Hinweise intern vorbereiten, in der Vorschau prüfen und erst danach publizieren.",
+						"main_menu" => "Tools",
+						"release" => "test, intern",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
 			"Schulung" => Array (
 						"title" => "Schulung",
 						"site" => "rkrk_quiz.php?Schulung",
@@ -1022,13 +1053,29 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						),
 */			"map_edit" => Array (
 						"title" => "Feld Editor",
-						"site" => "mapII/rkrk_feld_editor.php", // Feld Editor
-						"parameter" => "",
+						"site" => "fe/rkrk_feld_editor.php", // Feld Editor
+						"parameter" => "KAT",
 						"target" => "_mapfield",
 						"image" => "/map.png",
 						"image_small" => "/map_small.png",
 						"desc_short" => "Feld Editor",
 						"desc_long" => "Feld anlegen oder laden, Flugpfad rechnen, KMZ/UAV exportieren. Kartenbasis Farbe / S/W / Swissimage; Overlays inkl. AuLaV und swissALTI3D Relief.",
+						"main_menu" => "Intern",
+						"release" => "",
+						"users" => "Thomas Christen",
+						"sort" => $menuid++,
+						"activ" => true,
+						"securl" => false,
+						),
+			"map_edit_rc" => Array (
+						"title" => "Feld Editor auf RC",
+						"site" => "fe/rkrk_feld_editor_rc.php",
+						"parameter" => "KAT",
+						"target" => "_mapfieldrc",
+						"image" => "/map.png",
+						"image_small" => "/map_small.png",
+						"desc_short" => "Feld Editor auf RC",
+						"desc_long" => "Feld Editor für die DJI-Fernsteuerung. Fläche tippen, Startpunkt setzen, speichern.",
 						"main_menu" => "Intern",
 						"release" => "",
 						"users" => "Thomas Christen",
@@ -1284,7 +1331,7 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 
 Function CreateMenuTree ($OwnSite) {
 	global $MainMenu, $WebFreigabe;
-	$MenuTree = Array();
+	$entries = array();
 	foreach ($MainMenu as $key => $MenuEntry) {
 		if (!MenuEntryAccessGranted($key)) {
 			continue;
@@ -1293,7 +1340,21 @@ Function CreateMenuTree ($OwnSite) {
 		if ($group === "") {
 			continue;
 		}
-		$MenuTree[$group][] = $key;
+		$entries[] = array(
+			'key' => $key,
+			'group' => $group,
+			'sort' => intval($MenuEntry['sort'] ?? 0),
+		);
+	}
+	usort($entries, function ($a, $b) {
+		if ($a['sort'] === $b['sort']) {
+			return strcmp((string)$a['key'], (string)$b['key']);
+		}
+		return $a['sort'] <=> $b['sort'];
+	});
+	$MenuTree = array();
+	foreach ($entries as $entry) {
+		$MenuTree[$entry['group']][] = $entry['key'];
 	}
 	return $MenuTree;
 }	
@@ -1655,6 +1716,16 @@ function DoMenu($MenuTree) {
 		echo "<!-- Navbar -->" . chr(10);
 		echo "<div class='top rkrk-shell-header'>" . chr(10);
 		echo "  <div class='bar black card'>" . chr(10);
+		$homeHref = htmlspecialchars(rkrk_menu_site_href('Home', ''), ENT_QUOTES, 'UTF-8');
+		$faviconSrc = '/rkropen/favicon/Reh_FA840B_orange/favicon-32x32.png';
+		if (function_exists('rkrk_favicon_assets')) {
+			$faviconAssets = rkrk_favicon_assets();
+			if (!empty($faviconAssets['png'])) {
+				$faviconSrc = (string)$faviconAssets['png'];
+			}
+		}
+		$faviconSrc = htmlspecialchars($faviconSrc, ENT_QUOTES, 'UTF-8');
+		echo "   <a class='rkrk-shell-favicon' href='" . $homeHref . "' title='Zur Startseite'><img src='" . $faviconSrc . "' alt='RKRK' height='32'></a>" . chr(10);
 		echo "   <a class='bar-item button padding-large rkrk-nav-toggle hide-medium hide-large' href='javascript:void(0)' onclick='ToggleMyMenu()' title='Menü'><i class='fa fa-bars'></i></a>" . chr(10);
 		if ($LoggedOn) {
 			$seenTopTitles = array();
@@ -1664,6 +1735,9 @@ function DoMenu($MenuTree) {
 				if (count($Menu)== 1) {
 					//single entry
 					$singleKey = $Menu[0] ?? "";
+					if ($singleKey === "Home") {
+						continue;
+					}
 					$singleTitle = trim(strval($MainMenu[$singleKey]["title"] ?? $singleKey));
 					$singleNorm = mb_strtolower($singleTitle, 'UTF-8');
 					if ($singleNorm !== '' && isset($seenTopTitles[$singleNorm])) {
@@ -1693,13 +1767,10 @@ function DoMenu($MenuTree) {
 			}
 		} else {
 			//not logged in
-			CreateMenuTop("Home", "");
 			CreateMenuTop("Login", "");
 		}
-		echo "    <a href='javascript:void(0)' class='padding-large hover-red hide-small rkrk-nav-desktop right'></a>" . chr(10);
-		$logoSrc = rkrk_menu_apply_diroffset($IconLoc . "/202302 Logo_Head_RKRKZ_light");
-		echo "<img class='rkrk-shell-logo' align='right' src='" . $logoSrc . "' height='40' alt='RKRK'>". chr(10);
-		
+		$logoSrc = htmlspecialchars(rkrk_menu_apply_diroffset('images/calc/rkrk_logo.png'), ENT_QUOTES, 'UTF-8');
+		echo "<a class='rkrk-shell-logo' href='" . $homeHref . "' title='Zur Startseite'><img src='" . $logoSrc . "' alt='RKRK' height='40'></a>" . chr(10);
 		echo "  </div>" . chr(10);
 		echo "<!-- Navbar on small screens (remove the onclick attribute if you want the navbar to always show on top of the content when clicking on the links) -->" . chr(10); 
 		echo "<div id='navDemo' class='bar-block black rkrk-mobile-panel hide' style='display:none;'>" . chr(10);

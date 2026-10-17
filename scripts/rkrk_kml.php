@@ -135,7 +135,9 @@ Function kml_POI_style($StyleName, $Icon ,$IconColor, $IconScale, $LabelColor, $
 				//$Markersize = round(($Scale*$IconScale)/2,1);
 				$Markersize = "0.5";
 				$Markertype = "001-marker";
-				if ($StyleName=="startpoint")
+				if ($StyleName=="label")
+					$output .=  '          <href>' . $Icon . '</href>' . Chr(10);
+				elseif ($StyleName=="startpoint")
 					$output .=  '          <href>' . 'https://map.geo.admin.ch/api/icons/sets/default/icons/'.$Markertype.'@'.$Markersize.'x-245,177,131.png' . '</href>' . Chr(10);
 				elseif ($StyleName=="centerpoint")
 					$output .=  '          <href>' . 'https://map.geo.admin.ch/api/icons/sets/default/icons/'.$Markertype.'@'.$Markersize.'x-124,156,214.png' . '</href>' . Chr(10);
@@ -506,7 +508,8 @@ switch ($Mapstyle) {
 			$FplfAreaColor="ffffffff";
 	}	
 
-	$output .=  kml_POI_style("label", $SymLabel, "ff0051e6", $Zoom , $LabelAreaColor, $Zoom, $Target ,true);
+	$midLabelScale = ((float)$Zoom > 0) ? $Zoom : 1;
+	$output .=  kml_POI_style("label", $SymLabel, "ff0051e6", 0 , $LabelAreaColor, $midLabelScale, $Target, isset($ListOfStylesUsed["label"]));
 	//if (!$Flugplan) {
 	if (($Overview) or ($Flugplan)) {
 		// label Ausschalten
@@ -722,9 +725,17 @@ function InGdeList($Feldname,$RegionSelected) {
 	//foreach explode(",", str_replace(" ", ",",$RegionSelected)) as $Reg {
 	$delimiter=",";
 	foreach (explode($delimiter,str_replace(" ", ",",$RegionSelected)) as $Region) {
-		$GdeList = $RegionSettings[$Region]["GdeList"];
+		$Region = trim($Region);
+		if ($Region === '' || !isset($RegionSettings[$Region]) || !is_array($RegionSettings[$Region])) {
+			continue;
+		}
+		$GdeList = $RegionSettings[$Region]["GdeList"] ?? '';
 		if ($GdeList !="") {
 			foreach (explode($delimiter,str_replace(" ", ",",$GdeList)) as $Gde) {
+				$Gde = trim($Gde);
+				if ($Gde === '' || !isset($OptionGemeinde[$Gde]["Kml"])) {
+					continue;
+				}
 				if ($OptionGemeinde[$Gde]["Kml"] == str_replace($searchUML, $replaceUML, $Feldname)) {
 					$InGde = true;
 				}
@@ -750,6 +761,104 @@ function rkrk_kml_region_row($name) {
 	return $RegionSettings[$key];
 }
 
+function rkrk_kml_xml_text($text) {
+	return htmlspecialchars((string)$text, ENT_QUOTES | ENT_XML1, 'UTF-8');
+}
+
+function rkrk_kml_alert_date_explicit() {
+	if (!function_exists('GetURLwDefault')) {
+		return '';
+	}
+	foreach (array('Stichtag', 'AlertDate') as $key) {
+		$raw = (string)GetURLwDefault($key, $key, '', '');
+		if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+			return $raw;
+		}
+	}
+	return '';
+}
+
+function rkrk_kml_alert_on_date() {
+	$raw = rkrk_kml_alert_date_explicit();
+	return $raw !== '' ? $raw : date('Y-m-d');
+}
+
+function rkrk_kml_alert_pick_names() {
+	if (!function_exists('ref_layers_alert_kml_selection')) {
+		include_once(__DIR__ . '/rkrk_ref_layers_lib.php');
+	}
+	if (!function_exists('ref_layers_alert_kml_selection') || !function_exists('GetURLwDefault')) {
+		return array();
+	}
+	$raw = GetURLwDefault('AlertKml', 'AlertKml', '', '');
+	return ref_layers_alert_kml_selection($raw);
+}
+
+function rkrk_kml_alert_pick_output($names, &$ListOfStylesUsed) {
+	if (!is_array($names) || $names === array() || !function_exists('ref_layers_features_from_kml')) {
+		return '';
+	}
+	$out = '';
+	foreach ($names as $name) {
+		$name = function_exists('ref_layers_alert_kml_safe_name') ? ref_layers_alert_kml_safe_name($name) : '';
+		if ($name === '' || !function_exists('ref_layers_find_kml') || !function_exists('ref_layers_alert_kml_path_ok')) {
+			continue;
+		}
+		$path = ref_layers_find_kml($name);
+		if ($path === null || !ref_layers_alert_kml_path_ok($path)) {
+			continue;
+		}
+		$features = ref_layers_features_from_kml($path, 'ALL,', 'Alert');
+		if (!is_array($features)) {
+			continue;
+		}
+		foreach ($features as $feat) {
+			if (!is_array($feat)) {
+				continue;
+			}
+			$props = is_array($feat['properties'] ?? null) ? $feat['properties'] : array();
+			$geom = is_array($feat['geometry'] ?? null) ? $feat['geometry'] : array();
+			$coords = ref_layers_coords_string($geom);
+			if ($coords === '' || !preg_match('/^[0-9eE+.,\s-]+$/', $coords)) {
+				continue;
+			}
+			$type = ref_layers_poi_type($geom['type'] ?? ($props['geomType'] ?? 'Point'));
+			$style = trim((string)($props['styleUrl'] ?? ''));
+			if (!preg_match('/^#[A-Za-z0-9_-]+$/', $style)) {
+				$style = '#Alert';
+			}
+			$styleId = substr($style, 1);
+			$ListOfStylesUsed[$styleId] = $styleId;
+			$out .= "  <Placemark>" . chr(10);
+			$out .= "    <name>" . rkrk_kml_xml_text($props['name'] ?? $name) . "</name>" . chr(10);
+			$out .= "    <description>" . rkrk_kml_xml_text($props['description'] ?? '') . "</description>" . chr(10);
+			$out .= "    <styleUrl>" . $style . "</styleUrl>" . chr(10);
+			if ($type === 'Polygon') {
+				$out .= "    <Polygon>" . chr(10);
+				$out .= "      <tessellate>1</tessellate>" . chr(10);
+				$out .= "      <altitudeMode>clampToGround</altitudeMode>" . chr(10);
+				$out .= "      <outerBoundaryIs>" . chr(10);
+				$out .= "        <LinearRing>" . chr(10);
+				$out .= "          <coordinates>" . $coords . "</coordinates>" . chr(10);
+				$out .= "        </LinearRing>" . chr(10);
+				$out .= "      </outerBoundaryIs>" . chr(10);
+				$out .= "    </Polygon>" . chr(10);
+			} elseif ($type === 'Line') {
+				$out .= "    <LineString>" . chr(10);
+				$out .= "      <tessellate>1</tessellate>" . chr(10);
+				$out .= "      <coordinates>" . $coords . "</coordinates>" . chr(10);
+				$out .= "    </LineString>" . chr(10);
+			} else {
+				$out .= "    <Point>" . chr(10);
+				$out .= "      <coordinates>" . $coords . "</coordinates>" . chr(10);
+				$out .= "    </Point>" . chr(10);
+			}
+			$out .= "  </Placemark>" . chr(10) . chr(10);
+		}
+	}
+	return $out;
+}
+
 function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $WFOn, $SORAOn, $SunOn, $JggOn, $GdeOn, $KTOn, $ORTOn, $FZOn, $AlertOn, $EGOn, $LabelOn, $FileName, &$ListOfStylesUsed) {
 
 	//used global variales
@@ -769,6 +878,21 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 
 	$DataOutput = "";
 	$i= 0;
+	$alertLiveNames = array();
+	if ($AlertOn) {
+		if (!function_exists('ref_layers_alert_files_for_date')) {
+			include_once(__DIR__ . '/rkrk_ref_layers_lib.php');
+		}
+		$alertPick = rkrk_kml_alert_pick_names();
+		$explicitDate = rkrk_kml_alert_date_explicit();
+		if ($explicitDate !== '' && $alertPick !== array()) {
+			$alertLiveNames = $alertPick;
+		} elseif (function_exists('ref_layers_alert_files_for_date')) {
+			$alertLiveNames = ref_layers_alert_files_for_date(rkrk_kml_alert_on_date(), $alertPick !== array() ? $alertPick : null);
+		} else {
+			$alertLiveNames = $alertPick;
+		}
+	}
 	IF ($debugoutput) {
 		echo "<p>POI hinzugefügt:</p>";
 	}
@@ -795,7 +919,6 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 				($feld->Kat=="HSP" and $HSPOn) or
 				($feld->Kat=="POI" and $PoiOn) or
 				($feld->Kat=="FZ" and $FZOn) or
-				($feld->Kat=="Alert" and $AlertOn) or
 			    ($feld->Kat=="JG" and $JggOn
 					and (like(explode(" ",$feld->name)[0],$RegionSelected," ") or ($RegionSelected=="leer") or ($RegionSelected=="ALL"))
 				)  or
@@ -951,12 +1074,26 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 					$DataOutput .= trim($feld->styleUrl);
 					$ListOfStylesUsed[trim(substr($feld->styleUrl, 1))]=trim(substr($feld->styleUrl, 1));
 					$DataOutput .= "</styleUrl>" . chr(10);
+					$lineCoords = '';
+					if (isset($feld->LineString->coordinates)) {
+						$lineCoords = trim((string)$feld->LineString->coordinates);
+					}
+					if ($lineCoords === '') {
+						$lineCoords = trim((string)$feld->coordinates);
+					}
+					$lineTess = '1';
+					if (isset($feld->LineString->tessellate) && trim((string)$feld->LineString->tessellate) !== '') {
+						$lineTess = trim((string)$feld->LineString->tessellate);
+					} elseif (trim((string)$feld->tessellate) !== '') {
+						$lineTess = trim((string)$feld->tessellate);
+					}
 					$DataOutput .= "    <LineString>" . chr(10);
 					$DataOutput .= "      <tessellate>";
-					$DataOutput .= trim($feld->LineString->tessellate);
+					$DataOutput .= $lineTess;
 					$DataOutput .= "</tessellate>" . chr(10);
+					$DataOutput .= "      <altitudeMode>clampToGround</altitudeMode>" . chr(10);
 					$DataOutput .= "          <coordinates>";
-					$DataOutput .= trim($feld->LineString->coordinates);
+					$DataOutput .= $lineCoords;
 					$DataOutput .= "</coordinates>" . chr(10);
 					$DataOutput .= "    </LineString>" . chr(10);
 					$DataOutput .= "  </Placemark>" . chr(10) . chr(10);
@@ -965,8 +1102,10 @@ function GetPoiKML ($RegionSelected, $SaveFile, $debugoutput, $PoiOn, $HSPOn, $W
 		}
 		$i++;
 	}
-	
 
+	if ($AlertOn && $alertLiveNames !== array()) {
+		$DataOutput .= rkrk_kml_alert_pick_output($alertLiveNames, $ListOfStylesUsed);
+	}
 
 	if ($SaveFile) {
 		$filepath= $kmlFilelocations . $FileName . ".kml";

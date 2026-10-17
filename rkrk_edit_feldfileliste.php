@@ -247,6 +247,102 @@ window.addEventListener('resize', rkrkApplyDesktopTableScroll);
 	// Functions
 	// ============================================
 
+function rkrk_feldfile_id_prefix_match($feldId, $searchRaw) {
+	$searchRaw = trim((string)$searchRaw);
+	if ($searchRaw === '') {
+		return true;
+	}
+	$feldId = (string)$feldId;
+	$idNorm = strtolower(str_replace(array(' ', '-'), '', $feldId));
+	$parts = preg_split('/\s+/', str_replace('-', ' ', $searchRaw));
+	if (!is_array($parts)) {
+		return false;
+	}
+	$grouped = array();
+	$buf = '';
+	foreach ($parts as $part) {
+		$part = (string)$part;
+		if ($part === '') {
+			continue;
+		}
+		if ($buf === '') {
+			$buf = $part;
+			continue;
+		}
+		$partDigits = preg_match('/^\d+$/', $part) === 1;
+		$bufHasDigit = preg_match('/\d/', $buf) === 1;
+		$bufIsRegion = preg_match('/^\d{1,3}$/', $buf) === 1;
+		if ($partDigits && (!$bufHasDigit || $bufIsRegion)) {
+			$buf .= $part;
+		} else {
+			$grouped[] = $buf;
+			$buf = $part;
+		}
+	}
+	if ($buf !== '') {
+		$grouped[] = $buf;
+	}
+	$idParts = preg_split('/[- ]+/', strtolower($feldId));
+	if (!is_array($idParts)) {
+		$idParts = array();
+	}
+	foreach ($grouped as $token) {
+		$tokenNorm = strtolower(str_replace(array(' ', '-'), '', (string)$token));
+		if ($tokenNorm === '') {
+			continue;
+		}
+		if ($idNorm !== '' && strncmp($idNorm, $tokenNorm, strlen($tokenNorm)) === 0) {
+			return true;
+		}
+		foreach ($idParts as $idPart) {
+			if ($idPart !== '' && strncmp($idPart, $tokenNorm, strlen($tokenNorm)) === 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+function rkrk_feldfile_scanned_names($katRow) {
+	$names = array();
+	if (!is_array($katRow)) {
+		return $names;
+	}
+	foreach (array('json', 'jpg', 'kmz', 'kml') as $ext) {
+		if (empty($katRow[$ext]) || !is_array($katRow[$ext])) {
+			continue;
+		}
+		foreach ($katRow[$ext] as $fn) {
+			$fn = trim((string)$fn);
+			if ($fn !== '') {
+				$names[] = $fn;
+			}
+		}
+	}
+	return $names;
+}
+
+function rkrk_feldfile_display_corename($katRow, $feld) {
+	$cor = '';
+	if (is_array($katRow) && isset($katRow['CorName']) && !is_array($katRow['CorName'])) {
+		$cor = trim((string)$katRow['CorName']);
+	}
+	if ($cor === '' && is_array($feld) && isset($feld['CorName']) && !is_array($feld['CorName'])) {
+		$cor = trim((string)$feld['CorName']);
+	}
+	if ($cor !== '') {
+		return $cor;
+	}
+	$names = rkrk_feldfile_scanned_names($katRow);
+	foreach ($names as $fn) {
+		if (preg_match('/\.json$/i', $fn) === 1) {
+			return $fn;
+		}
+	}
+	return isset($names[0]) ? $names[0] : '';
+}
+
+
 //======================================
 // Read in paramters for selection
 //======================================
@@ -415,8 +511,8 @@ echo "<table class='rkrk-filter-form' width=100%>";
 	echo "</td></tr>";
 echo "</table  width=100%>";
 if (GetAccess("DebugDataBase")) {
-	echo '<input type="hidden" name="Act" id="Act" value="save" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'&DBW=' . $_GET["DBW"]. '&TM=' . $TableMode . '">'. chr(10);
-	echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'&DBW=' . $_GET["DBW"]. '&TM=' . $TableMode . '"> '. chr(10);
+	echo '<input type="hidden" name="Act" id="Act" value="save" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'&DBW=' . ($_GET["DBW"] ?? "off"). '&TM=' . $TableMode . '">'. chr(10);
+	echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'&DBW=' . ($_GET["DBW"] ?? "off"). '&TM=' . $TableMode . '"> '. chr(10);
 } else {
 	echo '<input type="hidden" name="Act" id="Act" value="save" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'&TM=' . $TableMode . '">'. chr(10);
 	echo '<input type="submit" name="Einlesen" value="Einlesen" formaction="' .htmlspecialchars($_SERVER["PHP_SELF"]). '?'. $EnableDeleteSet.'&TM=' . $TableMode . '"> '. chr(10);
@@ -447,12 +543,26 @@ $Feldkatalog= GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-	if ($_POST["NumEntries"]>0) {
+	if (isset($_POST["NumEntries"]) && $_POST["NumEntries"]>0) {
 		//new configuration, safe configuration file
 		//echo "NumE: " . $_POST["NumEntries"] .  "<br>" . chr(10);
 
 		//Write to LOGfile
-		WriteToLog("save", basename($_SERVER['PHP_SELF']), "Felddatenliste ",strval($_POST["JG" . $i]),$file, $RKRKMissionSelected,"");		
+		$FeldID = isset($_POST["FeldID" . $i]) ? (string)$_POST["FeldID" . $i] : "";
+		$jgLog = isset($_POST["JG" . $i]) ? (string)$_POST["JG" . $i] : "";
+		$file = "";
+		if ($FeldID !== "" && $jgLog !== "" && isset($RegionSettings[$jgLog]["Dir"])) {
+			$foundFiles = glob($RKRKLocalLoactionMissionFiles . $RegionSettings[$jgLog]["Dir"] . "/" . $FeldID . "*.*");
+			if (is_array($foundFiles)) {
+				foreach ($foundFiles as $foundFile) {
+					if (is_string($foundFile) && $foundFile !== "" && is_file($foundFile)) {
+						$file = basename($foundFile);
+						break;
+					}
+				}
+			}
+		}
+		WriteToLog("save", basename($_SERVER['PHP_SELF']), "Felddatenliste ",$jgLog,$file, $RKRKMissionSelected,"");
 		for ($i = 1; $i < $_POST["NumEntries"]; $i++) {
 			//echo $i . "<br>";
 			//echo  $i . "  " . $_POST["FeldID" . $i] . " " . $_POST["Feldname" . $i] . " " . $_POST["GrundstueckID" . $i];
@@ -467,7 +577,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // =================================
 	//echo "<br>Postentries: " . $_POST["NumEntries"]. "<br><br>";
 	$Transfer = array();
-	if ($_POST["NumEntries"]>0) {
+	if (isset($_POST["NumEntries"]) && $_POST["NumEntries"]>0) {
 		//new configuration, safe configuration file
 		//echo "NumE: " . $_POST["NumEntries"] .  "<br>" . chr(10);
 		for ($i = 1; $i < $_POST["NumEntries"]; $i++) {
@@ -515,6 +625,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 						//echo "JG new ". $Transfer[$i]["JG"]["New"] . "<br>";
 						//echo "FeldID old ". $Transfer[$i]["FeldID"]["Old"] . "<br>";
 						//echo "FeldID new ". $NewFeldID . "<br>";
+						$existingFeldRow = array();
+						$jgNewKey = isset($_POST["JG_New" . $i]) ? (string)$_POST["JG_New" . $i] : "";
+						$newFeldIdKey = (string)$NewFeldID;
+						if ($jgNewKey !== "" && $newFeldIdKey !== ""
+							&& isset($Feldkatalog[$jgNewKey]) && is_array($Feldkatalog[$jgNewKey])
+							&& isset($Feldkatalog[$jgNewKey][$newFeldIdKey]) && is_array($Feldkatalog[$jgNewKey][$newFeldIdKey])) {
+							$existingFeldRow = $Feldkatalog[$jgNewKey][$newFeldIdKey];
+						}
 						if ( 
 							($Transfer[$i]["JG"]["Old"] == $Transfer[$i]["JG"]["New"]) and
 							($Transfer[$i]["FeldID"]["Old"] == strval($NewFeldID))
@@ -524,7 +642,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 								$Transfer[$i]["FeldID"]["New"] =$NewFeldID;
 							} else {
 							if (
-									($Feldkatalog[$_POST["JG_New" . $i]][$NewFeldID]["FeldID"]!="") 
+									((string)($existingFeldRow["FeldID"] ?? "") != "") 
 									or ($_POST["FeldID_New" . $i] =="")
 								)	
 								{
@@ -543,6 +661,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 				}
 
 				//Write to LOGfile
+				$FeldID = isset($_POST["FeldID" . $i]) ? (string)$_POST["FeldID" . $i] : "";
+				$jgLog = isset($_POST["JG" . $i]) ? (string)$_POST["JG" . $i] : "";
+				$file = "";
+				if ($FeldID !== "" && $jgLog !== "" && isset($RegionSettings[$jgLog]["Dir"])) {
+					$foundFiles = glob($RKRKLocalLoactionMissionFiles . $RegionSettings[$jgLog]["Dir"] . "/" . $FeldID . "*.*");
+					if (is_array($foundFiles)) {
+						foreach ($foundFiles as $foundFile) {
+							if (is_string($foundFile) && $foundFile !== "" && is_file($foundFile)) {
+								$file = basename($foundFile);
+								break;
+							}
+						}
+					}
+				}
 				WriteToLog("save", basename($_SERVER['PHP_SELF']), "Filename ",$FeldID,$file, $RKRKMissionSelected,"");
 
 			} // true
@@ -559,9 +691,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 			// 1) rename Files
 			// ---------------
 			$FilesToSearch = $RKRKLocalLoactionMissionFiles.$RegionSettings[$TransferEntry["JG"]["Old"]]["Dir"]."/".$TransferEntry["FeldID"]["Old"]."*.*";
-			//echo "File to search: " . $FilesToSearch;
-			
-			$FileList = glob($FilesToSearch);
+			$FileList = glob($FilesToSearch) ?: array();
 			//pre_R($FileList);
 
 			//Reset Data
@@ -606,6 +736,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 				$NewFilename = $NewCorefilename . "_" .$FilenameMeaning[4] . "_" . $FilenameMeaning[5] . "_" . $FilenameMeaning[6].".".$path_parts['extension'];
 				$OldFileInfo = pathinfo($FileManage );
 				$NewFileInfo = pathinfo($NewFilename);
+				$destAbs = $RKRKLocalLoactionMissionFiles.$NewFilename;
 				//echo "Oldfilename: ". $FileManage . "<br>";
 				//pre_R($OldFileInfo);
 				//echo "NewBasefilename: ". $NewFilename . "<br>";
@@ -651,7 +782,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 					// upload JSON File
 					echo "UpdateJson: " . $OldFileInfo['basename'] . " - ".  $TransferEntry["JG"]["Old"]  . " - " . $NewFileInfo['basename'] . " - ".  $TransferEntry["JG"]["New"] . "<br>";
 					//UpdateFilenameInJson($OldFileInfo['basename'], basename($NewFileInfo['basename']) , $TransferEntry["JG"]["Old"]);
-					UpdateFilenameAndFeldIDInJson($OldFileInfo['basename'], basename($NewFileInfo['basename']) ,$TransferEntry["JG"]["Old"], $TransferEntry["JG"]["New"], $TransferEntry["FeldID"]["New"]);
+					UpdateFilenameAndFeldIDInJson($OldFileInfo['basename'], basename($NewFileInfo['basename']) ,$TransferEntry["JG"]["Old"], $TransferEntry["JG"]["New"], $TransferEntry["FeldID"]["New"], $FileManage);
 					//UpdateFeldkatalogNummerInJson($NewFileInfo['basename'], $TransferEntry["FeldID"]["New"]);
 					//UpdateGruppengebietInJson($NewFileInfo['basename'], $TransferEntry["JG"]["New"]);
 					//echo "-  done";
@@ -664,12 +795,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 			
 				// delete new file if file exists
 				//echo "Delete File: " . $RKRKLocalLoactionMissionFiles.$NewFilename . "<br>";
-				if (file_exists($RKRKLocalLoactionMissionFiles.$NewFilename))
-					unlink($RKRKLocalLoactionMissionFiles.$NewFilename);
+				if (file_exists($destAbs))
+					unlink($destAbs);
 				
 				// Move file finally
-				//echo "Rename File: " . $FileManage . " => " . $RKRKLocalLoactionMissionFiles.$NewFilename . "<br>";
-				rename($FileManage , $RKRKLocalLoactionMissionFiles.$NewFilename);
+				//echo "Rename File: " . $FileManage . " => " . $destAbs . "<br>";
+				rename($FileManage , $destAbs);
 			}
 
 			
@@ -757,16 +888,19 @@ if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 	$FontSize= "100%";
 }
 
-//Erneutes Einlesen der Felddaten (nach Änderung)
-$Feldkatalog= GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML);
+//Erneutes Einlesen nach dem Schreiben. Der erste Ladevorgang dieser Anfrage liegt im Cache und wäre noch der Stand vor dem Umbenennen.
+clearstatcache(true);
+$Feldkatalog= GetFeldkatalog($xmlMissionLocation.$RKRKFelderfileXML, true);
 //pre_R($Feldkatalog);
 
 $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 
 	// JG/Region selection
 	//pre_r($EnabledRegion);
+	$JGs2Select = array();
+	$RegionsSelected = array();
 	foreach ($EnabledRegion as $key => $Reg) {
-		if ($Reg==1)
+		if ($Reg==1 && isset($RegionSettings[$key]["JGList"]))
 		$JGs2Select = explode(",", $RegionSettings[$key]["JGList"]);
 		foreach ($JGs2Select as $JGtoSelect)
 		{
@@ -782,7 +916,14 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 		// Spezielle Filter
 		// ===========================================
 		$i=1;
+		$rkrkListOrder = array();
 		//Write to LOGfile
+		if (!isset($FeldID)) {
+			$FeldID = "";
+		}
+		if (!isset($file)) {
+			$file = "";
+		}
 		WriteToLog("get", basename($_SERVER['PHP_SELF']), "Feldfileliste ",$FeldID,$file, $RKRKMissionSelected,"");
 		//echo "Feldnamenwahl: " . $FeldNamenWahl . "<br>";
 		if (($FormSet["NewOnly"]["Set"]== true) 
@@ -795,41 +936,62 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 					foreach ($Region as $Key => $Feld) {
 						//echo "Region " . $Key . "<br>";
 						// selected to show
-						if (	
-								$FeldNamenWahl == "" 
-								or like($Feld["FeldID"], strval($FeldNamenWahl))
-								or (strpos($FeldNamenWahl, strval($Feld["FeldID"]))!== false)
-								or like($Feld["Feldname"], $FeldNamenWahl)
-								or like($Feld["Flurname"], $FeldNamenWahl)
-							) 
-						{
-							//echo $Feld["Feldname"] . " - ";
-							if (	$FeldNamenWahl != "" 
-									or
-									(
-										($FormSet["NewOnly"]["Set"]== true)  
-										and ($KatFileList[$Feld["JG"]][$Feld["FeldID"]]["FeldID"] != $Feld["FeldID"])
-									) or
-								(
-										($FormSet["Changed"]["Set"]== true) 
-											and (
-											($KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Feldname"] != $Feld["Feldname"]) 
-											or ($KatFileList[$Feld["JG"]][$Feld["FeldID"]]["Flurname"] != $Feld["Flurname"])
-										)
-									)
-								)
-								{
-									$Feldkatalog[$Feld["JG"]][$Feld["FeldID"]]["ListNr"]= $i;
-									$i++;
-								} else {
-									$Feldkatalog[$Feld["JG"]][$Feld["FeldID"]]["ListNr"]= "";
-								}
+						if (!is_array($Feld)) {
+							continue;
+						}
+						$feldIdKey = isset($Feld["FeldID"]) ? (string)$Feld["FeldID"] : "";
+						$jgKey = isset($Feld["JG"]) ? (string)$Feld["JG"] : "";
+						$searchActive = trim((string)$FeldNamenWahl) !== "";
+						$idMatch = rkrk_feldfile_id_prefix_match($feldIdKey, $FeldNamenWahl);
+						$wantNew = ($FormSet["NewOnly"]["Set"] == true);
+						$wantChanged = ($FormSet["Changed"]["Set"] == true);
+						$filterPass = true;
+						$unnamedUpload = false;
+						if ($searchActive && $idMatch) {
+							$filterPass = true;
+						} elseif ($wantNew || $wantChanged) {
+							$katRow = array();
+							if ($jgKey !== "" && $feldIdKey !== ""
+								&& isset($KatFileList[$jgKey]) && is_array($KatFileList[$jgKey])
+								&& isset($KatFileList[$jgKey][$feldIdKey]) && is_array($KatFileList[$jgKey][$feldIdKey])) {
+								$katRow = $KatFileList[$jgKey][$feldIdKey];
+							}
+							$isNew = ((string)($katRow["FeldID"] ?? "") != $feldIdKey);
+							$unnamedUpload = (trim((string)($katRow["CorName"] ?? "")) === ""
+								&& rkrk_feldfile_scanned_names($katRow) !== array());
+							$isChanged = ((string)($katRow["Feldname"] ?? "") != (string)($Feld["Feldname"] ?? ""))
+								|| ((string)($katRow["Flurname"] ?? "") != (string)($Feld["Flurname"] ?? ""))
+								|| $unnamedUpload;
+							$filterPass = ($wantNew && $isNew) || ($wantChanged && $isChanged);
+						}
+						if ($searchActive && !$idMatch) {
+							$filterPass = false;
+						}
+						if ($jgKey !== "" && $feldIdKey !== "") {
+							if ($filterPass) {
+								$rkrkListOrder[] = array($jgKey, $feldIdKey, $unnamedUpload);
 							} else {
-									$Feldkatalog[$Feld["JG"]][$Feld["FeldID"]]["ListNr"]= "";
+								$Feldkatalog[$jgKey][$feldIdKey]["ListNr"] = "";
+							}
 						}
 					}
 				}
 			}
+			$n = 1;
+			foreach ($rkrkListOrder as $row) {
+				if (!empty($row[2])) {
+					$Feldkatalog[$row[0]][$row[1]]["ListNr"] = $n;
+					$n++;
+				}
+			}
+			foreach ($rkrkListOrder as $row) {
+				if (empty($row[2])) {
+					$Feldkatalog[$row[0]][$row[1]]["ListNr"] = $n;
+					$n++;
+				}
+			}
+			$i = $n;
+			$MaxSelectedEntries = $i;
 		}
 		//pre_r($Feldkatalog);
 
@@ -847,12 +1009,15 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 			AlternateLineTable($TableColor['even'], $FontSize, $FontSizeInPoints, $TableColor['odd']);
 
 			echo "<br>" .chr(10);
-			PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, false, "Dateien ändern");
+			PageControl($ActPage, $MaxPages, $AnzLinesPPage, $FontSize, false, "Dateien ändern", false);
 			echo "<br>" .chr(10);
 			//page
 			echo "<div id='alle' class='tabcontent'>" . chr(10);
 			echo "<table>" .chr(10);
 			echo "<tr >" .chr(10);
+			if (!isset($TableSetup) || !is_array($TableSetup)) {
+				$TableSetup = array();
+			}
 			if ($TableMode=="B") {
 				// Titel Bearbeitungsmodus
 				echo "<th>#</th>" .chr(10);
@@ -878,6 +1043,12 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 			}
 			//echo '<form method="post" action="'. htmlspecialchars($_SERVER["PHP_SELF"]) . '">'. chr(10);
 			//echo $showfrom . ", " . $showto . ", " . $MaxSelectedEntries . ", " . $AnzLinesPPage . ", " . $MaxPages;
+			if (!isset($searchSDZ2) || !is_array($searchSDZ2)) {
+				$searchSDZ2 = array();
+			}
+			if (!isset($replaceSDZ2) || !is_array($replaceSDZ2)) {
+				$replaceSDZ2 = array();
+			}
 			foreach ($Feldkatalog as $Key => $Region) {
 				//echo ($Key) . "<br>";
 				//pre_r($Region);
@@ -891,8 +1062,20 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 							$Feld["ListNr"]<=$showto){
 								//page show control
 
-							$CoreFileName = $Feld["CorName"];
-							$CoreFileNameWoULM = str_replace($searchSDZ2, $replaceSDZ2 ,$Feld["CorName"]);
+							$CoreFileName = "";
+							$katRowShow = array();
+							if (
+								isset($Feld["JG"], $Feld["FeldID"])
+								&& isset($KatFileList[$Feld["JG"]][$Feld["FeldID"]])
+								&& is_array($KatFileList[$Feld["JG"]][$Feld["FeldID"]])
+							) {
+								$katRowShow = $KatFileList[$Feld["JG"]][$Feld["FeldID"]];
+							}
+							$CoreFileName = rkrk_feldfile_display_corename($katRowShow, $Feld);
+							if ($CoreFileName === "" && trim((string)$FeldNamenWahl) === "") {
+								continue;
+							}
+							$CoreFileNameWoULM = str_replace($searchSDZ2, $replaceSDZ2, $CoreFileName);
 							$LenFeldID = strlen($Feld["FeldID"]);
 								// ----------------------
 								// Start Liste Umbenennen
@@ -903,7 +1086,7 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 								if ($EnableDelete) {
 									// delete
 									if (GetAccess("DeleteData")) {
-										echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "&DBW=" . $_GET["DBW"]. "' height='" . $ButtonHeightSmall . "' title='Feld " . $Feld["FeldID"] . " löschen'>" .chr(10);
+										echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "&DBW=" . ($_GET["DBW"] ?? "off"). "' height='" . $ButtonHeightSmall . "' title='Feld " . $Feld["FeldID"] . " löschen'>" .chr(10);
 									} else {
 										echo "<input type='image' value='1st page' src='" . $IconLoc . "/delete.png' formaction='" . htmlspecialchars($_SERVER["PHP_SELF"]) . "?ActPage=" . $ActPage . "&FeldID=" . $Feld["FeldID"] . "&delete=Y&EnableDelete=" . $_GET["EnableDelete"]. "' height='" . $ButtonHeightSmall . "'  title='Feld " . $Feld["FeldID"] . " löschen'>" .chr(10);
 									}
@@ -944,11 +1127,12 @@ $KatFileList = ReadMissionFiles ($RegionSettings, $EnabledRegion);
 								// Flurname
 								echo "<td>";
 								$Inputfieldname = "Flurname".$i;
-								echo InputField($Inputfieldname, $Feld["Flurname"],  0,"left", "hidden");
-								echo $Feld["Flurname"];
+								$flurShow = $Feld["Flurname"] ?? "";
+								echo InputField($Inputfieldname, $flurShow,  0,"left", "hidden");
+								echo $flurShow;
 								echo "<br>";
 								$Inputfieldname = "Flurname_New".$i;
-								echo InputField($Inputfieldname, $Feld["Flurname"], 30);
+								echo InputField($Inputfieldname, $flurShow, 30);
 								echo "</td>" . chr(10);
 								// GrundstückID
 								echo "<td>" . chr(10);

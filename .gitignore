@@ -43,6 +43,9 @@ images/**/*.jpeg
 .vscode/
 *.swp
 
+# Synology WebDAV metadata
+**/._DAV/
+
 # Missionen/RKRK-Daten und Benutzerlisten (nicht ins Repo)
 rkropen/
 **/Rehitzrettung - Users.csv

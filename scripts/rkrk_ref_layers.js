@@ -1,5 +1,5 @@
 const API = window.RKRK_REF_LAYERS_API || 'rkrk_api_ref_layers.php';
-const KAT_ORDER = ['FZ','HSP','Alert','POI','Gde','GdeLabel','JG','JGLabel','Kanton','KtLabel','Ort','SORA','SUN','WF','DEV'];
+const KAT_ORDER = ['Alert','FZ','HSP','POI','Gde','GdeLabel','JG','JGLabel','Kanton','KtLabel','Ort','SORA','SUN','WF','DEV'];
 const POINT_KATS = ['POI','Ort','GdeLabel','JGLabel','KtLabel'];
 const LINE_KATS = ['HSP'];
 const REGION_GROUPS = [
@@ -45,6 +45,7 @@ let selectIx = null;
 let translateIx = null;
 let snapIx = null;
 let drawIx = null;
+let circleKey = null;
 let mapFile = null;
 let mapKat = 'POI';
 let mapDirty = false;
@@ -109,7 +110,7 @@ function defaultDrawType(kat) {
 function katChipHtml(kat) {
   const c = model.cache[kat];
   const st = tileStyle(kat, model.colors[kat]);
-  const kb = c && c.cached ? `${(c.bytes / 1024).toFixed(0)} KB` : 'leer';
+  const kb = c && c.cached ? `${(c.bytes / 1024).toFixed(0)} KB` : 'Cache leer';
   return `<span class="kat-chip" style="background:${st.fill};border-color:${st.stroke}">${escapeHtml(kat)} · ${escapeHtml(kb)}</span>`;
 }
 
@@ -152,6 +153,45 @@ function collectRegions(idx) {
   return regs.length ? (regs.join(',') + ',') : '';
 }
 
+function alertYearlyOn(value) {
+  return value === true || value === 1 || value === '1' || value === 'Ja' || value === 'ja' || value === 'true';
+}
+function normalizeAlertFile(f) {
+  const row = f || {};
+  row.from = row.from || '';
+  row.to = row.to || '';
+  row.yearly = alertYearlyOn(row.yearly);
+  return row;
+}
+function alertScheduleFromDom(idx, fallback) {
+  const fromEl = document.querySelector(`input[data-idx="${idx}"][data-from]`);
+  const toEl = document.querySelector(`input[data-idx="${idx}"][data-to]`);
+  const yearEl = document.querySelector(`select[data-idx="${idx}"][data-yearly]`);
+  if (!fromEl && !toEl && !yearEl) {
+    return {
+      from: (fallback && fallback.from) || '',
+      to: (fallback && fallback.to) || '',
+      yearly: !!(fallback && fallback.yearly),
+    };
+  }
+  return {
+    from: fromEl ? fromEl.value : '',
+    to: toEl ? toEl.value : '',
+    yearly: yearEl ? yearEl.value === '1' : false,
+  };
+}
+function alertWindowHtml(idx, f) {
+  if ((f.kat || '') !== 'Alert') return '';
+  const yearly = f.yearly ? '1' : '0';
+  return `<div class="alert-window">
+    <label>Von<input type="date" data-idx="${idx}" data-from value="${escapeHtml(f.from || '')}"></label>
+    <label>Bis<input type="date" data-idx="${idx}" data-to value="${escapeHtml(f.to || '')}"></label>
+    <label>Wiederholung<select data-idx="${idx}" data-yearly>
+      <option value="0"${yearly === '0' ? ' selected' : ''}>einmal</option>
+      <option value="1"${yearly === '1' ? ' selected' : ''}>jedes Jahr</option>
+    </select></label>
+  </div>`;
+}
 function syncFileFromDom(idx) {
   const f = model.files[idx];
   if (!f) return;
@@ -160,6 +200,10 @@ function syncFileFromDom(idx) {
   if (katEl) f.kat = katEl.value;
   if (aktEl) f.aktiv = !!aktEl.checked;
   f.region = collectRegions(idx);
+  const sched = alertScheduleFromDom(idx, f);
+  f.from = sched.from;
+  f.to = sched.to;
+  f.yearly = sched.yearly;
 }
 
 function renderRegionPanel(idx, f) {
@@ -215,25 +259,28 @@ function render() {
   root.innerHTML = kats.map((kat) => {
     const rows = byKat[kat];
     const activeN = rows.filter((r) => r.aktiv).length;
+    const alertNames = kat === 'Alert' ? rows.map((r) => escapeHtml(r.name)).join(', ') : '';
     const st = tileStyle(kat, model.colors[kat]);
     const body = rows.map((f) => {
       const idx = model.files.findIndex((x) => x.name === f.name);
       const onMap = mapFile && mapFile === f.name ? ' is-on-map' : '';
       return `<tr class="file-row${onMap}" data-name="${escapeHtml(f.name)}">
-          <td class="file-name col-name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</td>
+          <td class="col-name" title="${escapeHtml(f.name)}"><input class="zone-name" data-idx="${idx}" data-zone-name value="${escapeHtml(f.name)}" title="Name in der Liste und in der Jagdgebiet-Zuordnung" autocomplete="off">${alertWindowHtml(idx, f)}</td>
           <td class="col-aktiv"><label class="aktiv"><input type="checkbox" data-idx="${idx}" data-aktiv ${f.aktiv ? 'checked' : ''} /></label></td>
           <td class="col-regs">${regChipsHtml(idx, f)}</td>
           <td class="col-edit"><button type="button" class="icon-btn icon-sm btn-edit" data-edit="${idx}" aria-expanded="false" title="Regionen-Presets" aria-label="Regionen-Presets">&#127991;</button></td>
           <td class="col-map"><button type="button" class="icon-btn icon-sm btn-map" data-map="${idx}" ${f.kml_exists ? '' : 'disabled'} title="Auf der Karte bearbeiten" aria-label="Auf der Karte bearbeiten">&#127757;</button></td>
+          <td class="col-del"><button type="button" class="icon-btn icon-sm btn-danger" data-del-layer="${idx}" title="Eintrag und Datei löschen" aria-label="Eintrag und Datei löschen">&#128465;</button></td>
         </tr>
         <tr class="file-edit-row">
-          <td colspan="5">${renderRegionPanel(idx, f)}</td>
+          <td colspan="6">${renderRegionPanel(idx, f)}</td>
         </tr>`;
     }).join('');
     return `<section class="kat-block" data-kat-block="${escapeHtml(kat)}">
       <div class="kat-head" style="border-left-color:${st.stroke};background:#eef4fa">
-        <div class="kat-head-title">${katChipHtml(kat)}<span class="meta">${rows.length} Dateien · ${activeN} aktiv</span></div>
+        <div class="kat-head-title">${katChipHtml(kat)}<span class="meta">${rows.length} Dateien · ${activeN} aktiv${alertNames ? ' · ' + alertNames : ''}</span></div>
         <div class="kat-actions">
+          ${kat === 'Alert' ? '<button type="button" data-new-alert="1">Neue Alert-Zone</button>' : ''}
           <button type="button" class="icon-btn icon-sm btn-ghost" data-kat-all="${escapeHtml(kat)}" data-on="1" title="Alle in dieser Gruppe aktiv" aria-label="Alle in dieser Gruppe aktiv">&#10003;</button>
           <button type="button" class="icon-btn icon-sm btn-ghost" data-kat-all="${escapeHtml(kat)}" data-on="0" title="Alle in dieser Gruppe aus" aria-label="Alle in dieser Gruppe aus">&#10005;</button>
         </div>
@@ -241,11 +288,12 @@ function render() {
       <table class="file-table">
         <thead>
           <tr>
-            <th class="col-name">Datei</th>
+            <th class="col-name">Name</th>
             <th class="col-aktiv">Aktiv</th>
             <th class="col-regs">Regionen</th>
             <th class="col-edit"></th>
             <th class="col-map"></th>
+            <th class="col-del"></th>
           </tr>
         </thead>
         <tbody>${body}</tbody>
@@ -312,7 +360,15 @@ function render() {
       openKmlOnMap(f).catch((e) => setStatus(String(e.message || e)));
     });
   });
-  root.querySelectorAll('[data-kat], [data-aktiv], [data-reg]').forEach((el) => {
+  root.querySelectorAll('[data-del-layer]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      deleteLayer(Number(btn.getAttribute('data-del-layer'))).catch((e) => setStatus(String(e.message || e)));
+    });
+  });
+  root.querySelectorAll('[data-new-alert]').forEach((btn) => {
+    btn.addEventListener('click', () => toggleNewAlert());
+  });
+  root.querySelectorAll('[data-kat], [data-aktiv], [data-reg], [data-from], [data-to], [data-yearly]').forEach((el) => {
     el.addEventListener('change', () => {
       const idx = Number(el.getAttribute('data-idx'));
       syncFileFromDom(idx);
@@ -330,11 +386,18 @@ function collectFromDom() {
   return model.files.map((f, idx) => {
     const katEl = document.querySelector(`select[data-idx="${idx}"][data-kat]`);
     const aktEl = document.querySelector(`input[data-idx="${idx}"][data-aktiv]`);
+    const nameEl = document.querySelector(`input[data-idx="${idx}"][data-zone-name]`);
+    const typed = nameEl ? nameEl.value.trim() : '';
+    const sched = alertScheduleFromDom(idx, f);
     return {
-      name: f.name,
+      name: typed || f.name,
+      stored: f.name,
       region: collectRegions(idx) || f.region,
       kat: katEl ? katEl.value : f.kat,
       aktiv: aktEl ? !!aktEl.checked : !!f.aktiv,
+      from: sched.from,
+      to: sched.to,
+      yearly: sched.yearly,
     };
   });
 }
@@ -401,6 +464,10 @@ function markDirty() {
 }
 
 function stopDraw() {
+  if (circleKey && map) {
+    ol.Observable.unByKey(circleKey);
+    circleKey = null;
+  }
   if (drawIx && map) {
     map.removeInteraction(drawIx);
     drawIx = null;
@@ -512,9 +579,15 @@ function closeMapEdit(force) {
   setStatus('Kartenbearbeitung beendet.');
 }
 
+function syncCircleField() {
+  const typeEl = document.getElementById('mapDrawType');
+  const bar = document.getElementById('mapEditBar');
+  if (bar && typeEl) bar.classList.toggle('is-circle', typeEl.value === 'Circle');
+}
+
 function startDraw() {
   if (!mapFile) return;
-  if (drawIx) {
+  if (drawIx || circleKey) {
     stopDraw();
     return;
   }
@@ -522,6 +595,39 @@ function startDraw() {
   modifyIx.setActive(false);
   selectIx.setActive(false);
   translateIx.setActive(false);
+  if (type === 'Circle') {
+    circleKey = map.on('singleclick', (evt) => {
+      const radiusEl = document.getElementById('mapRadiusM');
+      const radius = radiusEl ? Number(radiusEl.value) : NaN;
+      if (!Number.isFinite(radius) || radius <= 0) {
+        setStatus('Radius in Metern eingeben.');
+        return;
+      }
+      if (!ol.geom.Polygon.circular) {
+        setStatus('Kreis konnte nicht erzeugt werden.');
+        return;
+      }
+      const lonLat = ol.proj.toLonLat(evt.coordinate);
+      const poly = ol.geom.Polygon.circular(lonLat, radius, 64);
+      poly.transform('EPSG:4326', map.getView().getProjection());
+      const feature = new ol.Feature(poly);
+      feature.set('name', 'Kreis');
+      feature.set('kat', mapKat);
+      editSource.addFeature(feature);
+      markDirty();
+      stopDraw();
+      selectIx.getFeatures().clear();
+      selectIx.getFeatures().push(feature);
+      setSelectedFeature(feature);
+      setStatus('Kreis mit Radius ' + Math.round(radius) + ' m. Speichern schreibt die KML.');
+    });
+    const addBtn = document.getElementById('mapAddBtn');
+    addBtn.innerHTML = '&#10005;';
+    addBtn.title = 'Zeichnen abbrechen';
+    addBtn.setAttribute('aria-label', 'Zeichnen abbrechen');
+    setStatus('Kreis: Radius in Metern eintragen, dann den Mittelpunkt auf der Karte anklicken.');
+    return;
+  }
   drawIx = new ol.interaction.Draw({ source: editSource, type });
   drawIx.on('drawend', (evt) => {
     evt.feature.set('name', 'Neu');
@@ -551,6 +657,26 @@ function deleteSelected() {
   markDirty();
 }
 
+async function deleteLayer(idx) {
+  const f = model.files[idx];
+  if (!f || !f.name) return;
+  const name = String(f.name);
+  if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0 || name.indexOf('..') >= 0) {
+    setStatus('Nur der Dateiname ist erlaubt.');
+    return;
+  }
+  if (!window.confirm('Eintrag «' + name + '» löschen? Die KML-Datei und der Katalogeintrag werden entfernt.')) return;
+  setStatus('Lösche ' + name + '…');
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete_layer', file: name }),
+  });
+  const data = await r.json();
+  if (!data.ok) throw new Error(data.message || data.error || 'delete_failed');
+  window.location.reload();
+}
+
 async function saveMapKml() {
   if (!mapFile) return;
   const format = new ol.format.GeoJSON();
@@ -567,10 +693,12 @@ async function saveMapKml() {
   const data = await r.json();
   if (!data.ok) throw new Error(data.message || data.error || 'save_kml_failed');
   mapDirty = false;
-  document.getElementById('mapEditFile').textContent = mapFile;
-  setStatus(`Gespeichert: ${data.path || mapFile}.kml · ${data.count} Objekte · Cache ${mapKat} aktualisiert.`);
+  const savedCount = data.count;
   await loadCache();
-  render();
+  await saveSettings();
+  const label = document.getElementById('mapEditFile');
+  if (label) label.textContent = mapFile || '';
+  setStatus(`Gespeichert: ${mapFile}.kml · ${savedCount} Objekte. Name, Von/Bis und Aktiv sind mitgespeichert.`);
 }
 
 async function loadCache() {
@@ -591,12 +719,94 @@ async function loadCache() {
   } catch (_) { /* defaults */ }
 }
 
+let newAlertOpen = false;
+let newAlertRegs = new Set(['ALL']);
+
+function renderNewAlertPanel() {
+  const panel = document.getElementById('newAlertPanel');
+  if (!panel) return;
+  if (!newAlertOpen) {
+    panel.hidden = true;
+    panel.innerHTML = '';
+    return;
+  }
+  const chips = listedRegionKeys().map((r) => {
+    const on = newAlertRegs.has(r);
+    const cls = 'reg-chip' + (on ? ' is-on' : '') + (r === 'ALL' ? ' is-all' : '');
+    return `<button type="button" class="${cls}" data-new-reg="${escapeHtml(r)}" aria-pressed="${on ? 'true' : 'false'}">${escapeHtml(r)}</button>`;
+  }).join('');
+  panel.hidden = false;
+  panel.innerHTML = `<h2>Neue Alert-Zone</h2>
+    <p class="muted">Neue Datei. _Alert, _Alert_24 und _Alert_26 bleiben unverändert. KML hochladen oder danach auf der Karte zeichnen, auch als Kreis mit Radius.</p>
+    <label class="new-alert-name">Name<input type="text" id="newAlertName" placeholder="Alert_Sperre"></label>
+    <label class="new-alert-name">KML-Datei<input type="file" id="newAlertFile" accept=".kml,application/vnd.google-earth.kml+xml"></label>
+    <label class="aktiv"><input type="checkbox" id="newAlertAktiv"> Aktiv</label>
+    <div class="alert-window">
+      <label>Von<input type="date" id="newAlertFrom"></label>
+      <label>Bis<input type="date" id="newAlertTo"></label>
+      <label>Wiederholung<select id="newAlertYearly"><option value="0">einmal</option><option value="1">jedes Jahr</option></select></label>
+    </div>
+    <div class="reg-chips">${chips}</div>
+    <button type="button" id="newAlertSave">Zone anlegen</button>
+    <button type="button" class="btn-ghost" id="newAlertCancel">Abbrechen</button>`;
+  panel.querySelectorAll('[data-new-reg]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-new-reg');
+      if (newAlertRegs.has(key)) newAlertRegs.delete(key);
+      else newAlertRegs.add(key);
+      const on = newAlertRegs.has(key);
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  });
+  document.getElementById('newAlertCancel').onclick = () => {
+    newAlertOpen = false;
+    renderNewAlertPanel();
+  };
+  document.getElementById('newAlertSave').onclick = () => createAlertZone().catch((e) => setStatus(String(e.message || e)));
+}
+
+function toggleNewAlert() {
+  newAlertOpen = !newAlertOpen;
+  if (newAlertOpen && newAlertRegs.size === 0) newAlertRegs.add('ALL');
+  renderNewAlertPanel();
+}
+
+async function createAlertZone() {
+  const nameEl = document.getElementById('newAlertName');
+  const name = nameEl ? nameEl.value.trim() : '';
+  const regs = Array.from(newAlertRegs);
+  const body = {
+    action: 'create_alert',
+    name,
+    region: regs.length ? (regs.join(',') + ',') : '',
+    aktiv: !!(document.getElementById('newAlertAktiv') && document.getElementById('newAlertAktiv').checked),
+    from: (document.getElementById('newAlertFrom') && document.getElementById('newAlertFrom').value) || '',
+    to: (document.getElementById('newAlertTo') && document.getElementById('newAlertTo').value) || '',
+    yearly: !!(document.getElementById('newAlertYearly') && document.getElementById('newAlertYearly').value === '1'),
+  };
+  const fileEl = document.getElementById('newAlertFile');
+  if (fileEl && fileEl.files && fileEl.files[0]) {
+    if (fileEl.files[0].size > 2000000) throw new Error('Die KML-Datei ist zu gross.');
+    body.kml = await fileEl.files[0].text();
+  }
+  setStatus('Lege Alert-Zone an…');
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json();
+  if (!data.ok) throw new Error(data.message || data.error || 'create_failed');
+  window.location.reload();
+}
+
 async function loadSettings() {
   setStatus('Lade Einstellungen…');
   const r = await fetch(`${API}?action=settings`, { cache: 'no-store' });
   const data = await r.json();
   if (!data.ok) throw new Error(data.message || data.error || 'load_failed');
-  model.files = data.files || [];
+  model.files = (data.files || []).map(normalizeAlertFile);
   model.regions = data.regions || [];
   model.kats = data.kats || [];
   model.settings_path = data.settings_path || '';
@@ -609,6 +819,7 @@ async function loadSettings() {
 
 async function saveSettings() {
   const files = collectFromDom();
+  const openRename = mapFile ? files.find((f) => f.stored === mapFile && f.name !== f.stored) : null;
   setStatus('Speichere JSON…');
   const r = await fetch(API, {
     method: 'POST',
@@ -617,9 +828,16 @@ async function saveSettings() {
   });
   const data = await r.json();
   if (!data.ok) throw new Error(data.message || data.error || 'save_failed');
-  model.files = data.files || files;
+  if (openRename) {
+    const want = String(openRename.name || '').replace(/\.kml$/i, '');
+    const hit = (data.files || []).find((f) => String(f.name || '').replace(/\.kml$/i, '') === want);
+    if (hit) mapFile = hit.name;
+  }
+  model.files = (data.files || files).map(normalizeAlertFile);
   render();
-  setStatus('Gespeichert: rkrk_kmlfile_settings.json (Regionen pro Quelle erhalten).');
+  const label = document.getElementById('mapEditFile');
+  if (label && mapFile) label.textContent = mapFile;
+  setStatus('Gespeichert: Name, Von/Bis, Aktiv und Regionen.');
 }
 
 async function resetSettings() {
@@ -698,5 +916,10 @@ document.getElementById('reloadBtn').onclick = () => loadSettings().catch((e) =>
 document.getElementById('saveBtn').onclick = () => saveSettings().catch((e) => setStatus(String(e.message || e)));
 document.getElementById('resetBtn').onclick = () => resetSettings().catch((e) => setStatus(String(e.message || e)));
 document.getElementById('buildBtn').onclick = () => buildLayers().catch((e) => setStatus(String(e.message || e)));
+const newAlertBtn = document.getElementById('newAlertBtn');
+if (newAlertBtn) newAlertBtn.onclick = () => toggleNewAlert();
+const drawTypeEl = document.getElementById('mapDrawType');
+if (drawTypeEl) drawTypeEl.addEventListener('change', syncCircleField);
+syncCircleField();
 initMap();
 loadSettings().catch((e) => setStatus(String(e.message || e)));

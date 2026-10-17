@@ -133,6 +133,18 @@ if (isset($_GET["DataSet"])) {
 		
 	}
 }
+if (!isset($DataSet) || !is_string($DataSet)) {
+	$DataSet = "";
+}
+if (!isset($JsonFile) || !is_string($JsonFile)) {
+	$JsonFile = "";
+}
+if (!isset($_GET["DBW"]) || !is_scalar($_GET["DBW"])) {
+	$_GET["DBW"] = "off";
+}
+if (!isset($FontSize) || !is_string($FontSize) || $FontSize === "") {
+	$FontSize = "100%";
+}
 
 if (isset($_GET["Sortieren"])) { 
 	$SortTable= $_GET["Sortieren"];
@@ -247,6 +259,18 @@ if ($RKRKDefaultDJI2PointuseAutoHeight)
 else	
 	$RKRKDefaultDJI2PointuseAutoHeightValue = "Nein";
 
+// Sichtbarkeit wie die übrigen M3T-Prüfungen. Expliziter Schalter: Checkbox, sonst POST, sonst GET.
+// Fehlt der Schalter, gilt die Missionswahl (ohne MDB ist das 3T). Kein Warning, kein Abbruch.
+$CheckMAVIC3T = false;
+if (isset($_POST["Dji2WayPoint_cb"])) {
+	$CheckMAVIC3T = ($_POST["Dji2WayPoint_cb"] === "on");
+} elseif (isset($_POST["CheckMAVIC3T"])) {
+	$CheckMAVIC3T = in_array((string)$_POST["CheckMAVIC3T"], array("on", "1", "Ja"), true);
+} elseif (isset($_GET["CheckMAVIC3T"])) {
+	$CheckMAVIC3T = in_array((string)$_GET["CheckMAVIC3T"], array("on", "1", "Ja"), true);
+} elseif (isset($RKRKMissionSelected) && $RKRKMissionSelected === "3T") {
+	$CheckMAVIC3T = true;
+}
 
 	$UpdateFields = Array(
 		"old" 	=> Array("Field" => "old",
@@ -456,7 +480,7 @@ else
 		"MissionWaypointType" 	=> Array("Field" => "MissionWaypointType",
 							"Default" => $RKRKDefaultDJI2PointuseMissionPathModeValue,
 							"StandardSetting" => "Ja",
-							"Value" => RKRKDefaultDJI2PointuseMissionPathModeValue,
+							"Value" => $RKRKDefaultDJI2PointuseMissionPathModeValue,
 							"Einheit" => "",
 							"Type" => "select",
 							"Text" => "<b>Missions Flugpfad</b> (in allen Punkten) setzen",
@@ -1098,9 +1122,15 @@ function UpdateJsonDataStructure(&$JsonData, $UpdateFields,$DataSet="", $JG="") 
 				//(in_array("Structure",$DataArr)) or 
 				(in_array("Korruption",$DataArr))
 				) {
-				$JsonData["geojson"]["features"][$key]["properties"]["height"]				= (float)$JsonData["geojson"]["features"][$key]["properties"]["height"];
-				$JsonData["geojson"]["features"][$key]["properties"]["_height"]				= (float)$JsonData["geojson"]["features"][$key]["properties"]["_height"];
-				$SystemInfo .= "<li>Punkt: " . $key . " Korrigierte evenutelle korrupte Daten (height, _height) - " . $JsonData["geojson"]["features"][$key]["properties"]["height"];
+				$pointHeightRaw = rkrk_health_path($JsonData, array("geojson", "features", $key, "properties", "height"));
+				if ($pointHeightRaw !== "") {
+					$JsonData["geojson"]["features"][$key]["properties"]["height"] = (float)$pointHeightRaw;
+				}
+				$pointStoredRaw = rkrk_health_path($JsonData, array("geojson", "features", $key, "properties", "_height"));
+				if ($pointStoredRaw !== "") {
+					$JsonData["geojson"]["features"][$key]["properties"]["_height"] = (float)$pointStoredRaw;
+				}
+				$SystemInfo .= "<li>Punkt: " . $key . " Korrigierte evenutelle korrupte Daten (height, _height) - " . $pointHeightRaw;
 			}
 		}
 		if(count(array_intersect(array("3T","Dji2Curve","Dji2Drone"), $DataArr)) > 0)
@@ -1205,7 +1235,8 @@ function UpdateJsonDataStructure(&$JsonData, $UpdateFields,$DataSet="", $JG="") 
 				//$NewPointProperties["properties"]["useMissionWaypointType"] =  false;
 				//$NewPointProperties["properties"]["speed"] =  5;
 				//$NewPointProperties["properties"]["useMissionSpeed"] =  false;
-				$NewPointProperties["properties"]["height"] =  (float)$JsonData["geojson"]["features"][$key]["properties"]["height"];
+				$srcPointHeight = rkrk_health_path($JsonData, array("geojson", "features", $key, "properties", "height"));
+				$NewPointProperties["properties"]["height"] = ($srcPointHeight === "" ? "" : (float)$srcPointHeight);
 				//$NewPointProperties["properties"]["useMissionHeight"] =  false;
 				//$NewPointProperties["properties"]["type"] =  1;
 				//$NewPointProperties["properties"]["pathMode"] =  "straight";
@@ -1366,8 +1397,8 @@ function UpdateJsonDataStructure(&$JsonData, $UpdateFields,$DataSet="", $JG="") 
 	if (in_array("Feldname",$DataArr)) {
 
 		//$FeldNamenArray = GetMeaningFilename($JsonData["name"]);
-		$FeldNamenArray = GetMeaningFilename($JsonData["fileNameComplete"]);
-		if (([1]<>"")  &&
+		$FeldNamenArray = rkrk_health_meaning(rkrk_health_scalar($JsonData, "fileNameComplete"));
+		if (($FeldNamenArray[1]<>"")  &&
 			($FeldNamenArray[3]<>"")  &&
 			($FeldNamenArray[4]<>"")  &&
 			($FeldNamenArray[5]<>"")  &&
@@ -1516,6 +1547,69 @@ function UpdateJsonDataStructure(&$JsonData, $UpdateFields,$DataSet="", $JG="") 
 }
 
 
+function rkrk_health_get($source, $path, $asArray = false) {
+	$empty = $asArray ? array() : "";
+	if (!is_array($path)) {
+		$path = array($path);
+	}
+	$cur = $source;
+	foreach ($path as $key) {
+		if (!is_array($cur) || !array_key_exists($key, $cur) || $cur[$key] === null) {
+			return $empty;
+		}
+		$cur = $cur[$key];
+	}
+	if ($asArray) {
+		return is_array($cur) ? $cur : array();
+	}
+	if (is_array($cur) || $cur === null) {
+		return "";
+	}
+	return $cur;
+}
+
+function rkrk_health_arr($source, $key) {
+	return rkrk_health_get($source, array($key), true);
+}
+
+function rkrk_health_scalar($source, $key) {
+	return rkrk_health_get($source, array($key), false);
+}
+
+function rkrk_health_path($source, $keys) {
+	return rkrk_health_get($source, $keys, false);
+}
+
+function rkrk_health_num($value, $precision) {
+	if ($value === "" || $value === null || is_array($value) || !is_numeric($value)) {
+		return "";
+	}
+	return round((float)$value, $precision);
+}
+
+function rkrk_health_meaning($filename) {
+	$parts = GetMeaningFilename($filename);
+	if (!is_array($parts)) {
+		$parts = array();
+	}
+	for ($i = 0; $i <= 7; $i++) {
+		if (!array_key_exists($i, $parts) || $parts[$i] === null || is_array($parts[$i])) {
+			$parts[$i] = "";
+		} else {
+			$parts[$i] = (string)$parts[$i];
+		}
+	}
+	return $parts;
+}
+
+function rkrk_health_extension($path) {
+	$fileParts = pathinfo($path);
+	if (!is_array($fileParts) || !array_key_exists("extension", $fileParts) || $fileParts["extension"] === null) {
+		return "";
+	}
+	return (string)$fileParts["extension"];
+}
+
 function CheckJsonSettings($JsonFile, &$HealthData, $JG) {
 global 	$colorOKtext, 
 		$colorNOK ,$colorNOKtext, 
@@ -1536,31 +1630,53 @@ global 	$colorOKtext,
 		
 	$JsonFileData="";
 	$JsonFileData = ReadJsonFile($JsonFile);
+	foreach (array("Filename","old","FlugStatistik","KatalogNummer","Feldname","EasyMode","GruppenGebiet","Phone","Richtung","Pfad","Curve","TravelSpeed","FlightTime","UpdateDate","M3TSpeed","M3THeight","M3TGen","M3TDrone","M3TWayPoint","M3THeigthMode","M3TCurve","Flughoehe") as $healthKey) {
+		$HealthData[$healthKey] = array("Ok" => false, "Value" => "", "CalcValue" => "");
+	}
 	//pre_R($RKRKJsonStandardPointSettings);
 
 	
 	//$HealthData["Struktur"]["Ok"] = array_key_exists("djiPilot", $JsonFileData["missionSettings"]);
-	$JsonFileName = str_replace($searchSDZ,	$replaceSDZ, pathinfo($JsonFile)["basename"]);
-	$HealthData["Filename"]["Value"] = substr(pathinfo($JsonFile)["basename"], 0 ,strlen($JsonFileName));
-	$HealthData["Filename"]["Ok"]= (substr(pathinfo($JsonFile)["basename"], 0 ,strlen($JsonFileName)) == $JsonFileName);
+	$fileBaseName = rkrk_health_get(pathinfo((string)$JsonFile), "basename");
+	$JsonFileName = str_replace($searchSDZ,	$replaceSDZ, $fileBaseName);
+	$HealthData["Filename"]["Value"] = substr($fileBaseName, 0 ,strlen($JsonFileName));
+	$HealthData["Filename"]["Ok"]= (substr($fileBaseName, 0 ,strlen($JsonFileName)) == $JsonFileName);
 
 	foreach ($RKRKJsonStandardSettings as $key1 => $data1) {
 		foreach ($data1 as $key2 => $data2) {
-			$HealthData["Richtung"]["Value"] = $JsonFileData[$key1][$key2]["directionMode"];
-			$HealthData["Richtung"]["Ok"]= ($RKRKJsonStandardSettings[$key1][$key2]["directionMode"] == $JsonFileData[$key1][$key2]["directionMode"]);
-			$HealthData["Pfad"]["Value"] = $JsonFileData[$key1][$key2]["pathModus"];
-			$HealthData["Pfad"]["Ok"]= ($RKRKJsonStandardSettings[$key1][$key2]["pathModus"] == $JsonFileData[$key1][$key2]["pathModus"]);
-			$HealthData["TravelSpeed"]["Value"] = round($JsonFileData[$key1][$key2]["travelSpeed"],1);
-			$HealthData["TravelSpeed"]["Ok"] = ($RKRKJsonStandardSettings[$key1][$key2]["travelSpeed"] == $JsonFileData[$key1][$key2]["travelSpeed"]);
+			$directionMode = rkrk_health_get($JsonFileData, array($key1, $key2, "directionMode"));
+			$directionStd = rkrk_health_get($RKRKJsonStandardSettings, array($key1, $key2, "directionMode"));
+			$pathMode = rkrk_health_get($JsonFileData, array($key1, $key2, "pathModus"));
+			$pathStd = rkrk_health_get($RKRKJsonStandardSettings, array($key1, $key2, "pathModus"));
+			$travelSpeed = rkrk_health_get($JsonFileData, array($key1, $key2, "travelSpeed"));
+			$travelStd = rkrk_health_get($RKRKJsonStandardSettings, array($key1, $key2, "travelSpeed"));
+			$HealthData["Richtung"]["Value"] = $directionMode;
+			$HealthData["Richtung"]["Ok"]= ($directionMode !== "" && $directionStd !== "" && $directionStd == $directionMode);
+			$HealthData["Pfad"]["Value"] = $pathMode;
+			$HealthData["Pfad"]["Ok"]= ($pathMode !== "" && $pathStd !== "" && $pathStd == $pathMode);
+			$HealthData["TravelSpeed"]["Value"] = rkrk_health_num($travelSpeed, 1);
+			$HealthData["TravelSpeed"]["Ok"] = ($travelSpeed !== "" && $travelStd !== "" && $travelStd == $travelSpeed);
 			//$HealthData["Curve"]["Value"]= round($JsonFileData[$key1][$key2]["curveSize"],1);
 			//$HealthData["Curve"]["Ok"] = ($RKRKJsonStandardSettings[$key1][$key2]["curveSize"] == $JsonFileData[$key1][$key2]["curveSize"]);
-			$HealthData["Curve"]["Value"]= round($JsonFileData[$key1][$key2]["turningDistance"],1);
-			$HealthData["Curve"]["Ok"] = ($RKRKJsonStandardSettings[$key1][$key2]["turningDistance"] == $JsonFileData[$key1][$key2]["turningDistance"]);
-			$HealthData["FlightTime"]["Ok"]= !(is_string($JsonFileData["flightTime"]));
-			$HealthData["FlightTime"]["Value"]= round($JsonFileData["flightTime"],1);
+			$turningDistance = rkrk_health_get($JsonFileData, array($key1, $key2, "turningDistance"));
+			$turningDistanceStd = rkrk_health_get($RKRKJsonStandardSettings, array($key1, $key2, "turningDistance"));
+			$HealthData["Curve"]["Value"]= rkrk_health_num($turningDistance, 1);
+			$HealthData["Curve"]["Ok"] = ($turningDistance !== "" && $turningDistanceStd !== "" && $turningDistanceStd == $turningDistance);
+			$flightTime = rkrk_health_get($JsonFileData, "flightTime");
+			$flightDistance = rkrk_health_get($JsonFileData, "flightDistance");
+			$waypointCount = rkrk_health_get($JsonFileData, array("featureCount", "waypoints"));
+			$HealthData["FlightTime"]["Value"]= rkrk_health_num($flightTime, 1);
 			// flight distance/ travel speed + 3s per point
-			$HealthData["FlightTime"]["CalcValue"]= round($JsonFileData["flightDistance"]/$JsonFileData[$key1][$key2]["travelSpeed"]+$JsonFileData["featureCount"]["waypoints"]*3,1);
-			$HealthData["FlightTime"]["Ok"] = ((abs(($HealthData["FlightTime"]["Value"]-$HealthData["FlightTime"]["CalcValue"])/$HealthData["FlightTime"]["CalcValue"])*100)<20);
+			if ($flightDistance !== "" && is_numeric($flightDistance) && $travelSpeed !== "" && is_numeric($travelSpeed) && (float)$travelSpeed != 0 && $waypointCount !== "" && is_numeric($waypointCount)) {
+				$HealthData["FlightTime"]["CalcValue"]= round(((float)$flightDistance / (float)$travelSpeed) + ((float)$waypointCount * 3), 1);
+			} else {
+				$HealthData["FlightTime"]["CalcValue"]= "";
+			}
+			if ($HealthData["FlightTime"]["Value"] === "" || $HealthData["FlightTime"]["CalcValue"] === "" || (float)$HealthData["FlightTime"]["CalcValue"] == 0) {
+				$HealthData["FlightTime"]["Ok"] = false;
+			} else {
+				$HealthData["FlightTime"]["Ok"] = ((abs(($HealthData["FlightTime"]["Value"]-$HealthData["FlightTime"]["CalcValue"])/$HealthData["FlightTime"]["CalcValue"])*100)<20);
+			}
 /*
 			$HealthData["Richtung"]["Value"]t = round($JsonFileData[$key1][$key2]["autoHeight"],1);
 			$HealthData["Richtung"]["Ok"] = ($RKRKJsonStandardSettings[$key1][$key2]["autoHeight"] == $JsonFileData[$key1][$key2]["autoHeight"]);
@@ -1573,89 +1689,116 @@ global 	$colorOKtext,
 
 	//M3T
 	//echo "Sp: "  .$UpdateFields["Dji2Speed"]["Value"] . "<br>";
-	$HealthData["M3TSpeed"]["Ok"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["speed"]==$UpdateFields["Dji2Speed"]["Value"]);
+	$m3tSpeed = rkrk_health_get($JsonFileData, array("missionSettings", "djiPilot2", "speed"));
+	$expectedSpeed = rkrk_health_get($UpdateFields, array("Dji2Speed", "Value"));
+	$HealthData["M3TSpeed"]["Ok"] =  ($m3tSpeed !== "" && $expectedSpeed !== "" && $m3tSpeed==$expectedSpeed);
 	//$HealthData["M3TSpeed"]["Ok"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["speed"]==$RKRKDefaultDJI2TravelSpeed);
-	$HealthData["M3TSpeed"]["Value"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["speed"]);
+	$HealthData["M3TSpeed"]["Value"] =  $m3tSpeed;
 	
 	//echo "He: "  .$UpdateFields["Dji2Heigth"]["Value"] . "<br>";
-	$HealthData["M3THeight"]["Ok"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["height"]>=$RKRKLowerHeight) && 
-									  ($JsonFileData["missionSettings"]["djiPilot2"]["height"]<=$RKRKUpperHeight);
+	$m3tHeight = rkrk_health_path($JsonFileData, array("missionSettings", "djiPilot2", "height"));
+	$HealthData["M3THeight"]["Ok"] =  ($m3tHeight !== "" && $m3tHeight>=$RKRKLowerHeight && $m3tHeight<=$RKRKUpperHeight);
 	//$HealthData["M3THeight"]["Ok"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["height"]==$RKRKDefaultDJI2TravelHeight);
-	$HealthData["M3THeight"]["Value"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["height"]);
+	$HealthData["M3THeight"]["Value"] =  $m3tHeight;
 	
 	//echo "Ge: "  .$UpdateFields["Dji2Drone"]["Value"] . "<br>";
-	$HealthData["M3TGen"]["Ok"] =  (($JsonFileData["missionSettings"]["djiPilot2"]["droneType"]==$UpdateFields["Dji2Drone"]["Value"]) and ($JsonFileData["copterProfile"] == $RKRKDefaultDJI2CopterProfile));
+	$droneType = rkrk_health_get($JsonFileData, array("missionSettings", "djiPilot2", "droneType"));
+	$copterProfile = rkrk_health_get($JsonFileData, "copterProfile");
+	$expectedDrone = rkrk_health_get($UpdateFields, array("Dji2Drone", "Value"));
+	$HealthData["M3TGen"]["Ok"] =  (($droneType !== "" && $expectedDrone !== "" && $droneType==$expectedDrone) and ($copterProfile !== "" && $copterProfile == $RKRKDefaultDJI2CopterProfile));
 	//echo "droneType " . $JsonFileData["missionSettings"]["djiPilot2"]["droneType"] . " copterProfile " . $JsonFileData["copterProfile"] . "<br>";
 	//$HealthData["M3TGen"]["Ok"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["droneType"]==$RKRKDefaultDJI2DroneType);
-	$HealthData["M3TGen"]["Value"] =  ($JsonFileData["missionSettings"]["djiPilot2"]["droneType"]);
+	$HealthData["M3TGen"]["Value"] =  $droneType;
 	
 	//echo "Dr: "  .$UpdateFields["Dji2Drone"]["Value"] . "<br>";
-	$HealthData["M3TDrone"]["Ok"] = (($JsonFileData["missionSettings"]["djiPilot2"]["droneType"]==$UpdateFields["Dji2Drone"]["Value"]) and ($JsonFileData["copterProfile"] == $RKRKDefaultDJI2CopterProfile));
+	$HealthData["M3TDrone"]["Ok"] = (($droneType !== "" && $expectedDrone !== "" && $droneType==$expectedDrone) and ($copterProfile !== "" && $copterProfile == $RKRKDefaultDJI2CopterProfile));
 	//$HealthData["M3TDrone"]["Ok"] = ($JsonFileData["missionSettings"]["djiPilot2"]["droneType"]==$RKRKDefaultDJI2DroneType);
-	$HealthData["M3TDrone"]["Value"] = ($JsonFileData["missionSettings"]["djiPilot2"]["droneType"]);
+	$HealthData["M3TDrone"]["Value"] = $droneType;
 	
 	//echo "WP: "  .$UpdateFields["Dji2WayPoint"]["Value"] . "<br>";
-	$HealthData["M3TWayPoint"]["Ok"] = ($JsonFileData["missionSettings"]["djiPilot2"]["waypointType"]==$UpdateFields["Dji2WayPoint"]["Value"]);
+	$waypointType = rkrk_health_get($JsonFileData, array("missionSettings", "djiPilot2", "waypointType"));
+	$expectedWaypoint = rkrk_health_get($UpdateFields, array("Dji2WayPoint", "Value"));
+	$HealthData["M3TWayPoint"]["Ok"] = ($waypointType !== "" && $expectedWaypoint !== "" && $waypointType==$expectedWaypoint);
 	//$HealthData["M3TWayPoint"]["Ok"] = ($JsonFileData["missionSettings"]["djiPilot2"]["waypointType"]==$RKRKDefaultDJI2WayPointType);
-	$HealthData["M3TWayPoint"]["Value"] = ($JsonFileData["missionSettings"]["djiPilot2"]["waypointType"]);
+	$HealthData["M3TWayPoint"]["Value"] = $waypointType;
 	
 	//echo "HM: "  .$UpdateFields["Dji2HeightMode"]["Value"] . "<br>";
-	$HealthData["M3THeigthMode"]["Ok"] = ($JsonFileData["missionSettings"]["djiPilot2"]["flightHeightMode"]==$RKRKDefaultDJI2HeightMode);
-	$HealthData["M3THeigthMode"]["Value"] = ($JsonFileData["missionSettings"]["djiPilot2"]["flightHeightMode"]);
+	$flightHeightMode = rkrk_health_get($JsonFileData, array("missionSettings", "djiPilot2", "flightHeightMode"));
+	$HealthData["M3THeigthMode"]["Ok"] = ($flightHeightMode !== "" && $flightHeightMode==$RKRKDefaultDJI2HeightMode);
+	$HealthData["M3THeigthMode"]["Value"] = $flightHeightMode;
 	
 	//$KatalogNummer = explode("_",$JsonFileData["name"])[0];
 	//ab Feb 2026 - Katalognummer nicht mehr im Feldnamen
 	//$HealthData["KatalogNummer"]["Ok"] = ($JsonFileData["sharedFieldCatalog"]["catalogIdentifier"] == $KatalogNummer);
 	//echo "Feldkatalognummer: " . $JsonFileData["sharedFieldCatalog"]["catalogIdentifier"] . "/" . explode("-",$JsonFileData["sharedFieldCatalog"]["catalogIdentifier"])[0]. " JG: " . $JG . "<br>";
-	$HealthData["KatalogNummer"]["Ok"] = (explode("-",$JsonFileData["sharedFieldCatalog"]["catalogIdentifier"])[0] == $JG);
-	$HealthData["KatalogNummer"]["Value"] = ($JsonFileData["sharedFieldCatalog"]["catalogIdentifier"]);
+	$catalogIdentifier = rkrk_health_get($JsonFileData, array("sharedFieldCatalog", "catalogIdentifier"));
+	$catalogJg = ($catalogIdentifier === "") ? "" : explode("-", (string)$catalogIdentifier)[0];
+	$HealthData["KatalogNummer"]["Ok"] = ($catalogIdentifier !== "" && $catalogJg == $JG);
+	$HealthData["KatalogNummer"]["Value"] = $catalogIdentifier;
 	// behinhaltet kein "WP" und kein "ha"
 
-	$Feldname = $JsonFileData["name"];
+	$Feldname = rkrk_health_get($JsonFileData, "name");
 	//echo $Feldname . " WP: " . strpos($Feldname, "WP") . " ha: " . strpos($Feldname, "ha_") . "<br>";
 	//echo "Feldname: " . $Feldname . " Feldkatalog: " . $JsonFileData["sharedFieldCatalog"]["catalogIdentifier"] . "<br>";
-	$HealthData["Feldname"]["Ok"] = ((strpos($Feldname, $JsonFileData["sharedFieldCatalog"]["catalogIdentifier"]) === false) and (strpos($Feldname, "WP") === false) and (strpos($Feldname, "ha_") === false));
-	$HealthData["Feldname"]["Value"] = ($JsonFileData["name"]);
+	$HealthData["Feldname"]["Ok"] = ($Feldname !== "" && $catalogIdentifier !== "" && (strpos($Feldname, $catalogIdentifier) === false) and (strpos($Feldname, "WP") === false) and (strpos($Feldname, "ha_") === false));
+	$HealthData["Feldname"]["Value"] = $Feldname;
 	
 	//EasyMode
 	//since Feb 2026
-	$HealthData["EasyMode"]["Ok"] = ($JsonFileData["missionSettings"]["djiPilot2"]["easyModeForm"] === true);
-	$HealthData["EasyMode"]["Value"] = ($JsonFileData["name"]);
+	$HealthData["EasyMode"]["Ok"] = (rkrk_health_path($JsonFileData, array("missionSettings", "djiPilot2", "easyModeForm")) === true);
+	$HealthData["EasyMode"]["Value"] = $Feldname;
 
 	//echo "KatID " .  $JsonFileData["sharedFieldCatalog"]["catalogIdentifier"] . " JG " . $JG ." | " . $JsonFileData["pilotGroupAreaName"] . " / ". $RegionSettings[$JG]["GroupAreaName"] . " | " . $JsonFileData["data"]["zoneId"] . " / " .  $RegionSettings[$JG]["GroupAreaID"] . "<br>"; 
-	$HealthData["GruppenGebiet"]["Ok"] =  ((str_replace($searchSDZ,$replaceSDZ,$JsonFileData["pilotGroupAreaName"]) == $RegionSettings[$JG]["GroupAreaName"]) and ($JsonFileData["data"]["zoneId"] == $RegionSettings[$JG]["GroupAreaID"]) );
-	$HealthData["GruppenGebiet"]["Value"] = ($JsonFileData["pilotGroupAreaName"]);
+	$pilotGroupAreaName = rkrk_health_get($JsonFileData, "pilotGroupAreaName");
+	$zoneId = rkrk_health_get($JsonFileData, array("data", "zoneId"));
+	$regionName = rkrk_health_get($RegionSettings, array($JG, "GroupAreaName"));
+	$regionId = rkrk_health_get($RegionSettings, array($JG, "GroupAreaID"));
+	$HealthData["GruppenGebiet"]["Ok"] =  ($pilotGroupAreaName !== "" && $regionName !== "" && (str_replace($searchSDZ,$replaceSDZ,$pilotGroupAreaName) == $regionName) and ($zoneId !== "" && $zoneId == $regionId) );
+	$HealthData["GruppenGebiet"]["Value"] = $pilotGroupAreaName;
 
 	//No impcat to curve size, 13.08.2023
 	//	$HealthData["M3TCurve"]["Ok"] = ($JsonFileData["missionSettings"]["djiPilot2"]["curveSize"]==(float)$RKRKDefaultDJI2CurveSize);
 	//	$HealthData["M3TCurve"]["Value"] = ($JsonFileData["missionSettings"]["djiPilot2"]["curveSize"]);
+	$HealthData["M3TCurve"] = array("Value" => "", "Ok" => false);
 
 	// check if flight statisics in JSON file stored
-	$HealthData["FlugStatistik"]["Ok"] = 	!(($JsonFileData["controlFlights"][0]["date"]!="")
-											or ($JsonFileData["controlFlights"][1]["date"]!="")
-											or ($JsonFileData["controlFlights"][2]["date"]!="")
-											or ($JsonFileData["controlFlights"][3]["date"]!=""));
+	$controlFlights = rkrk_health_arr($JsonFileData, "controlFlights");
+	$flightDateFilled = false;
+	for ($flightIndex = 0; $flightIndex <= 3; $flightIndex++) {
+		$flightDate = rkrk_health_scalar(rkrk_health_arr($controlFlights, $flightIndex), "date");
+		if ($flightDate !== "") {
+			$flightDateFilled = true;
+		}
+	}
+	$HealthData["FlugStatistik"]["Ok"] = !$flightDateFilled;
 
 	// check Phone number format (without spaces/ +41791112233)
-	$HealthData["Phone"]["Ok"] = (substr_count( $JsonFileData["data"]["owner"]["phone"] . 
-												$JsonFileData["connectedPlanningData"]["pilotObject"]["profile"]["phone"] . 
-												$JsonFileData["contributor"]["phone"], ' ')==0);
+	$phoneOwner = rkrk_health_get($JsonFileData, array("data", "owner", "phone"));
+	$phonePilot = rkrk_health_get($JsonFileData, array("connectedPlanningData", "pilotObject", "profile", "phone"));
+	$phoneContributor = rkrk_health_get($JsonFileData, array("contributor", "phone"));
+	$HealthData["Phone"]["Value"] = $phoneOwner . $phonePilot . $phoneContributor;
+	$HealthData["Phone"]["Ok"] = ($HealthData["Phone"]["Value"] !== "" && substr_count($HealthData["Phone"]["Value"], ' ')==0);
 
 	//$HealthData["UpdateDate"]["Value"]= date(substr($JsonFileData["lastModified"],10),"d.m.Y");
-	$JsonDate=date_format( date_create(substr($JsonFileData["lastModified"],0,10)),"d.m.Y");
+	$lastModified = rkrk_health_get($JsonFileData, "lastModified");
+	$lastModifiedDate = ($lastModified === "") ? false : date_create(substr((string)$lastModified,0,10));
+	$JsonDate = $lastModifiedDate ? date_format($lastModifiedDate,"d.m.Y") : "";
 	$HealthData["UpdateDate"]["Value"]=$JsonDate;
-	$HealthData["UpdateDate"]["Ok"] = (date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($JsonDate)));
+	$HealthData["UpdateDate"]["Ok"] = ($JsonDate !== "" && date("Y-m-d",strtotime($KatalogBaseline))>date("Y-m-d", strtotime($JsonDate)));
 
 
 	
 	//$HealthData["UpdateDate"]["Value"]=$JsonFileData["missionSettings"]["djiPilot2"]["height"];
-	$HealthData["Flughoehe"]["Value"]=(GetMeaningFilename($JsonFile)[4]);
-	$HealthData["Flughoehe"]["Ok"]=($JsonFileData["missionSettings"]["djiPilot2"]["height"]==GetMeaningFilename($JsonFile)[4]);
+	$meaningFilename = rkrk_health_meaning($JsonFile);
+	$missionHeight = rkrk_health_path($JsonFileData, array("missionSettings", "djiPilot2", "height"));
+	$HealthData["Flughoehe"]["Value"]=$meaningFilename[4];
+	$HealthData["Flughoehe"]["Ok"]=($missionHeight !== "" && $meaningFilename[4] !== "" && $missionHeight==$meaningFilename[4]);
 
 	//pre_R(GetMeaningFilename($JsonFile));
 	//check if height in not a number
 	//echo $JsonFileData["geojson"]["features"][2]["properties"]["height"];
-	$HealthData["old"]["Ok"]=!(is_string($JsonFileData["geojson"]["features"][2]["properties"]["height"]));//pre_R($HealthData);
+	$oldPointHeight = rkrk_health_path($JsonFileData, array("geojson", "features", 2, "properties", "height"));
+	$HealthData["old"]["Ok"]=($oldPointHeight !== "" && !is_string($oldPointHeight));//pre_R($HealthData);
 }
 
 
@@ -1672,32 +1815,37 @@ global 	$colorOKtext,
 	$JsonFileData = ReadJsonFile($JsonFile);
 	//pre_R($RKRKJsonStandardPointSettings);
 
+	$pointFeatures = rkrk_health_get($JsonFileData, array("geojson", "features"), true);
 	if ($Point=="n") {
-		$Point= count($JsonFileData["geojson"]["features"])-1;
+		$Point= count($pointFeatures)-1;
 	} elseif ($Point=="n-1") {
-		$Point= count($JsonFileData["geojson"]["features"])-2; 
+		$Point= count($pointFeatures)-2; 
 	} else {
 		$Point++; //Adjust Point numbering to Flight point number
 	}
 	//echo"Point: " . $Point . "<br>";
-	$PointData = $JsonFileData["geojson"]["features"][$Point];
+	$PointData = rkrk_health_get($pointFeatures, $Point, true);
 
 
 	//pre_R($PointData);
 	foreach ($PointData as $key1 => $data1) {
 		//$okheight= ($data1["_height"] == $RKRKJsonStandardPointSettings["point"]["properties"]["_height"]);
-		$okheight= ($data1["_height"] <= $RKRKUpperHeight) &&
-				   ($data1["_height"] >= RKRKLowerHeight);
-		$heigth = round($data1["_height"],1);
+		$pointHeight = rkrk_health_get($data1, "height");
+		$pointTurn = rkrk_health_get($data1, "turningDistance");
+		$storedHeight = rkrk_health_get($data1, "_height");
+		$pointHeightStd = rkrk_health_get($RKRKJsonStandardPointSettings, array("point", "properties", "turningDistance"));
+		$okheight= ($storedHeight !== "" && $storedHeight <= $RKRKUpperHeight) &&
+				   ($storedHeight >= $RKRKLowerHeight);
+		$heigth = rkrk_health_num($storedHeight, 1);
 		if ($height==0) {
 			//$okheight= ($data1["height"] == $RKRKJsonStandardPointSettings["point"]["properties"]["height"]);
-			$okheight= ($data1["height"] <= $RKRKUpperHeight) &&
-				   ($data1["height"] >= RKRKLowerHeight);
-			$heigth = round($data1["height"],1);
+			$okheight= ($pointHeight !== "" && $pointHeight <= $RKRKUpperHeight) &&
+				   ($pointHeight >= $RKRKLowerHeight);
+			$heigth = rkrk_health_num($pointHeight, 1);
 		}
 		
-		$okcurve= ($data1["turningDistance"] == $RKRKJsonStandardPointSettings["point"]["properties"]["turningDistance"]);
-		$curve = round($data1["turningDistance"],1);
+		$okcurve= ($pointTurn !== "" && $pointHeightStd !== "" && $pointTurn == $pointHeightStd);
+		$curve = rkrk_health_num($pointTurn, 1);
 	}
 
 }
@@ -1723,12 +1871,14 @@ global 	$RKRKJsonStandardPointSettings,
 	$JsonFileData = ReadJsonFile($JsonFile);
 	//pre_r($JsonFileData);
 	//pre_R($RKRKJsonStandardPointSettings);
-  	$heigthsArr[] =  "[" . $JsonFileData["missionSettings"]["djiPilot2"]["height"] . "]__";
-	$turndistsArr[] =  "[" . $JsonFileData["missionSettings"]["djiPilot2"]["defaultCurveSize"] . "]__";
+	$missionHeight = rkrk_health_path($JsonFileData, array("missionSettings", "djiPilot2", "height"));
+  	$heigthsArr[] =  "[" . $missionHeight . "]__";
+	$turndistsArr[] =  "[" . rkrk_health_path($JsonFileData, array("missionSettings", "djiPilot2", "defaultCurveSize")) . "]__";
 	//pre_R($JsonFileData["geojson"]["features"] );
 	$StrtPtHeight=0;
+	$EndPtHeight="";
 
-	$FlightHeight = $JsonFileData["missionSettings"]["djiPilot2"]["height"] ;
+	$FlightHeight = $missionHeight ;
 	//echo "<br> F: " . $FlightHeight . "  ";
 	$MissionHeightOn = ($RKRKDefaultDJI2PointuseMissionHeight);
 	$MissionSpeedOn = ($RKRKDefaultDJI2PointuseMissionSpeed);
@@ -1742,89 +1892,100 @@ global 	$RKRKJsonStandardPointSettings,
 	//echo " mw: " . $MissionFlightDirectionOn  . " "; 
 	//echo " ah: " . $AutoheightOn . " "; 
 
-	foreach ($JsonFileData["geojson"]["features"] as $key1 => $data1) {
+	$pointFeatures = rkrk_health_arr(rkrk_health_arr($JsonFileData, "geojson"), "features");
+	foreach ($pointFeatures as $key1 => $data1) {
+		$pointProps = rkrk_health_arr($data1, "properties");
+		$useMissionHeight = rkrk_health_get($pointProps, "useMissionHeight");
+		$useMissionSpeed = rkrk_health_get($pointProps, "useMissionSpeed");
+		$useMissionYawDirection = rkrk_health_get($pointProps, "useMissionYawDirection");
+		$useMissionWaypointType = rkrk_health_get($pointProps, "useMissionWaypointType");
+		$autoHeight = rkrk_health_get($pointProps, "autoHeight");
+		$pointHeight = rkrk_health_get($pointProps, "height");
+		$turnDist = rkrk_health_get($pointProps, "turningDistance");
 		
-		if ( ($data1["type"] == "Feature")
-				and ($data1["properties"]["type"] == 1)) {
+		if ( (rkrk_health_scalar($data1, "type") == "Feature")
+				and (rkrk_health_scalar($pointProps, "type") == 1)) {
 
 			if ($StrtPtHeight==0) {
 				// Startpunkthöhe
-				if (!$data1["properties"]["useMissionHeight"]) {
-					$StrtPtHeight = round($data1["properties"]["height"],1);
+				if (!$useMissionHeight) {
+					$StrtPtHeight = rkrk_health_num($pointHeight, 1);
 				} else {
-					$StrtPtHeight = round($JsonFileData["missionSettings"]["djiPilot2"]["height"],1);
+					$StrtPtHeight = rkrk_health_num($missionHeight, 1);
 				}
 				//echo $key1 . " S: " . $StrtPtHeight . "  ";
 			}
 			
 			// EndHeight
-				if (!$data1["properties"]["useMissionHeight"]) {
-					$EndPtHeight = round($data1["properties"]["height"],1);
+				if (!$useMissionHeight) {
+					$EndPtHeight = rkrk_health_num($pointHeight, 1);
 				} else {
-					$EndPtHeight = round($JsonFileData["missionSettings"]["djiPilot2"]["height"],1);
+					$EndPtHeight = rkrk_health_num($missionHeight, 1);
 				}
 			//echo $key1 . " E: " . $EndPtHeight . "  ";
 
-			if (($key1>0) and ($key1< count($JsonFileData["geojson"]["features"])-1)) {
+			if (($key1>0) and ($key1< count($pointFeatures)-1)) {
 				//pre_R($data1);
-				$CurrentPtHeight =round($data1["properties"]["height"],1);
-				if ($RKRKJsonStandardPointSettings["point"]["properties"]["_height"]==0) {
-					if (($key1>1) and ($key1< count($JsonFileData["geojson"]["features"])-1)) 
+				$CurrentPtHeight = rkrk_health_num($pointHeight, 1);
+				if (rkrk_health_get($RKRKJsonStandardPointSettings, array("point", "properties", "_height"))==0) {
+					if (($key1>1) and ($key1< count($pointFeatures)-1)) 
 						//echo round($data1["properties"]["height"],0). ",";
 						//$okheight = $okheight && (round($data1["properties"]["height"],0) == $RKRKJsonStandardPointSettings["point"]["properties"]["height"]);
-						$okheight = $okheight && 
-										(round($data1["properties"]["height"],0) >= $RKRKLowerHeight) &&
-										(round($data1["properties"]["height"],0) <= $RKRKUpperHeight);
-					$heigthsArr[] = round($data1["properties"]["height"],1);
+						$okheight = $okheight && ($pointHeight !== "") &&
+										(round((float)$pointHeight,0) >= $RKRKLowerHeight) &&
+										(round((float)$pointHeight,0) <= $RKRKUpperHeight);
+					$heigthsArr[] = rkrk_health_num($pointHeight, 1);
 				} else {
 				}
-					if (($key1>1) and ($key1< count($JsonFileData["geojson"]["features"])-1)) 
+					if (($key1>1) and ($key1< count($pointFeatures)-1)) {
 						//echo round($data1["properties"]["_height"],0). ",";
 						//$okheight= $okheight && (round($data1["properties"]["_height"],0) == $RKRKJsonStandardPointSettings["point"]["properties"]["height"]);
-						$okheight= $okheight && 
-										(round($data1["properties"]["_height"],0) >= $RKRKLowerHeight) &&
-										(round($data1["properties"]["_height"],0) <= $RKRKUpperHeight);
-					$heigthsArr[] = round($data1["properties"]["_height"],1);
+						$pointStoredHeight = rkrk_health_scalar($pointProps, "_height");
+						$okheight= $okheight && ($pointStoredHeight !== "") &&
+										(round((float)$pointStoredHeight,0) >= $RKRKLowerHeight) &&
+										(round((float)$pointStoredHeight,0) <= $RKRKUpperHeight);
+					}
+					$heigthsArr[] = rkrk_health_num(rkrk_health_scalar($pointProps, "_height"), 1);
 				
-				$okcurve= $okcurve && ($data1["properties"]["turningDistance"] >0);
+				$okcurve= $okcurve && ($turnDist !== "" && $turnDist >0);
 				//echo round($data1["properties"]["turningDistance"],1) . ","; 
-				$turndistsArr[] = round($data1["properties"]["turningDistance"],1);
+				$turndistsArr[] = rkrk_health_num($turnDist, 1);
 				
 				//Missionsgeschwindigkeit
-				$CheckValueMissionSpeed = ($UpdateFields["MissionSpeed"]["Value"]=="Ja");
+				$CheckValueMissionSpeed = (rkrk_health_get($UpdateFields, array("MissionSpeed", "Value"))=="Ja");
 				//if ($data1["properties"]["useMissionSpeed"] != ($RKRKDefaultDJI2PointuseMissionSpeed)) {
-				if ($data1["properties"]["useMissionSpeed"] != ($CheckValueMissionSpeed)) {
+				if ($useMissionSpeed === "" || $useMissionSpeed != ($CheckValueMissionSpeed)) {
 					//echo " ms: " . $data1["properties"]["useMissionSpeed"] . " "; 
 					//$MissionSpeedOn = !($RKRKDefaultDJI2PointuseMissionSpeed);
 					$MissionSpeedOn = false;
 				}
 				//Missionshöhe
-				$CheckValueMissionHeight =  ($UpdateFields["MissionHeight"]["Value"]=="Ja");
+				$CheckValueMissionHeight =  (rkrk_health_get($UpdateFields, array("MissionHeight", "Value"))=="Ja");
 				//if ($data1["properties"]["useMissionHeight"] != ($RKRKDefaultDJI2PointuseMissionHeight)) {
-				if ($data1["properties"]["useMissionHeight"] != ($CheckValueMissionHeight)) {
+				if ($useMissionHeight === "" || $useMissionHeight != ($CheckValueMissionHeight)) {
 					//echo " mh: " . $data1["properties"]["useMissionHeight"] . " "; 
 					$MissionHeightOn = false;
 				}
 				//Mission Path direction
-				$CheckValueMissionYawDirection =  ($UpdateFields["MissionWaypointType"]["Value"]=="Ja");
+				$CheckValueMissionYawDirection =  (rkrk_health_get($UpdateFields, array("MissionWaypointType", "Value"))=="Ja");
 				//if ($data1["properties"]["useMissionYawDirection"] != ($RKRKDefaultDJI2PointuseMissionYawDirection)) {
-				if ($data1["properties"]["useMissionYawDirection"] != ($CheckValueMissionYawDirection)) {
+				if ($useMissionYawDirection === "" || $useMissionYawDirection != ($CheckValueMissionYawDirection)) {
 					//echo " md: " . $data1["properties"]["useMissionYawDirection"] . " "; 
 					$MissionFlightDirectionOn = false;
 				}
 				//Mission Path mode
-				$CheckValueMissionPathMode =  ($UpdateFields["MissionDirection"]["Value"]=="Ja"); 
+				$CheckValueMissionPathMode =  (rkrk_health_get($UpdateFields, array("MissionDirection", "Value"))=="Ja"); 
 				//if ($data1["properties"]["useMissionWaypointType"] != ($RKRKDefaultDJI2PointuseMissionPathMode)) {
-				if ($data1["properties"]["useMissionWaypointType"] != ($CheckValueMissionPathMode)) {
+				if ($useMissionWaypointType === "" || $useMissionWaypointType != ($CheckValueMissionPathMode)) {
 					//echo " mw: " . $data1["properties"]["mode"] . " "; 
 					$MissionWaypointTypeOn = false;
 				}
 			}
-			if (($key1>0) and ($key1< count($JsonFileData["geojson"]["features"]))) {
+			if (($key1>0) and ($key1< count($pointFeatures))) {
 				//Autoheight
-				$CheckValueAutoHeight =  ($UpdateFields["AutoHeight"]["Value"]=="Ja");
+				$CheckValueAutoHeight =  (rkrk_health_get($UpdateFields, array("AutoHeight", "Value"))=="Ja");
 				//if ($data1["properties"]["autoHeight"] != ($RKRKDefaultDJI2PointuseAutoHeight)) {
-				if ($data1["properties"]["autoHeight"] != ($CheckValueAutoHeight)) {
+				if ($autoHeight === "" || $autoHeight != ($CheckValueAutoHeight)) {
 					//echo " ah: " . $data1["properties"]["autoHeight"] . " "; 
 					$AutoheightOn = false;
 				}
@@ -1886,15 +2047,22 @@ global 	$RKRKLocalLoactionMissionFiles,
 		$i=0;
 		if (in_array($JKey,$FilterJG)) {
 			//echo "Region: " . $JKey . "<br>";
+			$FeldIDArray = array();
 			if ($FeldIDListe<>"") {
 				$FeldIDArray = explode(" " ,$FeldIDListe);
 			}
+			if (!is_array($FeldIDArray)) {
+				$FeldIDArray = array();
+			}
 			foreach ($JRegion as $Field) {
-				if ((in_array($Field["FeldID"], $FeldIDArray)) or ($FeldIDListe=="")) {
-					$JsonData[$Field["FeldID"]]["FeldID"] = $Field["FeldID"]."-F";
-					$JsonData[$Field["FeldID"]]["JG"] = $Field["JG"];
-					$JsonData[$Field["FeldID"]]["JasonFile"] = $Field["JasonFile"];
-					$JsonData[$Field["FeldID"]]["Location"] = "Feldkatalog";
+				$feldId = rkrk_health_get($Field, "FeldID");
+				$feldJg = rkrk_health_get($Field, "JG");
+				$feldJason = rkrk_health_get($Field, "JasonFile");
+				if ($feldId !== "" && (($FeldIDListe=="") || in_array($feldId, $FeldIDArray))) {
+					$JsonData[$feldId]["FeldID"] = $feldId."-F";
+					$JsonData[$feldId]["JG"] = $feldJg;
+					$JsonData[$feldId]["JasonFile"] = $feldJason;
+					$JsonData[$feldId]["Location"] = "Feldkatalog";
 					$i++;
 					if (($i >= $Stop) && ($Stop>0)) break;	
 				}	
@@ -1908,12 +2076,11 @@ global 	$RKRKLocalLoactionMissionFiles,
 		//pre_R($ExFiles);
 		foreach ($ExFiles as $key => $ExFile) {
 			//echo "ExFile: " . $key . " - " . $ExFile . "<br>";
-			$MeaningFilename = GetMeaningFilename($ExFile);
-			$file_parts = pathinfo($ExIntputDirectory.$ExFile);
-			if ($file_parts['extension']=="json") {
+			$MeaningFilename = rkrk_health_meaning($ExFile);
+			if (rkrk_health_extension($ExIntputDirectory.$ExFile)=="json") {
 				$JsonData[$MeaningFilename[0]."E"]["FeldID"] = $MeaningFilename[0]."-E";
 				$JsonData[$MeaningFilename[0]."E"]["JG"] = explode("-",$MeaningFilename[0])[0];
-				$JsonData[$MeaningFilename[0]."E"]["JasonFile"] = $Field["JasonFile"];
+				$JsonData[$MeaningFilename[0]."E"]["JasonFile"] = rkrk_health_get(isset($Field) ? $Field : array(), "JasonFile");
 				//$JsonData["EX-".sprintf("%03d", $key)]["FeldID"] = "EX-" . sprintf("%03d", $key);
 				//$JsonData["EX-".sprintf("%03d", $key)]["JG"] = "EX";
 				$JsonData[$MeaningFilename[0]."E"]["JasonFile"] = $ExIntputDirectory.$ExFile;
@@ -1928,9 +2095,8 @@ global 	$RKRKLocalLoactionMissionFiles,
 		//pre_R($DwnldFiles);
 		foreach ($DwnldFiles as $key => $DwnldFile) {
 			//echo "OutputFile: " . $key . " - " . $DwnldFile . "<br>";
-			$MeaningFilename = GetMeaningFilename($DwnldFile);
-			$file_parts = pathinfo($TestOutputDirectory.$DwnldFile);
-			if ($file_parts['extension']=="json") {
+			$MeaningFilename = rkrk_health_meaning($DwnldFile);
+			if (rkrk_health_extension($TestOutputDirectory.$DwnldFile)=="json") {
 				$JsonData[$MeaningFilename[0]."D"]["FeldID"] = $MeaningFilename[0]."-D";
 				$JsonData[$MeaningFilename[0]."D"]["JG"] = explode("-",$MeaningFilename[0])[0];
 				//$JsonData["DWNLD-".sprintf("%03d", $key)]["FeldID"] = "DW-" . sprintf("%03d", $key);
@@ -2073,8 +2239,13 @@ global 	$RKRKLocalLoactionMissionFiles,
 		aasort($JsonData, $SortTable);
 	}
 	foreach ($JsonData as $Data) {
-		foreach (explode(",",$Data["JasonFile"]) as $JsonFile) {
-			CheckJsonSettings($RKRKLocalLoactionMissionFiles.trim($JsonFile), $HealthData, $Data["JG"]);
+		$jasonList = rkrk_health_get($Data, "JasonFile");
+		$feldJgRow = rkrk_health_get($Data, "JG");
+		foreach (explode(",", (string)$jasonList) as $JsonFile) {
+			if (trim((string)$JsonFile) === "") {
+				continue;
+			}
+			CheckJsonSettings($RKRKLocalLoactionMissionFiles.trim($JsonFile), $HealthData, $feldJgRow);
 			//CheckJsonPoints($RKRKLocalLoactionMissionFiles.trim($JsonFile), 2);
 			//CheckJsonPoints($RKRKLocalLoactionMissionFiles.trim($JsonFile), 3);
 			//CheckJsonPoints($RKRKLocalLoactionMissionFiles.trim($JsonFile), "last");
@@ -2113,14 +2284,16 @@ global 	$RKRKLocalLoactionMissionFiles,
 			echo "</td>";
 			echo "<td>";
 			if (GetAccess("InternLinks")) {
+				$Picture = "";
 				foreach ($OptionFlughoehe as $Flughoehe) {
-					if (strpos($Data["JasonFile"],"_" . $Flughoehe["Opt"] . "_") != false) {
-						$Flightheight= $Flughoehe["Opt"];
-						$Picture =  $IconLoc . "\json" . $Flughoehe["Opt"] . ".png";
+					$heightOpt = rkrk_health_get($Flughoehe, "Opt");
+					if ($heightOpt !== "" && strpos((string)$jasonList,"_" . $heightOpt . "_") != false) {
+						$Flightheight= $heightOpt;
+						$Picture =  $IconLoc . "\json" . $heightOpt . ".png";
 					}
 				}
-				if ($Data["JasonFile"] !="") {
-					echo "<a href='" . $RKRKLocalLoactionMissionFiles.$Data["JasonFile"] . "'  download target='_blank'><img src='" . $Picture . "' height='" . $ButtonHeightSmall * .8 ."' title='Jason File " . $Data["FeldID"] . " - " . $Data["JasonFile"] . "'></a> <wbr>" . chr(10);
+				if ($jasonList !="") {
+					echo "<a href='" . $RKRKLocalLoactionMissionFiles.$jasonList . "'  download target='_blank'><img src='" . $Picture . "' height='" . $ButtonHeightSmall * .8 ."' title='Jason File " . rkrk_health_get($Data, "FeldID") . " - " . $jasonList . "'></a> <wbr>" . chr(10);
 				}
 			}
 			echo "</td>";
@@ -2133,8 +2306,9 @@ global 	$RKRKLocalLoactionMissionFiles,
 				$textcolor = $colorNOKtext;
 				echo "<span style='color:" . $textcolor . "'>";
 			}
-			echo pathinfo($JsonFile)["basename"];
-			$OutputData[$Data["FeldID"]]["File"] = pathinfo($JsonFile)["basename"];
+			$jsonBaseName = rkrk_health_get(pathinfo((string)$JsonFile), "basename");
+			echo $jsonBaseName;
+			$OutputData[rkrk_health_get($Data, "FeldID")]["File"] = $jsonBaseName;
 			echo "</span>";
 			//echo "<br>" . $HealthData["Filename"]["Value"];
 			echo "</td>";
@@ -2342,7 +2516,7 @@ global 	$RKRKLocalLoactionMissionFiles,
 				//} else {
 				//	echo "<td>";
 				//}	
-				echo "<span style='color:" . $textcolor . "'>" . $HealthData["M3TCurve"]["Value"]. "</span><b>";
+				echo "<span style='color:" . $textcolor . "'>" . rkrk_health_scalar(isset($HealthData["M3TCurve"]) ? $HealthData["M3TCurve"] : array(), "Value"). "</span><b>";
 				echo "</td>";
 
 				//Prüfen der Flughöhen, Kurven, Start und Entpunkt konfiguration
@@ -2547,7 +2721,24 @@ Ersetzt durch Liste, 04.01.2023
 // Main Function
 //=========================================
 
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
+$RegList = array();
+foreach ($RegionSettings as $regKey => $regVal) {
+	if ($regKey === "NO" || $regKey === "ALL") {
+		continue;
+	}
+	if (is_array($regVal)) {
+		$regCode = isset($regVal["Reg"]) ? (string)$regVal["Reg"] : "";
+		if ($regCode === "NO" || strcasecmp($regCode, "ALL") === 0) {
+			continue;
+		}
+		$RegList[$regKey] = $regVal;
+		continue;
+	}
+	if ($regVal === "NO" || $regVal === "ALL") {
+		continue;
+	}
+	$RegList[$regKey] = $regVal;
+}
 if (GetAccess("TestOnly")) {
 	$RegionSettings["EX"] = array("Reg" => "EX",
 								  "JGList" => "EX",
@@ -2794,8 +2985,7 @@ if (($FeldIDtoUpdate!="")) {
 				//echo "ExFile: " . $key . " - " . $ExFile . "<br>";
 				$JsonInputFile= $ExIntputDirectory.trim($ExFile);
 				$JsonFileData = ReadJsonFile($JsonInputFile);
-				$file_parts = pathinfo($JsonInputFile);
-				if ($file_parts['extension']=="json") {
+				if (rkrk_health_extension($JsonInputFile)=="json") {
 					UpdateJsonDataStructure($JsonFileData, $UpdateFields,$DataSet, "");
 					//echo "Write to: " . $TestOutputDirectory  ."/".  pathinfo($ExFile)[basename] . "<br>";
 					WriteJsonFile ($TestOutputDirectory ."/".  pathinfo($ExFile)[basename], $JsonFileData); 
@@ -2813,8 +3003,7 @@ if (($FeldIDtoUpdate!="")) {
 				//echo "OutputFile: " . $key . " - " . $DwnlodFile . "<br>";
 				$JsonInputFile= $TestOutputDirectory.trim($DwnlodFile);
 				$JsonFileData = ReadJsonFile($JsonInputFile);
-				$file_parts = pathinfo($JsonInputFile);
-				if ($file_parts['extension']=="json") {
+				if (rkrk_health_extension($JsonInputFile)=="json") {
 					UpdateJsonDataStructure($JsonFileData, $UpdateFields,$DataSet, "");
 					//echo "Write to: " . $TestOutputDirectory  ."/".  pathinfo($DwnlodFile)[basename] . "<br>";
 					WriteJsonFile ($TestOutputDirectory ."/".  pathinfo($DwnlodFile)[basename], $JsonFileData); 
@@ -2829,8 +3018,8 @@ if (($FeldIDtoUpdate!="")) {
 //===================================
 
 $FontSizeInPoints = 11;
-if ($FontSize== "") {
-	$FontSize= "100%";
+if (!isset($FontSize) || !is_string($FontSize) || $FontSize === "") {
+	$FontSize = "100%";
 }
 $TableColor =  GetTableColor ("");
 AlternateLineTable($TableColor['even'], $FontSize, $FontSizeInPoints, $TableColor['odd']);

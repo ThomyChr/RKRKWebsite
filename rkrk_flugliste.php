@@ -257,7 +257,10 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 		}
 		echo "<br>" .chr(10);
 		if (!$OnlyGuest) {
-			if ($dataline["Zeit"]!="") {
+			$hideZeit = isset($_GET['HideZeit']) && (string)$_GET['HideZeit'] === '1';
+			if ($hideZeit) {
+				echo ($dataline["Zeit"]=="" ? "<i>in planung</i>" : "<i>geplant</i>") . "<br><br>" .chr(10);
+			} elseif ($dataline["Zeit"]!="") {
 				echo "<b>" . $dataline["Zeit"] . " h</b><br><br>" .chr(10);
 			} else {
 				echo " __:__ h<br><br>" .chr(10);
@@ -339,10 +342,11 @@ Function CreateOutputLine($dataline, $TableSetup, $line, $MaxLine, $Type="data")
 			 //öffentliche Flugliste
 			echo $ScreenTableSetup["<td>"] .chr(10);
 			if ($dataline["Geflogen"]=="") {
+				$hideZeit = isset($_GET['HideZeit']) && (string)$_GET['HideZeit'] === '1';
 				if ($dataline["Zeit"]=="") {
 					echo "<i>in planung</i>" .chr(10);
 				} else {
-					echo "<i>eingeplant</i>" .chr(10);
+					echo $hideZeit ? "<i>geplant</i>" .chr(10) : "<i>eingeplant</i>" .chr(10);
 				}
 			} elseif ($dataline["Geflogen"]=="Ja") {
 				echo "<i>geflogen</i>" .chr(10);

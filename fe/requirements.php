@@ -54,10 +54,11 @@ $mapllBrand = mapll_favicon_brand();
         <a class="secondary" href="index.php">Zur Startseite</a>
         <a class="secondary" href="analyse_ui.php">Zur Analyse</a>
         <a class="secondary" href="requirements_print.php" target="_blank" rel="noopener">Requirements als PDF/Print</a>
+        <a class="secondary" href="rkrk_feldeditor_spec.php">Spec</a>
       </div>
       <div class="detail-box" style="margin-top:12px;">
         <h3 class="detail-title">Damit Requirements ins Berechnungsmodell gehen</h3>
-        <p class="detail-text">Verwende diese Kernparameter-Keys fuer die Berechnungsbasis: HFOV_deg, DFOV_deg, target_agl_m, overlap, edge_factor, speed_m_s, turn_delay_s, agl_tolerance_m, angle_step_deg, target_step_m, max_nb_points, min_delay_s, low_relief_height_threshold_m, min_path_coverage_ratio, curve_waypoint_angle_step_deg. Danach auf "Speichern" und dann "Modell aus Kernparametern erzeugen". Rot markierte Eintraege sind aktuell nicht direkt in der Berechnung verdrahtet.</p>
+        <p class="detail-text">Verwende diese Kernparameter-Keys fuer die Berechnungsbasis: HFOV_deg, DFOV_deg, target_agl_m, overlap, edge_factor, speed_m_s, turn_delay_s, agl_tolerance_m, angle_step_deg, target_step_m, max_nb_points, min_delay_s, low_relief_height_threshold_m, min_path_coverage_ratio, curve_waypoint_angle_step_deg. <code>agl_display_deviation_m</code> ist die Anzeigegrenze ±10 m für den roten Punkt in DESK und MOB. Danach auf "Speichern" und dann "Modell aus Kernparametern erzeugen". Rot markierte Eintraege sind aktuell nicht direkt in der Berechnung verdrahtet.</p>
       </div>
     </div>
 
@@ -72,13 +73,13 @@ $mapllBrand = mapll_favicon_brand();
       <details class="formula-details">
         <summary>Spurabstand</summary>
         <div class="formula-content">
-          <p class="detail-text"><strong>S = (1 - overlap) * W</strong><br>Bei 15% Überlappung gilt: S = 0.85 * W.</p>
+          <p class="detail-text"><strong>S = (1 - overlap) * W</strong><br>Bei 15% Überlappung gilt: S = 0.85 * W. Die angezeigte Bandbreite ist das Mittel aus S und W: S + (W − S) / 2. Die Sichttiefe L = 2 * h * tan(VFOV / 2) verlängert Start und Ende um L / 2.</p>
         </div>
       </details>
       <details class="formula-details">
         <summary>Randregel</summary>
         <div class="formula-content">
-          <p class="detail-text"><strong>d_rand &lt;= edge_factor * S</strong><br>Die Bahnen müssen nicht bis zum Rand gehen; der maximale Randabstand ist begrenzt.</p>
+          <p class="detail-text"><strong>d = 0.40 * S, wenn keine Lücke entsteht, sonst kleiner</strong><br>40 Prozent der Bahnbreite vom Feldrand, seitlich und an den Bahnenden, solange nichts ungedeckt bleibt. Entsteht eine Lücke, wird der Abstand kleiner, bis die Fläche gedeckt ist. Nicht weit ausserhalb des Feldes fliegen. Kurzer Überstand höchstens eine Bahnbreite.</p>
         </div>
       </details>
       <details class="formula-details">
@@ -100,15 +101,15 @@ $mapllBrand = mapll_favicon_brand();
         </div>
       </details>
       <details class="formula-details">
-        <summary>Drehpunkt-Abdeckung (DFOV)</summary>
+        <summary>Drehpunkt-Abdeckung</summary>
         <div class="formula-content">
-          <p class="detail-text"><strong>D = 2 * h * tan(DFOV / 2)</strong><br>D: Kreisdurchmesser an Drehpunkten. Bandabdeckung entlang Flugweg bleibt auf W (HFOV-basiert), Drehpunktkreise werden mit DFOV berechnet.</p>
+          <p class="detail-text"><strong>Radius = Anzeigebandbreite / 2</strong><br>Auch kleinere Richtungswechsel bekommen einen äusseren Kreisausschnitt, sobald der Winkel etwa 4° übersteigt und die Lücke auf der halben Bandbreite sichtbar ist. Der Radius ist die halbe Anzeigebandbreite, nicht der DFOV-Kreis. Ein Stück bis 6 m zwischen zwei scharfen Drehungen ab 35° wird nicht zusätzlich als Band gezeichnet.</p>
         </div>
       </details>
       <details class="formula-details">
         <summary>Pfadabdeckung ohne Leerflaechen</summary>
         <div class="formula-content">
-          <p class="detail-text"><strong>coverage(path_band(W) ∪ turn_circles(D), field) >= min_path_coverage_ratio</strong><br>Wenn die Mindestabdeckung unterschritten wird, wird der Wegflugplan neu berechnet.</p>
+          <p class="detail-text"><strong>Suchband entlang des Pfads, an Drehungen ein tangentialer Kreisausschnitt</strong><br>Die Anzeige folgt dem bearbeiteten Pfad. Der berechnete Originalpfad bleibt für einen Reset gespeichert und wird ausgeblendet, sobald Wegpunkte geändert wurden.</p>
         </div>
       </details>
     </div>
@@ -175,7 +176,7 @@ $mapllBrand = mapll_favicon_brand();
     let model = null;
     const calcUsedCoreParamKeys = new Set([
       'HFOV_deg', 'DFOV_deg', 'target_agl_m', 'overlap', 'edge_factor', 'speed_m_s',
-      'turn_delay_s', 'turn_delay_skip_wp_s', 'agl_tolerance_m', 'angle_step_deg', 'target_step_m', 'max_nb_points',
+      'turn_delay_s', 'turn_delay_skip_wp_s', 'agl_tolerance_m', 'agl_display_deviation_m', 'angle_step_deg', 'target_step_m', 'max_nb_points',
       'min_delay_s', 'low_relief_height_threshold_m', 'min_path_coverage_ratio', 'curve_waypoint_angle_step_deg'
     ]);
     const calcUsedRequirementIds = new Set([

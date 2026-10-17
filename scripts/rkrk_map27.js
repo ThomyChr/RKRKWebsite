@@ -861,9 +861,13 @@
   }
 
   function attachPointLabel(styles, feature, factor, res) {
-    if (!labelsEnabled()) return styles;
-    const catLabel = catalogLabelStyle(feature, factor, res);
-    const nameLabel = catLabel ? null : pointNameLabelStyle(feature, factor);
+    const kind = fieldAnchorKind(feature);
+    const named = String((feature && (feature.get('name') || feature.get('Name'))) || '').trim();
+    if (kind === 'center' && !named) return styles;
+    const onAnchor = kind === 'start' || kind === 'center';
+    if (!labelsEnabled() && !onAnchor) return styles;
+    const catLabel = catalogLabelStyle(feature, factor, res, onAnchor);
+    const nameLabel = catLabel ? null : pointNameLabelStyle(feature, factor, onAnchor);
     const label = catLabel || nameLabel;
     if (!label) return styles;
     if (styles.length && styles[0] && typeof styles[0].clone === 'function') {
@@ -926,8 +930,8 @@
     return idm ? idm[1] : '';
   }
 
-  function catalogLabelStyle(feature, factor, resolution) {
-    if (!labelsEnabled()) return null;
+  function catalogLabelStyle(feature, factor, resolution, force) {
+    if (!force && !labelsEnabled()) return null;
     const cat = catalogNumberFromFeature(feature);
     if (!cat) return null;
     const res = Number(resolution);
@@ -957,7 +961,6 @@
   }
 
   function centeredFieldLabel(feature, resolution) {
-    if (!labelsEnabled()) return null;
     const cat = catalogNumberFromFeature(feature);
     if (!cat) return null;
     const res = Number(resolution);
@@ -976,8 +979,8 @@
     });
   }
 
-  function pointNameLabelStyle(feature, factor) {
-    if (!labelsEnabled()) return null;
+  function pointNameLabelStyle(feature, factor, force) {
+    if (!force && !labelsEnabled()) return null;
     const name = String((feature && (feature.get('name') || feature.get('Name'))) || '').trim();
     if (!name) return null;
     const size = Math.max(13, Math.round(16 * (Number(factor) > 0 ? Math.min(1.2, Number(factor) + 0.45) : 1) * labelScale()));
@@ -1063,6 +1066,12 @@
   }
 
   function kmlStyleForZoom(feature, resolution) {
+    if (feature && typeof feature.get === 'function') {
+      const fitOnly = String(feature.get('rkrkFitOnly') || '');
+      if (fitOnly === '1') return [];
+      const vis = feature.get('visibility');
+      if (vis === false || vis === 0 || vis === '0') return [];
+    }
     if (cfg.hideJgLabel && isJgAreaLabel(feature)) return [];
     const geom = feature.getGeometry();
     const type = geom ? geom.getType() : '';
@@ -1077,7 +1086,7 @@
     const res = Number(resolution);
     if (isBareFieldLabel(feature)) {
       const text = centeredFieldLabel(feature, res);
-      if (!text || hideText) return [];
+      if (!text) return [];
       return [new ol.style.Style({ text: text })];
     }
     const anchorKind = fieldAnchorKind(feature);
@@ -1088,7 +1097,7 @@
       }
       equalizeFieldAnchorIcons(styles, res);
       attachPointLabel(styles, feature, 1, res);
-      return hideText ? stripTextFromStyles(styles) : styles;
+      return styles;
     }
     const factor = pointIconFactor(feature, res);
     let styles = scaleKmlStyles(orig, factor, true);
@@ -1227,7 +1236,12 @@
 
   function mapSizeOk() {
     const size = map && typeof map.getSize === 'function' ? map.getSize() : null;
-    return !!(size && Number(size[0]) >= 280 && Number(size[1]) >= 280);
+    if (!size) return false;
+    const w = Number(size[0]);
+    const h = Number(size[1]);
+    const singleFieldEmbed = !cfg.menuOn && fFilterIds().length === 1;
+    const minSide = singleFieldEmbed ? 48 : 280;
+    return w >= minSide && h >= minSide;
   }
 
   function fitCropName() {
@@ -1236,6 +1250,14 @@
     if (cfg.flp || cfg.pfad) return 'flugplan';
     if (cfg.ovr) return 'suchfeld';
     return 'suchfeld';
+  }
+
+  function editFeldFill() {
+    try {
+      return new URLSearchParams(String(location.search || '')).get('FeldFill') === '1';
+    } catch (_) {
+      return false;
+    }
   }
 
   function fieldFillFrac() {
@@ -1273,7 +1295,7 @@
       if (!ext || (ol.extent && typeof ol.extent.isEmpty === 'function' && ol.extent.isEmpty(ext))) {
         return false;
       }
-      if (fFilterIds().length) {
+      if (fFilterIds().length && !editFeldFill()) {
         ext = expandExtentToFill(ext, fieldFillFrac());
       }
       map.getView().fit(ext, {

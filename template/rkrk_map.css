@@ -55,6 +55,8 @@ html.rkrk-map27 body.rkrk-map27-has-header #rkrkSidebarToggleBtn {
 .rkrk-map27-wrap .left {
   padding: 12px 12px 24px;
   overflow: auto;
+  min-width: 0;
+  max-height: 100%;
   border-right: 1px solid #d9dde2;
   background: #fff;
   color: #23384d;
@@ -201,7 +203,6 @@ html.rkrk-map27 body.rkrk-map27-has-header #rkrkSidebarToggleBtn {
   width: 24px;
   height: 24px;
 }
-
 html.rkrk-map27 .rkrk-map27-panel input[type="checkbox"],
 html.rkrk-map27 .rkrk-map27-panel input[type="radio"] {
   -webkit-appearance: none;
@@ -387,16 +388,25 @@ html.rkrk-map27 .rkrk-map27-panel input[type="radio"]:focus-visible {
 .rkrk-map27-map-btns {
   position: absolute;
   top: 10px;
-  right: 10px;
-  z-index: 20;
+  right: 50px;
+  z-index: 40;
   display: flex;
-  flex-wrap: wrap;
+  flex-flow: row nowrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 2px;
-  max-width: 55%;
+  gap: 4px;
+  max-width: calc(100% - 62px);
+  pointer-events: auto;
+}
+.rkrk-map27-map-btns a,
+.rkrk-map27-map-btns img {
+  flex: 0 0 auto;
+  box-sizing: border-box;
 }
 .rkrk-map27-map-btns img {
   height: 32px;
+  width: auto;
+  margin: 0;
 }
 .rkrk-map27-legend {
   position: absolute;

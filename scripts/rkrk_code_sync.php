@@ -437,7 +437,7 @@ if (!function_exists('rkrk_code_sync_plan')) {
 			if (rkrk_code_sync_selected_rkrs_folders($cfg) === array()) {
 				return array(
 					'ok' => false,
-					'error' => 'Bitte ein rkrs-Modul wählen (map, mapII, assess oder calc).',
+					'error' => 'Bitte ein rkrs-Modul wählen (map, fe, assess oder calc).',
 					'items' => array(),
 					'dest_only' => array(),
 					'route' => $route,

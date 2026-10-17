@@ -15,6 +15,9 @@ $mapllBrand = mapll_favicon_brand();
   <link rel="stylesheet" href="../template/rkrk_reg_pills.css?v=20260907nodbl" />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #23384d; }
+    .wrap { display: grid; grid-template-columns: 380px 1fr; height: 100vh; }
+    .map-wrap { min-width: 0; height: 100vh; }
+    .left { height: 100%; box-sizing: border-box; }
     h2 { margin-top: 0; }
     .rkr-brand-header { display: flex; align-items: center; gap: 10px; margin-top: 0; }
     .rkr-brand-favicon { width: 28px; height: 28px; border-radius: 6px; object-fit: contain; flex: 0 0 auto; background: #fff; }
@@ -204,6 +207,35 @@ $mapllBrand = mapll_favicon_brand();
       padding: 0;
       box-sizing: border-box;
     }
+    .rkrk-dabs-popup {
+      position: absolute;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.97);
+      border: 1px solid #cfd6de;
+      border-radius: 8px;
+      padding: 10px 28px 10px 12px;
+      min-width: 220px;
+      max-width: 420px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+      font-size: 12px;
+      color: #1b3552;
+    }
+    .rkrk-dabs-popup .pop-title { font-weight: 700; margin-bottom: 4px; }
+    .rkrk-dabs-popup .pop-desc { line-height: 1.35; margin-top: 6px; overflow-wrap: anywhere; }
+    .rkrk-dabs-popup .pop-close {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      width: auto;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #1b3552;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+    #dabsStatus { margin: 2px 0 0; font-size: 11px; color: #5b6f86; }
     .analysis-control-box {
       position: absolute;
       right: 14px;
@@ -473,6 +505,10 @@ $mapllBrand = mapll_favicon_brand();
     </div>
     <div class="map-wrap">
       <div id="map" class="map"></div>
+      <div id="dabsPopup" class="rkrk-dabs-popup" style="display:none">
+        <button type="button" class="pop-close" id="dabsPopupClose" aria-label="Schliessen">×</button>
+        <div id="dabsPopupBody"></div>
+      </div>
       <button type="button" class="rkrk-help-fab" data-rkrk-help title="Hilfe zur aktuellen Sicht (F1 / ?)" aria-expanded="false">?</button>
       <button id="mapSetupBtn" class="map-setup-btn rkrk-setup-btn" title="Setup: Boxen ein-/ausblenden" type="button">⚙</button>
       <div id="mapSetupPanel" class="map-setup-panel rkrk-sels rkrk-reg-pills">
@@ -560,6 +596,12 @@ $mapllBrand = mapll_favicon_brand();
         <div class="rkrk-sels rkrk-reg-pills">
         <label class="rkrk-sel rkrk-reg-pill"><input id="useFieldReferenceAgl" type="checkbox" checked /> Feld-Referenzflughöhe verwenden</label>
         </div>
+        <div class="control-divider"></div>
+        <div class="group-title">DABS</div>
+        <div class="rkrk-sels rkrk-reg-pills">
+        <label class="rkrk-sel rkrk-reg-pill" title="Skyguide DABS bis 200 m AGL. Klick auf ein Gebiet zeigt die Bemerkung."><input id="showDabsLayer" type="checkbox" /> DABS bis 200 m AGL</label>
+        </div>
+        <div id="dabsStatus"></div>
       </div>
       <div id="analysisControlBox" class="analysis-control-box" data-rkrk-box="analysis" data-rkrk-box-label="Analyse-Boxen">
         <div class="title">Analyse-Boxen</div>
@@ -591,6 +633,7 @@ $mapllBrand = mapll_favicon_brand();
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
+  <script src="rkrk_swiss_overlays.js?v=20261008dabs"></script>
   <script src="rkrk_help_catalog.js?v=20260907help"></script>
   <script src="rkrk_help.js"></script>
   <script src="rkrk_layout.js"></script>
@@ -738,6 +781,31 @@ $mapllBrand = mapll_favicon_brand();
       mapHoverTipEl.style.left = `${ev.pixel[0] + 16}px`;
       mapHoverTipEl.style.top = `${ev.pixel[1] + 16}px`;
       mapHoverTipEl.innerHTML = `<strong>${title || 'Korrekturpunkt'}</strong><br>${reason}`;
+    });
+    let dabsCtl = null;
+    function syncAnalyseDabs() {
+      const box = document.getElementById('showDabsLayer');
+      const on = !!(box && box.checked);
+      if (!window.RkrkSwissOverlays || typeof window.RkrkSwissOverlays.attachDabs !== 'function') return;
+      if (!dabsCtl) {
+        dabsCtl = window.RkrkSwissOverlays.attachDabs(map, {
+          url: 'rkrk_dabs.php',
+          statusEl: document.getElementById('dabsStatus'),
+        });
+      }
+      if (!dabsCtl) return;
+      if (on) dabsCtl.enable(0.75);
+      else dabsCtl.disable();
+    }
+    const showDabsLayerEl = document.getElementById('showDabsLayer');
+    if (showDabsLayerEl) {
+      showDabsLayerEl.addEventListener('change', () => {
+        syncAnalyseDabs();
+        saveUiSettings();
+      });
+    }
+    map.on('singleclick', (evt) => {
+      if (dabsCtl && dabsCtl.showAtEvent(evt)) return;
     });
 
     function applyBaseMapMode() {
@@ -2222,6 +2290,7 @@ $mapllBrand = mapll_favicon_brand();
         showFieldControlPoints: !!showFieldControlPointsEl.checked,
         showCorrectionPoints: !!showCorrectionPointsEl.checked,
         useFieldReferenceAgl: !!useFieldReferenceAglEl.checked,
+        showDabs: !!(document.getElementById('showDabsLayer') && document.getElementById('showDabsLayer').checked),
         analysisBlocks: Object.keys(analysisBlockToggles).reduce((acc, k) => {
           const cfg = analysisBlockToggles[k];
           acc[k] = !!(cfg && cfg.input && cfg.input.checked);
@@ -2292,6 +2361,11 @@ $mapllBrand = mapll_favicon_brand();
         if (typeof cfg.useFieldReferenceAgl === 'boolean') {
           useFieldReferenceAglEl.checked = cfg.useFieldReferenceAgl;
         }
+        if (typeof cfg.showDabs === 'boolean') {
+          const dabsBox = document.getElementById('showDabsLayer');
+          if (dabsBox) dabsBox.checked = cfg.showDabs;
+        }
+        syncAnalyseDabs();
         if (cfg.collapseState && typeof cfg.collapseState === 'object') {
           collapseState = cfg.collapseState;
         }

@@ -306,7 +306,7 @@ function rkrk_html_open_tag() {
 }
 
 function rkrk_theme_link_tags($diroffset = '') {
-	echo "  <LINK href='" . htmlspecialchars($diroffset . 'template/rkrk_theme.css?v=20260907menu', ENT_QUOTES, 'UTF-8') . "' rel='stylesheet' type='text/css'>\n";
+	echo "  <LINK href='" . htmlspecialchars($diroffset . 'template/rkrk_theme.css?v=20261015logo', ENT_QUOTES, 'UTF-8') . "' rel='stylesheet' type='text/css'>\n";
 }
 
 function headerpage($title ,$mobile,$diroffset="") {

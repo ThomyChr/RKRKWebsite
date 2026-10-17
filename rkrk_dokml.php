@@ -5,6 +5,133 @@
 	include_once('scripts/rkrk_felddaten.php');
 	include_once('scripts/rkrk_csvfiles.php');
 
+	if (!function_exists('rkrk_dokml_kml_coord_list')) {
+		function rkrk_dokml_kml_coord_list($coords, $close = true) {
+			if (!is_array($coords)) {
+				return '';
+			}
+			$out = '';
+			$first = '';
+			$last = '';
+			foreach ($coords as $value) {
+				if (!is_array($value) || !isset($value[0]) || $value[0] === '' || $value[0] === null) {
+					continue;
+				}
+				if (is_array($value[0])) {
+					return rkrk_dokml_kml_coord_list($value, $close);
+				}
+				if (!isset($value[1])) {
+					continue;
+				}
+				$pt = $value[0] . ', ' . $value[1] . '     ';
+				$out .= $pt;
+				if ($first === '') {
+					$first = $pt;
+				}
+				$last = $pt;
+			}
+			if ($close && $first !== '' && $first !== $last) {
+				$out .= $first;
+			}
+			return $out;
+		}
+	}
+
+	if (!function_exists('rkrk_dokml_apply_mission_geometry')) {
+		function rkrk_dokml_apply_mission_geometry($feld) {
+			global $RKRKLocalLoactionMissionFiles;
+			if (!($feld instanceof SimpleXMLElement)) {
+				return;
+			}
+			$area = trim((string)$feld->Flaechendaten);
+			$path = trim((string)$feld->Flugweg);
+			$start = trim((string)$feld->Grundstueckdaten->Startplatz);
+			if ($area !== '' && $path !== '' && $start !== '') {
+				return;
+			}
+			$rawList = trim((string)$feld->JasonFile);
+			if ($rawList === '') {
+				return;
+			}
+			$files = function_exists('rkrk_explode_csv')
+				? rkrk_explode_csv($rawList)
+				: preg_split('/\s*,\s*/', $rawList);
+			if (!is_array($files)) {
+				return;
+			}
+			$root = rtrim(str_replace('\\', '/', (string)$RKRKLocalLoactionMissionFiles), '/');
+			$data = null;
+			foreach ($files as $rel) {
+				$rel = ltrim(str_replace('\\', '/', (string)$rel), '/');
+				if ($rel === '' || $root === '') {
+					continue;
+				}
+				$full = $root . '/' . $rel;
+				if (!is_file($full)) {
+					continue;
+				}
+				$json = json_decode((string)file_get_contents($full), true);
+				if (is_array($json)) {
+					$data = $json;
+					break;
+				}
+			}
+			if (!is_array($data)) {
+				return;
+			}
+			$features = (isset($data['geojson']['features']) && is_array($data['geojson']['features']))
+				? $data['geojson']['features']
+				: array();
+			if ($area === '' && $features !== array()) {
+				$built = rkrk_dokml_kml_coord_list($features[0]['geometry']['coordinates'] ?? null);
+				if ($built === '' && isset($features[1])) {
+					$built = rkrk_dokml_kml_coord_list($features[1]['geometry']['coordinates'] ?? null);
+				}
+				if ($built !== '') {
+					$feld->Flaechendaten = $built;
+				}
+			}
+			if ($path !== '' && $start !== '') {
+				return;
+			}
+			$flugweg = '';
+			$startplatz = $start;
+			foreach ($features as $feat) {
+				if (!is_array($feat)) {
+					continue;
+				}
+				$geom = (isset($feat['geometry']) && is_array($feat['geometry'])) ? $feat['geometry'] : array();
+				if (($geom['type'] ?? '') !== 'Point') {
+					continue;
+				}
+				$c = (isset($geom['coordinates']) && is_array($geom['coordinates'])) ? $geom['coordinates'] : array();
+				if (!isset($c[0], $c[1])) {
+					continue;
+				}
+				$props = (isset($feat['properties']) && is_array($feat['properties'])) ? $feat['properties'] : array();
+				$ptype = isset($props['type']) ? (string)$props['type'] : '';
+				$height = isset($props['height']) ? (float)$props['height'] : 0.0;
+				if ($startplatz === '' && $ptype === '6') {
+					$startplatz = $c[0] . ', ' . $c[1];
+				}
+				if ($height > 0 && $ptype === '1') {
+					$flugweg .= $c[0] . ', ' . $c[1] . ', ' . $height . '    ';
+				} elseif ($startplatz === '') {
+					$startplatz = $c[0] . ', ' . $c[1];
+				}
+			}
+			if ($path === '' && $flugweg !== '') {
+				$feld->Flugweg = $flugweg;
+			}
+			if ($start === '' && $startplatz !== '') {
+				if (!isset($feld->Grundstueckdaten)) {
+					$feld->addChild('Grundstueckdaten');
+				}
+				$feld->Grundstueckdaten->Startplatz = $startplatz;
+			}
+		}
+	}
+
 	if (!function_exists('rkrk_status_has')) {
 		function rkrk_status_has($value, $code) {
 			$value = strtoupper(trim(function_exists('rkrk_str') ? rkrk_str($value) : (string)$value));
@@ -18,8 +145,18 @@
 
 	if (!headers_sent()) {
 		header('Content-Type: application/vnd.google-earth.kml+xml; charset=UTF-8');
-		// Kein Access-Control-Allow-Origin hier: der Webserver setzt bereits "*".
-		// Ein zweites "*" wird zu "*, *" und map.geo.admin.ch blockiert die KML.
+		// map.geo.admin.ch liest die KML im Browser. Genau ein Access-Control-Allow-Origin: *
+		// ist nötig. "*, *" blockiert die Flugzonen, ein fehlender Header ebenfalls.
+		$hasOrigin = false;
+		foreach (headers_list() as $sentHeader) {
+			if (stripos($sentHeader, 'Access-Control-Allow-Origin:') === 0) {
+				$hasOrigin = true;
+				break;
+			}
+		}
+		if (!$hasOrigin) {
+			header('Access-Control-Allow-Origin: *');
+		}
 		header('Access-Control-Allow-Methods: GET, OPTIONS');
 		header('Cache-Control: no-store');
 	}
@@ -367,6 +504,20 @@
 	}
 	$DebugText .= "FFilter: " . $FFilter . chr(10);
 
+	// AreaOnly: nur diese Feld-Polygone zeichnen. Nicht FFilter — der zoomt und blendet nicht aus.
+	$AreaOnly = GetURLtoFalseTrue("AreaOnly", "AreaOnly");
+	$AreaIdsRaw = str_replace(array('%2B', '%2b', '_'), array('+', '+', ' '), GetURLwDefault("AreaIds", "AreaIds", "", ""));
+	$AreaIdSet = array();
+	if ($AreaOnly) {
+		foreach (preg_split('/[\s,;+|]+/', (string)$AreaIdsRaw, -1, PREG_SPLIT_NO_EMPTY) as $areaId) {
+			$areaId = trim((string)$areaId);
+			if ($areaId !== '') {
+				$AreaIdSet[$areaId] = true;
+			}
+		}
+	}
+	$DebugText .= "AreaOnly: " . ($AreaOnly ? 'on' : 'off') . " n=" . count($AreaIdSet) . chr(10);
+
 	//SFilter: Filter Suchfilter (Flurname/ Feldname)
 	$SFilter = str_replace("_"," ",GetURLwDefault("SFilter", "SFilter", "", ""));
 	$DebugText .= "SFilter: " . $SFilter . chr(10);
@@ -403,7 +554,10 @@
 	// Read Files
 	// ===========================================
 	// load Felder XML
-	
+	if (function_exists('SetMissionLocation')) {
+		SetMissionLocation();
+	}
+
 	$fileloaded = true;
 	$catalogPath = $xmlMissionLocation.$RKRKFelderfileXML;
 	if (function_exists('ReadCatalogFile')) {
@@ -485,6 +639,8 @@ if ($fileloaded == true && $xml_felder) {
 
 
 			) {;
+			$emitField = (!$AreaOnly) || isset($AreaIdSet[$feldIdStr]);
+			rkrk_dokml_apply_mission_geometry($feld);
 			$Hotlinkinfo = "";
 			if ($WebFreigabe !="gast") {
 
@@ -528,14 +684,6 @@ if ($fileloaded == true && $xml_felder) {
 						foreach ($kmzList as $key => $file) {
 							if ($file<>"") {
 								$Hotlinkinfo .=  '<a href="' .$RKRKExternalLoactionMissionFiles.$file . '" download> ' . $file  . ' <img src="' . $weblocation ."/".$IconLoc . '/dwnld_kmz_35.png" height="' . $ButtonHeight .'" title="KMZ File (für M3T) herunterladen"></a>';
-							}
-						}
-					}
-					if (GetAccess("MapDownloadLitchi")){
-						$litchiList = function_exists('rkrk_explode_csv') ? rkrk_explode_csv($feld->LichtiFile) : explode(",", (string)$feld->LichtiFile);
-						foreach ($litchiList as $key => $file) {
-							if ($file<>"") {
-								$Hotlinkinfo .=  '<a href="' .$RKRKExternalLoactionMissionFiles.$file . '" download> ' . $file  . ' <img src="' . $weblocation ."/".$IconLoc . '/dwnld_litchi_35.png" height="' . $ButtonHeight .'" title="Lichi File herunterladen"></a>';
 							}
 						}
 					}
@@ -668,12 +816,11 @@ weiter bla bla bla
 				$fileoutput .=  Chr(10);
 			}
 			//if ($StartpunktOn and $Overview==false) {
-			if ($StartpunktOn or $Overview) {
+			if ($emitField && ($StartpunktOn or $Overview)) {
 				$fileoutput .=  '  <!-- ===== Startpunkt ' . $feld->FeldID. '  ' .$feld->Feldname .'====== -->' . chr(10);
 				$fileoutput .=  '  <Placemark id='. chr(34) . "S".$feld->FeldID . chr(34) . '>' . chr(10);
-				if ($LabelOn && $Zoom>0) {
-					$fileoutput .=  '    <name>' . str_replace($searchSD, $replaceSD,$feld->FeldID). '</name>' . chr(10);
-				}	
+				// Name hängt am Startpunkt, nicht am Flächen-Label (Label=on/off).
+				$fileoutput .=  '    <name>' . str_replace($searchSD, $replaceSD,$feld->FeldID). '</name>' . chr(10);
 				//$fileoutput .=  '    <name>' . $feld->FeldID. '  ' .$feld->Feldname .'</name>' . chr(10);
 				if (in_array("Strt",$ObjectInfoEnable))
 					$fileoutput .= $Hotlinkinfo;
@@ -688,10 +835,11 @@ weiter bla bla bla
 				$fileoutput .=  Chr(10);
 			}
 		// Zentrumspunkt 
-			if ($ZentrumspunktOn) {
+			if ($emitField && $ZentrumspunktOn) {
 				$fileoutput .=  '  <!-- ===== Zentrumspunkt ' . $feld->FeldID. '  ' .$feld->Feldname .'====== -->' . chr(10);
 				$fileoutput .=  '  <Placemark id='. chr(34) . "Z".$feld->FeldID . chr(34) . '>' . chr(10);
-				if ($LabelOn) {
+				// Nummer nur am Zentrum, wenn der Startpunkt aus ist. Sind beide an, trägt der Start die Nummer.
+				if (!$StartpunktOn && !$Overview) {
 					$fileoutput .=  '    <name>' . str_replace($searchSD, $replaceSD,$feld->FeldID). '</name>' . chr(10);
 				}
 				//$fileoutput .=  '    <name>' . $feld->FeldID. '  ' .$feld->Feldname .'</name>' . chr(10);
@@ -707,13 +855,12 @@ weiter bla bla bla
 				$fileoutput .=  '  </Placemark>' . chr(10);
 				$fileoutput .=  Chr(10);
 			}
-			//Label
-			if ($ZentrumspunktOn==false and $StartpunktOn==false and $Zoom>0.1) {
+			// Feldnummer mittig, sobald die Fläche an ist und weder Start noch Zentrum gezeigt werden.
+			// Unabhängig vom Schalter Beschriftung (Label).
+			if ($emitField && $AreaOn && $ZentrumspunktOn==false && $StartpunktOn==false && !$Overview) {
 				$fileoutput .=  '  <!-- ===== Label ' . $feld->FeldID. '  ' .$feld->Feldname .'====== -->' . chr(10);
 				$fileoutput .=  '  <Placemark id='. chr(34) . str_replace($searchSD, $replaceSD,"Z".$feld->FeldID) . chr(34) . '>' . chr(10);
-				if ($LabelOn) {
-					$fileoutput .=  '    <name>' . $feld->FeldID. '</name>' . chr(10);
-				}
+				$fileoutput .=  '    <name>' . str_replace($searchSD, $replaceSD,$feld->FeldID). '</name>' . chr(10);
 				//$fileoutput .=  '    <name>' . $feld->FeldID. '  ' .$feld->Feldname .'</name>' . chr(10);
 				if (in_array("Label",$ObjectInfoEnable))
 					$fileoutput .= $Hotlinkinfo;
@@ -744,7 +891,7 @@ weiter bla bla bla
 			//         </outerBoundaryIs>
 			//       </Polygon>
 			//     </Placemark>
-			if ($AreaOn) {
+			if ($AreaOn && $emitField) {
 				$fileoutput .=  '  <!-- ===== Flight Area ====== -->' . chr(10);
 				$fileoutput .=  '  <Placemark id=' . chr(34) ."A". $feld->FeldID . chr(34) . '>' . chr(10);
 				$fileoutput .=  '    <name>' . str_replace($searchSD, $replaceSD,$feld->FeldID. '  ' .$feld->Feldname). '  ' .$feld->GrundstueckID .'</name>' . chr(10);
@@ -765,6 +912,28 @@ weiter bla bla bla
 				$fileoutput .=  '  </Polygon>' . chr(10);
 				$fileoutput .=  '  </Placemark>' . chr(10);
 				$fileoutput .=  Chr(10);
+			} elseif ($AreaOn && $AreaOnly && !$emitField) {
+				$fitCoords = trim((string)$feld->Flaechendaten);
+				if ($fitCoords !== '') {
+					$fileoutput .=  '  <Placemark id=' . chr(34) . 'A' . $feld->FeldID . chr(34) . '>' . chr(10);
+					$fileoutput .=  '    <visibility>0</visibility>' . chr(10);
+					$fileoutput .=  '    <ExtendedData><Data name="rkrkFitOnly"><value>1</value></Data></ExtendedData>' . chr(10);
+					$fileoutput .=  '  <styleUrl>#fieldarea_free</styleUrl>' . chr(10);
+					$ListOfStylesUsed['fieldarea_free'] = 'fieldarea_free';
+					$fileoutput .=  '  <Polygon>' . chr(10);
+					$fileoutput .=  '    <tessellate>1</tessellate>' . chr(10);
+					$fileoutput .=  '    <altitudeMode>clampToGround</altitudeMode>' . chr(10);
+					$fileoutput .=  '    <outerBoundaryIs>' . chr(10);
+					$fileoutput .=  '      <LinearRing>' . chr(10);
+					$fileoutput .=  '      <coordinates>' . chr(10);
+					$fileoutput .=  $fitCoords . chr(10);
+					$fileoutput .=  '        </coordinates>' . chr(10);
+					$fileoutput .=  '      </LinearRing>' . chr(10);
+					$fileoutput .=  '    </outerBoundaryIs>' . chr(10);
+					$fileoutput .=  '  </Polygon>' . chr(10);
+					$fileoutput .=  '  </Placemark>' . chr(10);
+					$fileoutput .=  Chr(10);
+				}
 			}
 		// Flightpath 
 			//<!-- ===== Flight PATH ====== -->
@@ -779,7 +948,7 @@ weiter bla bla bla
 			//        <coordinates>8.454534407833894,47.22617263699161,20 8.454514479940766,47.22573579985978,52 8.453369774047037,47.2253415021444,42 8.453251222008182,47.22551241166111,42 8.45438633349859,47.225903404849475,50 8.454258186245132,47.226071009687644,49 8.453132669203434,47.22568332104694,41 8.453014115632781,47.225854230301856,40 8.454130038180383,47.2262386143743,46</coordinates>
 			//      </LineString>
 			//    </Placemark>
-			if ($PfadOn) {
+			if ($emitField && $PfadOn) {
 				$fileoutput .=  '  <!-- ===== Flight Path ====== -->' . chr(10);
 				$fileoutput .=  '  <Placemark id=' . chr(34) ."F". $feld->FeldID . chr(34) . '>' . chr(10);
 				$fileoutput .=  '    <name>' . str_replace($searchSD, $replaceSD,$feld->FeldID. '  ' .$feld->Feldname) . '  ' .$feld->GrundstueckID .'</name>' . chr(10);

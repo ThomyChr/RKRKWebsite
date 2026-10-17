@@ -153,11 +153,17 @@
     }
     function onColumnToggle() {
       syncPills();
+      var reload = geoNeedsReload(table);
+      if (reload) {
+        if (table.dataset.geoReload === '1') return;
+        table.dataset.geoReload = '1';
+      }
       paintColumns(table);
-      save(table);
+      save(table, reload ? function () { window.location.reload(); } : null, true);
     }
     pills.querySelectorAll('input').forEach(function (box) {
-      if (box.dataset.col) box.checked = ui.hidden.indexOf(box.dataset.col) === -1;
+      var colName = box.dataset.col || '';
+      if (colName && !lazyGeoCols[colName]) box.checked = ui.hidden.indexOf(colName) === -1;
       box.addEventListener('change', onColumnToggle);
     });
     pills.addEventListener('click', function (ev) {
@@ -199,7 +205,6 @@
         vis.appendChild(showAll);
         tools.appendChild(vis);
       } else {
-        existingVis.open = true;
         if (!existingVis.contains(showAll)) existingVis.appendChild(showAll);
         tools.appendChild(existingVis);
       }
@@ -232,8 +237,10 @@
       var savedFilter = JSON.parse(localStorage.getItem(filterKey(table)) || 'null');
       if (savedFilter) {
         restorePills(form.querySelector('[data-adr-filter="typ"]'), savedFilter.types);
-        restorePills(form.querySelector('[data-adr-filter="region"]'), savedFilter.regions);
-        restorePills(form.querySelector('[data-adr-filter="flags"]'), savedFilter.flags);
+        var regParam = '';
+        try { regParam = String(new URLSearchParams(window.location.search).get('Reg') || '').trim(); } catch (e2) {}
+        var regInUrl = regParam !== '' && !/^alle$/i.test(regParam) && !/^all$/i.test(regParam);
+        if (regInUrl) restorePills(form.querySelector('[data-adr-filter="region"]'), savedFilter.regions);
       }
     } catch (e) {}
 
@@ -412,9 +419,75 @@
     }
   }
 
-  function save(table) {
+  var lazyGeoCols = { GeoJG: 1, GrundstueckID: 1, GeoGde: 1, GeoWrn: 1 };
+
+  function readGeoCookieMap() {
+    var shown = {};
+    var parts = document.cookie ? document.cookie.split(';') : [];
+    for (var i = 0; i < parts.length; i++) {
+      var bit = parts[i].replace(/^\s+/, '');
+      if (bit.indexOf('rkrk_felder_geo=') !== 0) continue;
+      var raw = bit.substring(16);
+      try { raw = decodeURIComponent(raw); } catch (e) {}
+      var names = raw.split(',');
+      for (var n = 0; n < names.length; n++) {
+        var name = names[n].replace(/^\s+|\s+$/g, '');
+        if (lazyGeoCols[name]) shown[name] = 1;
+      }
+    }
+    return shown;
+  }
+
+  function writeGeoCookie(table) {
+    var shown = readGeoCookieMap();
+    var pills = table && table._adrCols ? table._adrCols.querySelectorAll('input') : [];
+    var saw = false;
+    for (var i = 0; i < pills.length; i++) {
+      var key = pills[i].dataset.col || '';
+      if (!lazyGeoCols[key]) continue;
+      saw = true;
+      if (pills[i].checked) shown[key] = 1;
+      else delete shown[key];
+    }
+    if (!saw) return;
+    var list = [];
+    for (var name in shown) {
+      if (Object.prototype.hasOwnProperty.call(shown, name) && shown[name]) list.push(name);
+    }
+    document.cookie = 'rkrk_felder_geo=' + encodeURIComponent(list.join(',')) + '; path=/rkropen/test27/; Max-Age=31536000; SameSite=Lax';
+  }
+
+  function geoNeedsReload(table) {
+    var pills = table._adrCols ? table._adrCols.querySelectorAll('input') : [];
+    for (var i = 0; i < pills.length; i++) {
+      var key = pills[i].dataset.col || '';
+      if (!lazyGeoCols[key] || !pills[i].checked) continue;
+      if (!table.querySelector('thead tr:first-child th[data-col="' + key + '"]')) return true;
+    }
+    return false;
+  }
+
+  function save(table, done, rememberGeo) {
     var state = columnState(table);
     try { localStorage.setItem(storageKey(table), JSON.stringify(state)); } catch (e) {}
+    if (rememberGeo) {
+      writeGeoCookie(table);
+      var present = {};
+      var pills = table._adrCols ? table._adrCols.querySelectorAll('input') : [];
+      for (var p = 0; p < pills.length; p++) {
+        if (lazyGeoCols[pills[p].dataset.col]) present[pills[p].dataset.col] = 1;
+      }
+      for (var geoKey in lazyGeoCols) {
+        if (!Object.prototype.hasOwnProperty.call(lazyGeoCols, geoKey)) continue;
+        if (!present[geoKey] && state.hidden.indexOf(geoKey) === -1) state.hidden.push(geoKey);
+      }
+    }
+    var finished = false;
+    function finish() {
+      if (finished) return;
+      finished = true;
+      if (typeof done === 'function') done();
+    }
     try {
       fetch('scripts/rkrk_adr_ui.php', {
         method: 'POST',
@@ -425,8 +498,11 @@
           widths: state.widths
         }),
         credentials: 'same-origin'
-      });
-    } catch (e) {}
+      }).then(function () { finish(); }).catch(function () { finish(); });
+      if (done) window.setTimeout(finish, 2500);
+    } catch (e) {
+      finish();
+    }
   }
 
   function saveFilters(table) {
@@ -607,6 +683,32 @@
     var form = head.closest('form');
     var table = form ? form.querySelector('table.rkrk-adr-grid') : null;
     if (!table) return;
+    if (cb.closest('[data-adr-filter="flags"]')) {
+      if (window.__rkrkFlagNavPending) return;
+      window.__rkrkFlagNavPending = true;
+      window.setTimeout(function () {
+        saveFilters(table);
+        var root = form.querySelector('[data-adr-filter="flags"]');
+        var wantNew = false;
+        var wantChg = false;
+        if (root) {
+          root.querySelectorAll('input[type="checkbox"]').forEach(function (box) {
+            if (!box.checked) return;
+            var flag = (box.getAttribute('data-flag') || '').toLowerCase();
+            if (flag === 'new') wantNew = true;
+            if (flag === 'changed') wantChg = true;
+          });
+        }
+        var url = new URL(window.location.href);
+        if (wantNew) url.searchParams.set('NewOnly', '1');
+        else url.searchParams.delete('NewOnly');
+        if (wantChg) url.searchParams.set('Changed', '1');
+        else url.searchParams.delete('Changed');
+        url.searchParams.set('ActPage', '1');
+        window.location.assign(url.toString());
+      }, 0);
+      return;
+    }
     window.setTimeout(function () {
       saveFilters(table);
       apply(table);

@@ -18,7 +18,9 @@ $syncRouteId = (string)($_POST['route'] ?? $_GET['route'] ?? '');
 $syncMode = function_exists('rkrk_code_sync_mode')
 	? rkrk_code_sync_mode($_POST['sync_mode'] ?? $_GET['sync_mode'] ?? 'mirror')
 	: 'mirror';
-$needsSilentAuth = ($uhAction === 'download_catalog' || $uhAction === 'download_site' || $_SERVER['REQUEST_METHOD'] === 'POST');
+$pageAction = strtolower(trim((string)($_POST['page_action'] ?? $_GET['page_action'] ?? '')));
+$isAuthPost = in_array($pageAction, array('login', 'logout', 'register', 'changepw'), true);
+$needsSilentAuth = !$isAuthPost && ($uhAction === 'download_catalog' || $uhAction === 'download_site' || ($_SERVER['REQUEST_METHOD'] === 'POST' && $uhAction !== ''));
 
 if ($needsSilentAuth) {
 	$GLOBALS['RKRK_AJAX_JSON_MODE'] = true;

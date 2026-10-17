@@ -4,11 +4,14 @@ require_once __DIR__ . '/analysis_lib.php';
 require_once __DIR__ . '/dji_wpml_spec.php';
 require_once __DIR__ . '/wpml_kmz_export.php';
 
+if (!function_exists('resolve_mission_intern_paths')) {
 function resolve_mission_intern_paths(): array
 {
     return mapll_mission_intern_paths();
 }
+}
 
+if (!function_exists('ensure_mission_intern_structure')) {
 function ensure_mission_intern_structure(array $paths): void
 {
     $dirs = [
@@ -27,11 +30,159 @@ function ensure_mission_intern_structure(array $paths): void
         }
     }
 }
+}
 
 function sanitize_filename(string $value): string
 {
     $safe = preg_replace('/[^a-zA-Z0-9_-]+/', '_', $value);
     return trim((string)$safe, '_');
+}
+
+function rkrk_mission_file_token(string $value): string
+{
+    $value = trim($value);
+    $token = preg_replace('/[^\p{L}\p{N}_-]+/u', '_', $value);
+    if (!is_string($token) || $token === '') {
+        $token = sanitize_filename($value);
+    }
+    return trim($token, '_');
+}
+
+function rkrk_export_pilot_code(): string
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+    $keys = ['Initialen'];
+    if (isset($GLOBALS['SessNme_RegisteredInitialen']) && is_string($GLOBALS['SessNme_RegisteredInitialen'])) {
+        array_unshift($keys, $GLOBALS['SessNme_RegisteredInitialen']);
+    }
+    foreach ($keys as $key) {
+        $raw = trim((string)($_SESSION[$key] ?? ''));
+        if ($raw === '') {
+            continue;
+        }
+        $code = rkrk_mission_file_token($raw);
+        if ($code !== '') {
+            return $code;
+        }
+    }
+    return 'FE';
+}
+
+function rkrk_catalog_grundstueck_id(string $feldId): string
+{
+    $feldId = trim($feldId);
+    if ($feldId === '') {
+        return '';
+    }
+    $io = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'rkrk_catalog_io.php';
+    if (!function_exists('rkrk_catalog_load_simplexml') && is_file($io)) {
+        require_once $io;
+    }
+    if (!function_exists('rkrk_catalog_load_simplexml') || !function_exists('mapll_fields_xml_path')) {
+        return '';
+    }
+    $xmlPath = mapll_fields_xml_path();
+    if ($xmlPath === '') {
+        return '';
+    }
+    $xml = rkrk_catalog_load_simplexml($xmlPath);
+    if (!($xml instanceof SimpleXMLElement)) {
+        return '';
+    }
+    foreach ($xml->Feld as $f) {
+        if (trim((string)($f->FeldID ?? '')) === $feldId) {
+            return trim((string)($f->GrundstueckID ?? ''));
+        }
+    }
+    return '';
+}
+
+/** Feldkatalognummer: gesendete FeldID, sonst Treffer im 3T-Katalog über XML-ID oder Name und GIS. */
+function rkrk_catalog_feld_id_for_field(array $field): string
+{
+    $feldId = trim((string)($field['feld_id'] ?? ''));
+    if ($feldId !== '' && strcasecmp($feldId, 'UNDEF') !== 0) {
+        return $feldId;
+    }
+    $io = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'rkrk_catalog_io.php';
+    if (!function_exists('rkrk_catalog_load_simplexml') && is_file($io)) {
+        require_once $io;
+    }
+    if (!function_exists('rkrk_catalog_load_simplexml') || !function_exists('mapll_fields_xml_path')) {
+        return '';
+    }
+    $xmlPath = mapll_fields_xml_path();
+    if ($xmlPath === '') {
+        return '';
+    }
+    $xml = rkrk_catalog_load_simplexml($xmlPath);
+    if (!($xml instanceof SimpleXMLElement)) {
+        return '';
+    }
+    $internalId = trim((string)($field['id'] ?? ''));
+    $wantName = rkrk_mission_file_token(trim((string)($field['name'] ?? '')));
+    $wantGis = trim((string)($field['grundstueck_id'] ?? $field['gis'] ?? ''));
+    $nameHits = [];
+    foreach ($xml->Feld as $f) {
+        $id = trim((string)($f->FeldID ?? ''));
+        if ($id === '') {
+            continue;
+        }
+        if ($internalId !== '' && (string)$f['id'] === $internalId) {
+            return $id;
+        }
+        $name = rkrk_mission_file_token(trim((string)($f->Feldname ?? '')));
+        $gis = trim((string)($f->GrundstueckID ?? ''));
+        if ($wantName !== '' && strcasecmp($name, $wantName) === 0 && ($wantGis === '' || $gis === $wantGis)) {
+            $nameHits[] = $id;
+        }
+    }
+    return count($nameHits) === 1 ? $nameHits[0] : '';
+}
+
+/** Katalognummer_Feldname_GISNummer_Flughöhe_Pilotenkürzel_Jahr(YY). */
+function rkrk_mission_name_parts(string $feldId, string $feldName, string $gis, string $height, string $pilot = '', ?string $year = null): array
+{
+    $kat = rkrk_mission_file_token($feldId !== '' ? $feldId : 'UNDEF');
+    $name = rkrk_mission_file_token($feldName !== '' ? $feldName : 'Feld');
+    $gisToken = rkrk_mission_file_token($gis);
+    if ($gisToken === '') {
+        $gisToken = '0';
+    }
+    $heightNum = preg_replace('/[^0-9.]+/', '', $height) ?? '';
+    if ($heightNum === '' || !is_numeric($heightNum)) {
+        $heightNum = '60';
+    }
+    $heightToken = (string)intval(round(floatval($heightNum)));
+    $pilotToken = rkrk_mission_file_token($pilot !== '' ? $pilot : rkrk_export_pilot_code());
+    if ($pilotToken === '') {
+        $pilotToken = 'FE';
+    }
+    $yy = (is_string($year) && preg_match('/^\d{2}$/', $year)) ? $year : date('y');
+    $feldname = $name . '_' . $gisToken . '_' . $heightToken . '_' . $pilotToken . '_' . $yy;
+    $complete = $kat . '_' . $feldname;
+    return [
+        'feldname' => $feldname,
+        'complete' => $complete,
+    ];
+}
+
+function rkrk_mission_name_parts_from_field(array $field, array $missionSettings = []): array
+{
+    $feldId = trim((string)($field['feld_id'] ?? ''));
+    $name = trim((string)($field['name'] ?? ''));
+    $gis = trim((string)($field['grundstueck_id'] ?? $field['gis'] ?? ''));
+    if ($gis === '') {
+        $gis = rkrk_catalog_grundstueck_id($feldId);
+    }
+    $height = trim((string)($missionSettings['altitude_m'] ?? ''));
+    if ($height === '') {
+        $height = trim((string)($field['std_flughoehe'] ?? '60'));
+    }
+    $pilot = trim((string)($field['pilot_code'] ?? ''));
+    return rkrk_mission_name_parts($feldId, $name, $gis, $height, $pilot);
 }
 
 function ensure_field_mission_dir(array $paths, string $feldId): string
@@ -72,6 +223,7 @@ function parse_triplets_from_text(string $raw): array
     return $out;
 }
 
+if (!function_exists('format_triplets_text')) {
 function format_triplets_text(array $pts): string
 {
     $parts = [];
@@ -85,6 +237,7 @@ function format_triplets_text(array $pts): string
     }
     return implode('    ', $parts);
 }
+}
 
 function mission_settings_defaults(): array
 {
@@ -97,7 +250,7 @@ function mission_settings_defaults(): array
         'flight_direction_deg' => -1.0,
         'speed_m_s' => 5.0,
         'overlap_pct' => 15.0,
-        'edge_factor_pct' => 30.0,
+        'edge_factor_pct' => 40.0,
         'start_speed_active' => false,
         'start_speed_m_s' => 5.0,
         'hfov_deg' => floatval($droneDefaults['hfov_deg'] ?? 49.0),
@@ -124,6 +277,7 @@ function normalize_mission_settings(array $missionSettings): array
     $hfovDeg = array_key_exists('hfov_deg', $droneSpecific) ? floatval($droneSpecific['hfov_deg']) : floatval($d['hfov_deg']);
     $vfovDeg = array_key_exists('vfov_deg', $droneSpecific) ? floatval($droneSpecific['vfov_deg']) : floatval($d['vfov_deg']);
     $dfovDeg = array_key_exists('dfov_deg', $droneSpecific) ? floatval($droneSpecific['dfov_deg']) : floatval($d['dfov_deg']);
+    $pois = export_mission_pois($missionSettings);
     return [
         'drone_type' => $droneType,
         'kmz_params_active' => (bool)($missionSettings['kmz_params_active'] ?? $d['kmz_params_active']),
@@ -149,9 +303,67 @@ function normalize_mission_settings(array $missionSettings): array
         'safe_start_altitude_m' => floatval($missionSettings['safe_start_altitude_m'] ?? $d['safe_start_altitude_m']),
         'direct_to_start_position' => (bool)($missionSettings['direct_to_start_position'] ?? $d['direct_to_start_position']),
         'gimbal_mode' => trim((string)($missionSettings['gimbal_mode'] ?? $d['gimbal_mode'])),
+        'gimbal_pitch' => (isset($missionSettings['gimbal_pitch']) && is_numeric($missionSettings['gimbal_pitch']))
+            ? max(-90.0, min(30.0, floatval($missionSettings['gimbal_pitch'])))
+            : null,
         'altitude_mode' => trim((string)($missionSettings['altitude_mode'] ?? $d['altitude_mode'])),
+        'poi' => $pois[0] ?? null,
+        'pois' => $pois,
         'waypoint_overrides' => normalize_waypoint_overrides_raw($missionSettings['waypoint_overrides'] ?? []),
     ];
+}
+
+function export_mission_pois(array $mission): array
+{
+    $out = [];
+    $raw = $mission['pois'] ?? null;
+    if (is_array($raw)) {
+        foreach ($raw as $item) {
+            $poi = clean_export_poi($item);
+            if ($poi !== null) {
+                $out[] = $poi;
+            }
+        }
+    }
+    if ($out === []) {
+        $one = clean_export_poi($mission['poi'] ?? null);
+        if ($one !== null) {
+            $out[] = $one;
+        }
+    }
+    return $out;
+}
+
+/** Missions- oder Wegpunkt-POI: Länge, Breite, Höhe. */
+function clean_export_poi($raw): ?array
+{
+    if (!is_array($raw)) {
+        return null;
+    }
+    $lon = isset($raw['longitude']) ? floatval($raw['longitude']) : (isset($raw['lng']) ? floatval($raw['lng']) : NAN);
+    $lat = isset($raw['latitude']) ? floatval($raw['latitude']) : (isset($raw['lat']) ? floatval($raw['lat']) : NAN);
+    if (!is_finite($lon) || !is_finite($lat)) {
+        return null;
+    }
+    $height = isset($raw['height']) && is_numeric($raw['height']) ? floatval($raw['height']) : 0.0;
+    return [
+        'longitude' => round($lon, 6),
+        'latitude' => round($lat, 6),
+        'height' => round($height, 1),
+    ];
+}
+
+/** DJI waypointPoiPoint: Breite, Länge, Höhe. */
+function export_poi_point_csv($raw): string
+{
+    $poi = clean_export_poi($raw);
+    if ($poi === null) {
+        return '';
+    }
+    $fmt = static function (float $v, int $dec): string {
+        return rtrim(rtrim(sprintf('%.' . $dec . 'F', $v), '0'), '.');
+    };
+    return $fmt($poi['latitude'], 6) . ',' . $fmt($poi['longitude'], 6) . ',' . $fmt($poi['height'], 1);
 }
 
 function normalize_waypoint_overrides_raw($raw): array
@@ -228,6 +440,10 @@ function normalize_waypoint_overrides_raw($raw): array
         if (isset($row['heading_angle']) && is_numeric($row['heading_angle'])) {
             $clean['heading_angle'] = floatval($row['heading_angle']);
         }
+        $poi = clean_export_poi($row['poi'] ?? null);
+        if ($poi !== null) {
+            $clean['poi'] = $poi;
+        }
         if ($clean !== []) {
             $out[$sk] = $clean;
         }
@@ -268,8 +484,13 @@ function effective_ch_flags_for_waypoint(array $mission, int $index1): array
     if (array_key_exists('use_mission_turn_distance', $ov)) {
         $base['useMissionTurnDistance'] = (bool)$ov['use_mission_turn_distance'];
     }
-    if (array_key_exists('use_mission_yaw', $ov)) {
-        $base['useMissionDirectionMode'] = (bool)$ov['use_mission_yaw'];
+    $headingNow = !empty($base['useMissionYawDirection'])
+        ? (string)($mission['heading_mode'] ?? '')
+        : (string)($ov['heading_mode'] ?? ($mission['heading_mode'] ?? ''));
+    $headingNow = mb_strtolower(trim($headingNow));
+    if ($headingNow === 'definiert' || $headingNow === 'fixed') {
+        $base['useMissionPathMode'] = true;
+        $base['useMissionDirectionMode'] = true;
     }
     return $base;
 }
@@ -451,6 +672,23 @@ function mission_route_follow_active(array $missionSettings): bool
     return (($missionSettings['waypoint_settings_mode'] ?? 'route_follow') !== 'per_waypoint');
 }
 
+function all_waypoints_use_mission_flag(array $mission, string $overrideKey): bool
+{
+    $map = $mission['waypoint_overrides'] ?? [];
+    if (!is_array($map)) {
+        return true;
+    }
+    foreach ($map as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        if (array_key_exists($overrideKey, $row) && !$row[$overrideKey]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function ch_waypoint_use_mission_flags(array $missionSettings): array
 {
     // Default: Route folgen = Missionswerte. Nur explizite Punkt-Flags schalten auf gespeicherte Punktwerte.
@@ -500,7 +738,7 @@ function german_waypoint_type_to_wpml_bundle(string $waypointType): array
     }
     if ($t === 'Wendet vor dem Wegpunkt. Fliegt durch') {
         return [
-            'global_wpml_turn' => 'toPointAndPassWithContinuityCurvature',
+            'global_wpml_turn' => 'toPointAndPassWithContinuityCurvature2',
             'ch_waypoint_type' => 'toPointAndPassWithContinuityCurvature2',
             'path_mode' => 'curve',
             'use_straight_line' => 1,
@@ -527,10 +765,10 @@ function german_heading_mode_to_wpml_global(string $heading): string
         return 'towardPOI';
     }
     if (str_contains($g, 'definiert')) {
-        return 'fixed';
-    }
-    if (str_contains($g, 'schenk')) {
         return 'smoothTransition';
+    }
+    if (str_contains($g, 'schenk') || str_contains($g, 'schwenk')) {
+        return 'fixed';
     }
     if ((str_contains($g, 'richtung') && str_contains($g, 'wegpunkt')) || str_contains($g, 'flugroute') || str_contains($g, 'followwayline')) {
         return 'followWayline';
@@ -541,23 +779,20 @@ function german_heading_mode_to_wpml_global(string $heading): string
     return 'followWayline';
 }
 
-function german_heading_mode_to_ch_direction_strings(string $heading): array
+function german_heading_mode_to_ch_direction_strings(string $heading, bool $hasPoi = false): array
 {
     $g = mb_strtolower(trim($heading));
     if (str_contains($g, 'definiert')) {
-        return ['directionType' => 'fixed', 'yawDirection' => 'followWayline'];
+        return ['directionType' => 'followWayline', 'yawDirection' => 'customised'];
     }
-    if (str_contains($g, 'schenk')) {
-        return ['directionType' => 'smoothTransition', 'yawDirection' => 'followWayline'];
+    if (str_contains($g, 'schenk') || str_contains($g, 'schwenk')) {
+        return ['directionType' => 'followWayline', 'yawDirection' => 'fixed'];
     }
-    if (str_contains($g, 'poi') || str_contains($g, 'fokus')) {
-        return ['directionType' => 'towardPOI', 'yawDirection' => 'followWayline'];
-    }
-    if (str_contains($g, 'richtung') && str_contains($g, 'wegpunkt')) {
-        return ['directionType' => 'followWayline', 'yawDirection' => 'followWayline'];
+    if ((str_contains($g, 'poi') || str_contains($g, 'fokus')) && $hasPoi) {
+        return ['directionType' => 'towardPOI', 'yawDirection' => 'smoothTransition'];
     }
     if (str_contains($g, 'manuel')) {
-        return ['directionType' => 'fixed', 'yawDirection' => 'followWayline'];
+        return ['directionType' => 'followWayline', 'yawDirection' => 'manually'];
     }
     return ['directionType' => 'followWayline', 'yawDirection' => 'followWayline'];
 }
@@ -584,55 +819,36 @@ function wpml_heading_path_mode_from_internal(string $alignment): string
 function wpml_waypoint_heading_param_children_from_german(string $germanHeading, array $ov = []): array
 {
     $g = mb_strtolower(trim($germanHeading));
-    if (str_contains($g, 'schenk')) {
-        $children = [
-            'wpml:useGlobalHeadingParam' => 0,
-            'wpml:waypointHeadingMode' => 'smoothTransition',
-            'wpml:waypointHeadingYawPathMode' => 'followBadArc',
-            'wpml:waypointHeadingAngle' => 0.0,
-        ];
+    $pathMode = 'followBadArc';
+    if (str_contains($g, 'schenk') || str_contains($g, 'schwenk')) {
+        $mode = 'fixed';
     } elseif (str_contains($g, 'poi') || str_contains($g, 'fokus')) {
-        $children = [
-            'wpml:useGlobalHeadingParam' => 0,
-            'wpml:waypointHeadingMode' => 'towardPOI',
-            'wpml:waypointHeadingYawPathMode' => 'followBadArc',
-        ];
+        $mode = 'towardPOI';
     } elseif (str_contains($g, 'definiert')) {
-        $children = [
-            'wpml:useGlobalHeadingParam' => 0,
-            'wpml:waypointHeadingMode' => 'fixed',
-            'wpml:waypointHeadingYawPathMode' => 'followBadArc',
-        ];
-    } elseif (str_contains($g, 'richtung') && str_contains($g, 'wegpunkt')) {
-        $children = [
-            'wpml:useGlobalHeadingParam' => 0,
-            'wpml:waypointHeadingMode' => 'followWayline',
-            'wpml:waypointHeadingYawPathMode' => 'followBadArc',
-        ];
+        $mode = 'smoothTransition';
     } elseif (str_contains($g, 'manuel')) {
-        $children = [
-            'wpml:useGlobalHeadingParam' => 0,
-            'wpml:waypointHeadingMode' => 'fixed',
-            'wpml:waypointHeadingYawPathMode' => 'followBadArc',
-        ];
+        $mode = 'manually';
     } else {
-        $children = [
-            'wpml:useGlobalHeadingParam' => 0,
-            'wpml:waypointHeadingMode' => 'followWayline',
-            'wpml:waypointHeadingYawPathMode' => 'followBadArc',
-        ];
+        $mode = 'followWayline';
     }
     if (isset($ov['alignment_aircraft']) && is_string($ov['alignment_aircraft']) && trim((string)$ov['alignment_aircraft']) !== '') {
-        $children['wpml:waypointHeadingYawPathMode'] = wpml_heading_path_mode_from_internal((string)$ov['alignment_aircraft']);
+        $pathMode = wpml_heading_path_mode_from_internal((string)$ov['alignment_aircraft']);
     }
-    $angle = null;
-    if (isset($ov['heading_angle']) && is_numeric($ov['heading_angle'])) {
-        $angle = floatval($ov['heading_angle']);
-    } elseif (isset($ov['direction_deg']) && is_numeric($ov['direction_deg'])) {
-        $angle = floatval($ov['direction_deg']);
-    }
-    if ($angle !== null) {
-        $children['wpml:waypointHeadingAngle'] = $angle;
+    $children = [
+        'wpml:waypointHeadingMode' => $mode,
+        'wpml:waypointHeadingYawPathMode' => $pathMode,
+        'wpml:waypointHeadingPathMode' => $pathMode,
+    ];
+    if ($mode === 'smoothTransition') {
+        $angle = null;
+        if (isset($ov['heading_angle']) && $ov['heading_angle'] !== '' && $ov['heading_angle'] !== null && is_numeric($ov['heading_angle'])) {
+            $angle = floatval($ov['heading_angle']);
+        } elseif (isset($ov['direction_deg']) && $ov['direction_deg'] !== '' && $ov['direction_deg'] !== null && is_numeric($ov['direction_deg'])) {
+            $angle = floatval($ov['direction_deg']);
+        }
+        if ($angle !== null && is_finite($angle)) {
+            $children['wpml:waypointHeadingAngle'] = max(-180.0, min(180.0, $angle));
+        }
     }
     return $children;
 }
@@ -719,13 +935,10 @@ function build_kmz_waypoint_extensions(array $missionSettings, int $i0, float $a
     $wtStr = !empty($flags['useMissionWaypointType'])
         ? (string)($missionSettings['waypoint_type'] ?? '')
         : (string)($ov['waypoint_type'] ?? $missionSettings['waypoint_type'] ?? '');
-    if (empty($flags['useMissionPathMode']) && isset($ov['path_mode']) && is_string($ov['path_mode'])) {
-        $bundle = ch_path_bundle_from_path_mode_slug((string)$ov['path_mode']);
-    } else {
-        $bundle = german_waypoint_type_to_wpml_bundle($wtStr);
-    }
+    $bundle = german_waypoint_type_to_wpml_bundle($wtStr);
     $headingOv = !empty($flags['useMissionYawDirection']) ? [] : $ov;
     $headingChildren = wpml_waypoint_heading_param_children_from_german($hStr, $headingOv);
+    // useGlobalHeadingParam gehört zur Gierrichtung. Richtungsmodus und Pfadmodus haben kein KMZ-Tag.
     $useGlobalHeading = !empty($flags['useMissionYawDirection']) ? 1 : 0;
     $useGlobalSpeed = !empty($flags['useMissionSpeed']) ? 1 : 0;
     $useGlobalHeight = !empty($flags['useMissionHeight']) ? 1 : 0;
@@ -743,9 +956,12 @@ function build_kmz_waypoint_extensions(array $missionSettings, int $i0, float $a
         : floatval($ov['turning_distance_m'] ?? ($missionSettings['standard_turn_distance_m'] ?? 0.0));
     $damp = clamp_export_turn_m($dampSrc);
     $autoHeight = !array_key_exists('auto_height', $ov) || !empty($ov['auto_height']);
-    $gimbal = isset($ov['gimbal_pitch']) && is_numeric($ov['gimbal_pitch'])
-        ? floatval($ov['gimbal_pitch'])
-        : 0.0;
+    $gimbal = export_gimbal_pitch_deg($missionSettings, $ov);
+    $headingModeName = (string)($headingChildren['wpml:waypointHeadingMode'] ?? '');
+    $poiRaw = $ov['poi'] ?? null;
+    if ($headingModeName === 'towardPOI' && clean_export_poi($poiRaw) === null) {
+        $poiRaw = $missionSettings['poi'] ?? null;
+    }
     return [
         '_rel_height_hint' => $relForKmz,
         'wpml_turn_mode' => $bundle['global_wpml_turn'],
@@ -759,6 +975,7 @@ function build_kmz_waypoint_extensions(array $missionSettings, int $i0, float $a
         'wpml_turn_damping_m' => $damp,
         'auto_height' => $autoHeight,
         'gimbal_pitch' => $gimbal,
+        'poi_point' => $headingModeName === 'towardPOI' ? export_poi_point_csv($poiRaw) : '',
     ];
 }
 
@@ -951,14 +1168,18 @@ function dji_pilot2_null_overlay_keys(): array
 function mission_settings_ch_sample_branches(array $mission): array
 {
     $slug = resolve_uav_drone_type_slug((string)($mission['drone_type'] ?? ''));
-    $easy = !empty($mission['simple_mode']);
+    $easy = !empty($mission['easy_mode_form']);
     $spd = clamp_export_speed_m_s(floatval($mission['speed_m_s'] ?? 5.0));
     $hgt = clamp_export_agl_m(floatval($mission['altitude_m'] ?? 60.0));
     $takeoff = clamp_export_float(floatval($mission['safe_start_altitude_m'] ?? 20.0), 1.0, 150.0, 20.0);
     $turnD = clamp_export_turn_m(floatval($mission['standard_turn_distance_m'] ?? 5.0));
     $curveWp = (int)max(0, min(40, (int)round($turnD)));
     $defCurve = (int)max(5, min(40, max($curveWp, 5)));
-    $trans = clamp_export_float(floatval($mission['speed_m_s'] ?? 5.0) * 0.9, 0.5, 25.0, 4.5);
+    $transSource = $spd;
+    if (!empty($mission['start_speed_active'])) {
+        $transSource = floatval($mission['start_speed_m_s'] ?? $spd);
+    }
+    $trans = clamp_export_float($transSource, 0.1, 15.0, 5.0);
     $wpBundle = german_waypoint_type_to_wpml_bundle((string)($mission['waypoint_type'] ?? ''));
     $djiPilot2Wp = $wpBundle['ch_waypoint_type'];
     $flyDirect = !empty($mission['direct_to_start_position']);
@@ -977,7 +1198,7 @@ function mission_settings_ch_sample_branches(array $mission): array
         'curveSize' => $curveWp,
         'gimbal' => 'none',
         'powerSavingMode' => false,
-        'gimbalControl' => 'manuel',
+        'gimbalControl' => mission_gimbal_uses_point_setting($mission) ? 'setEachWaypoint' : 'manuel',
         'flightHeightMode' => wpml_height_mode_from_mission_altitude_mode((string)($mission['altitude_mode'] ?? '')),
         'flyToWaylineMode' => $flyDirect ? true : null,
         'waypointType' => $djiPilot2Wp,
@@ -1043,8 +1264,47 @@ function mission_settings_ch_sample_branches(array $mission): array
     ];
 }
 
+/** Offener Ring lon/lat. Ein wiederholter Schlusspunkt wird entfernt. */
+function export_open_lonlat_ring(array $poly): array
+{
+    $ring = [];
+    foreach ($poly as $q) {
+        if (!is_array($q) || count($q) < 2) {
+            continue;
+        }
+        $ring[] = [floatval($q[0] ?? 0.0), floatval($q[1] ?? 0.0)];
+    }
+    if (count($ring) >= 2) {
+        $a0 = $ring[0];
+        $a1 = $ring[count($ring) - 1];
+        if (abs($a0[0] - $a1[0]) <= 1e-9 && abs($a0[1] - $a1[1]) <= 1e-9) {
+            array_pop($ring);
+        }
+    }
+    return $ring;
+}
+
 /**
- * GeoJSON wie `Missionen/28_Mettmenstetten/*.json`: LineString mit vollen properties, Start (type 6), Wegpunkte (type 1) mit gleicher Schluesselreihenfolge.
+ * Flughöhe relativ zum Startpunkt: Geländehöhe des Punktes gegenüber dem Start plus die gesetzte Flughöhe.
+ * Ohne Geländewert bleibt die gesetzte Flughöhe.
+ *
+ * @param array<string, mixed> $deltaMap
+ */
+function export_height_rel_start(float $flightAgl, float $lon, float $lat, array $deltaMap, bool $addTerrain): float
+{
+    $height = $flightAgl;
+    if ($addTerrain) {
+        $delta = kmz_terrain_delta_from_cache($deltaMap, $lon, $lat);
+        if ($delta !== null) {
+            $height += $delta;
+        }
+    }
+    return round($height, 2);
+}
+
+/**
+ * GeoJSON wie `Missionen/28_Mettmenstetten/*.json`: LineString ist die Feldumrandung, danach Start (type 6) und Wegpunkte (type 1).
+ * Die Höhe bleibt die gesetzte Flughöhe. Die Geländedifferenz zum Start wird nur einmal in der KMZ addiert.
  */
 function build_ch_sample_geojson_features(array $poly, array $path, array $startPt, array $mission): array
 {
@@ -1054,14 +1314,10 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
     }
     $missionSpeed = clamp_export_speed_m_s(floatval($mission['speed_m_s'] ?? 5.0));
     $turnD = clamp_export_turn_m(floatval($mission['standard_turn_distance_m'] ?? 5.0));
-    $curveLine = (int)max(0, min(40, (int)round($turnD * 2.0)));
     $curveWp = (int)max(0, min(40, (int)round($turnD)));
     $turnWp = $turnD > 0.05 ? (float)$curveWp : null;
 
-    $lsCoords = [];
-    foreach ($path as $p) {
-        $lsCoords[] = [floatval($p[0] ?? 0.0), floatval($p[1] ?? 0.0)];
-    }
+    $lsCoords = export_open_lonlat_ring($poly);
     $features = [];
     $features[] = [
         'type' => 'Feature',
@@ -1072,18 +1328,18 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             'gimbalYaw' => 0,
             'gimbalNod' => 0,
             'cameraModeTime' => 1,
-            'directionType' => 'manual',
+            'directionType' => 'followWayline',
             'wpEvent' => 0,
             'autoTrigger' => 0,
             'climbRate' => 0.1,
             'tolerance' => 10,
             'rotation' => 'clockwise',
             'useMissionDirectionMode' => true,
-            'direction' => 0.0,
-            'curveSize' => $curveLine,
+            'direction' => 0,
+            'curveSize' => null,
             'useMissionPathMode' => true,
-            'useMissionYawDirection' => true,
-            'useMissionWaypointType' => true,
+            'useMissionYawDirection' => false,
+            'useMissionWaypointType' => false,
             'speed' => $missionSpeed,
             'useMissionSpeed' => true,
             'height' => 0.0,
@@ -1091,10 +1347,10 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             'type' => 1,
             'pathMode' => 'straight',
             'autoHeight' => true,
-            'yawDirection' => 'manual',
-            'waypointType' => 'straight',
+            'yawDirection' => 'followWayline',
+            'waypointType' => 'coordinateTurn',
             'turningDistance' => null,
-            'alignmentAircraft' => null,
+            'alignmentAircraft' => 'followBadArc',
             'aboveSea' => [
                 'value' => null,
                 'lat' => null,
@@ -1119,6 +1375,24 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             'type' => 6,
         ],
     ];
+    foreach (export_mission_pois($mission) as $missionPoi) {
+        $features[] = [
+            'type' => 'Feature',
+            'geometry' => [
+                'type' => 'Point',
+                'coordinates' => [floatval($missionPoi['longitude']), floatval($missionPoi['latitude'])],
+            ],
+            'properties' => [
+                'type' => 2,
+                'height' => floatval($missionPoi['height'] ?? 0),
+                'aboveSea' => [
+                    'value' => null,
+                    'lat' => round(floatval($missionPoi['latitude']), 6),
+                    'lng' => round(floatval($missionPoi['longitude']), 6),
+                ],
+            ],
+        ];
+    }
     $n = count($path);
     for ($i = 0; $i < $n; $i++) {
         $idx1 = $i + 1;
@@ -1134,27 +1408,59 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
         $wtStr = !empty($flags['useMissionWaypointType'])
             ? (string)($mission['waypoint_type'] ?? '')
             : (string)($ov['waypoint_type'] ?? $mission['waypoint_type'] ?? '');
+        $bundle = german_waypoint_type_to_wpml_bundle($wtStr);
+        $pathMode = (string)($bundle['path_mode'] ?? 'straight');
         if (empty($flags['useMissionPathMode']) && isset($ov['path_mode']) && is_string($ov['path_mode'])) {
-            $bundle = ch_path_bundle_from_path_mode_slug((string)$ov['path_mode']);
-        } else {
-            $bundle = german_waypoint_type_to_wpml_bundle($wtStr);
+            $pathBundle = ch_path_bundle_from_path_mode_slug((string)$ov['path_mode']);
+            if (isset($pathBundle['path_mode']) && is_string($pathBundle['path_mode']) && $pathBundle['path_mode'] !== '') {
+                $pathMode = (string)$pathBundle['path_mode'];
+            }
         }
-        $hd = german_heading_mode_to_ch_direction_strings($hStr);
+        $poiCandidate = clean_export_poi($ov['poi'] ?? null);
+        if ($poiCandidate === null) {
+            $missionPois = export_mission_pois($mission);
+            if (count($missionPois) === 1) {
+                $poiCandidate = $missionPois[0];
+            }
+        }
+        $headingAsked = mb_strtolower($hStr);
+        $askedPoi = str_contains($headingAsked, 'poi') || str_contains($headingAsked, 'fokus');
+        $hd = german_heading_mode_to_ch_direction_strings($hStr, $poiCandidate !== null);
         $speedVal = !empty($flags['useMissionSpeed'])
             ? $missionSpeed
             : clamp_export_speed_m_s(floatval($ov['speed_m_s'] ?? $missionSpeed));
         $pointHeight = !empty($flags['useMissionHeight'])
             ? $altM
             : clamp_export_agl_m(floatval($ov['agl_m'] ?? $agl));
-        if ($i + 1 < $n) {
-            $dir = bearing_deg_lon_lat($lon, $lat, floatval($path[$i + 1][0]), floatval($path[$i + 1][1]));
-        } elseif ($i > 0) {
-            $dir = bearing_deg_lon_lat(floatval($path[$i - 1][0]), floatval($path[$i - 1][1]), $lon, $lat);
-        } else {
-            $dir = 0.0;
+        $autoHeight = kmz_is_alt_relative_to_start($mission);
+        $explicitDir = null;
+        if (array_key_exists('heading_angle', $ov) && $ov['heading_angle'] !== null && $ov['heading_angle'] !== '' && is_numeric($ov['heading_angle'])) {
+            $explicitDir = floatval($ov['heading_angle']);
+        } elseif (array_key_exists('direction_deg', $ov) && $ov['direction_deg'] !== null && $ov['direction_deg'] !== '' && is_numeric($ov['direction_deg'])) {
+            $explicitDir = floatval($ov['direction_deg']);
         }
-        if (empty($flags['useMissionDirectionMode']) && isset($ov['direction_deg']) && is_numeric($ov['direction_deg'])) {
-            $dir = fmod((floatval($ov['direction_deg']) + 720.0), 360.0);
+        $yawKind = strtolower((string)($hd['yawDirection'] ?? ''));
+        $dirType = strtolower((string)($hd['directionType'] ?? ''));
+        $needsAngle = ($yawKind === 'customised' || $yawKind === 'customized');
+        $lockedAxis = ($yawKind === 'fixed');
+        $poiMode = ($dirType === 'towardpoi' || $yawKind === 'smoothtransition' || $yawKind === 'smooth');
+        if ($askedPoi && $poiCandidate === null) {
+            $dir = null;
+        } elseif ($needsAngle) {
+            $dir = ($explicitDir !== null && is_finite($explicitDir)) ? max(-180.0, min(180.0, $explicitDir)) : null;
+        } elseif ($lockedAxis || $poiMode) {
+            $dir = null;
+        } else {
+            if ($i + 1 < $n) {
+                $dir = bearing_deg_lon_lat($lon, $lat, floatval($path[$i + 1][0]), floatval($path[$i + 1][1]));
+            } elseif ($i > 0) {
+                $dir = bearing_deg_lon_lat(floatval($path[$i - 1][0]), floatval($path[$i - 1][1]), $lon, $lat);
+            } else {
+                $dir = 0.0;
+            }
+            if (empty($flags['useMissionDirectionMode']) && $explicitDir !== null && is_finite($explicitDir)) {
+                $dir = fmod(($explicitDir + 720.0), 360.0);
+            }
         }
         $curveWpLocal = $curveWp;
         $turnWpLocal = $turnWp;
@@ -1163,10 +1469,9 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             $curveWpLocal = (int)max(0, min(40, (int)round($tdLocal)));
             $turnWpLocal = $tdLocal > 0.05 ? (float)$curveWpLocal : null;
         }
-        $autoHeight = !array_key_exists('auto_height', $ov) || !empty($ov['auto_height']);
-        $gimbalAngle = isset($ov['gimbal_pitch']) && is_numeric($ov['gimbal_pitch'])
-            ? floatval($ov['gimbal_pitch'])
-            : -90.0;
+        $gimbalWritten = export_gimbal_pitch_deg($mission, $ov);
+        $gimbalAngle = $gimbalWritten !== null ? $gimbalWritten : -90.0;
+        $poiForJson = (($hd['directionType'] ?? '') === 'towardPOI') ? $poiCandidate : null;
         $alignWpml = 'followBadArc';
         if (!empty($ov['alignment_aircraft'])) {
             $alignWpml = wpml_heading_path_mode_from_internal((string)$ov['alignment_aircraft']);
@@ -1188,7 +1493,7 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             'tolerance' => 10,
             'rotation' => 'clockwise',
             'useMissionDirectionMode' => !empty($flags['useMissionDirectionMode']),
-            'direction' => round($dir, 1),
+            'direction' => $dir === null ? null : round((float)$dir, 1),
             'curveSize' => $curveWpLocal,
             'useMissionPathMode' => !empty($flags['useMissionPathMode']),
             'useMissionYawDirection' => !empty($flags['useMissionYawDirection']),
@@ -1198,7 +1503,7 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             'height' => $pointHeight,
             'useMissionHeight' => !empty($flags['useMissionHeight']),
             'type' => 1,
-            'pathMode' => $bundle['path_mode'],
+            'pathMode' => $pathMode,
             'autoHeight' => $autoHeight,
             'yawDirection' => $hd['yawDirection'],
             'waypointType' => $bundle['ch_waypoint_type'],
@@ -1211,6 +1516,9 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
             ],
             '_height' => $pointHeight,
         ];
+        if ($poiForJson !== null) {
+            $props['poi'] = $poiForJson;
+        }
         $features[] = [
             'type' => 'Feature',
             'geometry' => [
@@ -1268,6 +1576,56 @@ function contributor_stub_array(): array
     ];
 }
 
+function rkrk_export_region_table(): array
+{
+    if (isset($GLOBALS['RegionSettings']) && is_array($GLOBALS['RegionSettings']) && $GLOBALS['RegionSettings'] !== []) {
+        return $GLOBALS['RegionSettings'];
+    }
+    if (function_exists('editor_load_name_tables')) {
+        editor_load_name_tables();
+        if (isset($GLOBALS['RegionSettings']) && is_array($GLOBALS['RegionSettings']) && $GLOBALS['RegionSettings'] !== []) {
+            return $GLOBALS['RegionSettings'];
+        }
+    }
+    static $tried = false;
+    static $table = [];
+    if ($tried) {
+        return $table;
+    }
+    $tried = true;
+    $scripts = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'scripts';
+    $file = $scripts . DIRECTORY_SEPARATOR . 'rkrk_geofence.php';
+    if (!is_file($file)) {
+        return [];
+    }
+    $cwd = getcwd();
+    chdir($scripts);
+    ob_start();
+    include_once $file;
+    ob_end_clean();
+    if (is_string($cwd) && $cwd !== '') {
+        @chdir($cwd);
+    }
+    if (isset($RegionSettings) && is_array($RegionSettings)) {
+        $GLOBALS['RegionSettings'] = $RegionSettings;
+        $table = $RegionSettings;
+    }
+    return $table;
+}
+
+function rkrk_export_group_area(string $jg, string $feldId): array
+{
+    $code = trim($jg);
+    if ($code === '' && preg_match('/^([A-Za-z0-9]+)\s*-/', trim($feldId), $m)) {
+        $code = $m[1];
+    }
+    $regions = rkrk_export_region_table();
+    $row = ($code !== '' && isset($regions[$code]) && is_array($regions[$code])) ? $regions[$code] : null;
+    $name = $row ? trim((string)($row['GroupAreaName'] ?? '')) : '';
+    $zone = $row ? trim((string)($row['GroupAreaID'] ?? '')) : '';
+    return ['jg' => $code, 'name' => $name, 'zoneId' => $zone];
+}
+
 /**
  * UAV-Missions-JSON im gleichen Top-Level- und geojson-Schema wie `samples/*.json` (CH / DJI Pilot 2).
  * Hinweis: Verbindungs-/Nutzerfelder sind neutrale Stubs; Geometrie und missionSettings stammen aus dem Feld-Editor.
@@ -1280,7 +1638,9 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
         $path = ensure_start_point_first($path, $startPt, $cruise);
     }
     $feldId = trim((string)($meta['feld_id'] ?? 'mission'));
-    $fname = trim((string)($meta['name'] ?? $feldId));
+    $nameParts = is_array($meta['mission_name_parts'] ?? null) ? $meta['mission_name_parts'] : null;
+    $fname = trim((string)($nameParts['feldname'] ?? ($meta['name'] ?? $feldId)));
+    $completeName = trim((string)($nameParts['complete'] ?? $fname));
     $id = random_ch_mission_id();
     $now = gmdate('Y-m-d\TH:i:s.v\Z');
     $pathLonLat = [];
@@ -1288,17 +1648,7 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
         $pathLonLat[] = [floatval($p[0] ?? 0.0), floatval($p[1] ?? 0.0)];
     }
     $lineString = google_polyline_encode_precision5($pathLonLat);
-    $polyRing = [];
-    foreach ($poly as $q) {
-        $polyRing[] = [floatval($q[0] ?? 0.0), floatval($q[1] ?? 0.0)];
-    }
-    if (count($polyRing) >= 2) {
-        $a0 = $polyRing[0];
-        $a1 = $polyRing[count($polyRing) - 1];
-        if (abs($a0[0] - $a1[0]) > 1e-9 || abs($a0[1] - $a1[1]) > 1e-9) {
-            $polyRing[] = [$a0[0], $a0[1]];
-        }
-    }
+    $polyRing = export_open_lonlat_ring($poly);
     $polygonLineString = google_polyline_encode_precision5($polyRing);
     $allPts = $pathLonLat;
     if (count($polyRing) > 0) {
@@ -1314,7 +1664,12 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
     $missionSettings = mission_settings_ch_sample_branches($mission);
     $geojson = [
         'type' => 'FeatureCollection',
-        'features' => build_ch_sample_geojson_features($poly, $path, $startPt, $mission),
+        'features' => build_ch_sample_geojson_features(
+            $poly,
+            $path,
+            $startPt,
+            $mission
+        ),
     ];
     $lastAuto = [
         'properties' => [
@@ -1330,16 +1685,16 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
             'climbRate' => 0.1,
             'tolerance' => 10,
             'rotation' => 'clockwise',
-            'useMissionDirectionMode' => true,
+            'useMissionDirectionMode' => all_waypoints_use_mission_flag($mission, 'use_mission_direction_mode'),
             'direction' => 0,
             'curveSize' => 0,
-            'useMissionPathMode' => true,
-            'useMissionYawDirection' => mission_route_follow_active($mission),
-            'useMissionWaypointType' => mission_route_follow_active($mission),
+            'useMissionPathMode' => all_waypoints_use_mission_flag($mission, 'use_mission_path_mode'),
+            'useMissionYawDirection' => all_waypoints_use_mission_flag($mission, 'use_mission_yaw'),
+            'useMissionWaypointType' => all_waypoints_use_mission_flag($mission, 'use_mission_waypoint_type'),
             'speed' => clamp_export_speed_m_s(floatval($mission['speed_m_s'] ?? 5.0)),
-            'useMissionSpeed' => mission_route_follow_active($mission),
+            'useMissionSpeed' => all_waypoints_use_mission_flag($mission, 'use_mission_speed'),
             'height' => clamp_export_agl_m(floatval($mission['altitude_m'] ?? 60.0)),
-            'useMissionHeight' => mission_route_follow_active($mission),
+            'useMissionHeight' => all_waypoints_use_mission_flag($mission, 'use_mission_height'),
             'autoHeight' => true,
             'yawDirection' => 'followWayline',
             'waypointType' => german_waypoint_type_to_wpml_bundle((string)($mission['waypoint_type'] ?? ''))['ch_waypoint_type'],
@@ -1350,7 +1705,7 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
             'easyModeHeightSelect' => (int)round(clamp_export_agl_m(floatval($mission['altitude_m'] ?? 60.0))),
             'spacing' => 40,
             'border' => 15,
-            'easyModeForm' => !empty($mission['simple_mode']),
+            'easyModeForm' => !empty($mission['easy_mode_form']),
             'easyModeSpeed' => 5,
         ],
     ];
@@ -1359,7 +1714,7 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
         'lng' => floatval($startPt[0] ?? $path[0][0] ?? 0.0),
         'value' => (int)max(0.0, round(400.0 + clamp_export_agl_m(floatval($mission['altitude_m'] ?? 60.0)))),
     ];
-    return [
+    $payload = [
         'connectedPlanningData' => connected_planning_stub_array(),
         '_id' => $id,
         'name' => $fname,
@@ -1414,10 +1769,33 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
         'planningInfos' => [],
         'hasValidConnection' => false,
         'originalName' => $fname,
-        'fileNameComplete' => $fname,
-        'fileNameCompleteForExport' => $fname,
+        'fileNameComplete' => $completeName,
+        'fileNameCompleteForExport' => $completeName,
         'fileName' => $fname,
     ];
+    $area = rkrk_export_group_area((string)($meta['jg'] ?? ''), $feldId);
+    $payload['sharedFieldCatalog'] = [
+        'catalogIdentifier' => $feldId,
+    ];
+    if ($area['name'] !== '') {
+        $payload['pilotGroupAreaName'] = $area['name'];
+    }
+    if (!isset($payload['data']) || !is_array($payload['data'])) {
+        $payload['data'] = ['owner' => new stdClass()];
+    }
+    if ($area['zoneId'] !== '') {
+        $payload['data']['zoneId'] = $area['zoneId'];
+    }
+    $poiN = 0;
+    foreach ($geojson['features'] as $feature) {
+        if (is_array($feature) && (int)($feature['properties']['type'] ?? 0) === 2) {
+            $poiN++;
+        }
+    }
+    if ($poiN > 0 && isset($payload['featureCount']) && is_array($payload['featureCount'])) {
+        $payload['featureCount']['pois'] = $poiN;
+    }
+    return $payload;
 }
 
 /** WPML-KML an die Referenz samples/.../wpmz/template.kml anpassen (fehlende Knoten ergaenzen). */
@@ -1447,17 +1825,75 @@ function wpmz_kml_normalize_like_ch_sample(string $kml): string
             1
         );
     }
-    $kml = preg_replace(
-        '/(<wpml:useGlobalSpeed>\s*\d+(?:\.\d+)?\s*<\/wpml:useGlobalSpeed>)\s*[\r\n]*\s*(<wpml:useStraightLine>)/',
-        '$1' . "\n        <wpml:useGlobalTurnParam>0</wpml:useGlobalTurnParam>\n        $2",
-        $kml
-    );
+    if (strpos($kml, '<wpml:useGlobalTurnParam>') === false) {
+        $kml = preg_replace(
+            '/(<wpml:useGlobalSpeed>\s*\d+(?:\.\d+)?\s*<\/wpml:useGlobalSpeed>)\s*[\r\n]*\s*(<wpml:useStraightLine>)/',
+            '$1' . "\n        <wpml:useGlobalTurnParam>0</wpml:useGlobalTurnParam>\n        $2",
+            $kml
+        );
+    }
     return $kml;
+}
+
+function wpml_use_flag_from_text(string $raw): ?bool
+{
+    $t = strtolower(trim($raw));
+    if ($t === '1' || $t === 'true') {
+        return true;
+    }
+    if ($t === '0' || $t === 'false') {
+        return false;
+    }
+    return null;
+}
+
+/**
+ * Liest die vier useGlobal-Tags. Pfadmodus und Richtungsmodus haben kein Tag und bleiben unangetastet.
+ *
+ * @return array<string, array<string, bool>>
+ */
+function waypoint_overrides_from_wpml_kml(string $kml): array
+{
+    $map = [
+        'useGlobalHeight' => 'use_mission_height',
+        'useGlobalSpeed' => 'use_mission_speed',
+        'useGlobalTurnParam' => 'use_mission_waypoint_type',
+        'useGlobalHeadingParam' => 'use_mission_yaw',
+    ];
+    $out = [];
+    if (!preg_match_all('/<Placemark\b[^>]*>(.*?)<\/Placemark>/si', $kml, $blocks)) {
+        return $out;
+    }
+    $n = 0;
+    foreach ($blocks[1] as $block) {
+        if (!preg_match('/<coordinates>\s*([-0-9.]+)\s*,\s*([-0-9.]+)/i', $block, $coord)) {
+            continue;
+        }
+        $row = [];
+        foreach ($map as $tag => $key) {
+            if (preg_match('/<wpml:' . $tag . '>\s*([^<]*)<\/wpml:' . $tag . '>/i', $block, $m)) {
+                $flag = wpml_use_flag_from_text($m[1]);
+                if ($flag !== null) {
+                    $row[$key] = $flag;
+                }
+            }
+        }
+        if ($row === []) {
+            continue;
+        }
+        $n++;
+        $idx = $n;
+        if (preg_match('/<wpml:index>\s*(\d+)\s*<\/wpml:index>/i', $block, $im)) {
+            $idx = intval($im[1]) + 1;
+        }
+        $out[(string)$idx] = $row;
+    }
+    return $out;
 }
 
 function build_kml_for_path(array $meta, array $path): string
 {
-    $name = htmlspecialchars((string)($meta['feld_id'] ?? 'mission'), ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    $name = htmlspecialchars((string)($meta['mission_name_parts']['complete'] ?? $meta['name'] ?? $meta['feld_id'] ?? 'mission'), ENT_XML1 | ENT_QUOTES, 'UTF-8');
     $coords = [];
     foreach ($path as $p) {
         $coords[] = floatval($p[0] ?? 0.0) . ',' . floatval($p[1] ?? 0.0) . ',' . floatval($p[2] ?? 0.0);
@@ -1469,7 +1905,7 @@ function build_kml_for_path(array $meta, array $path): string
   <Document>
     <name>{$name}</name>
     <Placemark>
-      <name>Flight Path</name>
+      <name>{$name}</name>
       <LineString>
         <altitudeMode>relativeToGround</altitudeMode>
         <coordinates>
@@ -1623,6 +2059,28 @@ function resolve_dji_interface_drone_key(string $droneType): string
         }
     }
     return isset($enums['3T']) ? '3T' : (string)(array_key_first($enums) ?? '3T');
+}
+
+function mission_gimbal_uses_point_setting(array $mission): bool
+{
+    return wpml_gimbal_pitch_mode_from_mission((string)($mission['gimbal_mode'] ?? '')) === 'usePointSetting';
+}
+
+/** Flag aus: null, die KMZ schreibt keinen Winkel. Flag an: Wegpunktwinkel, sonst der Missionswinkel, sonst −90. */
+function export_gimbal_pitch_deg(array $mission, array $ov): ?float
+{
+    if (!mission_gimbal_uses_point_setting($mission)) {
+        return null;
+    }
+    $raw = null;
+    if (isset($ov['gimbal_pitch']) && is_numeric($ov['gimbal_pitch'])) {
+        $raw = floatval($ov['gimbal_pitch']);
+    } elseif (isset($mission['gimbal_pitch']) && is_numeric($mission['gimbal_pitch'])) {
+        $raw = floatval($mission['gimbal_pitch']);
+    } else {
+        $raw = -90.0;
+    }
+    return max(-90.0, min(30.0, $raw));
 }
 
 function wpml_gimbal_pitch_mode_from_mission(string $deMode): string
@@ -1882,12 +2340,9 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
     $droneKey = resolve_dji_interface_drone_key((string)($missionSettings['drone_type'] ?? 'Mavic 3T'));
     $wpBundle = german_waypoint_type_to_wpml_bundle((string)($missionSettings['waypoint_type'] ?? ''));
     $turnMode = (string)($wpBundle['global_wpml_turn'] ?? 'coordinateTurn');
-    if ($turnMode === 'toPointAndPassWithContinuityCurvature2') {
-        $turnMode = 'toPointAndPassWithContinuityCurvature';
-        $wpBundle['use_straight_line'] = 1;
-    }
     $headingMode = german_heading_mode_to_wpml_global((string)($missionSettings['heading_mode'] ?? ''));
-    if ($headingMode === 'towardPOI') {
+    $headingPoiPoint = export_poi_point_csv($missionSettings['poi'] ?? null);
+    if ($headingMode === 'towardPOI' && $headingPoiPoint === '') {
         $headingMode = 'followWayline';
     }
     $heightMode = wpml_height_mode_from_mission_altitude_mode((string)($missionSettings['altitude_mode'] ?? ''));
@@ -1953,24 +2408,23 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
         $ext = build_kmz_waypoint_extensions($missionSettings, intval($c['idx']), floatval($c['agl']));
         $h = clamp_wpml_rel_height_m(floatval($ext['_rel_height_hint'] ?? $aglM));
         $useGlobalHeight = intval($ext['wpml_use_global_height'] ?? 1);
-        $autoH = !empty($ext['auto_height']);
-        if ($applyAltPerWaypoint && $autoH) {
-            $delta = kmz_terrain_delta_from_cache($terrainDeltas, floatval($c['lng']), floatval($c['lat']));
-            if ($delta === null) {
-                $delta = 0.0;
-            }
-            $h = clamp_wpml_rel_height_m($h + $delta);
+        if ($applyAltPerWaypoint) {
+            $h = clamp_wpml_rel_height_m(export_height_rel_start(
+                $h,
+                floatval($c['lng']),
+                floatval($c['lat']),
+                $terrainDeltas,
+                true
+            ));
             $useGlobalHeight = 0;
         } elseif ($h < 1.2) {
             $h = $aglM;
         }
         $ptTurn = (string)($ext['wpml_turn_mode'] ?? $turnMode);
-        if ($ptTurn === 'toPointAndPassWithContinuityCurvature2') {
-            $ptTurn = 'toPointAndPassWithContinuityCurvature';
-        }
         $headingChildren = is_array($ext['wpml_heading_children'] ?? null) ? $ext['wpml_heading_children'] : [];
         $ptHeading = (string)($headingChildren['wpml:waypointHeadingMode'] ?? $headingMode);
-        if ($ptHeading === 'towardPOI') {
+        $poiPoint = (string)($ext['poi_point'] ?? '');
+        if ($ptHeading === 'towardPOI' && $poiPoint === '') {
             $ptHeading = 'followWayline';
         }
         $nWp = count($candidatePts);
@@ -1993,14 +2447,18 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
             'use_straight_line' => intval($ext['wpml_use_straight_line'] ?? ($wpBundle['use_straight_line'] ?? 1)),
             'turn_damping_m' => $damp,
             'heading_mode' => $ptHeading,
-            'heading_angle' => floatval($headingChildren['wpml:waypointHeadingAngle'] ?? 0.0),
-            'heading_path_mode' => (string)($headingChildren['wpml:waypointHeadingYawPathMode'] ?? 'followBadArc'),
-            'gimbal_pitch' => floatval($ext['gimbal_pitch'] ?? 0.0),
+            'heading_angle' => array_key_exists('wpml:waypointHeadingAngle', $headingChildren)
+                ? floatval($headingChildren['wpml:waypointHeadingAngle'])
+                : null,
+            'heading_path_mode' => (string)($headingChildren['wpml:waypointHeadingYawPathMode'] ?? ($headingChildren['wpml:waypointHeadingPathMode'] ?? 'followBadArc')),
+            'poi_point' => $poiPoint,
+            'gimbal_pitch' => is_numeric($ext['gimbal_pitch'] ?? null) ? floatval($ext['gimbal_pitch']) : null,
         ];
     }
     $first = $waypoints[0] ?? ['lat' => 0.0, 'lng' => 0.0, 'height' => $aglM];
     return [
         'author' => 'RKRK',
+        'mission_name' => (string)($meta['mission_name_parts']['complete'] ?? ($meta['name'] ?? '')),
         'drone_key' => $droneKey,
         'drone_enum' => intval($info['wpml:droneEnumValue'][$droneKey] ?? 77),
         'drone_sub_enum' => intval($info['wpml:droneSubEnumValue'][$droneKey] ?? 1),
@@ -2019,6 +2477,7 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
         'height_mode' => ($heightMode === 'EGM96') ? 'EGM96' : (($heightMode === 'WGS84') ? 'WGS84' : 'relativeToStartPoint'),
         'execute_height_mode' => $executeHeightMode,
         'heading_mode' => $headingMode,
+        'heading_poi_point' => $headingMode === 'towardPOI' ? $headingPoiPoint : '',
         'turn_mode' => $turnMode,
         'use_straight_line' => intval($wpBundle['use_straight_line'] ?? 1),
         'gimbal_pitch_mode' => wpml_gimbal_pitch_mode_from_mission((string)($missionSettings['gimbal_mode'] ?? '')),
@@ -2091,9 +2550,9 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
     if ($edgeFactor >= 0.0) {
         $edgeFactor /= 100.0;
     } else {
-        $edgeFactor = floatval($payload['edge_factor'] ?? 0.30);
+        $edgeFactor = floatval($payload['edge_factor'] ?? 0.40);
     }
-    if (!is_finite($edgeFactor)) $edgeFactor = 0.30;
+    if (!is_finite($edgeFactor)) $edgeFactor = 0.40;
     $edgeFactor = max(0.0, min(1.0, $edgeFactor));
     $planned = plan_lawnmower($poly, $startPt, $hfov, $aglForPlan, $overlap, $edgeFactor, $preferredDirection, $fixedAngleDeg, $curveWaypointAngleStepDeg);
     if (!is_array($planned) || !isset($planned['path']) || !is_array($planned['path'])) {
@@ -2134,7 +2593,7 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
     $coverageAfterTune = $coverageBeforeTune;
     $angleTuneApplied = false;
     $angleTuneDeltaDeg = 0.0;
-    if (!$isNarrowField && $coverageBeforeTune < $minPathCoverageRatio) {
+    if ($flightDirectionDeg <= -1.0 && !$isNarrowField && $coverageBeforeTune < $minPathCoverageRatio) {
         $baseTheta = isset($planned['angle']) ? floatval($planned['angle']) : (is_finite(floatval($fixedAngleDeg)) ? floatval($fixedAngleDeg) : 0.0);
         $bestPath = $path;
         $bestCov = $coverageBeforeTune;
@@ -2162,7 +2621,8 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
             $angleTuneDeltaDeg = $bestDelta;
         }
     }
-    $path = mission_path_add_top_midpoint_and_edge_tail($path, $poly, floatval($planned['W'] ?? 0.0));
+    // Nordkanten-Mittelpunkt und Kanten-Ende nicht in den Flugweg. Die Suchabdeckung
+    // folgt den Wegpunkten der Bahn, nicht diesen eingeschobenen Zwischenpunkten.
     $path = enforce_path_inside_field_except_first_leg($path, $poly, $isNarrowField ? 0.0 : $maxOutsideM);
     if (count($path) < 2 && count($startPt) >= 2 && count($poly) >= 1) {
         $path = ensure_start_point_first([[floatval($poly[0][0]), floatval($poly[0][1]), $aglForPlan]], $startPt, $aglForPlan);
@@ -2195,12 +2655,17 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
     ];
 }
 
+if (!defined('RKRK_MISSION_EXPORT_AS_LIB')) {
 $raw = file_get_contents('php://input');
 $payload = $raw ? json_decode($raw, true) : null;
 if (!is_array($payload)) {
     fail_resp(422, 'invalid_json', 'Body muss JSON sein');
 }
 $action = strtolower(trim((string)($payload['action'] ?? '')));
+$katOn = array_key_exists('KAT', $_GET) || !empty($payload['kat']);
+if (!$katOn && ($action === 'export_uav_json' || $action === 'export_dji_kmz')) {
+    fail_resp(403, 'kat_required', 'Serverdateien nur mit ?KAT. Ohne KAT das Feld lokal als KML oder JSON herunterladen.');
+}
 $field = is_array($payload['field'] ?? null) ? $payload['field'] : [];
 $mappingConfig = load_interface_mapping_config();
 
@@ -2219,6 +2684,33 @@ if ($action === 'get_mapping_schema') {
         'mapping' => $exportMapping,
         'mission_settings_defaults' => mission_settings_defaults(),
         'note' => 'Mapping between form (Flugvorgaben), UAV JSON and DJI KMZ.',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($action === 'import_wpml_flags') {
+    $kml = (string)($payload['template_kml'] ?? $payload['kml'] ?? '');
+    if (trim($kml) === '' && !empty($payload['kmz_base64'])) {
+        $rawKmz = base64_decode((string)$payload['kmz_base64'], true);
+        if (is_string($rawKmz) && $rawKmz !== '' && class_exists('ZipArchive')) {
+            $tmp = tempnam(sys_get_temp_dir(), 'wpml');
+            if ($tmp !== false && file_put_contents($tmp, $rawKmz) !== false) {
+                $zip = new ZipArchive();
+                if ($zip->open($tmp) === true) {
+                    $kml = (string)$zip->getFromName('wpmz/template.kml');
+                    $zip->close();
+                }
+                @unlink($tmp);
+            }
+        }
+    }
+    if (trim($kml) === '') {
+        fail_resp(422, 'missing_kml', 'template.kml oder KMZ fehlt.');
+    }
+    echo json_encode([
+        'ok' => true,
+        'waypoint_overrides' => waypoint_overrides_from_wpml_kml($kml),
+        'note' => 'useGlobalHeight/Speed/TurnParam und useGlobalHeadingParam (Gierrichtung). Pfadmodus und Richtungsmodus haben kein wpml-Tag.',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -2248,9 +2740,10 @@ if ($action === 'get_drone_profiles') {
     exit;
 }
 
-if ($feldId === '') {
-    $feldId = 'UNDEF';
+if ($feldId === '' || strcasecmp($feldId, 'UNDEF') === 0) {
+    $feldId = rkrk_catalog_feld_id_for_field($field);
 }
+$field['feld_id'] = $feldId;
 if (count($start) < 1 || count($poly) < 3) {
     fail_resp(422, 'invalid_field_geometry', 'Startplatz und Flaechendaten erforderlich');
 }
@@ -2261,10 +2754,6 @@ $meta = [
     'std_agl_m' => $stdAgl,
     'mission_settings' => $missionSettings,
 ];
-$missionPaths = resolve_mission_intern_paths();
-ensure_mission_intern_structure($missionPaths);
-$fieldMissionDir = ensure_field_mission_dir($missionPaths, $feldId);
-
 if ($action === 'compute_path') {
     $planned = compute_planned_mission_path($poly, $startPt, $missionSettings, $stdAgl, $manualPath, $payload);
     echo json_encode([
@@ -2277,6 +2766,10 @@ if ($action === 'compute_path') {
     exit;
 }
 
+$missionPaths = resolve_mission_intern_paths();
+ensure_mission_intern_structure($missionPaths);
+$fieldMissionDir = ensure_field_mission_dir($missionPaths, $feldId);
+
 if (count($manualPath) < 2 && ($action === 'export_dji_kmz' || $action === 'export_uav_json')) {
     $planned = compute_planned_mission_path($poly, $startPt, $missionSettings, $stdAgl, $manualPath, $payload);
     $manualPath = $planned['path'] ?? [];
@@ -2287,9 +2780,18 @@ if (count($manualPath) < 2) {
 }
 
 if ($action === 'export_uav_json') {
+    if ($feldId === '') {
+        fail_resp(422, 'missing_feld_id', 'Feldkatalognummer fehlt. Feld zuerst zuordnen oder speichern.');
+    }
+    $meta['feld_id'] = $feldId;
+    $meta['jg'] = trim((string)($field['jg'] ?? ''));
+    $meta['start_lonlat'] = $startPt;
+    $meta['terrain_delta_by_lonlat'] = is_array($field['terrain_delta_by_lonlat'] ?? null)
+        ? $field['terrain_delta_by_lonlat']
+        : [];
+    $meta['mission_name_parts'] = rkrk_mission_name_parts_from_field($field, $missionSettings);
     $uav = build_uav_json_payload($meta, $manualPath, $poly, $startPt);
-    $safe = sanitize_filename($feldId !== '' ? $feldId : 'UNDEF');
-    $jsonFile = $safe . '_uav_mission.json';
+    $jsonFile = $meta['mission_name_parts']['complete'] . '.json';
     $jsonPath = $fieldMissionDir . DIRECTORY_SEPARATOR . $jsonFile;
     @file_put_contents($jsonPath, json_encode($uav, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     echo json_encode([
@@ -2325,8 +2827,9 @@ if ($action === 'export_dji_kmz') {
         if (count($exportPath) < 2) {
             fail_resp(422, 'invalid_path', 'Kein Flugweg fuer KMZ (Feld + Startpunkt noetig).');
         }
-        $safe = sanitize_filename($feldId !== '' ? $feldId : 'UNDEF');
-        $base = $safe . '_' . date('Ymd_His');
+        $safeParts = rkrk_mission_name_parts_from_field($field, $kmzSettings);
+        $meta['mission_name_parts'] = $safeParts;
+        $base = $safeParts['complete'];
         $kmzPath = $exportDir . DIRECTORY_SEPARATOR . $base . '.kmz';
         $ctx = build_dji_pilot2_export_context($meta, $exportPath, $kmzSettings);
         if (empty($ctx['waypoints']) || count($ctx['waypoints']) < 2) {
@@ -2337,7 +2840,7 @@ if ($action === 'export_dji_kmz') {
         if (!pack_dji_pilot2_kmz_file($kmzPath, $templateKml, $waylinesWpml)) {
             fail_resp(500, 'kmz_open_failed', 'KMZ-Zip konnte nicht geschrieben werden: ' . $kmzPath);
         }
-        @file_put_contents($exportDir . DIRECTORY_SEPARATOR . $base . '_template.kml', $templateKml);
+        @file_put_contents($exportDir . DIRECTORY_SEPARATOR . $base . '.kml', $templateKml);
         @file_put_contents($exportDir . DIRECTORY_SEPARATOR . $base . '_waylines.wpml', $waylinesWpml);
         $kmzBytes = @file_get_contents($kmzPath);
         $kmzB64 = ($kmzBytes !== false && $kmzBytes !== '') ? base64_encode($kmzBytes) : null;
@@ -2347,7 +2850,7 @@ if ($action === 'export_dji_kmz') {
         echo json_encode([
             'ok' => true,
             'filename' => basename($kmzPath),
-            'template_filename' => $base . '_template.kml',
+            'template_filename' => $base . '.kml',
             'template_kml' => $templateKml,
             'stored_path' => $kmzPath,
             'download_url' => null,
@@ -2373,4 +2876,5 @@ if ($action === 'export_dji_kmz') {
 }
 
 fail_resp(422, 'unknown_action', 'Unbekannte action');
+}
 
