@@ -290,13 +290,11 @@ function editor_write_catalog_details(SimpleXMLElement $f, array $data, bool $is
     editor_put_text($f, 'SuchfeldBild', $data, 'suchfeld_bild', true);
     editor_put_text($f, 'FlugplanBild', $data, 'flugplan_bild', true);
     editor_put_text($f, 'KMLFile', $data, 'kml_file', true);
-    editor_put_text($f, 'KMZFile', $data, 'kmz_file', true);
     editor_put_text($f, 'LichtiFile', $data, 'lichti_file', true);
     if ($isCreate) {
+        editor_put_text($f, 'KMZFile', $data, 'kmz_file', true);
         $jason = trim((string)($data['jason_file'] ?? ''));
         ensure_child($f, 'JasonFile', $jason !== '' ? $jason : $missionFile);
-    } else {
-        editor_put_text($f, 'JasonFile', $data, 'jason_file', true);
     }
     if (array_key_exists('gemeinde', $data)) {
         ensure_child($f, 'Gemeinde', trim((string)$data['gemeinde']));
@@ -1760,6 +1758,59 @@ function editor_region_mission_dir(string $relDir): string
     return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $mission . '/' . $relDir);
 }
 
+function editor_archive_mission_file(string $path): bool
+{
+    if (!is_file($path)) {
+        return false;
+    }
+    $root = editor_mission_catalog_root();
+    $dir = $root . DIRECTORY_SEPARATOR . '_history' . DIRECTORY_SEPARATOR;
+    if (!is_dir($dir) && !@mkdir($dir, 0777, true) && !is_dir($dir)) {
+        return false;
+    }
+    $dest = $dir . date('YmdHis') . '_' . basename($path);
+    return @copy($path, $dest) && is_file($dest);
+}
+
+function editor_log_field_save(string $feldId, string $jsonRel, string $kmzRel): bool
+{
+    $page = 'rkrk_feld_editor.php';
+    $text = 'Feld ' . $feldId . ' gespeichert';
+    if (!function_exists('WriteToLog')) {
+        $gen = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'rkrk_gen.php';
+        if (is_file($gen)) {
+            ob_start();
+            include_once $gen;
+            ob_end_clean();
+        }
+    }
+    $logDir = editor_mission_catalog_root() . DIRECTORY_SEPARATOR . '_log' . DIRECTORY_SEPARATOR;
+    if (!is_dir($logDir) && !@mkdir($logDir, 0777, true) && !is_dir($logDir)) {
+        return false;
+    }
+    $logFile = $logDir . date('Ymd') . '_logfile.csv';
+    if (function_exists('WriteToLog')) {
+        $GLOBALS['logfilelocation'] = $logDir;
+        ob_start();
+        try {
+            WriteToLog('save', $page, $text, $jsonRel, $kmzRel, $feldId);
+        } catch (Throwable $e) {
+        }
+        ob_end_clean();
+    }
+    $tail = is_file($logFile) ? (string)@file_get_contents($logFile) : '';
+    if ($tail !== '' && str_contains($tail, $text . ';' . $jsonRel)) {
+        return true;
+    }
+    if (!is_file($logFile)) {
+        @file_put_contents($logFile, "Zeit;IP Adresse;Mac Address;Client;Device;User;Level;Typ;Seite;Text;Parameter;Text3;Text4\n");
+    }
+    $ip = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    $agent = str_replace(';', ',', (string)($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    $line = date('Y-m-d H:i:s') . ';' . $ip . ';;;' . $agent . ';;;save;' . $page . ';' . $text . ';' . $jsonRel . ';' . $kmzRel . ';' . $feldId . "\n";
+    return @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX) !== false;
+}
+
 function editor_write_mission_files(string $jg, string $feldId, string $name, string $height, array $poly, array $start, array $path, array $missionSettings = [], string $flugzeit = '0', string $distanz = '0', string $gis = ''): array
 {
     global $RegionSettings;
@@ -1851,13 +1902,14 @@ function editor_write_mission_files(string $jg, string $feldId, string $name, st
     if (!isset($payload['contributor']['notice'])) {
         $payload['contributor']['notice'] = '';
     }
-    $jsonWasThere = is_file($abs);
+    $kmzAbs = $absDir . DIRECTORY_SEPARATOR . $kmzName;
+    $historyJson = null;
+    $historyKmz = null;
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     if (!is_string($json) || file_put_contents($abs, $json) === false) {
         fail(500, 'mission_write_failed', 'Missionsdatei konnte nicht geschrieben werden: ' . $abs);
     }
     $kmzRel = '';
-    $kmzAbs = $absDir . DIRECTORY_SEPARATOR . $kmzName;
     $kmzError = '';
     try {
         if (!class_exists('ZipArchive') || !function_exists('pack_dji_pilot2_kmz_file') || !function_exists('build_dji_pilot2_export_context')) {
@@ -1873,6 +1925,9 @@ function editor_write_mission_files(string $jg, string $feldId, string $name, st
             $exportPath = (count($start) >= 2 && function_exists('ensure_start_point_first'))
                 ? ensure_start_point_first($path, $start, $agl)
                 : $path;
+            if (function_exists('realign_waypoint_overrides_to_path')) {
+                $kmzSettings = realign_waypoint_overrides_to_path($kmzSettings, $path, $exportPath);
+            }
             $ctx = build_dji_pilot2_export_context($meta, $exportPath, $kmzSettings);
             if (empty($ctx['waypoints']) || count($ctx['waypoints']) < 2) {
                 $kmzError = 'KMZ braucht mindestens 2 Wegpunkte.';
@@ -1901,6 +1956,10 @@ function editor_write_mission_files(string $jg, string $feldId, string $name, st
         'kmz_relative' => $kmzRel,
         'kmz_absolute' => $kmzRel !== '' ? $kmzAbs : '',
         'group_name' => $groupName,
+        'json_written' => is_file($abs) && filesize($abs) > 0,
+        'kmz_written' => $kmzRel !== '' && is_file($kmzAbs) && filesize($kmzAbs) > 0,
+        'history_json' => $historyJson,
+        'history_kmz' => $historyKmz,
     ];
 }
 
@@ -1926,7 +1985,15 @@ function editor_attach_mission_files(SimpleXMLElement $node, string $jg, string 
         if (!array_key_exists('kmz_params_active', $postedSettings)) {
             $postedSettings['kmz_params_active'] = true;
         }
+        $prevJson = trim(str_replace('\\', '/', (string)($node->JasonFile ?? '')));
+        $prevKmz = trim(str_replace('\\', '/', (string)($node->KMZFile ?? '')));
+        $historyJson = $prevJson !== '' ? editor_archive_mission_file(editor_catalog_file_abs($prevJson)) : null;
+        $historyKmz = $prevKmz !== '' ? editor_archive_mission_file(editor_catalog_file_abs($prevKmz)) : null;
         $mission = editor_write_mission_files($jg, $feldId, $name, $height, $poly, $start, $path, $postedSettings, $flugzeit, $distanz, $gis);
+        if (is_array($mission)) {
+            $mission['history_json'] = $historyJson;
+            $mission['history_kmz'] = $historyKmz;
+        }
         $missionFile = (string)($mission['relative'] ?? '');
         $kmzFile = (string)($mission['kmz_relative'] ?? '');
     }
@@ -1940,6 +2007,10 @@ function editor_attach_mission_files(SimpleXMLElement $node, string $jg, string 
         'mission' => $mission,
         'jason_file' => $missionFile,
         'kmz_file' => $kmzFile,
+        'json_written' => is_array($mission) && !empty($mission['json_written']),
+        'kmz_written' => is_array($mission) && !empty($mission['kmz_written']),
+        'history_json' => is_array($mission) ? ($mission['history_json'] ?? null) : null,
+        'history_kmz' => is_array($mission) ? ($mission['history_kmz'] ?? null) : null,
     ];
 }
 
@@ -3070,6 +3141,11 @@ if (!$saved) {
     fail(500, 'save_failed', $why !== '' ? ('Feldkatalog konnte nicht gespeichert werden: ' . $why) : 'Feldkatalog konnte nicht gespeichert werden');
 }
 
+$jsonWritten = is_array($mission ?? null) && !empty($mission['json_written']) && $missionFile !== '' && is_file((string)($mission['absolute'] ?? ''));
+$kmzWritten = is_array($mission ?? null) && !empty($mission['kmz_written']) && $kmzFile !== '' && is_file((string)($mission['kmz_absolute'] ?? ''));
+$logWritten = ($jsonWritten || $kmzWritten)
+    ? editor_log_field_save($feldId, $jsonWritten ? $missionFile : '', $kmzWritten ? $kmzFile : '')
+    : false;
 echo json_encode([
     'ok' => true,
     'mode' => $mode,
@@ -3077,6 +3153,12 @@ echo json_encode([
     'number' => $assignedNumber,
     'jg' => $jg,
     'jg_name' => editor_place_name($jg, 'Jgd'),
+    'aenderung' => $today,
+    'json_written' => $jsonWritten,
+    'kmz_written' => $kmzWritten,
+    'history_json' => is_array($mission ?? null) ? ($mission['history_json'] ?? null) : null,
+    'history_kmz' => is_array($mission ?? null) ? ($mission['history_kmz'] ?? null) : null,
+    'log_written' => $logWritten,
     'gemeinde' => $gemeinde,
     'gemeinde_name' => editor_place_name($gemeinde, 'Gde'),
     'jason_file' => $missionFile,

@@ -340,7 +340,14 @@
 		$links = CollectPilotFlightPlanLinks($data, $pilotCode, $date, $feldkatalog, "JasonFile");
 		$urls = array();
 		foreach ($links as $rel) {
-			$urls[] = $baseMissionPath . $rel;
+			$href = function_exists('rkrk_file_convert_download_href') ? rkrk_file_convert_download_href($rel) : '';
+			if ($href === '') {
+				$href = rkrk_json_flight_export_href($rel);
+			}
+			if ($href === '') {
+				$href = $baseMissionPath . $rel;
+			}
+			$urls[] = $href;
 		}
 		$jsonUrls = json_encode($urls, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		return "return StartPilotDownloads(" . $jsonUrls . ");";
@@ -523,4 +530,170 @@ function rkrk_einsatz_checklist_href($params) {
 		return "../" . $href;
 	}
 	return $href;
+}
+
+function rkrk_json_flight_export_href($rel) {
+	$rel = str_replace('\\', '/', trim((string)$rel));
+	if ($rel === '' || strpos($rel, '..') !== false || !preg_match('/\.json$/i', $rel)) {
+		return '';
+	}
+	global $RKRKMissionSelected;
+	$mdb = trim((string)($RKRKMissionSelected ?? ''));
+	$href = 'rkrk_json_flight_export.php?file=' . rawurlencode($rel);
+	if ($mdb !== '') {
+		$href .= '&MDB=' . rawurlencode($mdb);
+	}
+	return $href;
+}
+
+function rkrk_feld_id_from_mission_filename($rel) {
+	$base = basename(str_replace('\\', '/', (string)$rel));
+	$base = preg_replace('/\.(json|kmz)$/i', '', $base);
+	if (preg_match('/^([A-Za-z0-9]{1,6}-\d{1,4})(?:_|$)/', (string)$base, $match)) {
+		return $match[1];
+	}
+	if (function_exists('GetMeaningFilename')) {
+		$parts = GetMeaningFilename((string)$base);
+		$id = trim((string)($parts[0] ?? ''));
+		if ($id !== '') {
+			return $id;
+		}
+	}
+	return '';
+}
+
+function rkrk_flight_sightings_count($row) {
+	if (!is_array($row)) {
+		return 0;
+	}
+	$raw = trim((string)($row['Fund'] ?? ''));
+	if ($raw === '' || $raw === '0' || strcasecmp($raw, 'Nein') === 0) {
+		$raw = trim((string)($row['#Funde'] ?? ''));
+	}
+	if ($raw === '' || $raw === '0' || strcasecmp($raw, 'Nein') === 0) {
+		return 0;
+	}
+	if (is_numeric($raw)) {
+		return max(0, (int)round((float)$raw));
+	}
+	if (strcasecmp($raw, 'Ja') === 0) {
+		return 1;
+	}
+	return 0;
+}
+
+function rkrk_control_flight_date_utc($datum) {
+	$datum = trim((string)$datum);
+	if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datum)) {
+		return '';
+	}
+	try {
+		$local = new DateTime($datum . ' 00:00:00', new DateTimeZone('Europe/Zurich'));
+	} catch (Exception $e) {
+		return '';
+	}
+	$local->setTimezone(new DateTimeZone('UTC'));
+	return $local->format('Y-m-d\TH:i:s.000\Z');
+}
+
+function rkrk_control_flights_for_field($rows, $feldId) {
+	$feldId = trim((string)$feldId);
+	$flights = array();
+	if ($feldId === '' || !is_array($rows)) {
+		return $flights;
+	}
+	foreach ($rows as $row) {
+		if (!is_array($row) || trim((string)($row['Feld'] ?? '')) !== $feldId) {
+			continue;
+		}
+		$sightings = rkrk_flight_sightings_count($row);
+		if ($sightings < 1) {
+			continue;
+		}
+		$date = rkrk_control_flight_date_utc($row['Datum'] ?? '');
+		if ($date === '') {
+			continue;
+		}
+		$item = new stdClass();
+		$item->date = $date;
+		$item->notice = trim((string)($row['Bemerkung'] ?? ''));
+		$item->sightings = $sightings;
+		$item->isControllFlight = (strcasecmp(trim((string)($row['Kontrollflug'] ?? '')), 'Ja') === 0);
+		$item->additionalSightings = array();
+		$flights[] = $item;
+	}
+	usort($flights, function ($a, $b) {
+		return strcmp((string)$a->date, (string)$b->date);
+	});
+	return $flights;
+}
+
+function rkrk_load_flight_book_rows() {
+	global $csvDocLocation, $RKRKFlightsCSV, $csv_deliminator;
+	$rows = array();
+	$dir = rtrim(str_replace('\\', '/', (string)$csvDocLocation), '/') . '/';
+	$suffix = (string)($RKRKFlightsCSV ?? '_RKRKFluege.csv');
+	if ($dir === '/' || !is_dir($dir) || !function_exists('csv_to_array') || !function_exists('FormatFlugDataArray')) {
+		return $rows;
+	}
+	$names = scandir($dir);
+	if (!is_array($names)) {
+		return $rows;
+	}
+	$delimiter = (isset($csv_deliminator) && $csv_deliminator !== '') ? $csv_deliminator : ';';
+	foreach ($names as $name) {
+		if (!is_string($name) || !preg_match('/^\d{4}' . preg_quote($suffix, '/') . '$/', $name)) {
+			continue;
+		}
+		$loaded = csv_to_array($dir . $name, $delimiter);
+		if (!is_array($loaded)) {
+			continue;
+		}
+		$loaded = FormatFlugDataArray($loaded);
+		foreach ($loaded as $row) {
+			if (is_array($row)) {
+				$rows[] = $row;
+			}
+		}
+	}
+	return $rows;
+}
+
+function rkrk_json_apply_control_flights($json, $feldId, $rows = null) {
+	if (!is_object($json)) {
+		return;
+	}
+	if ($rows === null) {
+		$rows = rkrk_load_flight_book_rows();
+	}
+	$flights = rkrk_control_flights_for_field($rows, $feldId);
+	if (count($flights) > 0) {
+		$json->controlFlights = $flights;
+	}
+}
+
+function rkrk_json_ensure_mavic3t_drone_type($json) {
+	if (!is_object($json)) {
+		return;
+	}
+	if (!isset($json->missionSettings) || !is_object($json->missionSettings)) {
+		$json->missionSettings = new stdClass();
+	}
+	if (!isset($json->missionSettings->djiPilot2) || !is_object($json->missionSettings->djiPilot2)) {
+		$json->missionSettings->djiPilot2 = new stdClass();
+	}
+	$json->missionSettings->djiPilot2->droneType = 'mavic3T';
+	if (!isset($json->sortAndQueryHelper) || !is_object($json->sortAndQueryHelper)) {
+		$json->sortAndQueryHelper = new stdClass();
+	}
+	$json->sortAndQueryHelper->droneType = 'mavic3T';
+}
+
+function rkrk_json_encode_export($json) {
+	$flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+	if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+		$flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+	}
+	$encoded = json_encode($json, $flags);
+	return is_string($encoded) ? $encoded . "\n" : '';
 }

@@ -5,6 +5,7 @@
 window.RKRK_HELP_CATALOG = {
   pages: {
     editor: {
+      label: 'DESK',
       title: 'Feld-Editor',
       file: 'rkrk_feld_editor.php',
       summary: 'Feld anlegen oder laden, Flugparameter setzen, Trajektorie rechnen und KMZ/UAV exportieren.'
@@ -15,6 +16,7 @@ window.RKRK_HELP_CATALOG = {
       summary: 'Manuellen Flugpfad mit Algorithmus vergleichen, Abdeckung und Metriken pruefen, Pfadoptimierung steuern.'
     },
     rc: {
+      label: 'MOB',
       title: 'Feld-Editor RC',
       file: 'rkrk_feld_editor_rc.php',
       summary: 'Feldplanung auf der Fernsteuerung: Flaeche, Start, Flugpfad, 4 - Prüfen, Speichern, Daten. Gleicher Feldkatalog wie der grosse Editor.'
@@ -60,6 +62,16 @@ window.RKRK_HELP_CATALOG = {
         { name: 'Doppelklick', where: 'Punkt loeschen', required: false }
       ]
     },
+    'editor.waypoint': {
+      page: 'editor',
+      title: '4 - Prüfen',
+      use: 'Schritt 4 auf DESK. Die Nummer waehlt den Wegpunkt. Im einfachen Modus zeigt der Punkt Flughoehe, Geschwindigkeit, Wegpunkt-Typ, Gierrichtung und Neigungswinkel setzen. Die Schalter Route folgen sind verborgen. Weicht ein Wert von der Mission ab, gilt er nur fuer diesen Punkt.',
+      inputs: [
+        { name: 'Wegpunktnummer', where: 'Schritt 4, Nummernleiste', required: true },
+        { name: 'Flughoehe', where: 'Punktwert', required: true },
+        { name: 'Geschwindigkeit, Wegpunkt-Typ, Gierrichtung, Neigung', where: 'einfacher und Expertenmodus', required: false }
+      ]
+    },
     'editor.edit_path': {
       page: 'editor',
       title: 'Flugpfad bearbeiten',
@@ -95,7 +107,7 @@ window.RKRK_HELP_CATALOG = {
     'editor.coverage': {
       page: 'editor',
       title: 'Abdeckung & Anzeige',
-      use: 'Suchabdeckung und nicht abgedeckte Flaechen in der Routenoptimierung. Kleine Richtungswechsel bekommen einen aeusseren Kreisausschnitt, sobald die Luecke sichtbar ist.',
+      use: 'Suchabdeckung und nicht abgedeckte Flaechen. Neigung −90 oder nicht gesetzt: Streifen mittig auf der Route, Bodenbreite und Bodenlänge aus Flughöhe und Sichtfeld. Neigung ungleich −90: schräger Footprint in Gierrichtung, versetzt von der Route, blasser ab 150 m und Ende bei 320 m.',
       inputs: [
         { name: 'Suchabdeckung', where: 'Schritt 3 Flugpfad', required: true },
         { name: 'Nicht abgedeckte Flaechen', where: 'Schritt 3 Flugpfad, unter der Suchabdeckung', required: false },
@@ -162,7 +174,7 @@ window.RKRK_HELP_CATALOG = {
     'rc.route': {
       page: 'rc',
       title: '3 Flugpfad',
-      use: 'Die Route wird vom Server gerechnet. Suchabdeckung, Hoehe auf der Route, Anflug und Flugrichtung gehoeren zu diesem Schritt. Wegpunkte der Route lassen sich waehlen, verschieben, einfuegen und loeschen.',
+      use: 'Die Route wird vom Server gerechnet. Suchabdeckung, Hoehe auf der Route, Anflug und Flugrichtung gehoeren zu diesem Schritt. Neigung −90 zeichnet den Streifen auf der Route, eine andere Neigung den schrägen Footprint in Blickrichtung. Wegpunkte der Route lassen sich waehlen, verschieben, einfuegen und loeschen.',
       inputs: [
         { name: 'Umrandung und Start', where: 'Schritte 1 und 2', required: true },
         { name: 'Flughoehe', where: 'Hoehe plus und minus', required: true },
@@ -190,7 +202,7 @@ window.RKRK_HELP_CATALOG = {
     'rc.check': {
       page: 'rc',
       title: '6 Daten',
-      use: 'Zusaetzliche Feldkatalogdaten nach dem Speichern: Ort, Drohne, Hoehe, Wegpunkte, Distanz. Zeile: KMZ herunterladen, Abschliessen speichert dasselbe Feld nochmals und erneuert die Bilder, Fertig schliesst den Lauf. Zurueck heisst Abbrechen.',
+      use: 'Zusaetzliche Feldkatalogdaten nach dem Speichern: Ort, Drohne, Hoehe, Wegpunkte, Distanz. JSON herunterladen und KMZ herunterladen legen die Missionsdatei auf dieses Geraet. Abschliessen speichert dasselbe Feld nochmals und erneuert die Bilder, Fertig schliesst den Lauf. Zurueck heisst Abbrechen.',
       inputs: [
         { name: 'Gespeichertes Feld', where: 'nach Speichern', required: true }
       ]
@@ -366,7 +378,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.fielddata'],
       title: 'Aktuelles Feld speichern',
-      what: 'Schreibt Geometrie, Flugweg, GIS-Nummer und Stammdaten. Ohne GIS-Nummer wird nicht gespeichert und nicht exportiert. Ein neues Feld landet in der bestehenden Missionsstruktur des Jagdgebiets.',
+      what: 'Schreibt Geometrie, Flugweg, GIS-Nummer und Stammdaten und setzt das Aenderungsdatum. JSON und KMZ werden neu geschrieben. Die bisherige Datei kommt in die History, ein Logeintrag wird geschrieben. Die Meldung nennt beide Dateinamen und sagt, wenn eine Datei fehlt. Ohne GIS-Nummer wird nicht gespeichert und nicht exportiert. Ein neues Feld landet in der bestehenden Missionsstruktur des Jagdgebiets.',
       inputs: [
         { name: 'FeldID + Name', where: 'Felddaten-Box', required: true },
         { name: 'GIS-Nummer', where: 'Schritt 1 Flaeche, nach der Umrandung', required: true },
@@ -376,9 +388,13 @@ window.RKRK_HELP_CATALOG = {
     {
       id: 'editor.mission',
       pages: ['editor'],
-      views: ['editor.mission', 'editor.waypoint'],
+      views: ['editor.mission', 'editor.edit_path'],
       title: 'Missions- / KMZ-Parameter',
-      what: 'Flughoehe, Hoehenmodus und sichere Starthoehe stehen in Schritt 1 Flaeche. Die Flugrichtung ist im Flugpfad ein Regler: Vorschlag oder ein fester Winkel, Zurueck zum Vorschlag setzt wieder automatisch. Die uebrigen Missionswerte (Speed, Ueberlappung, Rand, Endaktion, Gier, Wegpunkttyp) stehen im Expertenmodus unter Flugroute in Schritt 4 Wegpunkt. Wenn KMZ-Parameter inaktiv sind, gelten DJI-Referenz-Defaults. Einfacher Modus gilt gleich auf DESK und MOB, nur die Oberflaeche unterscheidet sich. Standardparameter Einfacher Modus: Direkt zum Startpunkt fliegen: Nein. Geschwindigkeit: 4.5 m/s. Endaktion: Aufgabe beenden. Gierrichtung des Fluggeraetes: Richtung zum naechsten Wegpunkt. Wegpunkt Typ: Koordinierte Drehung, Ueberspringt den Wegpunkt. Standard-Wendedistanz: 5 m. Sichere Startflughoehe: 20 m. Startgeschwindigkeit aktiv: Nein. Gimbalsteuerung: Manuell. Flughoehenmodus: ALT (Relativ zum Startpunkt). Gierrichtung: Richtung zum naechsten Wegpunkt zeichnet ein Dreieck, breite Basis in Flugrichtung zum naechsten Wegpunkt, Spitze auf dem Punkt. Manuell ohne Dreieck. Definiert zeichnet das Dreieck entlang des Richtungs-Winkels, der Winkel bleibt sichtbar und ist bei useMissionYawDirection gesperrt. Fokus POI ist nicht unterstuetzt und zeichnet kein Dreieck. Schenkachse sperren zeichnet kein Dreieck, sondern ein rotes X. useMissionYawDirection entspricht wpml:useGlobalHeadingParam, wpml:waypointHeadingMode ist nur der Giermodus. Mit ?DEBUG zeigt das DESK-Expertenformular unter dem Label in 7px den verknuepften JSON/KMZ-Namen, und der KMZ-Export liefert zusaetzlich die ungezippte template-KML unter dem KMZ-Dateinamen mit Endung .kml.',
+      what: 'Gemeinsame Vorgaben im einfachen Modus, solange das Feld keine lokalen Abweichungen speichert: Direkt zum Startpunkt fliegen Nein, Geschwindigkeit 4.5 m/s, Endaktion Aufgabe beenden, Gierrichtung Richtung zum naechsten Wegpunkt, Wegpunkttyp Koordinierte Drehung ueberspringt den Wegpunkt, Wendedistanz 5 m, sichere Startflughoehe 20 m, Startgeschwindigkeit aus, Neigung −90 und nicht gesetzt, Hoehenmodus ALT relativ zum Startpunkt. DESK Schritt 3 zeigt dabei Suchabdeckung, nicht abgedeckte Flaechen, Hoehenanzeige, Anflug, Geschwindigkeit, Startgeschwindigkeit aus und gesperrt, Missionshoehe und Flugrichtung. Endaktion, Gierrichtung der Mission, Wegpunkttyp, Wendedistanz, Gimbalsteuerung, Randfaktor und FOV stehen im Reiter Flugroute und bleiben im einfachen Modus verborgen. Sichere Startflughoehe und Hoehenmodus haengen in Schritt 1, Direkt zur Startposition in Schritt 2. MOB Schritt Flugpfad zeigt Suchabdeckung, Hoehe auf der Route, Abweichung von der Sollflughoehe, Anflug, Geschwindigkeit, Startgeschwindigkeit, Missionshoehe und Flugrichtung. Die Startgeschwindigkeit ist im einfachen Modus gesperrt. Expertenmodus gibt diese Missionsfelder frei und schaltet die Startgeschwindigkeit frei. Neigung ungleich −90 schreibt den Winkel an den Wegpunkt. −90 bleibt der Standard und schreibt in der KMZ keinen Winkel. Gierrichtung Definiert braucht den Richtungs-Winkel. Fokus POI braucht einen POI. Schwenkachse sperren haelt die Nase fest. Flugrichtung im Flugpfad: Vorschlag oder fester Winkel. Mit ?DEBUG steht unter dem Label der JSON- und KMZ-Name.',
+      images: [
+        { src: 'help/einfach-desk-flugpfad.png', alt: 'DESK einfacher Modus, Schritt Flugpfad', caption: 'DESK, einfacher Modus, Schritt Flugpfad: Geschwindigkeit 4.5 m/s, Startgeschwindigkeit aus.' },
+        { src: 'help/experte-mob-flugpfad.png', alt: 'MOB Expertenmodus, Schritt Flugpfad', caption: 'MOB, Expertenmodus, Schritt Flugpfad. Die Startgeschwindigkeit bleibt aus, bis der Schalter an ist.' }
+      ],
       inputs: [
         { name: 'Drohnentyp und Flughoehe', where: 'Schritt 1 Flaeche', required: true },
         { name: 'Flugrichtung', where: 'Schritt 3 Flugpfad, Regler oder Vorschlag', required: false },
@@ -388,24 +404,48 @@ window.RKRK_HELP_CATALOG = {
     {
       id: 'editor.waypoint',
       pages: ['editor'],
-      views: ['editor.waypoint', 'editor.edit_path'],
+      views: ['editor.waypoint'],
       title: 'Wegpunktparameter',
-      what: 'Schritt 5 im Menue. Die Nummer waehlt den Wegpunkt. Einfacher Modus: nur die Flughoehe dieses Punkts. Expertenmodus: alle Punktwerte, dazu Vorheriger, Naechster und Alle Wegpunkte. Punkt speichern uebernimmt die Werte dieses Punkts, Abbrechen setzt sie auf den Stand beim Oeffnen zurueck, Loeschen entfernt den Punkt. Route folgen uebernimmt Hoehe, Speed, Wegpunkttyp und Gier aus der Mission.',
+      what: 'Schritt 4. Die Nummer waehlt den Wegpunkt. DESK im einfachen Modus zeigt am Punkt Flughoehe, Geschwindigkeit, Wegpunkt-Typ, Gierrichtung und Neigungswinkel setzen. Die Schalter Route folgen sind dort verborgen. Weicht ein Wert von der Mission ab, gilt er nur fuer diesen Punkt. MOB im einfachen Modus zeigt nur die Flughoehe dieses Punkts, plus und minus. Hat das Feld schon lokale Abweichungen, bleibt MOB im Expertenmodus. DESK im Expertenmodus zeigt dazu Latitude, Longitude, Verwende Missions-Hoehe, Verwende Missions-Geschwindigkeit, Route folgen, Wegpunkt-Typ, Wendedistanz bei koordinierter Drehung, Route folgen (Gierrichtung), Gierrichtung, Ausrichtung des Fluggeraets, Richtungs-Winkel bei Definiert oder Schwenkachse sperren, Neigungswinkel setzen und Neigung von −90 bis 30. POI-Knoepfe nur bei Fokus POI. Pfadmodus und Route folgen (Richtungsmodus) nur mit ?DEBUG. MOB im Expertenmodus zeigt dieselben Punktwerte ohne Latitude, Longitude und ohne eigene Wendedistanz: Verwende Missions-Hoehe, Hoehe, Verwende Missions-Geschwindigkeit, Geschwindigkeit, Route folgen (Wegpunkt-Typ), Wegpunkt-Typ, Route folgen (Gierrichtung), Gierrichtung, Winkel bei Definiert oder Schwenkachse, Ausrichtung, Neigungswinkel setzen und Neigung −90 bis 30. Route folgen uebernimmt den Missionswert und graut das Feld aus. Vorheriger, Naechster und Alle Wegpunkte. Punkt speichern uebernimmt die Werte, Abbrechen setzt den Stand beim Oeffnen zurueck, Loeschen entfernt den Punkt.',
+      images: [
+        { src: 'help/einfach-desk-wegpunkt.png', alt: 'DESK einfacher Modus am Wegpunkt', caption: 'DESK, einfacher Modus: Hoehe, Geschwindigkeit, Wegpunkt-Typ, Gierrichtung und Neigung, ohne Route folgen.' },
+        { src: 'help/experte-desk-wegpunkt.png', alt: 'DESK Expertenmodus, oberer Teil', caption: 'DESK, Expertenmodus: Koordinaten und Route folgen fuer Hoehe, Geschwindigkeit und Wegpunkt-Typ.' },
+        { src: 'help/experte-desk-neigung.png', alt: 'DESK Expertenmodus, Gierrichtung und Neigung', caption: 'DESK, Expertenmodus: Gierrichtung, Ausrichtung, Neigungswinkel setzen. Pfadmodus und Richtungsmodus nur mit ?DEBUG.' }
+      ],
       inputs: [
-        { name: 'Wegpunktnummer', where: 'Schritt 5, Nummernleiste', required: true },
-        { name: 'Flughoehe', where: 'Einfacher Modus, nur dieser Punkt', required: true },
-        { name: 'Weitere Punktwerte', where: 'Expertenmodus', required: false },
+        { name: 'Wegpunktnummer', where: 'Schritt 4, Nummernleiste', required: true },
+        { name: 'Flughoehe', where: 'Einfacher Modus', required: true },
+        { name: 'Geschwindigkeit, Wegpunkt-Typ, Gierrichtung, Neigung', where: 'auch im einfachen Modus', required: false },
         { name: 'Punkt speichern', where: 'unter dem Formular', required: true }
       ]
     },
     {
       id: 'editor.display',
       pages: ['editor'],
-      views: ['editor.coverage', 'editor.edit_path'],
+      views: ['editor.coverage', 'editor.edit_path', 'editor.waypoint', 'editor.mission'],
       title: 'Anzeigekontrolle',
-      what: 'Nur mit ADMIN in der Adresse. Im Feld-Editor gibt es einen Flugpfad. Suchabdeckung und nicht abgedeckte Flaechen schaltet Schritt 4; eine eigene Ueberlappung gibt es dort nicht. Hoehen liegen auf der Route oder im Feld. In der Anzeigekontrolle bleiben Ueberlappung, Korrekturpunkte und Wendekurven zusaetzlich schaltbar.',
+      what: 'Wegpunkt blau (#2f6dff): Hoehe, Geschwindigkeit, Wegpunkttyp und Gierrichtung folgen der Mission, und die Neigung ist −90 oder nicht gesetzt. Wegpunkt orange (#ff8c00): lokale Abweichung bei Hoehe, Geschwindigkeit, Wegpunkttyp oder Gierrichtung, oder ein gesetzter Neigungswinkel ungleich −90. Der gewaehlte Wegpunkt ist gelb (#f5d90a), auch wenn er sonst orange waere. −90 zeigt keine Gradzahl, der Punkt bleibt blau, sofern keine andere Abweichung vorliegt. Eine spezifische Neigung steht klein in Grad neben der Flughoehe. Die Zahl ueber dem Punkt ist die Wegpunktnummer. Darunter steht die programmierte Flughoehe, in Klammern die Hoehe ab Startpunkt. Gierrichtung: Dreieck entlang des naechsten Abschnitts, bei Definiert entlang des Winkels, bei Fokus POI zum POI. Manuell ohne Dreieck. Schwenkachse sperren ist ein rotes X. Der POI ist ein eigener markierter Punkt mit Beschriftung. Suchabdeckung bei Neigung −90 oder nicht gesetzt: hellblauer Streifen mittig auf der Route. Bodenbreite und Bodenlänge kommen aus Flughöhe und Sichtfeld. Die Nase entlang der Bahn nimmt die halbe Bodenbreite, quer zur Bahn die halbe Bodenlänge. Start und Ende haben eine Kappe, eine Kurve einen äusseren Kreisausschnitt. Neigung ungleich −90 zeichnet den schrägen Footprint in Gierrichtung, versetzt von der Route. Ab 150 m Bodenabstand wird er blasser und endet bei 320 m. Punkte mit −90 behalten den einfachen Streifen. Nicht abgedeckte Flaechen, nur DESK, sind das Raster im Feld ausserhalb des Streifens. Wendekurven anzeigen zeichnet bei Koordinierte Drehung eine graue Kurve: sie verlaesst den ankommenden Abschnitt um die Wendedistanz vor dem Punkt und trifft den abgehenden Abschnitt dieselbe Distanz danach. MOB zeichnet dieselbe graue Kurve auf der Route, ohne eigenen Schalter. Neben dem Massstab stehen A− und A+. Sie aendern die Schrift der Wegpunktnummer, der Hoehe, der Gradzahl und der Klammerhoehe. Abweichung von der Sollflughoehe setzt einen roten Punkt (#e10600), wo die Hoehe ueber Grund um mehr als die Toleranz abweicht, Vorgabe ±10 m.',
+      images: [
+        { src: 'help/farbcodierung-desk.png', alt: 'DESK Karte mit orangen Wegpunkten, blauer Route und roten Hoehenpunkten', caption: 'DESK, TF-053: orange Wegpunkte mit Abweichung, blaue Route, hellblaue Suchabdeckung, rote Punkte der Hoehenabweichung. Gelb (#f5d90a) ist der gewaehlte Wegpunkt; in diesem Ausschnitt liegt die gelbe Marke am Start.' },
+        { src: 'help/farbcodierung-mob-blau.png', alt: 'Blaue Wegpunkte und gelber gewaehlter Punkt', caption: 'MOB, Feld ohne Abweichung: Wegpunkte blau, der gewaehlte Punkt gelb. Kleine blaue Kreuze markieren die Abschnittsrichtung.' }
+      ],
       inputs: [
-        { name: 'Flugpfad', where: 'Anzeigekontrolle, nur ADMIN', required: true }
+        { name: 'Suchabdeckung', where: 'Schritt 3 Flugpfad und Anzeigekontrolle', required: false },
+        { name: 'Wendekurven anzeigen', where: 'Anzeigekontrolle, Kontrollpunkte', required: false },
+        { name: 'A− / A+', where: 'neben dem Massstab', required: false },
+        { name: 'Hoehen auf der Route', where: 'Anzeigekontrolle', required: false }
+      ]
+    },
+    {
+      id: 'coverage.calc',
+      pages: ['editor', 'rc'],
+      views: ['editor.coverage', 'editor.edit_path', 'editor.waypoint', 'rc.route', 'rc.wp', 'rc.field'],
+      title: 'Suchabdeckung berechnen',
+      what: 'Zwei Rechnungen, je nach Neigung. Einfach, Neigung −90 oder nicht gesetzt: Die Kamera blickt senkrecht nach unten. Die Bodenbreite ist zweimal die Flughöhe mal dem Tangens des halben horizontalen Sichtfelds. Die Bodenlänge in Blickrichtung ist dieselbe Rechnung mit dem vertikalen Sichtfeld. Der hellblaue Streifen liegt mittig auf der Route. Zeigt die Nase entlang der Bahn, ist die halbe Streifenbreite die halbe Bodenbreite. Zeigt die Nase quer zur Bahn, ist sie die halbe Bodenlänge. Dazwischen werden beide Anteile gemischt. Start und Ende erhalten eine Kappe um diese halbe Länge in Blickrichtung. An einem Richtungswechsel füllt ein Kreisausschnitt die äussere Lücke. Komplex, gesetzte Neigung ungleich −90: Die Kamera blickt schräg in Gierrichtung. Der Winkel aus dem Lot ist die Neigung plus 90 Grad. Der nahe und der ferne Bildrand liegen bei Flughöhe mal Tangens aus diesem Winkel, minus und plus dem halben vertikalen Sichtfeld. Ein Strahl, der den Horizont erreicht oder darüber liegt, hat keinen Bodenpunkt. Die Breite an einem Abstand ist die Schrägentfernung mal Tangens des halben horizontalen Sichtfelds. Die Schrägentfernung ist die Wurzel aus dem Quadrat der Flughöhe plus dem Quadrat des Bodenabstands. Der Streifen sitzt in Blickrichtung vor der Drohne und folgt der Bahn versetzt. Ab 150 m Bodenabstand wird er blasser und endet bei 320 m. Wegpunkte mit −90 auf derselben Route behalten den einfachen Streifen.',
+      inputs: [
+        { name: 'Neigung −90', where: 'einfacher Streifen auf der Route', required: false },
+        { name: 'Neigung ungleich −90', where: 'schräger Footprint in Gierrichtung, −90 bis 30', required: false },
+        { name: 'Flughöhe und Sichtfeld', where: 'Drohnentyp und programmierte Höhe', required: true }
       ]
     },
     {
@@ -431,7 +471,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.export'],
       title: 'DJI KMZ exportieren',
-      what: 'Pilot-2-KMZ (template.kml + waylines.wpml). Nutzt interne DJI-Spezifikation fuer Enums. Route folgen am Punkt setzt useGlobalHeight/Speed/Heading/Turn; sonst die gespeicherten Punktwerte.',
+      what: 'Pilot-2-KMZ (template.kml + waylines.wpml). Beim Oeffnen liest der Editor den Neigungswinkel aus template.kml: nur ein Winkel ungleich -90 ist spezifisch. Definiert ist smoothTransition mit Winkel, Fokus POI ist towardPOI. Ein Platzhalter-POI 0,0,0 setzt keinen Fokus. Nutzt interne DJI-Spezifikation fuer Enums. Route folgen am Punkt setzt useGlobalHeight/Speed/Heading/Turn; sonst die gespeicherten Punktwerte.',
       inputs: [
         { name: 'FeldID, Start, Flaeche, Flugweg', where: 'Felddaten', required: true },
         { name: 'Missions-Einstellungen', where: 'KMZ-Parameter', required: true }
@@ -582,9 +622,12 @@ window.RKRK_HELP_CATALOG = {
     {
       id: 'rc.coverage',
       pages: ['rc'],
-      views: ['rc.route'],
+      views: ['rc.route', 'rc.wp', 'rc.field'],
       title: 'Suchabdeckung und Hoehe auf der Route',
-      what: 'Suchabdeckung zeichnet den Streifen zur aktuellen Flughoehe. Hoehe auf der Route zeigt an jedem Punkt die Hoehe ab Startpunkt.',
+      what: 'Suchabdeckung bei Neigung −90 oder nicht gesetzt: hellblauer Streifen zur programmierten Flughoehe, mittig auf der Route, mit Kappe an Start und Ende und Kreisausschnitt an der Kurve. Neigung ungleich −90 zeichnet den schrägen Footprint in Gierrichtung, versetzt von der Route, blasser ab 150 m und Ende bei 320 m. Punkte mit −90 behalten den einfachen Streifen. Die Zahl unter dem Punkt ist die programmierte Hoehe, in Klammern die Hoehe ab Startpunkt. Ein Neigungswinkel ungleich −90 steht klein daneben in Grad und faerbt den Punkt orange. Der gewaehlte Punkt bleibt gelb. MOB hat keinen Schalter fuer nicht abgedeckte Flaechen. Die Wendekurve bei Koordinierte Drehung ist grau und folgt der Wendedistanz. A− und A+ im Menue Anzeige aendern dieselbe Beschriftung.',
+      images: [
+        { src: 'help/farbcodierung-mob.png', alt: 'MOB Karte mit orangen Wegpunkten, gelbem Punkt, POI und Gradzahlen', caption: 'MOB, TF-065: orange bei Abweichung oder Neigung ungleich −90, gelb der gewaehlte Punkt, POI beschriftet, kleine Gradzahl neben der Hoehe, hellblaue Suchabdeckung.' }
+      ],
       inputs: [
         { name: 'Suchabdeckung', where: 'Schritt Flugpfad', required: false },
         { name: 'Hoehe auf der Route', where: 'Schritt Flugpfad', required: false }
@@ -606,10 +649,15 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.wp'],
       title: 'Wegpunkthoehe',
-      what: 'Punkt zurueck und vor waehlt den Wegpunkt. Hoehe plus und minus aendert nur diesen Punkt. Die Hoehe ist immer die Differenz zum Startpunkt, Flughoehenmodus ALT, auch wenn die Missionshoehe verwendet wird.',
+      what: 'Punkt zurueck und vor waehlt den Wegpunkt. Die Hoehe ist die Differenz zum Startpunkt, Flughoehenmodus ALT. Einfacher Modus zeigt nur die Flughoehe dieses Punkts. Expertenmodus zeigt Verwende Missions-Hoehe, Hoehe, Verwende Missions-Geschwindigkeit, Geschwindigkeit, Route folgen (Wegpunkt-Typ), Wegpunkt-Typ, Route folgen (Gierrichtung), Gierrichtung, den Richtungs-Winkel bei Definiert oder Schwenkachse sperren, Ausrichtung, Neigungswinkel setzen und Neigung −90 bis 30. POI-Knoepfe nur bei Fokus POI. Keine eigene Wendedistanz und keine Koordinaten. Pfadmodus und Route folgen (Richtungsmodus) nur mit ?DEBUG. Route folgen graut das Feld aus. Neigung ungleich −90 steht an der Flughoehe und faerbt den Punkt orange. Liegen schon lokale Abweichungen vor, bleibt der Expertenmodus an.',
+      images: [
+        { src: 'help/einfach-mob.png', alt: 'MOB einfacher Modus, nur Flughoehe', caption: 'MOB, einfacher Modus, Schritt Prüfen: nur die Flughoehe dieses Punkts.' },
+        { src: 'help/experte-mob-wegpunkt.png', alt: 'MOB Expertenmodus am Wegpunkt', caption: 'MOB, Expertenmodus: Route folgen fuer Hoehe, Geschwindigkeit, Wegpunkt-Typ und Gierrichtung, dazu Ausrichtung und Neigung.' }
+      ],
       inputs: [
         { name: 'Wegpunkt', where: 'Schritt Wegpunkt', required: true },
-        { name: 'Flughoehe', where: '20 bis 120 m, nur dieser Punkt', required: true }
+        { name: 'Flughoehe', where: '20 bis 120 m, nur dieser Punkt', required: true },
+        { name: 'Neigungswinkel setzen', where: 'Expertenmodus, −90 bis 30', required: false }
       ]
     },
     {
@@ -617,7 +665,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.name'],
       title: 'Feld speichern',
-      what: 'Speichern legt ein neues Katalogfeld an oder, nach Ueberarbeiten, schreibt das geladene Feld fort. Ein neues Feld bekommt die Freigabe NEU. Ohne Jagdgebiet oder Gemeinde muss das vorher bestaetigt werden. Die Missionsdatei und die Bilder folgen, sobald das Jagdgebiet bekannt ist.',
+      what: 'JSON & KMZ speichern schreibt das geaenderte Feld in den Katalog, setzt das Aenderungsdatum und erneuert beide Missionsdateien. Die Meldung nennt JSON und KMZ einzeln, ob sie geschrieben wurden, ob die Vorversion in der History liegt und ob der Logeintrag geschrieben wurde. Fehlt eine Datei, steht das in der Meldung. Der Knopf steht ab dem Flugpfad, auch vor dem Schritt Speichern. JSON herunterladen und KMZ herunterladen legen nur die Datei auf dieses Geraet. Ein neues Feld bekommt die Freigabe NEU. Ohne Jagdgebiet oder Gemeinde muss das vorher bestaetigt werden.',
       inputs: [
         { name: 'Feldname', where: 'Schritt Speichern', required: true },
         { name: 'Route', where: 'Schritt Flugpfad', required: true }
@@ -644,7 +692,10 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.field', 'rc.ring', 'rc.start', 'rc.route', 'rc.wp', 'rc.check'],
       title: 'Anzeige',
-      what: 'Feld einpassen, Satellit oder Karte, Relief, Route, RPAS, Strom, Hindernisse, DABS und Flugzone. Die linke Leiste laesst sich einklappen und in der Breite ziehen.',
+      what: 'Feld einpassen, Satellit oder Karte, Relief, Route, Suchabdeckung, Hoehe auf der Route, Abweichung von der Sollflughoehe, RPAS, Strom, Hindernisse, DABS und Flugzone. Farbcodierung wie auf DESK: blau folgt der Mission, orange ist eine lokale Abweichung oder eine Neigung ungleich −90, gelb ist der gewaehlte Punkt. −90 ohne andere Abweichung bleibt blau und ohne Gradzahl. Gierrichtung als Dreieck, Manuell ohne Dreieck, Schwenkachse sperren als rotes X. Ein POI ist ein eigener Punkt mit Beschriftung. Der rote Punkt markiert die Abweichung der Hoehe ueber Grund. Die Suchabdeckung ist bei Neigung −90 der hellblaue Streifen auf der Route und bei anderer Neigung der versetzte Footprint in Blickrichtung. Bei Koordinierte Drehung liegt eine graue Wendekurve um die Wendedistanz. A− und A+ im Menue Anzeige aendern die Wegpunktbeschriftung. Die linke Leiste laesst sich einklappen und in der Breite ziehen.',
+      images: [
+        { src: 'help/farbcodierung-mob.png', alt: 'Farbcodierung auf der MOB-Karte', caption: 'MOB, TF-065: blaue Route, orange Wegpunkte, gelber gewaehlter Punkt, POI, Gradzahl, hellblaue Suchabdeckung.' }
+      ],
       inputs: [{ name: 'Anzeige', where: 'Knopf unten rechts', required: false }]
     },
     {

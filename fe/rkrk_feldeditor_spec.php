@@ -58,17 +58,17 @@ $mapllBrand = mapll_favicon_brand();
         <tr>
           <td>Definiert. Der Winkel (<code>direction</code>) ist die Nase. <code>null</code> bleibt <code>null</code> und ist nicht 0.</td>
           <td><code>customised</code></td>
-          <td><code>smoothTransition</code>, Winkel nur wenn gesetzt</td>
+          <td><code>smoothTransition</code>. In <code>waylines.wpml</code> steht <code>waypointHeadingAngleEnable</code> auf <code>1</code> und <code>waypointHeadingAngle</code> auf dem Winkel.</td>
         </tr>
         <tr>
           <td>Schwenkachse sperren. Rotes X, Winkel gesperrt.</td>
           <td><code>fixed</code></td>
-          <td><code>fixed</code>, ohne Winkel</td>
+          <td><code>fixed</code>. Winkel <code>0</code>, <code>waypointHeadingAngleEnable</code> <code>0</code>.</td>
         </tr>
         <tr>
-          <td>Fokus POI. Nase zum markierten POI.</td>
+          <td>Fokus POI. Nase zum markierten POI. Das ist nicht <code>smoothTransition</code>.</td>
           <td><code>smoothTransition</code></td>
-          <td><code>towardPOI</code> plus <code>waypointPoiPoint</code>. Ohne POI <code>followWayline</code>.</td>
+          <td><code>towardPOI</code>. Ohne POI <code>followWayline</code>. Winkel <code>0</code>, <code>waypointHeadingAngleEnable</code> <code>0</code>.</td>
         </tr>
         <tr>
           <td>Manuell</td>
@@ -77,14 +77,22 @@ $mapllBrand = mapll_favicon_brand();
         </tr>
       </tbody>
     </table>
-    <p>«Neigungswinkel setzen» an schreibt den Reglerwert ins JSON (<code>gimbalControl</code> <code>setEachWaypoint</code>, <code>gimbalAngle</code> an jedem Wegpunkt) und in die <code>template.kml</code> der KMZ (<code>gimbalPitchMode</code> <code>usePointSetting</code>, <code>gimbalPitchAngle</code>). Aus: JSON <code>manuel</code> und <code>gimbalAngle</code> −90, in der KMZ kein <code>gimbalPitchAngle</code>, <code>gimbalPitchMode</code> <code>manual</code>. Der Schalter rechnet den Flugpfad nicht neu. Speichern schreibt keine zweite KML-Datei. Die KML ist die <code>template.kml</code> in der KMZ.</p>
+    <p>Definiert und Fokus POI sind in der KMZ nicht dasselbe. Definiert ist <code>smoothTransition</code>. Fokus POI ist <code>towardPOI</code>. Die Fernsteuerung schreibt <code>waypointPoiPoint</code> an jedem Wegpunkt, auch bei Definiert. Das ist kein Fokus POI. Fokus POI gilt nur bei <code>waypointHeadingMode</code> <code>towardPOI</code>.</p>
+    <p>Lokaler Heading-Block in <code>template.kml</code> und <code>waylines.wpml</code>: <code>waypointHeadingMode</code>, <code>waypointHeadingAngle</code>, <code>waypointPoiPoint</code>, <code>waypointHeadingPathMode</code>, <code>waypointHeadingPoiIndex</code> <code>0</code>. <code>useGlobalHeadingParam</code> steht daneben, nicht im Block. <code>1</code> lässt den Block weg. Ein lokaler Punkt schreibt das Flag nicht als <code>0</code> in den Block. Die Drehrichtung steht in <code>waypointHeadingPathMode</code> (<code>followBadArc</code>, <code>clockwise</code>, <code>counterClockwise</code>). In <code>waylines.wpml</code> steht zusätzlich <code>waypointHeadingAngleEnable</code>: <code>1</code> nur bei Definiert mit gesetztem Winkel, sonst <code>0</code> und Winkel <code>0</code>.</p>
+    <p>Neigungswinkel. Standard −90 ist nicht spezifisch. JSON: <code>gimbalControl</code> <code>manuel</code>, an jedem Wegpunkt <code>gimbalAngle</code> −90. KMZ: <code>gimbalPitchMode</code> <code>manual</code>, in <code>template.kml</code> kein <code>gimbalPitchAngle</code>. In <code>waylines.wpml</code> steht <code>waypointGimbalHeadingParam</code> mit <code>waypointGimbalPitchAngle</code> <code>0</code> und <code>waypointGimbalYawAngle</code> <code>0</code>.</p>
+    <p>«Neigungswinkel setzen» und ein Wert ungleich −90 ist spezifisch. JSON: <code>gimbalControl</code> <code>setEachWaypoint</code>, <code>gimbalAngle</code> der gesetzte Wert (−90 bis 30). KMZ: <code>gimbalPitchMode</code> <code>usePointSetting</code>, <code>gimbalPitchAngle</code> am Wegpunkt in <code>template.kml</code>, in <code>waylines.wpml</code> derselbe Wert als <code>waypointGimbalPitchAngle</code>. Der Schalter rechnet den Flugpfad nicht neu. An der Flughöhe des Wegpunkts steht dann eine kleine Gradzahl, zum Beispiel <code>55</code> und daneben <code>−45°</code>. Der Wegpunkt ist orange, wie bei einer Abweichung von den Missionsdaten. Der gewählte Punkt bleibt gelb. Beim Standard −90 steht nur die Höhe und der Punkt bleibt blau. Speichern schreibt keine zweite KML-Datei. Die KML ist die <code>template.kml</code> in der KMZ.</p>
     <p>JSON und KMZ liegen direkt im Gebietsordner, zum Beispiel <code>TF_Testfelder/datei.json</code> und <code>datei.kmz</code>, ohne Unterordner der Katalognummer.</p>
+
+    <h2>Suchabdeckung</h2>
+    <p>Nur die Karte. <span class="none">kein KMZ-Tag</span>. Der Flugpfad wird dabei nicht neu gerechnet. Die Höhe <code>h</code> ist die programmierte Flughöhe des Punkts. <code>HFOV</code> und <code>VFOV</code> kommen vom Drohnentyp.</p>
+    <p>Einfach, Neigung −90 oder nicht gesetzt. Die Kamera blickt senkrecht nach unten. Bodenbreite W = 2 · h · tan(HFOV / 2). Bodenlänge = 2 · h · tan(VFOV / 2). Der hellblaue Streifen liegt mittig auf der Route. Dieselbe Überlappung wie bei der grünen Strecke S: S = (1 − Überlappung) · W. Der Faktor heisst im Code <code>spacingM / widthM</code> und ist (1 − Überlappung). Die Überlappung ist der Missionswert, Standard 15 %, der Faktor also 0.85. Standard der gezeichneten Suchabdeckung ist S, vorwärts und seitwärts, nach der Wahl der Kante. W ist das volle Kamerafenster. Mit <code>DEBUG</code> steht in der Anzeigekontrolle unter Abdeckung die Wahl Kamerasicht (W) oder Suchabdeckung (S). Ohne DEBUG und ohne gespeicherten Wert gilt S. Bei Missionshöhe und Nase entlang der Bahn ist die Streifenbreite gleich S. Ist die Gierrichtung nicht «Richtung zum nächsten Wegpunkt» und zeigt die Nase quer zur Bahn, ist die Streifenbreite die Bodenlänge mal denselben Faktor. «Richtung zum nächsten Wegpunkt» bleibt bei der Bodenbreite mal dem Faktor. Dazwischen werden beide Anteile gemischt. Start und Ende erhalten eine Kappe um die halbe skalierte Länge in Blickrichtung. An einem Richtungswechsel füllt ein Kreisausschnitt die äussere Lücke.</p>
+    <p>Komplex, gesetzte Neigung ungleich −90. Die Kamera blickt schräg in Gierrichtung. Der Winkel aus dem Lot ist τ = Neigung + 90°. Naher Bildrand = h · tan(τ − VFOV / 2), ferner Bildrand = h · tan(τ + VFOV / 2). Ein Strahl, dessen Winkel aus dem Lot 89° erreicht oder darüber liegt, hat keinen Bodenpunkt. Die halbe Breite an einem Bodenabstand r ist die Schrägentfernung √(h² + r²) mal tan(HFOV / 2). Nah, fern und diese halbe Breite werden mit demselben Faktor (1 − Überlappung) multipliziert. Ist die Gierrichtung «Richtung zum nächsten Wegpunkt», blickt die Kamera entlang der Bahn: quer zur Bahn die horizontale Breite, längs die vertikale Ausdehnung. Bei jeder anderen Gierrichtung bleibt das Fenster in der Kameraachse (HFOV quer zum Blick, VFOV in der Nickebene) und die Bahn schiebt es nur. Der Streifen sitzt in Blickrichtung vor der Drohne. Ab 150 m Bodenabstand des unskalierten Fensters wird er blasser und endet bei 320 m. Fehlt das Sichtfeld, gelten hier 49° horizontal und 40° vertikal. Wegpunkte mit −90 auf derselben Route behalten den einfachen Streifen.</p>
 
     <h2>Flag-Regel</h2>
     <p><code>true</code> und <code>1</code>: Missionswert, Expertenfeld ausgegraut. <code>false</code> und <code>0</code>: lokaler Wert. Im JasonFile <code>true</code> oder <code>false</code>. In der KMZ <code>1</code> oder <code>0</code>.</p>
     <p>Mit Tag: <code>useMissionHeight</code> → <code>wpml:useGlobalHeight</code>, <code>useMissionSpeed</code> → <code>wpml:useGlobalSpeed</code>, <code>useMissionWaypointType</code> → <code>wpml:useGlobalTurnParam</code>, <code>useMissionYawDirection</code> → <code>wpml:useGlobalHeadingParam</code>.</p>
     <p><span class="none">kein KMZ-Tag</span>: <code>useMissionPathMode</code>, <code>useMissionDirectionMode</code>. <code>wpml:useStraightLine</code> kommt aus dem Wegpunkt-Typ, nicht aus dem Pfadmodus. <code>wpml:waypointHeadingMode</code> ist der Giermodus, nicht das Flag.</p>
-    <p>Ist eines der sechs Flags <code>false</code>, sind Punkt und Gierrichtungssymbol orange. Der gewählte Punkt bleibt gelb. Ein fehlendes Flag färbt nicht. Das rote X der gesperrten Schwenkachse bleibt rot.</p>
+    <p>Ist eines der sechs Flags <code>false</code>, sind Punkt und Gierrichtungssymbol orange. Ein spezifischer Neigungswinkel, ungleich −90, färbt den Punkt ebenfalls orange. Der gewählte Punkt bleibt gelb. Ein fehlendes Flag färbt nicht. Das rote X der gesperrten Schwenkachse bleibt rot.</p>
 
     <h2>Zuordnung</h2>
     <table>
@@ -125,7 +133,7 @@ $mapllBrand = mapll_favicon_brand();
           <td>Route folgen (Gierrichtung)</td>
           <td><code>useMissionYawDirection</code></td>
           <td><code>wpml:useGlobalHeadingParam</code> <code>1</code>/<code>0</code></td>
-          <td class="hint">Heading-Block in <code>template.kml</code> nur bei <code>0</code>, in <code>waylines.wpml</code> immer. Ein <code>false</code> färbt Punkt und Gierrichtungssymbol orange. Der gewählte Punkt bleibt gelb.</td>
+          <td class="hint"><code>1</code>: kein Heading-Block. Lokal: Block ohne das Flag darin. <code>waylines.wpml</code> hat den Block immer. Ein <code>false</code> färbt Punkt und Gierrichtungssymbol orange. Der gewählte Punkt bleibt gelb.</td>
         </tr>
         <tr>
           <td class="grp">Gierrichtung</td>
@@ -182,15 +190,15 @@ $mapllBrand = mapll_favicon_brand();
           <td class="grp">Gierrichtung</td>
           <td>Richtungs-Winkel, −180 bis 180. Nur Definiert.</td>
           <td><code>direction</code>. <code>null</code> bleibt <code>null</code>.</td>
-          <td><code>wpml:waypointHeadingAngle</code> nur bei <code>smoothTransition</code> und nur wenn <code>direction</code> gesetzt ist</td>
-          <td class="hint">Siehe Gierrichtung und Neigung. <code>waypointHeadingYawPathMode</code> kommt aus <code>alignmentAircraft</code>.</td>
+          <td><code>wpml:waypointHeadingAngle</code>. In <code>waylines.wpml</code> zusätzlich <code>wpml:waypointHeadingAngleEnable</code></td>
+          <td class="hint">Definiert: Winkel und Enable <code>1</code>. Alle anderen Modi: Winkel <code>0</code> und Enable <code>0</code>. Ein <code>waypointPoiPoint</code> am selben Punkt macht daraus kein Fokus POI.</td>
         </tr>
         <tr>
           <td class="grp">Gierrichtung</td>
           <td>Ausrichtung des Fluggeräts. Automatisch, Uhrzeigersinn, Gegen den Uhrzeigersinn.</td>
           <td><code>alignmentAircraft</code></td>
-          <td><code>wpml:waypointHeadingYawPathMode</code></td>
-          <td class="hint">Im lokalen Heading-Block. Automatisch ist <code>followBadArc</code>. Dazu <code>clockwise</code> und <code>counterClockwise</code>.</td>
+          <td><code>wpml:waypointHeadingPathMode</code></td>
+          <td class="hint">Im lokalen Heading-Block. Automatisch ist <code>followBadArc</code>. Dazu <code>clockwise</code> und <code>counterClockwise</code>. Dazu <code>waypointHeadingPoiIndex</code> <code>0</code>.</td>
         </tr>
         <tr>
           <td class="grp">Gierrichtung</td>
@@ -204,7 +212,7 @@ $mapllBrand = mapll_favicon_brand();
           <td>POI</td>
           <td><code>poi</code> mit <code>longitude</code>, <code>latitude</code>, <code>height</code></td>
           <td><code>wpml:waypointPoiPoint</code></td>
-          <td class="hint">Typ-2-Punkte im GeoJSON sind die POI-Liste, mehrere erlaubt. Ein Wegpunkt nimmt zuerst <code>properties.poi</code>, sonst <code>poiIndex</code>, sonst den einzigen Typ-2-Punkt. Ohne POI bleibt die Gierrichtung <code>followWayline</code>, ohne erfundenen Punkt und ohne Peilwinkel in <code>direction</code>. Mit POI steht <code>waypointPoiPoint</code> als Breite,Länge,Höhe. In den Mission-Settings ist <code>pois</code> die Liste, <code>poi</code> der erste Eintrag.</td>
+          <td class="hint">Fokus POI nur bei <code>waypointHeadingMode</code> <code>towardPOI</code>. Die Fernsteuerung schreibt <code>waypointPoiPoint</code> an jedem Punkt, auch bei Definiert. Das allein ist kein Fokus POI. Typ-2-Punkte im GeoJSON sind die POI-Liste. Ein Wegpunkt nimmt zuerst <code>properties.poi</code>, sonst <code>poiIndex</code>, sonst den einzigen Typ-2-Punkt. Ohne POI bleibt die Gierrichtung <code>followWayline</code>. Mit POI steht <code>waypointPoiPoint</code> als Breite,Länge,Höhe.</td>
         </tr>
         <tr>
           <td class="grp">Höhe</td>
@@ -215,10 +223,10 @@ $mapllBrand = mapll_favicon_brand();
         </tr>
         <tr>
           <td class="grp">Mission</td>
-          <td>Neigungswinkel. Optional, −90 bis 30, Standard −90.</td>
-          <td><code>gimbalAngle</code></td>
-          <td><code>wpml:gimbalPitchAngle</code> in <code>template.kml</code></td>
-          <td class="hint">−90 bis 30, Standard −90. Wann der Winkel in JSON und KMZ steht, steht im Abschnitt Gierrichtung und Neigung. Höhe, Geschwindigkeit und Flugrichtung bleiben die Auslöser der Neurechnung.</td>
+          <td>Neigungswinkel. −90 bis 30, Standard −90. Spezifisch nur mit «Neigungswinkel setzen» und Wert ungleich −90. Dann steht eine kleine Gradzahl an der Flughöhe und der Wegpunkt ist orange.</td>
+          <td><code>gimbalAngle</code>. Steuerung <code>djiPilot2.gimbalControl</code></td>
+          <td><code>template.kml</code>: <code>wpml:gimbalPitchMode</code> und bei spezifisch <code>wpml:gimbalPitchAngle</code>. <code>waylines.wpml</code>: <code>wpml:waypointGimbalPitchAngle</code></td>
+          <td class="hint">Standard: JSON <code>manuel</code> und <code>gimbalAngle</code> −90, KMZ <code>manual</code> ohne <code>gimbalPitchAngle</code>, in <code>waylines.wpml</code> Pitch <code>0</code>. Spezifisch: JSON <code>setEachWaypoint</code> und der Winkel, KMZ <code>usePointSetting</code> und derselbe Winkel in beiden Dateien. Die Höhe bekommt die Gradzahl, der Wegpunkt wird orange. Der gewählte Punkt bleibt gelb. Der Flugpfad wird nicht neu gerechnet.</td>
         </tr>
 
         <tr class="group"><td colspan="5">Mission</td></tr>
@@ -346,7 +354,7 @@ $mapllBrand = mapll_favicon_brand();
           <td>FOV</td>
           <td>kein Name im JasonFile</td>
           <td class="none">kein KMZ-Tag</td>
-          <td class="hint">Bahnbreite aus <code>hfov_deg</code>, <code>vfov_deg</code>, <code>dfov_deg</code>. Keines davon wird als Tag geschrieben.</td>
+          <td class="hint">Sichtfeld der Drohne für Bahnabstand und Suchabdeckung. Die beiden Rechnungen stehen im Abschnitt Suchabdeckung. Keines der Winkel wird als Tag geschrieben.</td>
         </tr>
         <tr>
           <td class="grp">Anzeige</td>

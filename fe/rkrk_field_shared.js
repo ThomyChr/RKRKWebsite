@@ -31,7 +31,25 @@
     const spacingM = Number.isFinite(widthM) && widthM > 0
       ? Math.max(0, (1 - overlap) * widthM)
       : NaN;
-    return { widthM: widthM, lengthM: lengthM, spacingM: spacingM };
+    return {
+      widthM: widthM,
+      lengthM: lengthM,
+      spacingM: spacingM,
+      hfovDeg: Number(hfovDeg),
+      vfovDeg: Number(vfovDeg),
+    };
+  }
+
+  // Same factor as the green S line: S = (1 − overlap) · W, so S / W.
+  // coverageWindow "W" is the full camera window. Missing or "S" is the default.
+  function laneScale(metrics) {
+    if (metrics && metrics.coverageWindow === 'W') return 1;
+    const widthM = Number(metrics && metrics.widthM);
+    const spacingM = Number(metrics && metrics.spacingM);
+    if (Number.isFinite(widthM) && widthM > 0 && Number.isFinite(spacingM) && spacingM >= 0) {
+      return spacingM / widthM;
+    }
+    return 1;
   }
 
   function displayAtAgl(agl, metrics, refAgl) {
@@ -75,115 +93,363 @@
     return Math.acos(Math.max(-1, Math.min(1, dot)));
   }
 
-  function buildCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts) {
-    if (!Array.isArray(pathCoords) || pathCoords.length < 2) return [];
-    const sized = pathCoords.map((_, i) => displayAtAgl(aglList ? aglList[i] : fallbackAgl, metrics, fallbackAgl));
-    if (sized.some((s) => !s || !(s.displayM > 0))) return [];
-    const rings = [];
-    const halfAt = (idx) => {
-      const piece = sized[idx];
-      const half = Number(piece && piece.swathHalfM);
-      const meters = Number.isFinite(half) && half > 0 ? half : (piece.displayM * 0.5);
-      return meters * meterScaleAt(pathCoords[idx]);
+  function nadirPitch(pitch) {
+    if (pitch == null || pitch === '') return true;
+    const n = Number(pitch);
+    if (!Number.isFinite(n)) return true;
+    return Math.round(n) === -90;
+  }
+
+  // Ground range along the look direction. τ = pitch+90 is the tilt from nadir.
+  // A ray at or above the horizon (|angle from nadir| ≥ 89°) does not hit the ground.
+  var COVERAGE_FADE_START_M = 150;
+  var COVERAGE_FADE_END_M = 320;
+
+  function coverageFade(rangeM) {
+    const r = Math.abs(Number(rangeM));
+    if (!Number.isFinite(r) || r <= COVERAGE_FADE_START_M) return 1;
+    if (r >= COVERAGE_FADE_END_M) return 0;
+    return (COVERAGE_FADE_END_M - r) / (COVERAGE_FADE_END_M - COVERAGE_FADE_START_M);
+  }
+
+  // Near/far ground distances of a tilted view, and the cross-look half-width.
+  // Pitch −90 is not handled here. Pitch 0 still has a near edge (lower half of the VFOV).
+  function obliqueSpan(heightM, pitchDeg, hfovDeg, vfovDeg) {
+    const H = Number(heightM);
+    const pitch = Number(pitchDeg);
+    if (!(H > 1) || !Number.isFinite(pitch)) return null;
+    const tau = pitch + 90;
+    const av = Number(vfovDeg) / 2;
+    const ah = Number(hfovDeg) / 2;
+    if (!(av > 0) || !(ah > 0)) return null;
+    const horizon = 89;
+    const rangeAt = (angleDeg) => {
+      if (!(angleDeg > -horizon && angleDeg < horizon)) return null;
+      return H * Math.tan(angleDeg * Math.PI / 180);
     };
-    const turnMin = 35 * Math.PI / 180;
-    const turnAt = new Array(pathCoords.length).fill(false);
-    for (let i = 1; i < pathCoords.length - 1; i++) {
-      if (headingChange(pathCoords[i - 1], pathCoords[i], pathCoords[i + 1]) >= turnMin) turnAt[i] = true;
+    let near = rangeAt(tau - av);
+    let far = rangeAt(tau + av);
+    if (near == null && far == null) return null;
+    // A ray at or above the horizon has no ground edge. Do not invent one at the fade limit.
+    if (far == null) return null;
+    if (near == null) near = Math.min(0, far - 8);
+    if (far < near) {
+      const swap = near;
+      near = far;
+      far = swap;
     }
-    function pushQuad(a, b, halfA, halfB) {
-      const dx = b[0] - a[0];
-      const dy = b[1] - a[1];
-      const len = Math.hypot(dx, dy);
-      if (!(len > 1e-6) || !(halfA > 0) || !(halfB > 0)) return;
-      const nx = -dy / len;
-      const ny = dx / len;
-      const ring = [
-        [a[0] + nx * halfA, a[1] + ny * halfA],
-        [b[0] + nx * halfB, b[1] + ny * halfB],
-        [b[0] - nx * halfB, b[1] - ny * halfB],
-        [a[0] - nx * halfA, a[1] - ny * halfA],
-      ];
+    if (!(far > near + 0.5)) return null;
+    const halfAt = (rangeM) => {
+      const slant = Math.hypot(H, rangeM);
+      return Math.max(1, slant * Math.tan(ah * Math.PI / 180));
+    };
+    return { near: near, far: far, halfAt: halfAt };
+  }
+
+  // −90, missing, or null. One quad per leg, full length, centered on the route.
+  // Adjacent legs share the corner edge when the heading does not change.
+  // A turn adds the outer sector whose radii lie on those edges, so the band
+  // does not break and the sector is not a detached disc. The ground window
+  // is scaled by S/W, the same factor as the green S line. Across-track
+  // half-width is that scaled HFOV ground half when the leg is flown along
+  // Gierrichtung, and half the scaled near–far ground length when it is flown sideways.
+  function buildNadirCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts, caps, bearingList) {
+    if (!Array.isArray(pathCoords) || pathCoords.length < 2) return [];
+    const capStart = !caps || caps.start !== false;
+    const capEnd = !caps || caps.end !== false;
+    const sized = pathCoords.map((_, i) => displayAtAgl(aglList ? aglList[i] : fallbackAgl, metrics, fallbackAgl));
+    if (sized.some((piece) => !piece || !(piece.displayM > 0))) return [];
+    const rings = [];
+    function lookOf(index, tx, ty) {
+      let bearing = Number(bearingList && bearingList[index]);
+      if (!Number.isFinite(bearing)) bearing = nextLegBearingDeg(pathCoords, index);
+      if (!Number.isFinite(bearing)) return { x: tx, y: ty };
+      const rad = ((bearing % 360) + 360) % 360 * Math.PI / 180;
+      return { x: Math.sin(rad), y: Math.cos(rad) };
+    }
+    function halfMap(idx, tx, ty, look) {
+      const h = Number(aglList && aglList[idx]);
+      const agl = Number.isFinite(h) && h > 1 ? h : Number(fallbackAgl);
+      const ref = Number(fallbackAgl);
+      const k = (Number.isFinite(ref) && ref > 0 && agl > 1) ? (agl / ref) : 1;
+      const factor = laneScale(metrics);
+      const widthM = Number(metrics && metrics.widthM) * k * factor;
+      const lengthM = Number(metrics && metrics.lengthM) * k * factor;
+      const hfovHalf = Number.isFinite(widthM) && widthM > 0 ? widthM * 0.5 : 0;
+      const depthHalf = Number.isFinite(lengthM) && lengthM > 0 ? lengthM * 0.5 : hfovHalf;
+      const piece = sized[idx];
+      if (!(hfovHalf > 0)) {
+        const fallbackHalf = Number(piece && piece.swathHalfM);
+        const meters = Number.isFinite(fallbackHalf) && fallbackHalf > 0 ? fallbackHalf : (piece.displayM * 0.5);
+        return meters * meterScaleAt(pathCoords[idx]);
+      }
+      const along = Math.abs(look.x * tx + look.y * ty);
+      const across = Math.abs(look.x * (-ty) + look.y * tx);
+      return Math.max(along * hfovHalf + across * depthHalf, 0.5) * meterScaleAt(pathCoords[idx]);
+    }
+    function alongMap(idx, tx, ty, look) {
+      const h = Number(aglList && aglList[idx]);
+      const agl = Number.isFinite(h) && h > 1 ? h : Number(fallbackAgl);
+      const ref = Number(fallbackAgl);
+      const k = (Number.isFinite(ref) && ref > 0 && agl > 1) ? (agl / ref) : 1;
+      const factor = laneScale(metrics);
+      const widthM = Number(metrics && metrics.widthM) * k * factor;
+      const lengthM = Number(metrics && metrics.lengthM) * k * factor;
+      const hfovHalf = Number.isFinite(widthM) && widthM > 0 ? widthM * 0.5 : 0;
+      const depthHalf = Number.isFinite(lengthM) && lengthM > 0 ? lengthM * 0.5 : 0;
+      const along = Math.abs(look.x * tx + look.y * ty);
+      const across = Math.abs(look.x * (-ty) + look.y * tx);
+      return Math.max(across * hfovHalf + along * depthHalf, 0) * meterScaleAt(pathCoords[idx]);
+    }
+    function edgeAt(center, tx, ty, half) {
+      const nx = -ty;
+      const ny = tx;
+      return {
+        center: center,
+        left: [center[0] + nx * half, center[1] + ny * half],
+        right: [center[0] - nx * half, center[1] - ny * half],
+      };
+    }
+    function pushRing(ring) {
+      if (!ring || ring.length < 4) return;
       ring.push(ring[0].slice());
       rings.push(ring);
     }
-    function pushSector(center, radiusMap, a0, sweep) {
-      if (!Array.isArray(center) || !(radiusMap > 0) || !(Math.abs(sweep) > 1e-3)) return;
-      const steps = Math.max(6, Math.ceil(Math.abs(sweep) / (Math.PI / 14)));
-      const ring = [center.slice()];
-      for (let s = 0; s <= steps; s++) {
-        const a = a0 + sweep * (s / steps);
-        ring.push([
-          center[0] + Math.cos(a) * radiusMap,
-          center[1] + Math.sin(a) * radiusMap,
-        ]);
+    function pushJoin(center, inEdge, outEdge, sweep) {
+      if (!(Math.abs(sweep) > 0.02)) return;
+      const outer0 = sweep > 0 ? inEdge.right : inEdge.left;
+      const outer1 = sweep > 0 ? outEdge.right : outEdge.left;
+      const r0 = Math.hypot(outer0[0] - center[0], outer0[1] - center[1]);
+      const r1 = Math.hypot(outer1[0] - center[0], outer1[1] - center[1]);
+      if (!(r0 > 0.2) || !(r1 > 0.2)) return;
+      if (Math.hypot(outer0[0] - outer1[0], outer0[1] - outer1[1]) < 0.05) return;
+      const a0 = Math.atan2(outer0[1] - center[1], outer0[0] - center[0]);
+      const steps = Math.max(3, Math.ceil(Math.abs(sweep) / (Math.PI / 14)));
+      const ring = [center.slice(), outer0.slice()];
+      for (let s = 1; s < steps; s++) {
+        const t = s / steps;
+        const a = a0 + sweep * t;
+        const r = r0 + (r1 - r0) * t;
+        ring.push([center[0] + Math.cos(a) * r, center[1] + Math.sin(a) * r]);
       }
-      ring.push(center.slice());
-      rings.push(ring);
+      ring.push(outer1.slice());
+      pushRing(ring);
     }
+    const segs = [];
     for (let i = 0; i < pathCoords.length - 1; i++) {
-      const segLenM = (function () {
-        const a = lonLatPts && lonLatPts[i];
-        const b = lonLatPts && lonLatPts[i + 1];
-        if (a && b && global.ol && ol.sphere && typeof ol.sphere.getDistance === 'function') {
-          try {
-            return Number(ol.sphere.getDistance([Number(a[0]), Number(a[1])], [Number(b[0]), Number(b[1])])) || 0;
-          } catch (_) {}
-        }
-        const dx = pathCoords[i + 1][0] - pathCoords[i][0];
-        const dy = pathCoords[i + 1][1] - pathCoords[i][1];
-        const scale = meterScaleAt(pathCoords[i]);
-        return scale > 0 ? Math.hypot(dx, dy) / scale : 0;
-      })();
-      const hopMax = 6;
-      const turnHop = turnAt[i] && turnAt[i + 1] && segLenM <= hopMax;
-      if (turnHop) continue;
-      pushQuad(pathCoords[i], pathCoords[i + 1], halfAt(i), halfAt(i + 1));
-    }
-    for (let i = 1; i < pathCoords.length - 1; i++) {
-      const prev = pathCoords[i - 1];
-      const curr = pathCoords[i];
-      const next = pathCoords[i + 1];
-      const v1x = curr[0] - prev[0];
-      const v1y = curr[1] - prev[1];
-      const v2x = next[0] - curr[0];
-      const v2y = next[1] - curr[1];
-      const l1 = Math.hypot(v1x, v1y);
-      const l2 = Math.hypot(v2x, v2y);
-      if (!(l1 > 1e-3) || !(l2 > 1e-3)) continue;
-      const ux = v1x / l1;
-      const uy = v1y / l1;
-      const cross = ux * (v2y / l2) - uy * (v2x / l2);
-      const dot = ux * (v2x / l2) + uy * (v2y / l2);
-      const sweep = Math.atan2(cross, dot);
-      const absSweep = Math.abs(sweep);
-      if (!(absSweep > 0.07)) continue;
-      const radius = halfAt(i);
-      const arcM = sized[i].displayM * 0.5 * absSweep;
-      if (!(arcM > 0.8)) continue;
-      const extNx = cross > 0 ? uy : -uy;
-      const extNy = cross > 0 ? -ux : ux;
-      const a0 = Math.atan2(extNy, extNx);
-      pushSector(curr, radius, a0, sweep);
-    }
-    const last = pathCoords.length - 1;
-    function addCap(fromIdx, awayIdx) {
-      const extM = sized[fromIdx].lookM * 0.5;
-      if (!(extM > 0)) return;
-      const from = pathCoords[fromIdx];
-      const away = pathCoords[awayIdx];
-      const dx = from[0] - away[0];
-      const dy = from[1] - away[1];
+      const a = pathCoords[i];
+      const b = pathCoords[i + 1];
+      if (!a || !b) continue;
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
       const len = Math.hypot(dx, dy);
-      if (!(len > 1e-6)) return;
-      const scale = meterScaleAt(from);
-      const tip = [from[0] + (dx / len) * extM * scale, from[1] + (dy / len) * extM * scale];
-      pushQuad(from, tip, halfAt(fromIdx), halfAt(fromIdx));
+      if (!(len > 1e-3)) continue;
+      const tx = dx / len;
+      const ty = dy / len;
+      const look = lookOf(i, tx, ty);
+      const ha = halfMap(i, tx, ty, look);
+      const hb = halfMap(i + 1, tx, ty, look);
+      if (!(ha > 0) || !(hb > 0)) continue;
+      segs.push({
+        tx: tx,
+        ty: ty,
+        e0: edgeAt(a, tx, ty, ha),
+        e1: edgeAt(b, tx, ty, hb),
+        along0: alongMap(i, tx, ty, look),
+        along1: alongMap(i + 1, tx, ty, look),
+      });
     }
-    addCap(0, 1);
-    addCap(last, last - 1);
+    segs.forEach((seg, i) => {
+      const e0 = seg.e0;
+      const e1 = seg.e1;
+      pushRing([e0.left.slice(), e1.left.slice(), e1.right.slice(), e0.right.slice()]);
+      const next = segs[i + 1];
+      if (!next) return;
+      const turn = seg.tx * next.ty - seg.ty * next.tx;
+      const dot = seg.tx * next.tx + seg.ty * next.ty;
+      pushJoin(e1.center, e1, next.e0, Math.atan2(turn, dot));
+    });
+    function pushCap(edge, tx, ty, sign, lengthMap) {
+      if (!(lengthMap > 0.4)) return;
+      const dx = tx * lengthMap * sign;
+      const dy = ty * lengthMap * sign;
+      pushRing([
+        edge.left.slice(),
+        [edge.left[0] + dx, edge.left[1] + dy],
+        [edge.right[0] + dx, edge.right[1] + dy],
+        edge.right.slice(),
+      ]);
+    }
+    if (segs.length && capStart) pushCap(segs[0].e0, segs[0].tx, segs[0].ty, -1, segs[0].along0);
+    if (segs.length && capEnd) {
+      const last = segs[segs.length - 1];
+      pushCap(last.e1, last.tx, last.ty, 1, last.along1);
+    }
     return rings;
   }
+
+  // Tilted gimbal only. The window stays in the camera axes (HFOV across the
+  // look, VFOV along the look). A leg only slides that window along the
+  // segment. −90 points are not drawn here. Fade 150–320 m applies here.
+  function buildCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts, pitchList, bearingList, headingModeList) {
+    if (!Array.isArray(pathCoords) || pathCoords.length < 2) return [];
+    let anyTilt = false;
+    for (let i = 0; i < pathCoords.length; i++) {
+      if (!nadirPitch(pitchList && pitchList[i])) { anyTilt = true; break; }
+    }
+    if (!anyTilt) return buildNadirCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts, null, bearingList);
+    const nadirRings = [];
+    let nadirRun = null;
+    for (let i = 0; i < pathCoords.length - 1; i++) {
+      if (nadirPitch(pitchList && pitchList[i])) {
+        if (!nadirRun) {
+          nadirRun = [i];
+          nadirRings.push(nadirRun);
+        }
+        nadirRun.push(i + 1);
+      } else {
+        nadirRun = null;
+      }
+    }
+    const lastIdx = pathCoords.length - 1;
+    const ringsOut = [];
+    nadirRings.forEach((points) => {
+      if (points.length < 2) return;
+      buildNadirCoveragePolygons(
+        points.map((i) => pathCoords[i]),
+        points.map((i) => (aglList ? aglList[i] : fallbackAgl)),
+        metrics,
+        fallbackAgl,
+        points.map((i) => (lonLatPts ? lonLatPts[i] : null)),
+        { start: points[0] === 0, end: points[points.length - 1] === lastIdx },
+        points.map((i) => (bearingList ? bearingList[i] : null))
+      ).forEach((ring) => ringsOut.push(ring));
+    });
+    const hfovDegEarly = Number(metrics && metrics.hfovDeg);
+    const vfovDegEarly = Number(metrics && metrics.vfovDeg);
+    const hfovUse = Number.isFinite(hfovDegEarly) && hfovDegEarly > 1 ? hfovDegEarly : 49;
+    const vfovUse = Number.isFinite(vfovDegEarly) && vfovDegEarly > 1 ? vfovDegEarly : 40;
+    const rings = [];
+    function lookOf(index) {
+      let bearing = Number(bearingList && bearingList[index]);
+      if (!Number.isFinite(bearing)) bearing = nextLegBearingDeg(pathCoords, index);
+      if (!Number.isFinite(bearing)) bearing = nextLegBearingDeg(pathCoords, Math.max(0, index - 1));
+      if (!Number.isFinite(bearing)) bearing = 0;
+      const rad = ((bearing % 360) + 360) % 360 * Math.PI / 180;
+      return { x: Math.sin(rad), y: Math.cos(rad) };
+    }
+    function followsNextWaypoint(mode) {
+      const m = String(mode || '').toLowerCase();
+      if (!m) return false;
+      if (/definiert|custom|manuell|manual|schenk|schwenk|poi|fokus|fixed|lock|sperr/.test(m)) return false;
+      return /follow|richtung|wegpunkt|wayline/.test(m);
+    }
+    function aglOf(index) {
+      const h = Number(aglList && aglList[index]);
+      return Number.isFinite(h) && h > 1 ? h : Number(fallbackAgl);
+    }
+    function pitchOf(index) {
+      const pitch = Number(pitchList && pitchList[index]);
+      return Number.isFinite(pitch) ? pitch : -90;
+    }
+    // HFOV is across the look, VFOV is along the look. The corners are not
+    // rotated onto the leg.
+    function windowCorners(xy, agl, pitch, look) {
+      if (!xy || !look || nadirPitch(pitch)) return null;
+      const span = obliqueSpan(agl, pitch, hfovUse, vfovUse);
+      if (!span) return null;
+      const factor = laneScale(metrics);
+      const scaleRaw = meterScaleAt(xy);
+      const scale = scaleRaw > 0 ? scaleRaw : 1;
+      const near = span.near;
+      const far = Math.min(span.far, COVERAGE_FADE_END_M);
+      if (!(far > near + 0.4) || near >= COVERAGE_FADE_END_M) return null;
+      const fade = coverageFade((near + far) / 2);
+      if (!(fade > 0.04)) return null;
+      const px = -look.y;
+      const py = look.x;
+      const corner = (rangeM, sign) => {
+        const half = span.halfAt(rangeM) * factor * scale * sign;
+        const along = rangeM * factor * scale;
+        return [xy[0] + look.x * along + px * half, xy[1] + look.y * along + py * half];
+      };
+      return {
+        fade: fade,
+        corners: [corner(near, 1), corner(far, 1), corner(far, -1), corner(near, -1)],
+      };
+    }
+    function hull(points) {
+      const pts = points.filter((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+      if (pts.length < 3) return null;
+      pts.sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+      const turn = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+      const lower = [];
+      const upper = [];
+      pts.forEach((p) => {
+        while (lower.length >= 2 && turn(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+        lower.push(p);
+      });
+      for (let i = pts.length - 1; i >= 0; i--) {
+        const p = pts[i];
+        while (upper.length >= 2 && turn(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+        upper.push(p);
+      }
+      lower.pop();
+      upper.pop();
+      const ring = lower.concat(upper);
+      return ring.length >= 3 ? ring : null;
+    }
+    function fillOf(fade) {
+      return 'rgba(64,196,255,' + (0.46 * fade).toFixed(3) + ')';
+    }
+    function pushRing(ring, fade) {
+      if (!ring || ring.length < 3) return;
+      ring.push(ring[0].slice());
+      rings.push({ ring: ring, fill: fillOf(fade) });
+    }
+    for (let i = 0; i < pathCoords.length - 1; i++) {
+      const a = pathCoords[i];
+      const b = pathCoords[i + 1];
+      if (!a || !b || nadirPitch(pitchList && pitchList[i])) continue;
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const len = Math.hypot(dx, dy);
+      if (!(len > 1e-3)) continue;
+      const tx = dx / len;
+      const ty = dy / len;
+      const follow = followsNextWaypoint(headingModeList && headingModeList[i]);
+      const look0 = follow ? { x: tx, y: ty } : lookOf(i);
+      const endFollow = followsNextWaypoint(headingModeList && headingModeList[i + 1]);
+      const look1 = follow ? { x: tx, y: ty } : (endFollow ? { x: tx, y: ty } : lookOf(i + 1));
+      const h0 = aglOf(i);
+      const h1 = nadirPitch(pitchList && pitchList[i + 1]) ? h0 : aglOf(i + 1);
+      const p0 = pitchOf(i);
+      const p1 = nadirPitch(pitchList && pitchList[i + 1]) ? p0 : pitchOf(i + 1);
+      const yaw0 = Math.atan2(look0.x, look0.y);
+      const yaw1 = Math.atan2(look1.x, look1.y);
+      let dYaw = yaw1 - yaw0;
+      while (dYaw > Math.PI) dYaw -= Math.PI * 2;
+      while (dYaw < -Math.PI) dYaw += Math.PI * 2;
+      const steps = (!follow && (Math.abs(dYaw) > 0.14 || Math.abs(h1 - h0) > 2 || Math.abs(p1 - p0) > 1)) ? 4 : 1;
+      const pts = [];
+      let fade = 1;
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const xy = [a[0] + dx * t, a[1] + dy * t];
+        const yaw = yaw0 + dYaw * t;
+        const look = { x: Math.sin(yaw), y: Math.cos(yaw) };
+        const pose = windowCorners(xy, h0 + (h1 - h0) * t, p0 + (p1 - p0) * t, look);
+        if (!pose) continue;
+        fade = Math.min(fade, pose.fade);
+        pose.corners.forEach((c) => pts.push(c));
+      }
+      const ring = hull(pts);
+      if (ring) pushRing(ring, fade);
+    }
+    rings.forEach((ring) => ringsOut.push(ring));
+    return ringsOut;
+  }
+
 
   function groundMeters(a, b) {
     if (!a || !b) return 0;
@@ -207,7 +473,7 @@
   // leg between its neighbours, at the interpolated height, is a filler
   // (duplicate vertex, densify sample, or the injected leg midpoint). It is
   // left out of the band. The stored waypoint list is not changed.
-  function coverageSampleIndices(pathCoords, aglList) {
+  function coverageSampleIndices(pathCoords, aglList, pitchList, bearingList) {
     const n = Array.isArray(pathCoords) ? pathCoords.length : 0;
     if (n < 1) return [];
     const keep = new Array(n).fill(false);
@@ -218,9 +484,23 @@
       const prev = pathCoords[i - 1];
       const curr = pathCoords[i];
       const next = pathCoords[i + 1];
+      if (!nadirPitch(pitchList && pitchList[i])) {
+        keep[i] = true;
+        continue;
+      }
       if (headingChange(prev, curr, next) >= turnMin) {
         keep[i] = true;
         continue;
+      }
+      const bear = Number(bearingList && bearingList[i]);
+      const bearPrev = Number(bearingList && bearingList[i - 1]);
+      if (Number.isFinite(bear) && Number.isFinite(bearPrev)) {
+        let delta = Math.abs(bear - bearPrev) % 360;
+        if (delta > 180) delta = 360 - delta;
+        if (delta > 18) {
+          keep[i] = true;
+          continue;
+        }
       }
       const off = crossTrackMeters(prev, next, curr);
       const seg = groundMeters(prev, next);
@@ -245,14 +525,117 @@
     return idx.length >= 2 ? idx : [0, n - 1];
   }
 
-  function buildRouteCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts, routeCalculated) {
+  function buildRouteCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts, routeCalculated, pitchList, bearingList, headingModeList) {
     if (!routeCalculated) return [];
     if (!Array.isArray(pathCoords) || pathCoords.length < 2) return [];
-    const idx = coverageSampleIndices(pathCoords, aglList);
+    let tilted = false;
+    if (Array.isArray(pitchList)) {
+      for (let i = 0; i < pathCoords.length; i++) {
+        if (!nadirPitch(pitchList[i])) { tilted = true; break; }
+      }
+    }
+    const idx = coverageSampleIndices(pathCoords, aglList, tilted ? pitchList : null, tilted ? bearingList : null);
     const coords = idx.map((i) => pathCoords[i]);
     const agl = idx.map((i) => aglList ? aglList[i] : fallbackAgl);
     const lonLat = idx.map((i) => lonLatPts ? lonLatPts[i] : null);
-    return buildCoveragePolygons(coords, agl, metrics, fallbackAgl, lonLat);
+    const pitch = idx.map((i) => pitchList ? pitchList[i] : null);
+    const bearing = idx.map((i) => bearingList ? bearingList[i] : null);
+    const heading = idx.map((i) => headingModeList ? headingModeList[i] : null);
+    return buildCoveragePolygons(coords, agl, metrics, fallbackAgl, lonLat, pitch, bearing, heading);
+  }
+
+  // Coordinated turn that skips the waypoint: leave the incoming leg one
+  // turn-distance before the point and meet the next leg the same distance after.
+  function coordinateTurnCoords(prevXY, currXY, nextXY, distanceM) {
+    const D = Number(distanceM);
+    if (!prevXY || !currXY || !nextXY || !(D > 0.05)) return null;
+    const scale = meterScaleAt(currXY);
+    const mapD = D * (scale > 0 ? scale : 1);
+    const inX = Number(currXY[0]) - Number(prevXY[0]);
+    const inY = Number(currXY[1]) - Number(prevXY[1]);
+    const outX = Number(nextXY[0]) - Number(currXY[0]);
+    const outY = Number(nextXY[1]) - Number(currXY[1]);
+    const inLen = Math.hypot(inX, inY);
+    const outLen = Math.hypot(outX, outY);
+    if (!(inLen > mapD + 1e-3) || !(outLen > mapD + 1e-3)) return null;
+    const u1x = inX / inLen;
+    const u1y = inY / inLen;
+    const u2x = outX / outLen;
+    const u2y = outY / outLen;
+    const dot = Math.max(-1, Math.min(1, u1x * u2x + u1y * u2y));
+    const phi = Math.acos(dot);
+    if (!(phi > 0.05) || !(Math.PI - phi > 0.02)) return null;
+    const pin = [Number(currXY[0]) - u1x * mapD, Number(currXY[1]) - u1y * mapD];
+    const pout = [Number(currXY[0]) + u2x * mapD, Number(currXY[1]) + u2y * mapD];
+    const cross = u1x * u2y - u1y * u2x;
+    const left = cross >= 0;
+    const R = mapD / Math.tan(phi / 2);
+    if (!(R > 0)) return null;
+    const px = -u1y;
+    const py = u1x;
+    const sign = left ? 1 : -1;
+    const center = [pin[0] + sign * R * px, pin[1] + sign * R * py];
+    const a0 = Math.atan2(pin[1] - center[1], pin[0] - center[0]);
+    let sweep = Math.atan2(pout[1] - center[1], pout[0] - center[0]) - a0;
+    if (left) {
+      while (sweep <= 0) sweep += Math.PI * 2;
+      if (sweep > Math.PI + 0.2) sweep -= Math.PI * 2;
+    } else {
+      while (sweep >= 0) sweep -= Math.PI * 2;
+      if (sweep < -Math.PI - 0.2) sweep += Math.PI * 2;
+    }
+    const steps = Math.max(8, Math.ceil(Math.abs(sweep) / (Math.PI / 18)));
+    const line = [];
+    for (let s = 0; s <= steps; s++) {
+      const a = a0 + sweep * (s / steps);
+      line.push([center[0] + Math.cos(a) * R, center[1] + Math.sin(a) * R]);
+    }
+    line[0] = pin.slice();
+    line[line.length - 1] = pout.slice();
+    return line;
+  }
+
+  let mapLabelScaleValue = 1;
+  function mapLabelScale() {
+    return mapLabelScaleValue;
+  }
+  function setMapLabelScale(value) {
+    const n = Number(value);
+    mapLabelScaleValue = Number.isFinite(n) ? Math.max(0.7, Math.min(2.2, Math.round(n * 10) / 10)) : 1;
+    return mapLabelScaleValue;
+  }
+  function mapLabelFont(px, bold) {
+    const size = Math.max(8, Math.round(Number(px) * mapLabelScaleValue));
+    return (bold ? 'bold ' : '') + size + 'px Arial, Helvetica, sans-serif';
+  }
+
+  function saveConfirmText(data) {
+    const d = data && typeof data === 'object' ? data : {};
+    const base = (path) => {
+      const text = String(path || '').replace(/\\/g, '/').trim();
+      const cut = text.lastIndexOf('/');
+      return cut >= 0 ? text.slice(cut + 1) : text;
+    };
+    const jsonName = base(d.jason_file);
+    const kmzName = base(d.kmz_file);
+    const jsonOk = d.json_written === true && jsonName !== '';
+    const kmzOk = d.kmz_written === true && kmzName !== '';
+    const parts = [];
+    parts.push(jsonOk
+      ? ('JSON ' + jsonName + ' geschrieben und angepasst')
+      : ('JSON nicht geschrieben' + (jsonName ? (': ' + jsonName) : '')));
+    parts.push(kmzOk
+      ? ('KMZ ' + kmzName + ' geschrieben und angepasst')
+      : ('KMZ nicht geschrieben' + (kmzName ? (': ' + kmzName) : '')));
+    if (d.aenderung) parts.push('Änderungsdatum ' + d.aenderung);
+    const hist = [];
+    if (d.history_json === true) hist.push('JSON');
+    if (d.history_kmz === true) hist.push('KMZ');
+    if (hist.length) parts.push('Vorversion ' + hist.join(' und ') + ' in der History');
+    else if (d.history_json === false || d.history_kmz === false) parts.push('History-Kopie fehlgeschlagen');
+    if (d.log_written === true) parts.push('Logeintrag geschrieben');
+    else if (d.log_written === false) parts.push('Logeintrag nicht geschrieben');
+    return { ok: jsonOk && kmzOk, text: parts.join('. ') + '.' };
   }
 
   function nextLegBearingDeg(mapCoords, index0) {
@@ -306,25 +689,42 @@
     if (!Number.isFinite(programmed)) return null;
     const terrain = Number(terrainM);
     const start = Number(startTerrainM);
-    if (!Number.isFinite(terrain) || !Number.isFinite(start)) return programmed;
-    const delta = terrain - start;
-    if (!Number.isFinite(delta) || delta === 0) return programmed;
-    return programmed + delta;
+    if (!Number.isFinite(terrain) || !Number.isFinite(start)) return null;
+    const rel = programmed + (terrain - start);
+    return Number.isFinite(rel) ? rel : null;
+  }
+
+  function specificGimbalLabel(pitch) {
+    const n = Number(pitch);
+    if (!Number.isFinite(n)) return '';
+    const rounded = Math.round(n);
+    if (rounded === -90) return '';
+    return String(rounded) + '°';
+  }
+
+  function gimbalModeFromUav(control) {
+    const mode = String(control || '').toLowerCase();
+    if (!mode || mode === 'none' || mode === 'null') return '';
+    if (/seteach|usepoint|wegpunkt/.test(mode)) return 'Jeden Wegpunkt festlegen';
+    if (/manuel|manual/.test(mode)) return 'Manuell';
+    return '';
   }
 
   function heightCaption(programmedM, terrainM, startTerrainM) {
     const programmed = Number(programmedM);
     if (!Number.isFinite(programmed)) return { main: '', paren: '' };
     const rel = relativeHeightFromStartM(programmed, terrainM, startTerrainM);
+    const tenth = Number.isFinite(rel) ? (Math.round(rel * 10) / 10) : NaN;
     return {
       main: formatMeterLabel(programmed),
-      paren: '(' + formatMeterLabel(rel) + ')',
+      paren: Number.isFinite(tenth) ? ('(' + tenth.toFixed(1) + ' m)') : '',
     };
   }
 
   function waypointMissesMission(row) {
     const keys = ['use_mission_height', 'use_mission_speed', 'use_mission_waypoint_type', 'use_mission_yaw', 'use_mission_path_mode', 'use_mission_direction_mode'];
     if (!row || typeof row !== 'object') return false;
+    if (specificGimbalLabel(row.gimbal_pitch) !== '') return true;
     return keys.some((key) => Object.prototype.hasOwnProperty.call(row, key) && jsonFlag(row[key]) === false);
   }
 
@@ -601,6 +1001,12 @@
       });
       if (Object.values(flags).some((flag) => flag === false)) anyFalse = true;
       if (Number.isFinite(Number(props.height))) row.agl_m = Number(props.height);
+      if (Number.isFinite(Number(props.gimbalAngle))) row.gimbal_pitch = Math.round(Number(props.gimbalAngle));
+      const coord = geom.coordinates;
+      if (Array.isArray(coord) && Number.isFinite(Number(coord[0])) && Number.isFinite(Number(coord[1]))) {
+        row.lon = Number(coord[0]);
+        row.lat = Number(coord[1]);
+      }
       if (Number.isFinite(Number(props.speed))) row.speed_m_s = Number(props.speed);
       const wpType = waypointTypeFromUav(props.waypointType);
       if (wpType) row.waypoint_type = wpType;
@@ -645,7 +1051,39 @@
       const easyLast = jsonFlag(last && last.easyModeForm);
       if (easyLast === true || easyLast === false) easyModeForm = easyLast;
     }
-    return { overrides: overrides, anyFalse: anyFalse, easyModeForm: easyModeForm, count: n, pois: pois };
+    const gimbalMode = gimbalModeFromUav(pilot && pilot.gimbalControl);
+    return { overrides: overrides, anyFalse: anyFalse, easyModeForm: easyModeForm, count: n, pois: pois, gimbalMode: gimbalMode };
+  }
+
+  function alignOverridesToPath(overrides, triplets) {
+    const path = Array.isArray(triplets) ? triplets : [];
+    const rows = Object.keys(overrides || {}).map((key) => overrides[key]).filter((row) => (
+      row && Number.isFinite(Number(row.lon)) && Number.isFinite(Number(row.lat))
+    ));
+    if (path.length < 1 || !rows.length) return overrides || {};
+    const next = {};
+    path.forEach((point, index) => {
+      const lon = Number(point && point[0]);
+      const lat = Number(point && point[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
+      let best = null;
+      let bestD = Infinity;
+      rows.forEach((row) => {
+        const dlon = Number(row.lon) - lon;
+        const dlat = Number(row.lat) - lat;
+        const d = dlon * dlon + dlat * dlat;
+        if (d < bestD) {
+          bestD = d;
+          best = row;
+        }
+      });
+      if (!best || bestD > 2.5e-8) return;
+      const copy = Object.assign({}, best);
+      delete copy.lon;
+      delete copy.lat;
+      next[String(index + 1)] = copy;
+    });
+    return Object.keys(next).length ? next : (overrides || {});
   }
 
   function differs(a, b) {
@@ -682,6 +1120,11 @@
       seq += 1;
       if (!parsed.overrides[String(idx)]) parsed.overrides[String(idx)] = {};
       const row = parsed.overrides[String(idx)];
+      const coordMatch = block.match(/<coordinates>\s*([-0-9.]+)\s*,\s*([-0-9.]+)/i);
+      if (coordMatch) {
+        row.lon = Number(coordMatch[1]);
+        row.lat = Number(coordMatch[2]);
+      }
       const heightFlag = wpmlTag(block, 'useGlobalHeight');
       const kmzHeight = Number(wpmlTag(block, 'height'));
       if (flagIsOff(heightFlag)) {
@@ -722,27 +1165,30 @@
       const yawMode = headingModeFromKmz(wpmlTag(block, 'waypointHeadingMode'));
       const yawAngleText = wpmlTag(block, 'waypointHeadingAngle');
       const yawAngle = yawAngleText == null || String(yawAngleText).trim() === '' ? null : Number(yawAngleText);
+      const angleEnable = wpmlTag(block, 'waypointHeadingAngleEnable');
       const poiText = wpmlTag(block, 'waypointPoiPoint');
+      const storeHeading = (mode) => {
+        if (mode) row.heading_mode = mode;
+        const defined = mode === 'Definiert';
+        const enabled = angleEnable == null || flagIsOff(angleEnable) === false;
+        if (defined && enabled && yawAngle != null && Number.isFinite(yawAngle)) {
+          row.heading_angle = yawAngle;
+          row.direction_deg = yawAngle;
+        }
+      };
       if (flagIsOff(yawFlag)) {
         row.use_mission_yaw = false;
         parsed.anyFalse = true;
-        if (yawMode) row.heading_mode = yawMode;
-        if (yawAngle != null && Number.isFinite(yawAngle)) {
-          row.heading_angle = yawAngle;
-          row.direction_deg = yawAngle;
-        }
+        storeHeading(yawMode);
       } else if (yawFlag == null && yawMode && yawMode !== globalHeading) {
         row.use_mission_yaw = false;
         parsed.anyFalse = true;
-        row.heading_mode = yawMode;
-        if (yawAngle != null && Number.isFinite(yawAngle)) {
-          row.heading_angle = yawAngle;
-          row.direction_deg = yawAngle;
-        }
+        storeHeading(yawMode);
       }
-      if (poiText) {
+      if (yawMode === 'Fokus POI' && poiText) {
         const parts = poiText.split(',').map((part) => Number(String(part).trim()));
-        if (parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
+        const nonzero = parts.length >= 2 && (Math.abs(parts[0]) > 1e-7 || Math.abs(parts[1]) > 1e-7);
+        if (nonzero && Number.isFinite(parts[0]) && Number.isFinite(parts[1])) {
           row.poi = {
             latitude: parts[0],
             longitude: parts[1],
@@ -751,6 +1197,14 @@
           row.use_mission_yaw = false;
           row.heading_mode = 'Fokus POI';
           parsed.anyFalse = true;
+        }
+      }
+      const pitchText = wpmlTag(block, 'gimbalPitchAngle');
+      if (pitchText != null && String(pitchText).trim() !== '') {
+        const pitch = Math.round(Number(pitchText));
+        if (Number.isFinite(pitch) && Math.abs(pitch - (-90)) >= 0.5) {
+          row.gimbal_pitch = Math.max(-90, Math.min(30, pitch));
+          parsed.gimbalMode = 'Jeden Wegpunkt festlegen';
         }
       }
       parsed.count = Math.max(parsed.count || 0, idx);
@@ -790,9 +1244,8 @@
         row.use_mission_yaw = false;
         parsed.anyFalse = true;
       }
-      if (yawFlag == null && row.poi && row.poi.longitude != null) {
+      if (yawFlag == null && row.heading_mode === 'Fokus POI' && row.poi && row.poi.longitude != null) {
         row.use_mission_yaw = false;
-        row.heading_mode = row.heading_mode || 'Fokus POI';
         parsed.anyFalse = true;
       }
       const pathFlag = jsonFlag(row.use_mission_path_mode);
@@ -843,12 +1296,19 @@
     headingChange: headingChange,
     buildCoveragePolygons: buildCoveragePolygons,
     buildRouteCoveragePolygons: buildRouteCoveragePolygons,
+    coordinateTurnCoords: coordinateTurnCoords,
+    mapLabelScale: mapLabelScale,
+    setMapLabelScale: setMapLabelScale,
+    mapLabelFont: mapLabelFont,
+    saveConfirmText: saveConfirmText,
     nextLegBearingDeg: nextLegBearingDeg,
     formatMeterLabel: formatMeterLabel,
     programmedFlightHeightM: programmedFlightHeightM,
     heightAboveGroundM: heightAboveGroundM,
     relativeHeightFromStartM: relativeHeightFromStartM,
     heightCaption: heightCaption,
+    specificGimbalLabel: specificGimbalLabel,
+    gimbalModeFromUav: gimbalModeFromUav,
     waypointMissesMission: waypointMissesMission,
     bearingDegLonLat: bearingDegLonLat,
     yawSymbol: yawSymbol,
@@ -862,6 +1322,8 @@
     headingModeFromKmz: headingModeFromKmz,
     readUavWaypointOverrides: readUavWaypointOverrides,
     readMissionDeviations: readMissionDeviations,
+    applyKmzDeviations: applyKmzDeviations,
+    alignOverridesToPath: alignOverridesToPath,
     templateKmlFromKmz: templateKmlFromKmz,
     paintDebugParamHints: paintDebugParamHints,
   };

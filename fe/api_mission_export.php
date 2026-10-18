@@ -459,6 +459,33 @@ function waypoint_override_row(array $mission, int $index1): array
     return is_array($row) ? $row : [];
 }
 
+/** Wegpunktwerte bleiben am selben Koordinatenpunkt, wenn der Export einen Startpunkt davorsetzt. */
+function realign_waypoint_overrides_to_path(array $mission, array $before, array $after): array
+{
+    $rows = $mission['waypoint_overrides'] ?? null;
+    if (!is_array($rows) || !function_exists('path_points_same_lonlat')) {
+        return $mission;
+    }
+    $next = [];
+    foreach ($after as $i => $point) {
+        if (!is_array($point)) {
+            continue;
+        }
+        foreach ($before as $j => $old) {
+            if (!is_array($old) || !path_points_same_lonlat($point, $old)) {
+                continue;
+            }
+            $key = (string)($j + 1);
+            if (isset($rows[$key]) && is_array($rows[$key])) {
+                $next[(string)($i + 1)] = $rows[$key];
+            }
+            break;
+        }
+    }
+    $mission['waypoint_overrides'] = $next;
+    return $mission;
+}
+
 function effective_ch_flags_for_waypoint(array $mission, int $index1): array
 {
     $base = ch_waypoint_use_mission_flags($mission);
@@ -836,7 +863,6 @@ function wpml_waypoint_heading_param_children_from_german(string $germanHeading,
     }
     $children = [
         'wpml:waypointHeadingMode' => $mode,
-        'wpml:waypointHeadingYawPathMode' => $pathMode,
         'wpml:waypointHeadingPathMode' => $pathMode,
     ];
     if ($mode === 'smoothTransition') {
@@ -1309,8 +1335,10 @@ function export_height_rel_start(float $flightAgl, float $lon, float $lat, array
 function build_ch_sample_geojson_features(array $poly, array $path, array $startPt, array $mission): array
 {
     $altM = clamp_export_agl_m(floatval($mission['altitude_m'] ?? 60.0));
+    $pathBeforeStart = $path;
     if (count($startPt) >= 2) {
         $path = ensure_start_point_first($path, $startPt, $altM);
+        $mission = realign_waypoint_overrides_to_path($mission, $pathBeforeStart, $path);
     }
     $missionSpeed = clamp_export_speed_m_s(floatval($mission['speed_m_s'] ?? 5.0));
     $turnD = clamp_export_turn_m(floatval($mission['standard_turn_distance_m'] ?? 5.0));
@@ -1634,6 +1662,7 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
 {
     $mission = is_array($meta['mission_settings'] ?? null) ? $meta['mission_settings'] : [];
     $cruise = clamp_export_agl_m(floatval($mission['altitude_m'] ?? ($meta['std_agl_m'] ?? 60.0)));
+    $pathForFeatures = $path;
     if (count($startPt) >= 2) {
         $path = ensure_start_point_first($path, $startPt, $cruise);
     }
@@ -1666,7 +1695,7 @@ function build_uav_json_payload(array $meta, array $path, array $poly = [], arra
         'type' => 'FeatureCollection',
         'features' => build_ch_sample_geojson_features(
             $poly,
-            $path,
+            $pathForFeatures,
             $startPt,
             $mission
         ),
@@ -2061,26 +2090,49 @@ function resolve_dji_interface_drone_key(string $droneType): string
     return isset($enums['3T']) ? '3T' : (string)(array_key_first($enums) ?? '3T');
 }
 
-function mission_gimbal_uses_point_setting(array $mission): bool
+function mission_gimbal_pitch_value(array $mission, array $ov): ?float
 {
-    return wpml_gimbal_pitch_mode_from_mission((string)($mission['gimbal_mode'] ?? '')) === 'usePointSetting';
+    $raw = null;
+    if (isset($ov['gimbal_pitch']) && is_numeric($ov['gimbal_pitch'])) {
+        $raw = floatval($ov['gimbal_pitch']);
+    }
+    if ($raw === null || !is_finite($raw)) {
+        return null;
+    }
+    $clamped = max(-90.0, min(30.0, $raw));
+    if (abs($clamped - (-90.0)) < 0.5) {
+        return null;
+    }
+    return $clamped;
 }
 
-/** Flag aus: null, die KMZ schreibt keinen Winkel. Flag an: Wegpunktwinkel, sonst der Missionswinkel, sonst −90. */
+function mission_gimbal_uses_point_setting(array $mission): bool
+{
+    if (mission_gimbal_pitch_value($mission, []) !== null) {
+        return true;
+    }
+    $rows = $mission['waypoint_overrides'] ?? null;
+    if (!is_array($rows)) {
+        return false;
+    }
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        if (mission_gimbal_pitch_value($mission, $row) !== null) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/** Spezifisch nur mit «Neigungswinkel setzen» und einem Wert ungleich −90. Sonst null. */
 function export_gimbal_pitch_deg(array $mission, array $ov): ?float
 {
     if (!mission_gimbal_uses_point_setting($mission)) {
         return null;
     }
-    $raw = null;
-    if (isset($ov['gimbal_pitch']) && is_numeric($ov['gimbal_pitch'])) {
-        $raw = floatval($ov['gimbal_pitch']);
-    } elseif (isset($mission['gimbal_pitch']) && is_numeric($mission['gimbal_pitch'])) {
-        $raw = floatval($mission['gimbal_pitch']);
-    } else {
-        $raw = -90.0;
-    }
-    return max(-90.0, min(30.0, $raw));
+    return mission_gimbal_pitch_value($mission, $ov);
 }
 
 function wpml_gimbal_pitch_mode_from_mission(string $deMode): string
@@ -2450,7 +2502,7 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
             'heading_angle' => array_key_exists('wpml:waypointHeadingAngle', $headingChildren)
                 ? floatval($headingChildren['wpml:waypointHeadingAngle'])
                 : null,
-            'heading_path_mode' => (string)($headingChildren['wpml:waypointHeadingYawPathMode'] ?? ($headingChildren['wpml:waypointHeadingPathMode'] ?? 'followBadArc')),
+            'heading_path_mode' => (string)($headingChildren['wpml:waypointHeadingPathMode'] ?? 'followBadArc'),
             'poi_point' => $poiPoint,
             'gimbal_pitch' => is_numeric($ext['gimbal_pitch'] ?? null) ? floatval($ext['gimbal_pitch']) : null,
         ];
@@ -2480,7 +2532,7 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
         'heading_poi_point' => $headingMode === 'towardPOI' ? $headingPoiPoint : '',
         'turn_mode' => $turnMode,
         'use_straight_line' => intval($wpBundle['use_straight_line'] ?? 1),
-        'gimbal_pitch_mode' => wpml_gimbal_pitch_mode_from_mission((string)($missionSettings['gimbal_mode'] ?? '')),
+        'gimbal_pitch_mode' => mission_gimbal_uses_point_setting($missionSettings) ? 'usePointSetting' : 'manual',
         'takeoff_ref' => [floatval($first['lat']), floatval($first['lng']), floatval($first['height'])],
         'waypoints' => $waypoints,
     ];

@@ -17,10 +17,16 @@ include_once __DIR__ . '/rkrk_access_control.php';
 CheckIPandExit();
 $GLOBALS['RKRK_MANIFEST_APP'] = 'rc';
 headerpage('RC Zugang', true);
-$logoSrc = rtrim(str_replace('\\', '/', (string)($ImageLoc ?? 'images/')), '/') . '/calc/rkrk_logo.png';
+$logoSrc = '/rkropen/favicon/Reh_FA840B_orange/favicon-32x32.png';
+if (function_exists('rkrk_favicon_assets')) {
+	$rcFav = rkrk_favicon_assets();
+	if (!empty($rcFav['png'])) {
+		$logoSrc = (string)$rcFav['png'];
+	}
+}
 echo '<style>
   .rc-brand { display:flex; align-items:center; gap:10px; max-width:40rem; width:100%; box-sizing:border-box; margin:6px auto 0; padding:0 12px; font-family:system-ui,Segoe UI,Arial,sans-serif; text-decoration:none; }
-  .rc-brand img { height:48px; width:auto; display:block; }
+  .rc-brand img { height:32px; width:32px; object-fit:contain; display:block; }
   .rc-brand strong { display:block; font-size:18px; color:#48673A; }
   .rc-brand span { color:#5c6b7a; font-size:13px; }
 </style>';
@@ -86,8 +92,14 @@ $self = htmlspecialchars($_SERVER['PHP_SELF'] ?? 'rkrk_rc_access.php', ENT_QUOTE
 $iconBase = rtrim(str_replace('\\', '/', (string)($IconLoc ?? 'images/23color')), '/');
 $mapIntern = (string)($MapIntern ?? '&KA=S&Strt=on&Cntr=off&Area=on&Pfad=on&EX=NO&Poi=off&FZ=on&MAP=1&Zoom=1.0');
 $menuIcon = static function ($menuKey) use ($iconBase) {
+	if (function_exists('rkrk_menu_icon_src')) {
+		$src = rkrk_menu_icon_src($menuKey, true);
+		if ($src !== '') {
+			return $src;
+		}
+	}
 	global $MainMenu;
-	$file = ltrim((string)($MainMenu[$menuKey]['image'] ?? ''), '/');
+	$file = ltrim((string)($MainMenu[$menuKey]['image_small'] ?? $MainMenu[$menuKey]['image'] ?? ''), '/');
 	return $file === '' ? '' : $iconBase . '/' . $file;
 };
 $links = array(
@@ -101,7 +113,7 @@ $links = array(
   body { margin: 0 !important; padding: 0 !important; background: #f7f8f6; }
   .rc-gate { max-width: 40rem; width: 100%; box-sizing: border-box; margin: 0 auto; padding: 4px 12px 16px; font-family: system-ui, Segoe UI, Arial, sans-serif; color: #172033; }
   .rc-brand { display: flex; align-items: center; gap: 10px; max-width: 40rem; width: 100%; box-sizing: border-box; margin: 4px auto 0; padding: 0 12px; }
-  .rc-brand img { height: 48px; width: auto; display: block; }
+  .rc-brand img { height: 32px; width: 32px; object-fit: contain; display: block; }
   .rc-brand strong { display: block; font-size: 18px; color: #48673A; letter-spacing: .02em; }
   .rc-brand span, .rc-brand a { color: #5c6b7a; font-size: 13px; text-decoration: none; }
   .rc-gate h2 { font-size: 12px; margin: 6px 0 4px; letter-spacing: .08em; text-transform: uppercase; color: #48673A; }
@@ -127,7 +139,7 @@ $links = array(
   @media (max-width: 1100px) {
     .rkrk-shell-header, #navDemo { display: none !important; }
     .rc-brand { margin-top: 10px; }
-    .rc-brand img { height: 36px; }
+    .rc-brand img { height: 32px; width: 32px; }
     .rc-links { grid-template-columns: 1fr 1fr; }
   }
 </style>

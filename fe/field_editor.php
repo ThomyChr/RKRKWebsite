@@ -12,7 +12,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
   <?php echo mapll_favicon_link_tags($mapllBrand); ?>
   <?php echo mapll_theme_css_link(); ?>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@7.5.2/ol.css" />
-  <link rel="stylesheet" href="rkrk_help.css" />
+  <link rel="stylesheet" href="rkrk_help.css?v=20261017hilfe6" />
   <link rel="stylesheet" href="rkrk_layout.css" />
   <link rel="stylesheet" href="../template/rkrk_reg_pills.css?v=20260907nodbl" />
   <style>
@@ -318,6 +318,77 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
     .plan-step { display: flex; justify-content: space-between; align-items: center; text-align: left; background: #fff; color: #1b3552; border: 1px solid #d9dde2; margin: 6px 0; padding: 10px 12px; }
     .plan-step::after { content: '›'; color: #5b6f86; font-size: 18px; }
     .plan-step.is-active { border-color: #1f78d1; background: #f3f8ff; }
+    .plan-point-list { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 4px; }
+    .plan-point-row {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid #d9dde2;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .plan-point-row[hidden] { display: none !important; }
+    .plan-point-row:has(.is-active) { border-color: #1f78d1; }
+    button.plan-point-hit {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      width: auto;
+      min-width: 0;
+      margin: 0;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #1b3552;
+      text-align: left;
+      font-family: inherit;
+      font-weight: 400;
+      line-height: 1.3;
+    }
+    button.plan-step.plan-point-hit::after { content: none; }
+    button.plan-point-hit:hover,
+    button.plan-step.plan-point-hit.is-active,
+    button.plan-step.plan-point-hit.is-active:hover {
+      background: transparent;
+      color: #1b3552;
+      border: 0;
+    }
+    .plan-point-row:hover { border-color: #b7c3d0; }
+    .plan-point-row:has(.is-active):hover { border-color: #1f78d1; }
+    .plan-point-ico {
+      flex: 0 0 18px;
+      width: 18px;
+      margin-top: 1px;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+    .plan-point-ico svg { display: block; margin: 0 auto; }
+    .plan-point-copy { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .plan-point-label { font-size: 13px; font-weight: 700; color: #1b3552; }
+    .plan-note.plan-coord { display: block; margin: 0; font-size: 11px; line-height: 1.35; color: #5b6f86; }
+    .plan-coord:empty { display: none; }
+    .plan-coord.is-coord { font-family: Consolas, ui-monospace, monospace; letter-spacing: 0; }
+    .plan-point-row .plan-quiet { align-self: center; flex: 0 0 auto; margin: 0 10px 0 0; white-space: nowrap; }
+    .plan-fold[data-plan-phase="start"] > summary .plan-fold-mark {
+      color: #24402a;
+      background: #eef5ea;
+      border: 1px solid #d5e4d0;
+      border-radius: 8px;
+      padding: 1px 7px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+    .plan-fold[data-plan-phase="start"] .plan-direct-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: #1b3552;
+    }
     .plan-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
     .plan-actions.plan-pic-actions { grid-template-columns: 1fr 1fr; }
     .plan-actions button { padding: 8px 4px; font-size: 12px; }
@@ -446,6 +517,8 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
     #planWpPanel.is-simple #wpDirectionWrap[hidden],
     #planWpPanel.is-simple #wpPoiBox[hidden],
     #planWpPanel.is-simple #wpTurnDistanceWrap[hidden] { display: none !important; }
+    #wpPitchWrap[hidden] { display: none !important; }
+    #planWpPanel.is-simple #missionSettingsBox > #msGimbalWrap.is-gimbal-open { display: block !important; }
     #msTurnDistanceWrap[hidden], #wpTurnDistanceWrap[hidden] { display: none !important; }
     #planWpPanel.is-simple #wpTabAll,
     #planWpPanel.is-simple #wpAllPane,
@@ -695,11 +768,35 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       right: auto;
       bottom: 8px;
     }
-    #rkrkMapScaleBar {
-      display: block;
+    #rkrkMapCorner {
       position: absolute;
       right: 10px;
       bottom: 10px;
+      z-index: 24;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      pointer-events: none;
+    }
+    #rkrkMapLabelSize {
+      pointer-events: auto;
+      display: flex;
+      gap: 4px;
+    }
+    #rkrkMapLabelSize button {
+      min-width: 36px;
+      height: 32px;
+      border: 1px solid rgba(0,0,0,0.28);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.92);
+      color: #111827;
+      font: 700 14px/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.16);
+    }
+    #rkrkMapScaleBar {
+      display: block;
+      position: static;
       z-index: 24;
       padding: 5px 8px 4px;
       border-radius: 6px;
@@ -963,6 +1060,96 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       color: #1b3552;
       white-space: nowrap;
     }
+    #wpDebugTableBox {
+      --wp-box-max: min(46vh, 320px);
+      position: absolute;
+      left: 8px;
+      top: 72px;
+      right: auto;
+      bottom: auto;
+      z-index: 26;
+      width: min(1080px, calc(100% - 24px));
+      max-height: var(--wp-box-max);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      box-sizing: border-box;
+      border: 1px solid #d9dde2;
+      border-radius: 8px;
+      background: rgba(248,251,255,0.97);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+      color: #1b3552;
+      padding: 8px;
+    }
+    #wpDebugTableBox[hidden] { display: none !important; }
+    #showBoxWaypointDataLabel[hidden] { display: none !important; }
+    #coverageWindowChoice[hidden] { display: none !important; }
+    #coverageWindowChoice:not([hidden]) { display: contents; }
+    #wpDebugTableBox > summary {
+      flex: 0 0 auto;
+      cursor: pointer;
+      user-select: none;
+      font-weight: bold;
+      color: #1b3552;
+      margin-bottom: 6px;
+    }
+    #wpDebugTableBox:not([open]) > summary { margin-bottom: 0; }
+    #wpDebugTableBox::details-content {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .wp-debug-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      min-width: 0;
+      max-width: 100%;
+      max-height: calc(var(--wp-box-max) - 44px);
+      overflow: auto;
+    }
+    #wpDebugTable {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+    #wpDebugTable col.wp-col-nr { width: 7%; }
+    #wpDebugTable col.wp-col-terrain { width: 16%; }
+    #wpDebugTable col.wp-col-delta { width: 13%; }
+    #wpDebugTable col.wp-col-prog { width: 15%; }
+    #wpDebugTable col.wp-col-rel { width: 18%; }
+    #wpDebugTable col.wp-col-yaw { width: 18%; }
+    #wpDebugTable col.wp-col-gimbal { width: 13%; }
+    #wpDebugTable th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #e8eef4;
+      text-align: left;
+      vertical-align: bottom;
+      padding: 4px 6px;
+      white-space: normal;
+      line-height: 1.2;
+      border-bottom: 1px solid #d9dde2;
+    }
+    #wpDebugTable td {
+      padding: 3px 6px;
+      border-top: 1px solid #e6ebf1;
+      white-space: normal;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+    #wpDebugTable td.num {
+      font-family: Consolas, ui-monospace, monospace;
+      text-align: right;
+    }
+    #wpDebugTable td.wp-debug-empty { text-align: left; font-family: Arial, sans-serif; }
     .editor-form-drawer {
       position: absolute;
       left: 14px;
@@ -1347,7 +1534,11 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
                 <div id="planExistingList" class="plan-existing-list"></div>
               </div>
               <button id="planStepPlace" class="plan-step" type="button">🔎 Ort suchen</button>
-              <button id="planStepPolygon" class="plan-step" type="button">✏ Feldpolygon zeichnen</button>
+              <div class="plan-point-list">
+                <div class="plan-point-row">
+                  <button id="planStepPolygon" class="plan-step plan-point-hit" type="button"><span class="plan-point-ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16" focusable="false"><path d="M8 1.4 14.4 5.9 12.1 14.4H3.9L1.6 5.9Z" fill="#e04e7e"/></svg></span><span class="plan-point-copy"><span class="plan-point-label">Feldpolygon zeichnen</span><span id="planPolygonNote" class="plan-note plan-coord"></span></span></button>
+                </div>
+              </div>
               <p class="plan-note">Umrandung auf der Karte zeichnen. Doppelklick beendet. Jagdgebiet, Gemeinde und die GIS-Nummer folgen erst aus dieser Fläche.</p>
               <div class="plan-rail">Lagen zur Prüfung</div>
               <div class="plan-pills rkrk-sels rkrk-reg-pills">
@@ -1384,14 +1575,19 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
             <summary><span>2 · Start</span><span class="plan-fold-mark" hidden></span></summary>
             <div class="plan-fold-body">
               <p class="plan-note">Startpunkt setzen. Direkt zum Startpunkt fliegen lässt den Anflug die berechnete Reihenfolge.</p>
-              <button id="planStepStart" class="plan-step" type="button">📍 Startpunkt setzen</button>
-              <p id="planStartCoord" class="plan-note"></p>
-              <button id="planStepPark" class="plan-quiet" type="button">🅿 Parkplatz setzen</button>
-              <button id="planParkClear" class="plan-quiet" type="button" hidden>Parkplatz entfernen</button>
-              <p id="planParkCoord" class="plan-note">Parkplatz nur, wenn er sich vom Startpunkt unterscheidet.</p>
-              <button id="planStepPoi" class="plan-quiet" type="button">◎ POI setzen</button>
-              <button id="planPoiClear" class="plan-quiet" type="button" hidden>POI entfernen</button>
-              <p id="planPoiCoord" class="plan-note">POI für die Gierrichtung Fokus POI.</p>
+              <div class="plan-point-list">
+                <div class="plan-point-row">
+                  <button id="planStepStart" class="plan-step plan-point-hit" type="button"><span class="plan-point-ico" aria-hidden="true">📍</span><span class="plan-point-copy"><span class="plan-point-label">Startpunkt setzen</span><span id="planStartCoord" class="plan-note plan-coord"></span></span></button>
+                </div>
+                <div id="planParkRow" class="plan-point-row" hidden>
+                  <button id="planStepPark" class="plan-point-hit" type="button"><span class="plan-point-ico" aria-hidden="true">🅿</span><span class="plan-point-copy"><span class="plan-point-label">Parkplatz setzen</span><span id="planParkCoord" class="plan-note plan-coord">Parkplatz nur, wenn er sich vom Startpunkt unterscheidet.</span></span></button>
+                  <button id="planParkClear" class="plan-quiet" type="button" hidden>Parkplatz entfernen</button>
+                </div>
+                <div id="planPoiRow" class="plan-point-row" hidden>
+                  <button id="planStepPoi" class="plan-point-hit" type="button"><span class="plan-point-ico" aria-hidden="true">◎</span><span class="plan-point-copy"><span class="plan-point-label">POI setzen</span><span id="planPoiCoord" class="plan-note plan-coord">POI für die Gierrichtung Fokus POI.</span></span></button>
+                  <button id="planPoiClear" class="plan-quiet" type="button" hidden>POI entfernen</button>
+                </div>
+              </div>
             </div>
           </details>
           <details class="plan-fold" data-plan-phase="optimize">
@@ -1402,7 +1598,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
               <label class="plan-checkline plan-coverage-sub"><input id="planShowUncovered" type="checkbox" checked /> Nicht abgedeckte Flächen</label>
               <div class="plan-rail">Höhenanzeige</div>
               <label class="plan-checkline"><input id="planShowRouteHeights" type="checkbox" /> Auf der Route</label>
-              <label class="plan-checkline"><input id="planShowAglLimit" type="checkbox" title="Roter Punkt, wo die reale Flughöhe über Grund von der Sollflughöhe um mehr als ±10 m abweicht." /> Abweichung von der Sollflughöhe</label>
+              <label class="plan-checkline"><input id="planShowAglLimit" type="checkbox" checked title="Roter Punkt, wo die reale Flughöhe über Grund von der Sollflughöhe um mehr als ±10 m abweicht." /> Abweichung von der Sollflughöhe</label>
               <label class="plan-checkline"><input id="planShowFieldHeights" type="checkbox" /> Im Feld</label>
               <div class="plan-rail">Zweiter Wegpunkt nach dem Start</div>
               <div class="plan-choice">
@@ -1541,10 +1737,16 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         <button type="button" class="pop-close" id="dabsPopupClose" aria-label="Schliessen">×</button>
         <div id="dabsPopupBody"></div>
       </div>
+      <div id="rkrkMapCorner">
+      <div id="rkrkMapLabelSize" role="group" aria-label="Schriftgrösse der Kartenbeschriftung">
+        <button id="mapLabelSmaller" type="button" title="Beschriftung kleiner">A−</button>
+        <button id="mapLabelLarger" type="button" title="Beschriftung grösser">A+</button>
+      </div>
       <div id="rkrkMapScaleBar" aria-label="Kartenmassstab" title="Kartenmassstab">
         <span class="rkrk-scale-ratio">Massstab</span>
         <div class="rkrk-scale-track" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
         <div class="rkrk-scale-caps"><span>0</span><span class="rkrk-scale-dist"></span></div>
+      </div>
       </div>
       <button id="layerControlDockBtn" class="map-dock-btn map-layer-btn" type="button" hidden title="Layersteuerung"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2 2 7l10 5 10-5-10-5zm-8 9.5 8 4 8-4V14l-8 4-8-4v-2.5zm0 5 8 4 8-4V19l-8 4-8-4v-2.5z"/></svg></button>
       <button id="fieldCharDockBtn" class="map-dock-btn map-field-btn" type="button" hidden title="Feldcharakteristik">📈</button>
@@ -1560,6 +1762,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         <label class="rkrk-sel rkrk-reg-pill" title="Layersteuerung: Kartenansicht und SwissTopo-Overlays"><input id="showBoxSwissOverlay" type="checkbox" checked data-rkrk-box-for="overlays" /> Layersteuerung</label>
         <label class="rkrk-sel rkrk-reg-pill" title="Flugvorgaben werden von rechts eingeblendet (Button Missionsparameter)" style="display:none;"><input id="showBoxMissionSettings" type="checkbox" data-rkrk-box-for="mission" /> Flugvorgaben</label>
         <label class="rkrk-sel rkrk-reg-pill" title="Berechnete Feldcharakteristik"><input id="showBoxFieldCharacteristics" type="checkbox" checked data-rkrk-box-for="characteristics" /> Feldcharakteristik</label>
+        <label id="showBoxWaypointDataLabel" class="rkrk-sel rkrk-reg-pill" hidden title="Wegpunkttabelle, nur mit DEBUG"><input id="showBoxWaypointData" type="checkbox" checked data-rkrk-box-for="waypoints" /> Wegpunktdaten</label>
         <label class="rkrk-sel rkrk-reg-pill" title="Felddatenbereich unten"><input id="showBoxFormDrawer" type="checkbox" data-rkrk-box-for="form" /> Felddaten-Box</label>
       </div>
       <div id="displayControlBox" class="display-control-box" data-rkrk-box="display" data-rkrk-box-label="Anzeigekontrolle">
@@ -1572,9 +1775,13 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         </div>
         <div class="control-divider"></div>
         <div class="group-title">Abdeckung</div>
-        <div class="group-note">Suchband = Mittel aus Sicht- und Bahnbreite, transparent. An Drehpunkten schliesst ein Kreissegment die Bahn. Start und Ende plus halbe Sichttiefe.</div>
+        <div class="group-note">Neigung −90: Streifen mittig auf der Route, Breite aus Flughöhe und Sichtfeld. Andere Neigung: schräger Footprint in Blickrichtung.</div>
         <div class="rkrk-sels rkrk-reg-pills">
-        <label class="rkrk-sel rkrk-reg-pill" title="Anzeigte Abdeckung = Bahnbreite + (Sichtbreite − Bahnbreite) / 2"><input id="showCoverageCircles" type="checkbox" checked /> <span id="coverageSourceLabel">Suchabdeckung</span></label>
+        <label class="rkrk-sel rkrk-reg-pill" title="Neigung −90: Streifen auf der Route. Andere Neigung: schräger Footprint in Gierrichtung."><input id="showCoverageCircles" type="checkbox" checked /> <span id="coverageSourceLabel">Suchabdeckung</span></label>
+        <span id="coverageWindowChoice" hidden>
+          <label class="rkrk-sel rkrk-reg-pill" title="DEBUG: volles Kamerafenster am Boden, die blaue Strecke W."><input type="radio" name="coverageWindowMode" value="W" /> Kamerasicht (W)</label>
+          <label class="rkrk-sel rkrk-reg-pill" title="DEBUG: Spurabstand, dieselbe Formel wie die grüne Strecke S. Standard."><input type="radio" name="coverageWindowMode" value="S" checked /> Suchabdeckung (S)</label>
+        </span>
         <label class="rkrk-sel rkrk-reg-pill"><input id="showOverlapAreas" type="checkbox" /> Ueberlappung anzeigen</label>
         <label class="rkrk-sel rkrk-reg-pill"><input id="showUncoveredAreas" type="checkbox" checked /> Nicht abgedeckte Flaechen</label>
         <label class="rkrk-sel rkrk-reg-pill" title="Wenn aktiv, wird bei der Pfadberechnung die Korrektur nicht abgedeckter Flaechen per Wegpunkt-Erweiterung/-Einfügung forciert.">
@@ -1584,10 +1791,10 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         <div class="control-divider"></div>
         <div class="group-title">Kontrollpunkte</div>
         <div class="rkrk-sels rkrk-reg-pills">
-        <label class="rkrk-sel rkrk-reg-pill"><input id="showCorrectionPoints" type="checkbox" checked /> Korrekturpunkte markieren</label>
+        <label class="rkrk-sel rkrk-reg-pill"><input id="showCorrectionPoints" type="checkbox" /> Korrekturpunkte markieren</label>
         <label class="rkrk-sel rkrk-reg-pill"><input id="showTurnCurves" type="checkbox" checked /> Wendekurven anzeigen</label>
         <label class="rkrk-sel rkrk-reg-pill"><input id="showControlPoints" type="checkbox" /> Höhen auf der Route</label>
-        <label class="rkrk-sel rkrk-reg-pill" title="Roter Punkt, wo die reale Flughöhe über Grund von der Sollflughöhe um mehr als ±10 m abweicht."><input id="showAglLimit" type="checkbox" /> Abweichung von der Sollflughöhe</label>
+        <label class="rkrk-sel rkrk-reg-pill" title="Roter Punkt, wo die reale Flughöhe über Grund von der Sollflughöhe um mehr als ±10 m abweicht."><input id="showAglLimit" type="checkbox" checked /> Abweichung von der Sollflughöhe</label>
         <label class="rkrk-sel rkrk-reg-pill"><input id="showFieldControlPoints" type="checkbox" /> Höhen im Feld</label>
         </div>
         <div class="control-divider"></div>
@@ -1828,9 +2035,9 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
                 <input id="msSafeStartAltitude" type="number" step="0.1" value="20" />
               </div>
               <div>
-                <label><input id="msDirectToStart" type="checkbox" style="width:auto;" /> Direkt zur Startposition fliegen</label>
+                <label class="plan-direct-line"><input id="msDirectToStart" type="checkbox" style="width:auto;" /> Direkt zur Startposition fliegen</label>
               </div>
-              <div>
+              <div id="msGimbalWrap">
                 <label>Gimbalsteuerung</label>
                 <select id="msGimbalMode">
                   <option value="Manuell" selected>Manuell</option>
@@ -1948,7 +2155,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
                   </div>
                   <div class="wp-hint">Richtungswinkel bei Definiert, Schritte 1°. Schenkachse sperren zeigt ein rotes X.</div>
                 </div>
-                <div id="wpPitchWrap" class="full plan-wp-check">
+                <div id="wpPitchWrap" class="full plan-wp-check" hidden>
                   <label class="wp-check"><input id="msGimbalAngleActive" type="checkbox" /> Neigungswinkel setzen</label>
                   <label class="wp-req">Neigungswinkel</label>
                   <div class="wp-slider-row">
@@ -1982,6 +2189,34 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
           <span>Höhendifferenz hoch</span><span id="fcClimbUp" class="value">-</span>
           <span>Höhendifferenz runter</span><span id="fcClimbDown" class="value">-</span>
           <span>Flugzeit</span><span id="fcFlightTime" class="value">-</span>
+        </div>
+      </details>
+      <details id="wpDebugTableBox" hidden open data-rkrk-box="waypoints" data-rkrk-box-label="Wegpunktdaten">
+        <summary>Wegpunktdaten</summary>
+        <div class="wp-debug-scroll">
+          <table id="wpDebugTable">
+            <colgroup>
+              <col class="wp-col-nr">
+              <col class="wp-col-terrain">
+              <col class="wp-col-delta">
+              <col class="wp-col-prog">
+              <col class="wp-col-rel">
+              <col class="wp-col-yaw">
+              <col class="wp-col-gimbal">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>WP<br>Nr</th>
+                <th>Höhe WP<br>aus SwissTopo</th>
+                <th>Delta zu<br>Starthöhe</th>
+                <th>Programmierte<br>Flughöhe</th>
+                <th>Flughöhe Relativ<br>zum Startpunkt</th>
+                <th>Gier<br>richtung</th>
+                <th>Gimbal<br>neigung</th>
+              </tr>
+            </thead>
+            <tbody id="wpDebugTableBody"></tbody>
+          </table>
         </div>
       </details>
       <details id="formDrawerBox" class="editor-form-drawer" data-rkrk-box="form" data-rkrk-box-label="📝 Felddaten-Box">
@@ -2317,10 +2552,10 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
   <?php include dirname(__DIR__) . '/scripts/rkrk_catalog_shot.php'; ?>
   <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
   <script src="rkrk_swiss_overlays.js?v=20260917dabs1"></script>
-  <script src="rkrk_help_catalog.js?v=20261012daten"></script>
-  <script src="rkrk_help.js"></script>
+  <script src="rkrk_help_catalog.js?v=20261018abdeckung2"></script>
+  <script src="rkrk_help.js?v=20261017hilfe7"></script>
   <script src="rkrk_layout.js"></script>
-  <script src="rkrk_field_shared.js?v=20261016yaw4"></script>
+  <script src="rkrk_field_shared.js?v=20261018ws"></script>
   <script>window.RKRK_KAT = <?php echo $rkrkKat ? 'true' : 'false'; ?>; window.RKRK_ADMIN = <?php echo $rkrkAdmin ? 'true' : 'false'; ?>;</script>
   <script>
     const els = {
@@ -2461,6 +2696,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       showBoxSwissOverlay: document.getElementById('showBoxSwissOverlay'),
       showBoxMissionSettings: document.getElementById('showBoxMissionSettings'),
       showBoxFieldCharacteristics: document.getElementById('showBoxFieldCharacteristics'),
+      showBoxWaypointData: document.getElementById('showBoxWaypointData'),
       showBoxFormDrawer: document.getElementById('showBoxFormDrawer'),
       showManualPath: document.getElementById('showManualPath'),
       showAlgorithmPath: document.getElementById('showAlgorithmPath'),
@@ -2481,6 +2717,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       computeMode: document.getElementById('computeMode'),
       swissOverlayBox: document.getElementById('swissOverlayBox'),
       fieldCharacteristicsBox: document.getElementById('fieldCharacteristicsBox'),
+      wpDebugTableBox: document.getElementById('wpDebugTableBox'),
       fcSource: document.getElementById('fcSource'),
       fcPathLength: document.getElementById('fcPathLength'),
       fcClimbUp: document.getElementById('fcClimbUp'),
@@ -3039,7 +3276,23 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         lengthM,
         cornerDiameterM,
         spacingM: preferAnalyzeFormula && Number.isFinite(formulaS) && formulaS > 0 ? formulaS : spacingM,
+        hfovDeg: hfovDeg,
+        vfovDeg: vfovDeg,
+        coverageWindow: coverageUsesCameraWindow() ? 'W' : 'S',
       };
+    }
+
+    function coverageUsesCameraWindow() {
+      if (!editorDebugOn()) return false;
+      const picked = document.querySelector('input[name="coverageWindowMode"]:checked');
+      return !!(picked && picked.value === 'W');
+    }
+
+    function applyCoverageWindowChoice(value) {
+      const mode = value === 'W' ? 'W' : 'S';
+      document.querySelectorAll('input[name="coverageWindowMode"]').forEach((el) => {
+        el.checked = el.value === mode;
+      });
     }
 
     function refreshWsSourceInfo() {
@@ -3297,12 +3550,33 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         return Number.isFinite(z) && z > 1 ? z : fallbackAgl;
       });
       const fillColor = 'rgba(64,196,255,0.46)';
+      const pitchList = triplets.map((_, i) => {
+        const row = waypointOverrides && waypointOverrides[String(i + 1)];
+        return row && row.gimbal_pitch;
+      });
+      const bearingList = triplets.map((_, i) => {
+        const yaw = yawDisplayForIndex(i + 1, pathCoords);
+        const sym = window.RkrkField && typeof RkrkField.yawSymbol === 'function'
+          ? RkrkField.yawSymbol(yaw && yaw.mode, yaw && yaw.angle, yaw && yaw.next)
+          : null;
+        if (sym && Number.isFinite(sym.bearingDeg)) return sym.bearingDeg;
+        if (window.RkrkField && typeof RkrkField.lensBearingDeg === 'function') {
+          return RkrkField.lensBearingDeg(pathCoords, i, yaw && yaw.next);
+        }
+        return yaw && yaw.next;
+      });
+      const headingModes = triplets.map((_, i) => {
+        const yaw = yawDisplayForIndex(i + 1, pathCoords);
+        return yaw && yaw.mode;
+      });
       const rings = window.RkrkField && RkrkField.buildRouteCoveragePolygons
-        ? RkrkField.buildRouteCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, triplets, routeCoverageReady)
+        ? RkrkField.buildRouteCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, triplets, routeCoverageReady, pitchList, bearingList, headingModes)
         : [];
-      rings.forEach((ring) => {
-        const feat = new ol.Feature({ geometry: new ol.geom.Polygon([ring]) });
-        feat.set('coverageFillColor', fillColor);
+      rings.forEach((item) => {
+        const piece = Array.isArray(item) ? { ring: item, fill: '' } : item;
+        if (!piece || !Array.isArray(piece.ring) || piece.ring.length < 4) return;
+        const feat = new ol.Feature({ geometry: new ol.geom.Polygon([piece.ring]) });
+        feat.set('coverageFillColor', piece.fill || fillColor);
         coverageSource.addFeature(feat);
       });
       refreshCoverageDiagnostics();
@@ -3674,6 +3948,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         showSwissOverlay: showOverlayBySetup,
         showMissionSettings: showMission,
         showFieldCharacteristics: showCharacteristics,
+        showWaypointData: !!(els.showBoxWaypointData && els.showBoxWaypointData.checked),
         showFormDrawer: showForm,
       });
       if (window.RkrkLayout && typeof window.RkrkLayout.applyBoxes === 'function') {
@@ -3682,6 +3957,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
           window.RkrkLayout.applyBoxes = function () {
             origApplyBoxes();
             if (!isPlanAdmin() && els.displayControlBox) els.displayControlBox.style.display = 'none';
+            syncWaypointDebugBoxVisibility();
           };
           window.RkrkLayout.__planAdminWrapped = true;
         }
@@ -3689,6 +3965,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       } else if (!isPlanAdmin() && els.displayControlBox) {
         els.displayControlBox.style.display = 'none';
       }
+      syncWaypointDebugBoxVisibility();
     }
 
     function restoreFloatingUiState() {
@@ -3711,6 +3988,9 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       if (els.showBoxFieldCharacteristics && typeof state.showFieldCharacteristics === 'boolean') {
         els.showBoxFieldCharacteristics.checked = state.showFieldCharacteristics;
       }
+      if (els.showBoxWaypointData && typeof state.showWaypointData === 'boolean') {
+        els.showBoxWaypointData.checked = state.showWaypointData;
+      }
       if (els.showBoxFormDrawer && typeof state.showFormDrawer === 'boolean') {
         els.showBoxFormDrawer.checked = state.showFormDrawer;
       }
@@ -3722,6 +4002,9 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       }
       if (els.fieldCharacteristicsBox && typeof state.fieldCharacteristicsOpen === 'boolean') {
         els.fieldCharacteristicsBox.open = state.fieldCharacteristicsOpen;
+      }
+      if (els.wpDebugTableBox && typeof state.waypointDataOpen === 'boolean') {
+        els.wpDebugTableBox.open = state.waypointDataOpen;
       }
       if (els.displayControlBox && typeof state.displayControlOpen === 'boolean') {
         if ('open' in els.displayControlBox) {
@@ -3776,10 +4059,12 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       if (els.showBoxSwissOverlay) patch.showSwissOverlay = !!els.showBoxSwissOverlay.checked;
       if (els.showBoxMissionSettings) patch.showMissionSettings = !!els.showBoxMissionSettings.checked;
       if (els.showBoxFieldCharacteristics) patch.showFieldCharacteristics = !!els.showBoxFieldCharacteristics.checked;
+      if (els.showBoxWaypointData) patch.showWaypointData = !!els.showBoxWaypointData.checked;
       if (els.showBoxFormDrawer) patch.showFormDrawer = !!els.showBoxFormDrawer.checked;
       if (els.swissOverlayBox) patch.swissOverlayOpen = !!els.swissOverlayBox.open;
       if (els.formDrawerBox) patch.formDrawerOpen = !!els.formDrawerBox.open;
       if (els.fieldCharacteristicsBox) patch.fieldCharacteristicsOpen = !!els.fieldCharacteristicsBox.open;
+      if (els.wpDebugTableBox) patch.waypointDataOpen = !!els.wpDebugTableBox.open;
       if (els.displayControlBox && 'open' in els.displayControlBox) patch.displayControlOpen = !!els.displayControlBox.open;
       if (els.displayControlBox) patch.displayControlCollapsed = els.displayControlBox.classList.contains('is-collapsed');
       const quickSlotBox = document.getElementById('quickSlotBox');
@@ -3793,10 +4078,13 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       const displayControlPos = captureBoxPosition(els.displayControlBox);
       const fieldCharacteristicsPos = captureBoxPosition(els.fieldCharacteristicsBox);
       const formDrawerPos = captureBoxPosition(els.formDrawerBox);
+      const waypointVisible = !!(els.wpDebugTableBox && !els.wpDebugTableBox.hidden && els.wpDebugTableBox.style.display !== 'none');
+      const waypointDataPos = waypointVisible ? captureBoxPosition(els.wpDebugTableBox) : null;
       if (mapMenuPos) patch.mapMenuPos = mapMenuPos;
       if (swissOverlayPos) patch.swissOverlayPos = swissOverlayPos;
       if (displayControlPos && !(els.displayControlBox && els.displayControlBox.classList.contains('is-collapsed'))) patch.displayControlPos = displayControlPos;
       if (fieldCharacteristicsPos) patch.fieldCharacteristicsPos = fieldCharacteristicsPos;
+      if (waypointDataPos && waypointDataPos.width > 20) patch.waypointDataPos = waypointDataPos;
       if (formDrawerPos) patch.formDrawerPos = formDrawerPos;
 
       saveFloatingUiState(patch);
@@ -4888,8 +5176,10 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         boxEl.style.left = `${left}px`;
         boxEl.style.top = `${top}px`;
         boxEl.style.right = 'auto';
-        if (storageKey === 'formDrawerPos') {
+        if (storageKey === 'formDrawerPos' || storageKey === 'waypointDataPos') {
           boxEl.style.bottom = 'auto';
+        }
+        if (storageKey === 'formDrawerPos') {
           boxEl.style.width = 'calc(100% - 28px)';
         }
       }
@@ -4919,7 +5209,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         lastLeft = startLeft;
         lastTop = startTop;
         boxEl.style.right = 'auto';
-        if (storageKey === 'formDrawerPos') boxEl.style.bottom = 'auto';
+        if (storageKey === 'formDrawerPos' || storageKey === 'waypointDataPos') boxEl.style.bottom = 'auto';
       });
 
       window.addEventListener('mousemove', (ev) => {
@@ -5444,6 +5734,10 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         lastDisplayControls: {
           showFieldPolygon: !!(els.showFieldPolygon ? els.showFieldPolygon.checked : true),
           showCoverageCircles: !!(els.showCoverageCircles && els.showCoverageCircles.checked),
+          coverageWindowMode: (function () {
+            const picked = document.querySelector('input[name="coverageWindowMode"]:checked');
+            return picked && picked.value === 'W' ? 'W' : 'S';
+          })(),
           showOverlapAreas: !!(els.showOverlapAreas && els.showOverlapAreas.checked),
           showUncoveredAreas: !!(els.showUncoveredAreas && els.showUncoveredAreas.checked),
           forceCoverageFix: !!(els.forceCoverageFix && els.forceCoverageFix.checked),
@@ -5451,6 +5745,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
           showSectionDirections: !!(els.showSectionDirections && els.showSectionDirections.checked),
           showCorrectionPoints: !!(els.showCorrectionPoints && els.showCorrectionPoints.checked),
           showTurnCurves: !!(els.showTurnCurves && els.showTurnCurves.checked),
+          mapLabelScale: window.RkrkField && typeof RkrkField.mapLabelScale === 'function' ? RkrkField.mapLabelScale() : 1,
           showControlPoints: !!(els.showControlPoints && els.showControlPoints.checked),
           showAglLimit: !!(els.showAglLimit && els.showAglLimit.checked),
           showFieldControlPoints: !!(els.showFieldControlPoints && els.showFieldControlPoints.checked),
@@ -5503,6 +5798,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       if (dc) {
         if (els.showFieldPolygon && typeof dc.showFieldPolygon === 'boolean') els.showFieldPolygon.checked = dc.showFieldPolygon;
         if (els.showCoverageCircles && typeof dc.showCoverageCircles === 'boolean') els.showCoverageCircles.checked = dc.showCoverageCircles;
+        applyCoverageWindowChoice(dc.coverageWindowMode);
         if (els.showOverlapAreas) els.showOverlapAreas.checked = typeof dc.showOverlapAreas === 'boolean' ? dc.showOverlapAreas : false;
         if (els.showUncoveredAreas && typeof dc.showUncoveredAreas === 'boolean') els.showUncoveredAreas.checked = dc.showUncoveredAreas;
         if (els.forceCoverageFix && typeof dc.forceCoverageFix === 'boolean') els.forceCoverageFix.checked = dc.forceCoverageFix;
@@ -5510,6 +5806,9 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         if (els.showSectionDirections && typeof dc.showSectionDirections === 'boolean') els.showSectionDirections.checked = dc.showSectionDirections;
         if (els.showCorrectionPoints && typeof dc.showCorrectionPoints === 'boolean') els.showCorrectionPoints.checked = dc.showCorrectionPoints;
         if (els.showTurnCurves && typeof dc.showTurnCurves === 'boolean') els.showTurnCurves.checked = dc.showTurnCurves;
+        if (window.RkrkField && typeof RkrkField.setMapLabelScale === 'function' && Number.isFinite(Number(dc.mapLabelScale))) {
+          RkrkField.setMapLabelScale(dc.mapLabelScale);
+        }
         if (els.showControlPoints && typeof dc.showControlPoints === 'boolean') els.showControlPoints.checked = dc.showControlPoints;
         if (els.showAglLimit && typeof dc.showAglLimit === 'boolean') els.showAglLimit.checked = dc.showAglLimit;
         if (els.showFieldControlPoints && typeof dc.showFieldControlPoints === 'boolean') els.showFieldControlPoints.checked = dc.showFieldControlPoints;
@@ -5520,6 +5819,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       ensureOverlapDefaultOff(state);
       ensurePlanHeightDefault(state);
       ensureRouteAglDefaultOff(state);
+      ensureDisplayDefaultsV3(state);
       syncPlanCoverageFromMap();
       syncPlanHeightsFromMap();
       const ms = state && state.lastMissionSettings && typeof state.lastMissionSettings === 'object'
@@ -5607,12 +5907,17 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       if (dc) {
         if (els.showFieldPolygon && typeof dc.showFieldPolygon === 'boolean') els.showFieldPolygon.checked = dc.showFieldPolygon;
         if (els.showCoverageCircles && typeof dc.showCoverageCircles === 'boolean') els.showCoverageCircles.checked = dc.showCoverageCircles;
+        applyCoverageWindowChoice(dc.coverageWindowMode);
         if (els.showOverlapAreas) els.showOverlapAreas.checked = typeof dc.showOverlapAreas === 'boolean' ? dc.showOverlapAreas : false;
         if (els.showUncoveredAreas && typeof dc.showUncoveredAreas === 'boolean') els.showUncoveredAreas.checked = dc.showUncoveredAreas;
         if (els.forceCoverageFix && typeof dc.forceCoverageFix === 'boolean') els.forceCoverageFix.checked = dc.forceCoverageFix;
         if (els.showControlPoints && typeof dc.showControlPoints === 'boolean') els.showControlPoints.checked = dc.showControlPoints;
         if (els.showAglLimit && typeof dc.showAglLimit === 'boolean') els.showAglLimit.checked = dc.showAglLimit;
         if (els.showTurnCurves && typeof dc.showTurnCurves === 'boolean') els.showTurnCurves.checked = dc.showTurnCurves;
+        if (window.RkrkField && typeof RkrkField.setMapLabelScale === 'function' && Number.isFinite(Number(dc.mapLabelScale))) {
+          RkrkField.setMapLabelScale(dc.mapLabelScale);
+        }
+        if (els.showCorrectionPoints && typeof dc.showCorrectionPoints === 'boolean') els.showCorrectionPoints.checked = dc.showCorrectionPoints;
         if (els.showFieldControlPoints && typeof dc.showFieldControlPoints === 'boolean') els.showFieldControlPoints.checked = dc.showFieldControlPoints;
         if (els.useFieldReferenceAgl && typeof dc.useFieldReferenceAgl === 'boolean') els.useFieldReferenceAgl.checked = dc.useFieldReferenceAgl;
         if (els.computeMode && typeof dc.computeMode === 'string') els.computeMode.value = (dc.computeMode === 'full') ? 'full' : 'simple';
@@ -5643,11 +5948,6 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
     function formData() {
       const gimbal = currentGimbalChoice();
       const overrides = cloneWaypointOverrides();
-      if (gimbal.on && selectedWaypointIndex1 >= 1) {
-        const key = String(selectedWaypointIndex1);
-        const prev = overrides[key] && typeof overrides[key] === 'object' ? overrides[key] : {};
-        overrides[key] = Object.assign({}, prev, { gimbal_pitch: gimbal.pitch });
-      }
       return {
         id: String(els.id.value || '').trim(),
         number: String(els.number.value || '').trim(),
@@ -5897,12 +6197,24 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       }
       const on = gimbalPointSettingOn();
       if (els.msGimbalAngleActive) els.msGimbalAngleActive.checked = on;
-      if (els.wpPitchWrap) els.wpPitchWrap.hidden = false;
       if (!on) {
         if (els.wpPitch) els.wpPitch.value = '-90';
         if (els.wpPitchRange) els.wpPitchRange.value = '-90';
       }
       [els.wpPitch, els.wpPitchRange].forEach((el) => { if (el) el.disabled = !on; });
+      syncGimbalWrapVisibility();
+    }
+
+    function syncGimbalWrapVisibility() {
+      const modeBtn = document.getElementById('planModeToggle');
+      const expert = !!(modeBtn && modeBtn.classList.contains('is-expert'));
+      const on = !!(els.msGimbalAngleActive && els.msGimbalAngleActive.checked);
+      const pitch = Number(els.wpPitch && els.wpPitch.value);
+      const deviate = on && Number.isFinite(pitch) && pitch !== -90;
+      const open = expert || deviate;
+      if (els.wpPitchWrap) els.wpPitchWrap.hidden = !open;
+      const msWrap = document.getElementById('msGimbalWrap');
+      if (msWrap) msWrap.classList.toggle('is-gimbal-open', open);
     }
 
     function commitGimbalAngleOnly() {
@@ -7151,12 +7463,130 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       ];
     }
 
+    let wpDebugPaintGen = 0;
+
+    function debugHtml(text) {
+      return String(text == null ? '' : text).replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    function debugMeter1(value, signed) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '–';
+      const tenth = Math.round(n * 10) / 10;
+      const text = tenth.toFixed(1);
+      return signed && tenth > 0 ? ('+' + text) : text;
+    }
+
+    function yawFormLabel(mode) {
+      const raw = String(mode || '');
+      const sel = els.wpHeadingMode || els.msHeadingMode;
+      if (sel && sel.options) {
+        const opt = Array.from(sel.options).find((item) => item.value === raw);
+        if (opt && opt.textContent) return String(opt.textContent).trim();
+      }
+      return raw;
+    }
+
+    function gimbalDebugText(row) {
+      const n = Number(row && row.gimbal_pitch);
+      const pitch = Number.isFinite(n) ? Math.round(n) : -90;
+      return (pitch < 0 ? '\u2212' : '') + String(Math.abs(pitch)) + '\u00b0';
+    }
+
+    function yawDebugText(index1, mapCoords) {
+      const yaw = yawDisplayForIndex(index1, mapCoords);
+      let label = yawFormLabel(yaw && yaw.mode);
+      if (yawIsDefinedMode(yaw && yaw.mode) && Number.isFinite(Number(yaw.angle))) {
+        const tenth = Math.round(Number(yaw.angle) * 10) / 10;
+        const ang = Math.abs(tenth - Math.round(tenth)) < 0.001 ? String(Math.round(tenth)) : tenth.toFixed(1);
+        label = (label || 'Definiert') + ' ' + ang + '\u00b0';
+      }
+      return label || '–';
+    }
+
+    function paintWaypointDebugTable(pathTriplets, terrains, startTerrain) {
+      const box = document.getElementById('wpDebugTableBox');
+      const body = document.getElementById('wpDebugTableBody');
+      if (!box || !body) return;
+      if (!editorDebugOn()) {
+        box.dataset.ready = '0';
+        body.innerHTML = '';
+        syncWaypointDebugBoxVisibility();
+        return;
+      }
+      const pts = normalizeTripletPath(pathTriplets);
+      if (pts.length < 2) {
+        box.dataset.ready = '0';
+        body.innerHTML = '';
+        syncWaypointDebugBoxVisibility();
+        return;
+      }
+      const pending = !Array.isArray(terrains);
+      const ground = pending ? [] : terrains;
+      const coords = pts.map((p) => ol.proj.fromLonLat([p[0], p[1]]));
+      const rows = pts.map((p, idx) => {
+        const terrain = Number(ground[idx]);
+        const delta = Number.isFinite(terrain) && Number.isFinite(Number(startTerrain)) ? (terrain - Number(startTerrain)) : NaN;
+        const programmed = programmedHeightForIndex(idx + 1, Number(p[2]));
+        const row = (waypointOverrides && waypointOverrides[String(idx + 1)]) || {};
+        let relText = '';
+        let mainText = Number.isFinite(programmed) ? (programmed + ' m') : '–';
+        if (!pending && window.RkrkField && typeof RkrkField.heightCaption === 'function') {
+          const caption = RkrkField.heightCaption(programmed, NaN, NaN);
+          mainText = caption.main || mainText;
+        }
+        if (!pending) {
+          const rel = window.RkrkField && typeof RkrkField.relativeHeightFromStartM === 'function'
+            ? RkrkField.relativeHeightFromStartM(programmed, terrain, startTerrain)
+            : (Number.isFinite(programmed) && Number.isFinite(terrain) && Number.isFinite(Number(startTerrain))
+              ? (programmed + (terrain - Number(startTerrain)))
+              : NaN);
+          if (Number.isFinite(rel)) relText = (Math.round(rel * 10) / 10).toFixed(1) + ' m';
+        }
+        if (!pending && window.RkrkField && typeof RkrkField.formatMeterLabel === 'function' && Number.isFinite(programmed)) {
+          mainText = RkrkField.formatMeterLabel(programmed) || mainText;
+        }
+        return '<tr>'
+          + '<td class="num">' + (idx + 1) + '</td>'
+          + '<td class="num">' + debugHtml(pending ? '…' : debugMeter1(terrain, false)) + '</td>'
+          + '<td class="num">' + debugHtml(pending ? '…' : debugMeter1(delta, true)) + '</td>'
+          + '<td class="num">' + debugHtml(mainText) + '</td>'
+          + '<td class="num">' + debugHtml(relText) + '</td>'
+          + '<td>' + debugHtml(yawDebugText(idx + 1, coords)) + '</td>'
+          + '<td class="num">' + debugHtml(gimbalDebugText(row)) + '</td>'
+          + '</tr>';
+      });
+      box.dataset.ready = '1';
+      body.innerHTML = rows.join('');
+      syncWaypointDebugBoxVisibility();
+    }
+
+    function syncWaypointDebugBoxVisibility() {
+      const box = document.getElementById('wpDebugTableBox');
+      const cb = document.getElementById('showBoxWaypointData');
+      const label = document.getElementById('showBoxWaypointDataLabel');
+      const debug = editorDebugOn();
+      if (label) label.hidden = !debug;
+      const coverageChoice = document.getElementById('coverageWindowChoice');
+      if (coverageChoice) coverageChoice.hidden = !debug;
+      if (!box) return;
+      const ready = box.dataset.ready === '1';
+      const allowed = debug && ready && !!(cb && cb.checked);
+      box.hidden = !allowed;
+    }
+
     function setPathSourceFromTriplets(source, path, pathKind = 'manual') {
       if (!source) return;
+      const debugGen = pathKind === 'manual' ? ++wpDebugPaintGen : wpDebugPaintGen;
       if (pathKind === 'manual' && pathEditFeatures) pathEditFeatures.clear();
       source.clear();
       const pts = normalizeTripletPath(path);
-      if (pts.length < 2) return;
+      if (pts.length < 2) {
+        if (pathKind === 'manual') paintWaypointDebugTable([], null, NaN);
+        return;
+      }
       const coords = pts.map((p) => ol.proj.fromLonLat([p[0], p[1]]));
       source.addFeature(new ol.Feature({ geometry: new ol.geom.LineString(coords) }));
       for (let i = 0; i < coords.length; i++) {
@@ -7169,13 +7599,10 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         const caption = window.RkrkField && typeof RkrkField.heightCaption === 'function'
           ? RkrkField.heightCaption(programmed, NaN, NaN)
           : { main: Number.isFinite(programmed) ? (programmed + ' m') : '', paren: '' };
-        const storedRel = Number(rowForCaption && rowForCaption.rel_height_m);
-        if (Number.isFinite(storedRel) && window.RkrkField && typeof RkrkField.formatMeterLabel === 'function') {
-          caption.paren = '(' + RkrkField.formatMeterLabel(storedRel) + ')';
-        }
         pf.set('pathWpAlt', Number.isFinite(wpAlt) ? wpAlt : NaN);
         pf.set('pathBottomLabel', caption.main || '');
         pf.set('pathStartRelLabel', caption.paren || '');
+        pf.set('pathGimbalPitch', rowForCaption && rowForCaption.gimbal_pitch);
         pf.set('pathTopLabel', '');
         const yaw = yawDisplayForIndex(i + 1, coords);
         pf.set('yawMode', yaw.mode);
@@ -7184,38 +7611,39 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         source.addFeature(pf);
         pf.set('pathDeviates', waypointHasLocalOverride(i + 1));
       }
-      const wpTypeNow = String(els.msWaypointType && els.msWaypointType.value || '');
-      const enableTurnGuide = !!(els.showTurnCurves && els.showTurnCurves.checked) && isSkipTurnWaypointType(wpTypeNow);
-      const turnDistM = Number(els.msTurnDistance && els.msTurnDistance.value);
-      const guideLen = Number.isFinite(turnDistM) && turnDistM > 0 ? turnDistM : 0;
-      const isTurnIdx = (idx) => {
-        const wpIdx = idx + 1;
-        return currentTurnWaypointIndices.has(wpIdx)
-          || (!currentTurnWaypointIndices.size && wpIdx > 1 && wpIdx < pts.length && (wpIdx % 2 === 0));
+      const showTurnPath = !!(els.showTurnCurves && els.showTurnCurves.checked);
+      const missionTurn = Number(els.msTurnDistance && els.msTurnDistance.value);
+      const missionTurnM = Number.isFinite(missionTurn) && missionTurn > 0 ? missionTurn : 0;
+      const turnTypeAt = (idx) => {
+        const row = waypointOverrides && waypointOverrides[String(idx + 1)];
+        const missionType = String(els.msWaypointType && els.msWaypointType.value || '');
+        if (row && row.use_mission_waypoint_type === false && row.waypoint_type) return String(row.waypoint_type);
+        return missionType;
       };
-      if (enableTurnGuide && guideLen > 0) {
+      const turnDistAt = (idx) => {
+        const row = waypointOverrides && waypointOverrides[String(idx + 1)];
+        if (row && row.use_mission_turn_distance === false) {
+          const local = Number(row.turning_distance_m);
+          if (Number.isFinite(local) && local > 0) return local;
+        }
+        return missionTurnM;
+      };
+      if (showTurnPath && window.RkrkField && typeof RkrkField.coordinateTurnCoords === 'function') {
         for (let i = 1; i + 1 < pts.length; i++) {
-          if (!isTurnIdx(i)) continue;
-          const prev = pts[i - 1];
-          const curr = pts[i];
-          const next = pts[i + 1];
-          const addGuide = (toPt) => {
-            const startXY = ol.proj.fromLonLat([Number(curr[0]), Number(curr[1])]);
-            const toXY = ol.proj.fromLonLat([Number(toPt[0]), Number(toPt[1])]);
-            const dx = toXY[0] - startXY[0];
-            const dy = toXY[1] - startXY[1];
-            const len = Math.hypot(dx, dy);
-            if (!(len > 1e-6)) return;
-            const endXY = [startXY[0] + (dx / len) * guideLen, startXY[1] + (dy / len) * guideLen];
-            const guide = new ol.Feature({
-              geometry: new ol.geom.LineString([startXY, endXY]),
-            });
-            guide.set('isTurnGuide', true);
-            guide.set('pathKind', pathKind);
-            source.addFeature(guide);
-          };
-          addGuide(prev);
-          addGuide(next);
+          if (!isSkipTurnWaypointType(turnTypeAt(i))) continue;
+          const guideLen = turnDistAt(i);
+          if (!(guideLen > 0)) continue;
+          const line = RkrkField.coordinateTurnCoords(
+            ol.proj.fromLonLat([Number(pts[i - 1][0]), Number(pts[i - 1][1])]),
+            ol.proj.fromLonLat([Number(pts[i][0]), Number(pts[i][1])]),
+            ol.proj.fromLonLat([Number(pts[i + 1][0]), Number(pts[i + 1][1])]),
+            guideLen
+          );
+          if (!line || line.length < 2) continue;
+          const guide = new ol.Feature({ geometry: new ol.geom.LineString(line) });
+          guide.set('isTurnPath', true);
+          guide.set('pathKind', pathKind);
+          source.addFeature(guide);
         }
       }
       // Separate markers for "Flugrichtung pro Sektor" (not waypoint numbers).
@@ -7231,8 +7659,31 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         sf.set('sectionIdx', i + 1);
         source.addFeature(sf);
       }
-      updatePathPointHeightLabels(source, pts).catch(() => {});
+      if (pathKind === 'manual') paintWaypointDebugTable(pts, null, NaN);
+      updatePathPointHeightLabels(source, pts, debugGen).catch(() => {});
       if (pathKind === 'manual') syncPathEditFeatures();
+    }
+
+    function mapFont(px, bold) {
+      if (window.RkrkField && typeof RkrkField.mapLabelFont === 'function') return RkrkField.mapLabelFont(px, !!bold);
+      return (bold ? 'bold ' : '') + px + 'px Arial';
+    }
+
+    function pathGimbalStyle(feature) {
+      const text = window.RkrkField && typeof RkrkField.specificGimbalLabel === 'function'
+        ? RkrkField.specificGimbalLabel(feature.get('pathGimbalPitch'))
+        : '';
+      if (!text) return [];
+      return [new ol.style.Style({
+        text: new ol.style.Text({
+          text: text,
+          offsetY: 12,
+          offsetX: 26,
+          font: mapFont(9, false),
+          fill: new ol.style.Fill({ color: '#1d4e89' }),
+          stroke: new ol.style.Stroke({ color: '#fff', width: 2 }),
+        }),
+      })];
     }
 
     function pathStartRelStyle(feature) {
@@ -7242,17 +7693,18 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         text: new ol.style.Text({
           text: startRelText,
           offsetY: 30,
-          font: '11px Arial',
+          font: mapFont(11, false),
           fill: new ol.style.Fill({ color: '#1d4e89' }),
           stroke: new ol.style.Stroke({ color: '#fff', width: 2.6 }),
         }),
       })];
     }
 
-    async function updatePathPointHeightLabels(source, pathTriplets) {
+    async function updatePathPointHeightLabels(source, pathTriplets, paintGen) {
       if (!source) return;
       const pts = normalizeTripletPath(pathTriplets);
       if (!pts.length) return;
+      const terrainByIdx = new Array(pts.length).fill(NaN);
       let startTerrain = NaN;
       const startPairs = parsePairs(els.startplatz && els.startplatz.value);
       const startLonLat = startPairs.length ? [startPairs[0][0], startPairs[0][1]] : null;
@@ -7282,23 +7734,25 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         }));
         terrains.forEach((terrain, j) => {
           const idx = i + j;
+          terrainByIdx[idx] = terrain;
           const feat = pointFeaturesByIdx.get(idx);
           if (!feat) return;
           const programmed = programmedHeightForIndex(idx + 1, Number(pts[idx] && pts[idx][2]));
           const row = (waypointOverrides && waypointOverrides[String(idx + 1)]) || {};
-          const startRow = (waypointOverrides && waypointOverrides['1']) || {};
-          const sea = Number(row.sea_m);
-          const startSea = Number(startRow.sea_m);
-          const useFileSea = Number.isFinite(sea) && Number.isFinite(startSea);
+          const terrainReady = Number.isFinite(Number(terrain)) && Number.isFinite(Number(startTerrain));
           const caption = window.RkrkField && typeof RkrkField.heightCaption === 'function'
-            ? RkrkField.heightCaption(programmed, useFileSea ? sea : terrain, useFileSea ? startSea : startTerrain)
+            ? RkrkField.heightCaption(programmed, terrainReady ? terrain : NaN, terrainReady ? startTerrain : NaN)
             : { main: '', paren: '' };
           feat.set('pathBottomLabel', caption.main || feat.get('pathBottomLabel') || '');
           feat.set('pathStartRelLabel', caption.paren || '');
+          feat.set('pathGimbalPitch', row.gimbal_pitch);
           feat.set('pathTopLabel', '');
         });
       }
       source.changed();
+      if (source === manualPathSource && paintGen === wpDebugPaintGen) {
+        paintWaypointDebugTable(pts, terrainByIdx, startTerrain);
+      }
     }
 
     function distanceMetersLonLat(a, b) {
@@ -7552,6 +8006,18 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       saveEditorLastSettings();
     }
 
+    function ensureDisplayDefaultsV3(state) {
+      if (state && state.displayDefaultsV3) return;
+      if (els.showAglLimit) els.showAglLimit.checked = true;
+      if (els.showTurnCurves) els.showTurnCurves.checked = true;
+      if (els.showCorrectionPoints) els.showCorrectionPoints.checked = false;
+      if (els.forceCoverageFix) els.forceCoverageFix.checked = false;
+      const planAgl = document.getElementById('planShowAglLimit');
+      if (planAgl) planAgl.checked = true;
+      saveFloatingUiState({ displayDefaultsV3: true });
+      saveEditorLastSettings();
+    }
+
     function syncPlanHeightsFromMap() {
       const route = document.getElementById('planShowRouteHeights');
       const field = document.getElementById('planShowFieldHeights');
@@ -7626,8 +8092,13 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         panel.classList.toggle('is-simple', !expert);
         panel.classList.toggle('is-expert', expert);
       }
+      const parkRow = document.getElementById('planParkRow');
+      const poiRow = document.getElementById('planPoiRow');
+      if (parkRow) parkRow.hidden = !expert;
+      if (poiRow) poiRow.hidden = !expert;
       if (!expert && waypointListTab === 'all') showWaypointTab('single');
       if (typeof applyWaypointFormEnableState === 'function') applyWaypointFormEnableState();
+      if (typeof syncGimbalWrapVisibility === 'function') syncGimbalWrapVisibility();
       if (typeof syncPlanStartSpeed === 'function') syncPlanStartSpeed();
       renderPlanWpChips();
     }
@@ -7760,6 +8231,8 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       const gis = planGisValue();
       const outlineBits = [];
       if (corners >= 3) outlineBits.push(corners + ' Ecken');
+      const polyNote = document.getElementById('planPolygonNote');
+      if (polyNote) polyNote.textContent = corners >= 3 ? (corners + ' Ecken') : '';
       if (gis) outlineBits.push('GIS ' + gis);
       if (drone) outlineBits.push(drone);
       if (alt) outlineBits.push(alt);
@@ -8455,9 +8928,15 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       const startNote = document.getElementById('planStartCoord');
       const parkNote = document.getElementById('planParkCoord');
       const clearBtn = document.getElementById('planParkClear');
-      if (startNote) startNote.textContent = start ? ('Startpunkt ' + formatFixed6([start])) : '';
+      if (startNote) {
+        startNote.textContent = start ? ('Startpunkt ' + formatFixed6([start])) : '';
+        startNote.classList.toggle('is-coord', !!start);
+      }
       const showPark = !!(park && (!start || !sameCoord6(park, start)));
-      if (parkNote) parkNote.textContent = showPark ? ('Parkplatz ' + formatFixed6([park])) : 'Parkplatz nur, wenn er sich vom Startpunkt unterscheidet.';
+      if (parkNote) {
+        parkNote.textContent = showPark ? ('Parkplatz ' + formatFixed6([park])) : 'Parkplatz nur, wenn er sich vom Startpunkt unterscheidet.';
+        parkNote.classList.toggle('is-coord', showPark);
+      }
       if (clearBtn) clearBtn.hidden = !showPark;
       paintParkMarker();
     }
@@ -8869,18 +9348,16 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         visible: true,
         style: (feature, resolution) => {
           const showDirectionInfo = !!(els.showSectionDirections && els.showSectionDirections.checked);
-          const showCorrection = !!(els.showCorrectionPoints && els.showCorrectionPoints.checked);
           const wpTypeNow = String(els.msWaypointType && els.msWaypointType.value || '');
-          const showTurnGuide = showCorrection && !!(els.showTurnCurves && els.showTurnCurves.checked) && isSkipTurnWaypointType(wpTypeNow);
+          const showTurnGuide = !!(els.showTurnCurves && els.showTurnCurves.checked);
           const g = feature.getGeometry();
           if (g instanceof ol.geom.LineString) {
-            if (feature.get('isTurnGuide')) {
+            if (feature.get('isTurnPath') || feature.get('isTurnGuide')) {
               if (!showTurnGuide) return null;
               return new ol.style.Style({
                 stroke: new ol.style.Stroke({
-                  color: 'rgba(255,140,0,0.95)',
-                  width: 2.0,
-                  lineDash: [6, 6],
+                  color: 'rgba(107,114,128,0.95)',
+                  width: 2.6,
                 }),
               });
             }
@@ -8922,7 +9399,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
               text: new ol.style.Text({
                 text: topText,
                 offsetY: -16,
-                font: 'bold 18px Arial',
+                font: mapFont(18, true),
                 fill: new ol.style.Fill({ color: '#1f2937' }),
                 stroke: new ol.style.Stroke({ color: '#fff', width: 3 }),
               }),
@@ -8931,11 +9408,12 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
               text: new ol.style.Text({
                 text: bottomText,
                 offsetY: 12,
-                font: '12px Arial',
+                font: mapFont(12, false),
                 fill: new ol.style.Fill({ color: '#6b7280' }),
                 stroke: new ol.style.Stroke({ color: '#fff', width: 2.6 }),
               }),
             })] : []),
+            ...pathGimbalStyle(feature),
             ...pathStartRelStyle(feature),
           ];
         },
@@ -8945,18 +9423,16 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         visible: true,
         style: (feature, resolution) => {
           const showDirectionInfo = !!(els.showSectionDirections && els.showSectionDirections.checked);
-          const showCorrection = !!(els.showCorrectionPoints && els.showCorrectionPoints.checked);
           const wpTypeNow = String(els.msWaypointType && els.msWaypointType.value || '');
-          const showTurnGuide = showCorrection && !!(els.showTurnCurves && els.showTurnCurves.checked) && isSkipTurnWaypointType(wpTypeNow);
+          const showTurnGuide = !!(els.showTurnCurves && els.showTurnCurves.checked);
           const g = feature.getGeometry();
           if (g instanceof ol.geom.LineString) {
-            if (feature.get('isTurnGuide')) {
+            if (feature.get('isTurnPath') || feature.get('isTurnGuide')) {
               if (!showTurnGuide) return null;
               return new ol.style.Style({
                 stroke: new ol.style.Stroke({
-                  color: 'rgba(255,140,0,0.95)',
-                  width: 2.0,
-                  lineDash: [6, 6],
+                  color: 'rgba(107,114,128,0.95)',
+                  width: 2.6,
                 }),
               });
             }
@@ -8998,7 +9474,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
               text: new ol.style.Text({
                 text: topText,
                 offsetY: -16,
-                font: 'bold 18px Arial',
+                font: mapFont(18, true),
                 fill: new ol.style.Fill({ color: '#1f2937' }),
                 stroke: new ol.style.Stroke({ color: '#fff', width: 3 }),
               }),
@@ -9007,11 +9483,12 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
               text: new ol.style.Text({
                 text: bottomText,
                 offsetY: 12,
-                font: '12px Arial',
+                font: mapFont(12, false),
                 fill: new ol.style.Fill({ color: '#6b7280' }),
                 stroke: new ol.style.Stroke({ color: '#fff', width: 2.6 }),
               }),
             })] : []),
+            ...pathGimbalStyle(feature),
             ...pathStartRelStyle(feature),
           ];
         },
@@ -9432,6 +9909,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       makeMapBoxDraggable(els.displayControlBox, '.title', 'displayControlPos');
       placeDisplayControlInView();
       makeMapBoxDraggable(els.fieldCharacteristicsBox, 'summary', 'fieldCharacteristicsPos');
+      makeMapBoxDraggable(els.wpDebugTableBox, 'summary', 'waypointDataPos');
       makeMapBoxDraggable(els.formDrawerBox, 'summary', 'formDrawerPos');
       window.rkrkUpdateMapSize = function () {
         if (map && typeof map.updateSize === 'function') map.updateSize();
@@ -9938,6 +10416,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         note.textContent = show
           ? missionPois.map((poi, i) => 'POI ' + (i + 1) + ' ' + Number(poi.longitude).toFixed(6) + ', ' + Number(poi.latitude).toFixed(6)).join(' · ')
           : (poiPlaceArmed ? 'POI auf die Karte tippen.' : 'POI für die Gierrichtung Fokus POI.');
+        note.classList.toggle('is-coord', show);
       }
       if (!poiSource) return;
       poiSource.clear();
@@ -10352,6 +10831,9 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         : (typeof RkrkField.readUavWaypointOverrides === 'function' ? RkrkField.readUavWaypointOverrides(doc) : null);
       if (!parsed || !parsed.count) return false;
       waypointOverrides = parsed.overrides;
+      if (typeof RkrkField.alignOverridesToPath === 'function') {
+        waypointOverrides = RkrkField.alignOverridesToPath(waypointOverrides, currentWaypointPath());
+      }
       if (Array.isArray(parsed.pois)) setMissionPois(parsed.pois);
       const anyFalse = parsed.anyFalse === true;
       const easy = parsed.easyModeForm;
@@ -10369,6 +10851,10 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       if (pilot && els.msHeadingMode && window.RkrkField && typeof RkrkField.headingModeFromUav === 'function') {
         const missionYaw = RkrkField.headingModeFromUav(pilot.directionMode || pilot.yawDirection || pilot.headingMode);
         if (missionYaw) els.msHeadingMode.value = missionYaw;
+      }
+      if (parsed.gimbalMode && els.msGimbalMode) {
+        els.msGimbalMode.value = parsed.gimbalMode;
+        syncGimbalAngleFlag();
       }
       syncPlanSpeedField();
       syncPlanStartSpeed();
@@ -10427,6 +10913,31 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
       return true;
     }
 
+    async function mergeFieldKmzTemplate(field) {
+      const rel = String(field && field.kmz_file || readControl('kmz_file') || '').trim();
+      if (!rel || !window.RkrkField || typeof RkrkField.templateKmlFromKmz !== 'function' || typeof RkrkField.applyKmzDeviations !== 'function') return false;
+      const url = missionPictureUrl(rel);
+      if (!url) return false;
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) return false;
+        const kml = await RkrkField.templateKmlFromKmz(new Uint8Array(await response.arrayBuffer()));
+        if (!kml) return false;
+        const parsed = RkrkField.applyKmzDeviations({ overrides: waypointOverrides || {}, count: 0, anyFalse: false }, kml);
+        if (parsed && parsed.overrides) waypointOverrides = parsed.overrides;
+        if (typeof RkrkField.alignOverridesToPath === 'function') {
+          waypointOverrides = RkrkField.alignOverridesToPath(waypointOverrides, currentWaypointPath());
+        }
+        if (parsed && parsed.gimbalMode && els.msGimbalMode) {
+          els.msGimbalMode.value = parsed.gimbalMode;
+          syncGimbalAngleFlag();
+        }
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
     async function applyJasonFileMissionFlags(field) {
       const rel = String(field && field.jason_file || readControl('jason_file') || '').trim();
       if (!rel || typeof missionPictureUrl !== 'function') return false;
@@ -10439,6 +10950,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         const doc = await response.json();
         const applied = applyUavJsonDocument(doc);
         if (applied) {
+          await mergeFieldKmzTemplate(field);
           holdStoredRoute();
           refreshFlightPathLayers();
           if (rightDrawerMode === 'waypoint') fillWaypointForm(selectedWaypointIndex1, true);
@@ -11000,17 +11512,22 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
           await loadField(created.id);
         }
       }
-      const where = ` JSON: ${data.jason_file || 'fehlt'}. KMZ: ${data.kmz_file || 'fehlt'}.`;
-      const place = [data.jg_name || data.jg, data.gemeinde_name || data.gemeinde].filter(Boolean).join(', ');
-      const head = mode === 'create'
-        ? `Neues Feld ${data.saved_field_id || ''} angelegt${place ? ` (${place})` : ''}.${where}`
-        : `Feld wurde gespeichert.${where}`;
-      if (catalogPictureTarget()) {
-        showStatus(head + ' Suchfeld- und Flugplanbild werden erzeugt …');
-        await generateCatalogPictures();
-      } else {
-        showStatus(head);
+      if (data.aenderung) {
+        writeControl('aenderung', data.aenderung);
+        writeControl('create_aenderung', data.aenderung);
       }
+      const confirm = window.RkrkField && typeof RkrkField.saveConfirmText === 'function'
+        ? RkrkField.saveConfirmText(data)
+        : { ok: !!(data.jason_file && data.kmz_file), text: 'JSON: ' + (data.jason_file || 'fehlt') + '. KMZ: ' + (data.kmz_file || 'fehlt') + '.' };
+      const place = [data.jg_name || data.jg, data.gemeinde_name || data.gemeinde].filter(Boolean).join(', ');
+      const head = (mode === 'create'
+        ? `Neues Feld ${data.saved_field_id || ''} angelegt${place ? ` (${place})` : ''}. `
+        : 'Feld wurde gespeichert. ') + confirm.text;
+      if (catalogPictureTarget()) {
+        showStatus(head + ' Suchfeld- und Flugplanbild werden erzeugt …', !confirm.ok);
+        await generateCatalogPictures();
+      }
+      showStatus(head, !confirm.ok);
       setPlanPhase('finish');
       return true;
     }
@@ -12180,6 +12697,7 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
     });
     els.showBoxMissionSettings.addEventListener('change', applyBoxVisibilityStateFromSetup);
     els.showBoxFieldCharacteristics.addEventListener('change', applyBoxVisibilityStateFromSetup);
+    if (els.showBoxWaypointData) els.showBoxWaypointData.addEventListener('change', applyBoxVisibilityStateFromSetup);
     if (els.jg) els.jg.addEventListener('input', () => { delete els.jg.dataset.code; });
     els.showBoxFormDrawer.addEventListener('change', applyBoxVisibilityStateFromSetup);
     if (els.swissOverlayBox) {
@@ -12201,6 +12719,11 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
     if (els.fieldCharacteristicsBox) {
       els.fieldCharacteristicsBox.addEventListener('toggle', () => {
         saveFloatingUiState({ fieldCharacteristicsOpen: !!els.fieldCharacteristicsBox.open });
+      });
+    }
+    if (els.wpDebugTableBox) {
+      els.wpDebugTableBox.addEventListener('toggle', () => {
+        saveFloatingUiState({ waypointDataOpen: !!els.wpDebugTableBox.open });
       });
     }
     window.addEventListener('beforeunload', persistUiStateNow);
@@ -12498,6 +13021,12 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         saveEditorLastSettings();
       });
     }
+    document.querySelectorAll('input[name="coverageWindowMode"]').forEach((el) => {
+      el.addEventListener('change', () => {
+        refreshFlightPathLayers();
+        saveEditorLastSettings();
+      });
+    });
     if (els.showUncoveredAreas) {
       els.showUncoveredAreas.addEventListener('change', () => {
         refreshFlightPathLayers();
@@ -12542,6 +13071,18 @@ $rkrkAdmin = array_key_exists('ADMIN', $_GET) || strcasecmp(trim((string)($_GET[
         saveEditorLastSettings();
       });
     }
+    function stepMapLabelScale(delta) {
+      if (!window.RkrkField || typeof RkrkField.setMapLabelScale !== 'function') return;
+      const cur = typeof RkrkField.mapLabelScale === 'function' ? RkrkField.mapLabelScale() : 1;
+      RkrkField.setMapLabelScale(cur + delta);
+      if (manualPathSource) manualPathSource.changed();
+      if (computedPathSource) computedPathSource.changed();
+      saveEditorLastSettings();
+    }
+    const mapLabelSmaller = document.getElementById('mapLabelSmaller');
+    const mapLabelLarger = document.getElementById('mapLabelLarger');
+    if (mapLabelSmaller) mapLabelSmaller.addEventListener('click', () => stepMapLabelScale(-0.2));
+    if (mapLabelLarger) mapLabelLarger.addEventListener('click', () => stepMapLabelScale(0.2));
     if (els.showControlPoints) {
       els.showControlPoints.addEventListener('change', () => {
         syncPlanHeightsFromMap();

@@ -15,6 +15,8 @@ include_once __DIR__ . '/scripts/rkrk_menu.php';
 include_once __DIR__ . '/scripts/rkrk_dji_kmz_interface.php';
 include_once __DIR__ . '/scripts/rkrk_kmz.php';
 include_once __DIR__ . '/scripts/rkrk_jsonfiles.php';
+include_once __DIR__ . '/scripts/rkrk_csvfiles.php';
+include_once __DIR__ . '/scripts/rkrk_einsatz_shared.php';
 include_once __DIR__ . '/rkrk_access_control.php';
 
 CheckIPandExit();
@@ -63,6 +65,14 @@ if ($convert && $ext === 'kmz') {
 	if ($out === '' || !is_file($out)) {
 		http_response_code(500);
 		exit;
+	}
+	$converted = json_decode((string)file_get_contents($out));
+	if (is_object($converted) && function_exists('rkrk_json_apply_control_flights')) {
+		rkrk_json_apply_control_flights($converted, rkrk_feld_id_from_mission_filename($rel));
+		$encoded = rkrk_json_encode_export($converted);
+		if ($encoded !== '') {
+			file_put_contents($out, $encoded);
+		}
 	}
 	while (ob_get_level() > 0) {
 		ob_end_clean();

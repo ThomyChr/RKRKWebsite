@@ -420,7 +420,7 @@
         {
           "wpml": "manual",
           "de": "Manuell",
-          "de_help": "Pilot steuert den Pitch. JSON djiPilot2.gimbalControl manuel und gimbalAngle -90. wpml:gimbalPitchAngle wird nicht geschrieben.",
+          "de_help": "Standard, nicht spezifisch. JSON djiPilot2.gimbalControl manuel und gimbalAngle -90. template.kml ohne gimbalPitchAngle. waylines.wpml waypointGimbalPitchAngle 0 und waypointGimbalYawAngle 0. An der Flughoehe steht keine Gradzahl.",
           "default": true,
           "aliases": ["manuell"],
           "match_contains": ["manuel"]
@@ -428,7 +428,7 @@
         {
           "wpml": "usePointSetting",
           "de": "Jeden Wegpunkt festlegen",
-          "de_help": "Flag Neigungswinkel setzen schaltet nur den Pitch frei und rechnet den Flugpfad nicht neu. JSON djiPilot2.gimbalControl setEachWaypoint und gimbalAngle je Wegpunkt, -90 bis 30. KMZ wpml:gimbalPitchMode usePointSetting und wpml:gimbalPitchAngle. Flag aus: gimbalPitchMode manual, kein gimbalPitchAngle.",
+          "de_help": "Spezifisch, wenn Neigungswinkel setzen an ist und der Wert nicht -90 ist. JSON gimbalControl setEachWaypoint und gimbalAngle der Wert, -90 bis 30. template.kml gimbalPitchMode usePointSetting und gimbalPitchAngle. waylines.wpml waypointGimbalPitchAngle derselbe Wert. An der Flughoehe steht eine kleine Gradzahl, der Wegpunkt ist orange. Der gewaehlte Punkt bleibt gelb. Der Flugpfad wird nicht neu gerechnet.",
           "aliases": ["usepointsetting"],
           "match_contains": ["wegpunkt", "punkt", "usepoint"]
         }
@@ -436,7 +436,7 @@
     },
     "wpml:waypointHeadingMode": {
       "de_name": "Gierrichtung des Fluggeraetes",
-      "de_help": "KMZ-Namen sind nicht die JSON-Namen. followWayline bleibt followWayline. Definiert (JSON customised) ist smoothTransition. Schwenkachse (JSON fixed) bleibt fixed, ohne Winkel. Fokus POI (JSON smoothTransition) ist towardPOI mit waypointPoiPoint.",
+      "de_help": "KMZ-Namen sind nicht die JSON-Namen. followWayline bleibt followWayline. Definiert (JSON customised) ist smoothTransition, waylines waypointHeadingAngleEnable 1. Fokus POI (JSON smoothTransition) ist towardPOI, nicht smoothTransition. Ein waypointPoiPoint an jedem Punkt ist kein Fokus POI.",
       "parent": "wpml:globalWaypointHeadingParam / wpml:waypointHeadingParam",
       "files": ["template.kml", "waylines.wpml"],
       "type": "enum",
@@ -462,14 +462,14 @@
         {
           "wpml": "fixed",
           "de": "Schenkachse sperren",
-          "de_help": "JSON yawDirection fixed. Winkel gesperrt, rotes X, kein waypointHeadingAngle.",
+          "de_help": "JSON yawDirection fixed. Winkel 0, waylines waypointHeadingAngleEnable 0, rotes X.",
           "aliases": ["fixed", "lock"],
           "match_contains": ["schenk", "schwenk"]
         },
         {
           "wpml": "towardPOI",
           "de": "Fokus POI",
-          "de_help": "JSON yawDirection smoothTransition. Mit POI: towardPOI und waypointPoiPoint Breite,Laenge,Hoehe. Ohne POI kein towardPOI, dann followWayline, kein erfundener Winkel.",
+          "de_help": "JSON yawDirection smoothTransition. Nur dieser Modus ist Fokus POI. Mit POI: towardPOI und waypointPoiPoint Breite,Laenge,Hoehe. Ohne POI followWayline. Winkel 0, waylines waypointHeadingAngleEnable 0.",
           "aliases": ["towardpoi"],
           "match_contains": ["poi", "fokus"],
           "extra": { "wpml:waypointPoiPoint": true }
@@ -477,7 +477,7 @@
         {
           "wpml": "smoothTransition",
           "de": "Definiert",
-          "de_help": "JSON yawDirection customised. Der Richtungswinkel ist die Gierrichtung. waypointHeadingAngle nur wenn direction gesetzt ist, sonst leer, nicht 0. waypointHeadingYawPathMode aus alignmentAircraft.",
+          "de_help": "JSON yawDirection customised. waypointHeadingAngle ist der Richtungswinkel. waylines waypointHeadingAngleEnable 1. Andere Modi schreiben Winkel 0 und Enable 0. Drehrichtung steht in waypointHeadingPathMode.",
           "aliases": ["customised", "customized"],
           "match_contains": ["definiert"],
           "extra": { "wpml:waypointHeadingAngle": true }
@@ -486,7 +486,7 @@
     },
     "wpml:waypointHeadingPathMode": {
       "de_name": "Gier-Drehrichtung",
-      "de_help": "RC-Datei schreibt wpml:waypointHeadingYawPathMode. Automatisch ist followBadArc.",
+      "de_help": "Die RC-Datei schreibt wpml:waypointHeadingPathMode im Heading-Block, plus waypointHeadingPoiIndex 0. Automatisch ist followBadArc. useGlobalHeadingParam steht neben dem Block, nicht darin.",
       "parent": "wpml:waypointHeadingParam",
       "files": ["template.kml", "waylines.wpml"],
       "type": "enum",

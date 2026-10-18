@@ -51,7 +51,7 @@
   right: 0;
   z-index: 90;
   height: 100vh;
-  width: min(var(--rkrk-help-width, 420px), 96vw);
+  width: min(var(--rkrk-help-width, 588px), 96vw);
   background: #fff;
   border-left: 1px solid #cfd6de;
   box-shadow: -8px 0 24px rgba(0,0,0,0.18);
@@ -204,8 +204,23 @@
   font-size: 11px;
 }
 .rkrk-help-empty { color: #5b6f86; font-size: 13px; padding: 12px 4px; }
+.rkrk-help-fig { margin: 8px 0 10px; }
+.rkrk-help-fig img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #d9dde2;
+  border-radius: 6px;
+  background: #f4f6f8;
+}
+.rkrk-help-fig figcaption {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #5b6f86;
+}
 .rkrk-help-page {
-  max-width: 860px;
+  max-width: min(1204px, calc(100vw - 48px));
   margin: 0 auto;
   padding: 20px 16px 40px;
 }

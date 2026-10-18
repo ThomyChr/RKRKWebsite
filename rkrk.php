@@ -86,6 +86,28 @@
 	.rkrk-feldkatalog-view.is-active img {
 	  opacity:1;
 	}
+	.rkrk-home-title {
+	  display:flex;
+	  align-items:center;
+	  justify-content:space-between;
+	  gap:12px;
+	}
+	.rkrk-home-title #Titel {
+	  margin-right:0;
+	  flex:1 1 auto;
+	}
+	.rkrk-home-rc {
+	  display:inline-flex;
+	  align-items:center;
+	  margin:12px 16px 8px 0;
+	  line-height:0;
+	  flex:0 0 auto;
+	}
+	.rkrk-home-rc img {
+	  width:32px;
+	  height:32px;
+	  object-fit:contain;
+	}
 	.rkrk-jg-pick {
 	  position:absolute;
 	  z-index:4;
@@ -120,7 +142,14 @@ $ShowButton = false;
 
 	GrantAccess();
 	CreateTopMenu();
-	PrintRKRKHeader("Drohnenrekitzrettung.ch");
+	$rcIcon = function_exists('rkrk_menu_icon_src') ? rkrk_menu_icon_src('RcZugang') : '';
+	if ($rcIcon === '') {
+		$rcIcon = rtrim(str_replace('\\', '/', (string)($IconLoc ?? 'images/23color')), '/') . '/rc_small.png';
+	}
+	echo '<div class="rkrk-home-title">' . chr(10);
+	echo '<h1 class="rkrk-shell-page-title" id="Titel">Drohnenrekitzrettung.ch</h1>' . chr(10);
+	echo '<a class="rkrk-home-rc" href="rkrk_rc_access.php" title="RC Zugang"><img src="' . htmlspecialchars($rcIcon, ENT_QUOTES, 'UTF-8') . '" alt="RC Zugang"></a>' . chr(10);
+	echo '</div>' . chr(10);
 	
 	//Write to LOGfile
 	WriteToLog("get", basename($_SERVER['PHP_SELF']), "öffnen ","","","");

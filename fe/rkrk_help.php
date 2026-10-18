@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RKRK Hilfe</title>
-  <link rel="stylesheet" href="rkrk_help.css" />
+  <link rel="stylesheet" href="rkrk_help.css?v=20261017hilfe6" />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #23384d; }
     .topnav { padding: 12px 16px; background: #fff; border-bottom: 1px solid #d9dde2; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -20,10 +20,14 @@
     <a href="analyse_ui.php">Algo-Analysator</a>
   </div>
   <div id="helpRoot"></div>
-  <script src="rkrk_help_catalog.js?v=20261014easy"></script>
-  <script src="rkrk_help.js"></script>
+  <script src="rkrk_help_catalog.js?v=20261018abdeckung2"></script>
+  <script src="rkrk_help.js?v=20261017hilfe7"></script>
   <script>
-    RkrkHelp.renderStandalone('#helpRoot');
+    const helpQuery = new URLSearchParams(location.search);
+    RkrkHelp.renderStandalone('#helpRoot', {
+      page: helpQuery.get('page') || '',
+      view: helpQuery.get('view') || ''
+    });
   </script>
 </body>
 </html>

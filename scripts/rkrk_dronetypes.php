@@ -32,8 +32,8 @@
 					"Mavic 3T" => array(
 						"Name" => "Mavic 3T",
 						"DFOV" => 61,
-						"IRCamAngle_H" => 48,
-						"IRCamAngle_V" => 38,
+						"IRCamAngle_H" => 49,
+						"IRCamAngle_V" => 40,
 						"IRCamResolution_H" => 640,
 						"IRCamResolution_V" => 512,
 						"CD_CharacteristicalDistance" => 0.605, // to calculate VLOS [m]

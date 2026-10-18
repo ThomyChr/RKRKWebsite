@@ -1661,52 +1661,54 @@ rkrk_fluege_repair_all_flight_data($data, $FieldDataArray);
 				
 				//echo "Speichern FlugID: " . $FlugID . "Zeit: " . $_POST["Zeit-" . $i] ."<br>";
 				$dosafe=true;
+				$postedFlightValue = function ($suffix) use ($i) {
+					$key = $suffix . "-" . $i;
+					return array_key_exists($key, $_POST) ? $_POST[$key] : null;
+				};
 				$data[$FlugID]["FlugID"] = $FlugID;
-				$data[$FlugID]["Datum"] = $_POST["Datum-" . $i];
-				$data[$FlugID]["Zeit"] = $_POST["Zeit-" . $i];
-				$data[$FlugID]["Pilot"] = $_POST["Pilot-" . $i];
+				if ($postedFlightValue("Datum") !== null) {
+					$data[$FlugID]["Datum"] = $postedFlightValue("Datum");
+				}
+				if ($postedFlightValue("Zeit") !== null) {
+					$data[$FlugID]["Zeit"] = $postedFlightValue("Zeit");
+				}
+				if ($postedFlightValue("Pilot") !== null) {
+					$data[$FlugID]["Pilot"] = $postedFlightValue("Pilot");
+				}
 				$data[$FlugID]["Feld"] = str_replace($searchSD, $replaceSD, $postFeld);
-				//$data[$FlugID]["Feld"] = cleanString(str_replace($searchSDZ, $replaceSDZ, $_POST["Feld-" . $i]));
 				rkrk_einsatz_apply_result_fields(
 					$data[$FlugID],
-					$_POST["Geflogen-" . $i] ?? "",
-					$_POST["Kontrollflug-" . $i] ?? "",
-					$_POST["Fund-" . $i] ?? "",
+					$postedFlightValue("Geflogen") ?? "",
+					$postedFlightValue("Kontrollflug") ?? "",
+					$postedFlightValue("Fund") ?? "",
 					$postBem
 				);
 				$data[$FlugID]["UAV#"] = $postUav;
-				$data[$FlugID]["Felder"] = rkrk_fluege_clean_felder_text($_POST["Felder-" . $i]);
-				//if ($_POST["Jaeger-" . $i]!="") 
-					$data[$FlugID]["Jaeger"] = $_POST["Jaeger-" . $i];
-				//else
-				//	$data[$FlugID]["Jaeger"] = $Feldkatalog[$_POST["JG-" . $i]][$_POST["Feld-" . $i]]["JG"];
-					
-				//$data[$FlugID]["Kontaktnummer"] = str_replace($searchSDZ, $replaceSDZ, $_POST["Kontaktnummer-" . $i]);
-				//if ($_POST["Kontaktnummer-" . $i]!="") 
-					$data[$FlugID]["Kontaktnummer"] = cleanString(str_replace($searchSD, $replaceSD, $_POST["Kontaktnummer-" . $i]));
-				//else
-				//	$data[$FlugID]["Kontaktnummer"] = cleanString($AdressDataArray[$Feldkatalog[$_POST["JG-" . $i]][$_POST["Feld-" . $i]]["Jaeger"]]['Text']);
-				//$data[$FlugID]["Landwirt"] = str_replace($searchSDZ, $replaceSDZ, $_POST["Landwirt-" . $i]);
-				//if ($_POST["Landwirt-" . $i]!="") 
-					$data[$FlugID]["Landwirt"] = rkrk_fluege_clean_landwirt_text(cleanString(str_replace($searchSD, $replaceSD, $_POST["Landwirt-" . $i])));
-				//else
-				//	$data[$FlugID]["Landwirt"] = $Feldkatalog[$_POST["JG-" . $i]][$_POST["Feld-" . $i]]["Bauer"];
-				// Bemerkung, Geflogen, Kontrollflug und Fund setzt rkrk_einsatz_apply_result_fields.
-				//if ($_POST["Flugzeit-" . $i]!="")
-					//echo "Post Flugzeit: " . $i . "/ " . round($_POST["Flugzeit-" . $i],1) . "<br>";
-					$data[$FlugID]["Flugzeit"] = round($_POST["Flugzeit-" . $i],1);
-				//else
-				//	$data[$FlugID]["Flugzeit"] = $FluzeitStartUndLandung+$Feldkatalog[$_POST["JG-" . $i]][$_POST["Feld-" . $i]]["Flugzeit"];
-				$data[$FlugID]["AnzFelder"] = $_POST["AnzFelder-" . $i];
-				$data[$FlugID]["#Funde"] = $_POST["#Funde-" . $i];
-				$data[$FlugID]["Einsatztag"] = $_POST["Einsatztag-" . $i];
-				$data[$FlugID]["GrundstückID"] = $_POST["GrundstückID-" . $i];
-				$data[$FlugID]["Gde"] = rkrk_fluege_scalar_text($_POST["Gde-" . $i]);
-				$data[$FlugID]["JG"] = $_POST["JG-" . $i];
-				$data[$FlugID]["Warnung"] = $_POST["Warnung-" . $i];
-				$data[$FlugID]["Reg"] = $_POST["Reg-" . $i];
-				$data[$FlugID]["Flaeche"] = $_POST["Flaeche-" . $i];
-				$data[$FlugID]["Status"] = $_POST["Status-" . $i];
+				if ($postedFlightValue("Felder") !== null) {
+					$data[$FlugID]["Felder"] = rkrk_fluege_clean_felder_text($postedFlightValue("Felder"));
+				}
+				if ($postedFlightValue("Jaeger") !== null) {
+					$data[$FlugID]["Jaeger"] = $postedFlightValue("Jaeger");
+				} elseif (!isset($data[$FlugID]["Jaeger"])) {
+					$data[$FlugID]["Jaeger"] = "";
+				}
+				if ($postedFlightValue("Kontaktnummer") !== null) {
+					$data[$FlugID]["Kontaktnummer"] = cleanString(str_replace($searchSD, $replaceSD, $postedFlightValue("Kontaktnummer")));
+				}
+				if ($postedFlightValue("Landwirt") !== null) {
+					$data[$FlugID]["Landwirt"] = rkrk_fluege_clean_landwirt_text(cleanString(str_replace($searchSD, $replaceSD, $postedFlightValue("Landwirt"))));
+				}
+				if ($postedFlightValue("Flugzeit") !== null && is_numeric($postedFlightValue("Flugzeit"))) {
+					$data[$FlugID]["Flugzeit"] = round($postedFlightValue("Flugzeit"), 1);
+				}
+				foreach (array("AnzFelder", "#Funde", "Einsatztag", "GrundstückID", "JG", "Warnung", "Reg", "Flaeche", "Status") as $flightColumn) {
+					if ($postedFlightValue($flightColumn) !== null) {
+						$data[$FlugID][$flightColumn] = $postedFlightValue($flightColumn);
+					}
+				}
+				if ($postedFlightValue("Gde") !== null) {
+					$data[$FlugID]["Gde"] = rkrk_fluege_scalar_text($postedFlightValue("Gde"));
+				}
 				//echo "FlugID: ". $FlugID . "<br>";
 				//Write to LOGfile
 				IF ($doadd) {
@@ -2508,8 +2510,15 @@ echo "<table class='rkrk-flight-main rkrk-files-collapsed rkrk-meta-collapsed'>"
 								$fileHref = $convHref;
 							}
 						}
+						if ($xmlLabel === 'JasonFile' && $convHref === '' && function_exists('rkrk_json_flight_export_href')) {
+							$exportHref = rkrk_json_flight_export_href($Link);
+							if ($exportHref !== '') {
+								$fileHref = $exportHref;
+							}
+						}
 						$kmlHref = ($xmlLabel === 'KMZFile' && function_exists('rkrk_debug_kml_href')) ? rkrk_debug_kml_href($Link) : '';
-						echo "<a href='" . htmlspecialchars($fileHref, ENT_QUOTES, 'UTF-8') . "'" . ($kmlHref !== '' ? " data-kml='" . htmlspecialchars($kmlHref, ENT_QUOTES, 'UTF-8') . "'" : "") . ($convHref === '' ? " download" : "") . "><img src='" . htmlspecialchars($iconPath, ENT_QUOTES, 'UTF-8') . "' height='" . (int)$ButtonHeight . "' title='" . htmlspecialchars($FileType["Text"] . " " . $dataline['Feld'] . " - " . $Link, ENT_QUOTES, 'UTF-8') . "' ></a> <wbr>" . chr(10);
+						$isStaticFile = ($fileHref === ($RKRKLocalLoactionMissionFiles . $Link));
+						echo "<a href='" . htmlspecialchars($fileHref, ENT_QUOTES, 'UTF-8') . "'" . ($kmlHref !== '' ? " data-kml='" . htmlspecialchars($kmlHref, ENT_QUOTES, 'UTF-8') . "'" : "") . ($isStaticFile ? " download" : "") . "><img src='" . htmlspecialchars($iconPath, ENT_QUOTES, 'UTF-8') . "' height='" . (int)$ButtonHeight . "' title='" . htmlspecialchars($FileType["Text"] . " " . $dataline['Feld'] . " - " . $Link, ENT_QUOTES, 'UTF-8') . "' ></a> <wbr>" . chr(10);
 						if ($xmlLabel === "JasonFile") {
 							$JsonFileList[] = $Link;
 						}
