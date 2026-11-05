@@ -1,5 +1,9 @@
 <?php
-/** AIP ENR 5.1 LS-R polygons (simple rings) for DABS map display. */
+/**
+ * AIP ENR 5.1 simple rings for DABS map display.
+ * Keys are LSR… and, when a ring is already defined, LSD….
+ * Lookup is by that key; a missing LS-D entry stays a circle.
+ */
 declare(strict_types=1);
 
 function rkrk_dabs_aip_rings(): array

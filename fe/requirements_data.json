@@ -38,14 +38,14 @@
             "label": "Überlappung",
             "value": 0.15,
             "unit": "-",
-            "description": "Bahnenüberlappung zur sicheren Abdeckung."
+            "description": "Winkelanteil k der Suchbreite S im Bahnbreiten-Tool, Vorgabe 0.15, ab 50 m mit Hoehenkorrektur. Die lineare Ueberlappung steuert die Bahnbreite B, Bereich 0 bis 95 Prozent. Standard eines neuen Feldes: 30 Prozent."
         },
         {
             "key": "edge_factor",
             "label": "Randfaktor (max. Anteil der Bahnbreite)",
             "value": 0.4,
             "unit": "-",
-            "description": "40 Prozent der Bahnbreite S vom Feldrand, seitlich und an den Bahnenden, wenn dabei keine ungedeckte Flaeche entsteht. Entsteht eine Luecke, wird der Abstand kleiner, bis die Flaeche gedeckt ist. Nicht mit langen Bahnen weit ausserhalb des Feldes decken. Kurzer Ueberstand hoechstens eine Bahnbreite."
+            "description": "40 Prozent der Bahnbreite B vom Feldrand, seitlich und an den Bahnenden, wenn dabei keine ungedeckte Flaeche entsteht. Die Suchbreite S deckt diesen Streifen. Entsteht eine Luecke, wird der Abstand kleiner, bis die Flaeche gedeckt ist. Nicht mit langen Bahnen weit ausserhalb des Feldes decken. Kurzer Ueberstand hoechstens eine Bahnbreite."
         },
         {
             "key": "agl_tolerance_m",
@@ -194,15 +194,15 @@
             "id": "R-002",
             "name": "Spurabstand",
             "priority": "must",
-            "formula": "S = (1 - overlap) * W",
-            "description": "Der Spurabstand muss die definierte Überlappung einhalten."
+            "formula": "B = (1 - overlap_pct) * W; S = 2*h*tan(HFOV/2 - HFOV*k)",
+            "description": "Die Bahnbreite B haelt die lineare Ueberlappung ein. S ist die Suchbreite aus der Bahnberechnung und nicht der Spurabstand."
         },
         {
             "id": "R-003",
             "name": "Randabdeckung",
             "priority": "must",
-            "formula": "d = edge_factor * S mit edge_factor = 0.40, seitlich und an den Enden, wenn keine Luecke; sonst d kleiner bis gedeckt; Ueberstand ausserhalb <= S",
-            "description": "40 Prozent der Bahnbreite vom Feldrand einhalten, seitlich und an den Bahnenden, wenn dabei keine ungedeckte Flaeche entsteht. Entsteht eine Luecke, wird der Abstand kleiner, bis die Flaeche gedeckt ist, auch an einer bisher offenen Ecke. Nicht mit langen Bahnen weit ausserhalb des Feldes decken. Ein kurzer Ueberstand hoechstens in der Groesse einer Bahnbreite ist erlaubt. Dieselbe Rechnung gilt auf DESK und MOB, auch nach einem Richtungswechsel."
+            "formula": "d = edge_factor * B mit edge_factor = 0.40, seitlich und an den Enden, wenn keine Luecke; sonst d kleiner bis gedeckt; Ueberstand ausserhalb <= B",
+            "description": "40 Prozent der Bahnbreite B vom Feldrand einhalten, seitlich und an den Bahnenden. Die Suchbreite S deckt den Streifen bis zur Feldgrenze, die Bahn fliegt den Rand nicht ab. Entsteht eine Luecke, wird der Abstand kleiner, bis die Flaeche gedeckt ist. Nicht mit langen Bahnen weit ausserhalb des Feldes decken. Ein kurzer Ueberstand hoechstens in der Groesse einer Bahnbreite ist erlaubt."
         },
         {
             "id": "R-004",
@@ -260,7 +260,7 @@
             "name": "Ueberlappung 15 Prozent",
             "priority": "must",
             "formula": "overlap = 0.15",
-            "description": "Die Planung verwendet standardmaessig 15% Ueberlappung, sofern kein aktiviertes Schritt-Requirement dies explizit aendert."
+            "description": "Der Kernparameter overlap 0.15 ist der Winkelanteil fuer S. Die lineare Standardueberlappung eines neuen Feldes ist 30 Prozent und steuert B. Bereich 0 bis 95 Prozent. Ein gespeichertes Feld behaelt seine Ueberlappung."
         },
         {
             "id": "R-012",
@@ -397,15 +397,15 @@
             "id": "R-030",
             "name": "Parallelbahnen mit Spurabstand S",
             "priority": "must",
-            "formula": "lanes are parallel and lane_spacing = S = (1-overlap)*W",
-            "description": "Die Arbeitsbahnen muessen parallel verlaufen und den berechneten Spurabstand S einhalten, damit sich die geforderte minimale Ueberlappung ergibt."
+            "formula": "lanes are parallel and lane_spacing = B = round_half((1-overlap_pct)*W)",
+            "description": "Die Arbeitsbahnen muessen parallel verlaufen und die Bahnbreite B einhalten. B folgt der linearen Ueberlappung, Standard 30 Prozent."
         },
         {
             "id": "R-031",
             "name": "Pfadabdeckung ohne Leerflaechen",
             "priority": "must",
-            "formula": "display_width = S + (W-S)/2; look_L = 2*h*tan(VFOV/2); band along path; start_end_cap = L/2; turn = exterior sector radius display_width/2",
-            "description": "Anzeige der Suchabdeckung: Bandbreite ist das Mittel aus Bahnbreite S und Sichtbreite W. Start und Ende werden um die halbe Sichttiefe L/2 verlaengert. An Drehungen schliesst ein Kreisausschnitt mit Radius der halben Bandbreite tangential an die Bandkanten an. Vorwaertsflug, Gimbal -90 Grad."
+            "formula": "display_width = S; S aus Bahnberechnung; B = round_half((1-overlap_pct)*W); look_L = 2*h*tan(VFOV/2); band along path; start_end_cap = L/2; turn = exterior sector radius S/2",
+            "description": "Anzeige der Suchabdeckung: die Bandbreite quer zur Bahn ist S aus der Bahnberechnung. B ist die Bahnbreite und folgt der linearen Ueberlappung, Standard 30 Prozent, Bereich 0 bis 95 Prozent. Start und Ende werden um die halbe Sichttiefe L/2 verlaengert. An Drehungen schliesst ein Kreisausschnitt mit Radius S/2 tangential an die Bandkanten an. Vorwaertsflug, Gimbal -90 Grad."
         },
         {
             "id": "R-032",
@@ -428,8 +428,8 @@
             "name": "Bandbreite und Sichttiefe getrennt darstellen",
             "priority": "must",
             "status": "valid",
-            "formula": "W = 2*h*tan(HFOV/2); S = (1-overlap)*W; display_width = S+(W-S)/2; L = 2*h*tan(VFOV/2)",
-            "description": "Die Anzeigebandbreite ist das Mittel aus Spurabstand S und Sichtbreite W. Die Sichttiefe L aus dem vertikalen Oeffnungswinkel verlaengert nur Start und Ende um L/2. Der DFOV-Kreis bleibt ausserhalb der Anzeige."
+            "formula": "W = round_half(2*h*tan(HFOV/2)); S = round_half(2*h*tan(HFOV/2 - ua)); ua = HFOV*k; B = round_half((1-overlap_pct)*W); display_width = S; L = 2*h*tan(VFOV/2)",
+            "description": "Die Anzeigebandbreite quer zur Bahn ist die Suchbreite S aus der Bahnberechnung. B ist die Bahnbreite und folgt der linearen Ueberlappung. Standard eines neuen Feldes: 30 Prozent, Bereich 0 bis 95 Prozent. W, S und B sind auf den naechsten halben Meter gerundet. Die Sichttiefe L verlaengert nur Start und Ende um L/2."
         },
         {
             "id": "R-035",

@@ -392,6 +392,17 @@ function field_mission_settings_json(array $data): string
         'gimbal_mode' => $gimbalMode !== '' ? $gimbalMode : 'Manuell',
         'gimbal_pitch' => $gimbalPitch,
     ];
+    $obstacles = is_array($ms['obstacles'] ?? null) ? $ms['obstacles'] : [];
+    if (function_exists('normalize_obstacle_list')) {
+        $obstacles = normalize_obstacle_list($obstacles);
+    }
+    if ($obstacles !== []) {
+        $payload['obstacles'] = $obstacles;
+    }
+    $entryId = trim((string)($ms['entry_id'] ?? ''));
+    if ($entryId !== '' && $entryId !== 'auto') {
+        $payload['entry_id'] = $entryId;
+    }
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     return is_string($json) ? $json : '{}';
 }
@@ -1501,10 +1512,32 @@ function editor_mark_catalog_absent(string $key): void
     $_GET['MDB'] = $key;
 }
 
+function editor_debug_flag_on(): bool
+{
+    if (function_exists('rkrk_debug_catalogs_visible')) {
+        return rkrk_debug_catalogs_visible();
+    }
+    foreach ([$_GET, $_POST] as $bag) {
+        if (!is_array($bag)) {
+            continue;
+        }
+        foreach (array_keys($bag) as $flag) {
+            if (strcasecmp((string)$flag, 'DEBUG') === 0) {
+                return true;
+            }
+        }
+    }
+    return isset($_SERVER['QUERY_STRING']) && preg_match('/DEBUG/i', (string)$_SERVER['QUERY_STRING']) === 1;
+}
+
 function editor_use_mission(string $hint): void
 {
     $key = editor_mission_key_pure($hint);
     if ($key === '') {
+        $key = '3T';
+    }
+    // Mavic 3T Debug (MDB=D) nur mit ?DEBUG, sonst wie EXPERT auf 3T zurück.
+    if ($key === 'D' && !editor_debug_flag_on()) {
         $key = '3T';
     }
     $genKeys = ['3T', '4TD', 'D'];
@@ -1549,11 +1582,56 @@ function editor_use_mission(string $hint): void
     editor_bind_mission_catalog();
 }
 
+function editor_region_jg(string $raw): string
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return '';
+    }
+    editor_load_name_tables();
+    $regions = $GLOBALS['RegionSettings'] ?? [];
+    if (!is_array($regions)) {
+        return '';
+    }
+    $skip = ['ALL' => true, 'leer' => true, 'NO' => true];
+    if (isset($regions[$raw]) && is_array($regions[$raw])) {
+        $code = trim((string)($regions[$raw]['Reg'] ?? $raw));
+        if ($code === '' || isset($skip[$code])) {
+            return '';
+        }
+        return $code;
+    }
+    foreach ($regions as $key => $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $code = trim((string)($row['Reg'] ?? $key));
+        if ($code === '' || isset($skip[$code])) {
+            continue;
+        }
+        if (strcasecmp($code, $raw) === 0 || strcasecmp((string)$key, $raw) === 0) {
+            return $code;
+        }
+    }
+    return '';
+}
+
+function editor_region_jg_from_feld_id(string $feldId): string
+{
+    $feldId = trim($feldId);
+    if (!preg_match('/^([A-Za-z0-9]+)\s*-\s*\d+$/', $feldId, $m)) {
+        return '';
+    }
+    return editor_region_jg($m[1]);
+}
+
 function editor_normalize_feld_id(string $raw): string
 {
     $raw = trim($raw);
-    if (preg_match('/^(\d+)\s*-\s*(\d+)$/', $raw, $m)) {
-        return $m[1] . '-' . sprintf('%03d', intval($m[2]));
+    if (preg_match('/^([A-Za-z0-9]+)\s*-\s*(\d+)$/', $raw, $m)) {
+        $jg = editor_region_jg($m[1]);
+        $prefix = $jg !== '' ? $jg : $m[1];
+        return $prefix . '-' . sprintf('%03d', intval($m[2]));
     }
     return $raw;
 }
@@ -1975,7 +2053,14 @@ function editor_attach_mission_files(SimpleXMLElement $node, string $jg, string 
     $missionFile = '';
     $kmzFile = '';
     if ($jg === '') {
-        fail(422, 'missing_jg', 'JSON und KMZ brauchen ein Jagdgebiet. Der Feldkatalog wurde nicht gespeichert.');
+        if (empty($data['confirm_missing_place'])) {
+            fail(422, 'missing_jg', 'JSON und KMZ brauchen ein Jagdgebiet. Der Feldkatalog wurde nicht gespeichert.');
+        }
+        return [
+            'mission' => null,
+            'jason_file' => '',
+            'kmz_file' => '',
+        ];
     }
     if ($jg !== '') {
         $postedSettings = is_array($data['mission_settings'] ?? null) ? $data['mission_settings'] : [];
@@ -2102,17 +2187,94 @@ function editor_catalog_lock()
     return $fh;
 }
 
-function editor_reload_catalog(string $xmlPath): SimpleXMLElement
+function editor_catalog_json_path_for(string $xmlPath): string
 {
-    editor_bind_mission_catalog();
+    if (function_exists('rkrk_catalog_json_path')) {
+        $path = rkrk_catalog_json_path($xmlPath);
+        if (is_string($path) && $path !== '' && is_file($path)) {
+            return $path;
+        }
+    }
+    $sibling = dirname(dirname($xmlPath)) . DIRECTORY_SEPARATOR . 'jsonfiles' . DIRECTORY_SEPARATOR . 'RKRKFelder.json';
+    return is_file($sibling) ? $sibling : '';
+}
+
+function editor_catalog_json_field_rows(string $jsonPath): array
+{
+    if ($jsonPath === '' || !is_file($jsonPath) || !function_exists('rkrk_feldkatalog_fields_from_payload') || !function_exists('rkrk_read_json_file')) {
+        return [];
+    }
+    if (function_exists('rkrk_feldkatalog_file_complete') && !rkrk_feldkatalog_file_complete($jsonPath)) {
+        return [];
+    }
+    $rows = rkrk_feldkatalog_fields_from_payload(rkrk_read_json_file($jsonPath));
+    return is_array($rows) ? $rows : [];
+}
+
+function editor_simplexml_feld_row(SimpleXMLElement $feld): array
+{
+    $row = [];
+    foreach ($feld->children() as $child) {
+        $name = (string)$child->getName();
+        if ($name === '') {
+            continue;
+        }
+        if ($child->count() > 0) {
+            $nested = [];
+            foreach ($child->children() as $sub) {
+                $subName = (string)$sub->getName();
+                if ($subName !== '') {
+                    $nested[$subName] = (string)$sub;
+                }
+            }
+            $row[$name] = $nested;
+            continue;
+        }
+        $row[$name] = (string)$child;
+    }
+    return $row;
+}
+
+function editor_load_catalog_simplexml(string $xmlPath)
+{
     $xml = function_exists('rkrk_catalog_load_simplexml')
         ? rkrk_catalog_load_simplexml($xmlPath)
         : false;
-    if (!($xml instanceof SimpleXMLElement) && is_file($xmlPath) && (!function_exists('rkrk_feldkatalog_file_complete') || rkrk_feldkatalog_file_complete($xmlPath))) {
-        $xml = simplexml_load_file($xmlPath);
+    $loaded = ($xml instanceof SimpleXMLElement) ? count($xml->Feld) : 0;
+    $jsonPath = editor_catalog_json_path_for($xmlPath);
+    $jsonBytes = ($jsonPath !== '') ? (int)@filesize($jsonPath) : 0;
+    $min = function_exists('rkrk_feldkatalog_min_bytes') ? (int)rkrk_feldkatalog_min_bytes() : 20480;
+    if ($jsonBytes >= $min && $loaded < 100 && function_exists('rkrk_array_to_simplexml')) {
+        $fields = editor_catalog_json_field_rows($jsonPath);
+        if (count($fields) > $loaded) {
+            $built = rkrk_array_to_simplexml('Felder', ['Feld' => array_values($fields)]);
+            if ($built instanceof SimpleXMLElement) {
+                return $built;
+            }
+            return false;
+        }
     }
+    if ($xml instanceof SimpleXMLElement) {
+        return $xml;
+    }
+    if ($jsonBytes >= $min) {
+        return false;
+    }
+    if (is_file($xmlPath) && (!function_exists('rkrk_feldkatalog_file_complete') || rkrk_feldkatalog_file_complete($xmlPath))) {
+        $fallback = simplexml_load_file($xmlPath);
+        if ($fallback instanceof SimpleXMLElement) {
+            return $fallback;
+        }
+    }
+    return false;
+}
+
+function editor_reload_catalog(string $xmlPath): SimpleXMLElement
+{
+    editor_bind_mission_catalog();
+    $xml = editor_load_catalog_simplexml($xmlPath);
     if (!($xml instanceof SimpleXMLElement)) {
-        fail(500, 'catalog_missing', 'Feldkatalog nicht vorhanden');
+        fail(500, 'catalog_missing', 'Feldkatalog (JSON) nicht vorhanden');
     }
     return $xml;
 }
@@ -2137,7 +2299,7 @@ function editor_catalog_target(): array
     ];
 }
 
-function editor_save_catalog_compatible(SimpleXMLElement $xml): bool
+function editor_save_catalog_compatible(SimpleXMLElement $xml, array $omitFeldIds = []): bool
 {
     $GLOBALS['editorCatalogSaveError'] = '';
     editor_prepare_catalog_save();
@@ -2172,8 +2334,53 @@ function editor_save_catalog_compatible(SimpleXMLElement $xml): bool
     $optionJaeger = [];
     $max = 0;
     $regions = is_array($GLOBALS['EnabledRegion'] ?? null) ? $GLOBALS['EnabledRegion'] : [];
+    $jsonPath = rtrim($jsonDir, "/\\") . DIRECTORY_SEPARATOR . 'RKRKFelder.json';
+    $diskFields = editor_catalog_json_field_rows($jsonPath);
+    $omit = [];
+    foreach ($omitFeldIds as $rawId) {
+        $omitId = strtolower(trim((string)$rawId));
+        if ($omitId !== '') {
+            $omit[$omitId] = true;
+        }
+    }
+    if ($omit !== []) {
+        $kept = [];
+        foreach ($diskFields as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $rowId = strtolower(trim((string)($row['FeldID'] ?? '')));
+            if ($rowId !== '' && isset($omit[$rowId])) {
+                continue;
+            }
+            $kept[] = $row;
+        }
+        $diskFields = $kept;
+    }
+    $memCount = count($xml->Feld);
     ob_start();
-    $kat = TransferFeldKatFromXMLtoArr($xml, $regions, $optionJaeger, $max);
+    if (count($diskFields) > $memCount && function_exists('TransferFeldKatFromListToArr')) {
+        $byId = [];
+        foreach ($diskFields as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = strtolower(trim((string)($row['FeldID'] ?? '')));
+            if ($id !== '') {
+                $byId[$id] = $row;
+            }
+        }
+        foreach ($xml->Feld as $feld) {
+            $id = strtolower(trim((string)($feld->FeldID ?? '')));
+            if ($id === '') {
+                continue;
+            }
+            $byId[$id] = editor_simplexml_feld_row($feld);
+        }
+        $kat = TransferFeldKatFromListToArr(array_values($byId), $regions, $optionJaeger, $max);
+    } else {
+        $kat = TransferFeldKatFromXMLtoArr($xml, $regions, $optionJaeger, $max);
+    }
     if (!is_array($kat) || ($kat === [] && count($xml->Feld) > 0)) {
         ob_end_clean();
         $GLOBALS['editorCatalogSaveError'] = 'Transfer liefert []';
@@ -2188,24 +2395,88 @@ function editor_save_catalog_compatible(SimpleXMLElement $xml): bool
         }
         $kat[$jg][$id]['MissionSettings'] = $ms;
     }
+    $katCount = 0;
+    foreach ($kat as $region) {
+        if (is_array($region)) {
+            $katCount += count($region);
+        }
+    }
+    if (count($diskFields) >= 100 && $katCount < count($diskFields)) {
+        ob_end_clean();
+        $GLOBALS['editorCatalogSaveError'] = 'Der JSON-Feldkatalog würde verkleinert. Es wurde nichts geschrieben.';
+        return false;
+    }
+    $beforeSize = is_file($jsonPath) ? (int)@filesize($jsonPath) : 0;
+    $beforeMtime = is_file($jsonPath) ? (int)@filemtime($jsonPath) : 0;
     SaveFlugkatalog($kat, true, $xmlDir);
     if (function_exists('SaveFlugkatalog2CSV')) {
         SaveFlugkatalog2CSV($kat, $csvDir);
     }
     ob_end_clean();
-    $jsonPath = rtrim($jsonDir, "/\\") . DIRECTORY_SEPARATOR . 'RKRKFelder.json';
-    if (is_file($jsonPath) && function_exists('rkrk_feldkatalog_min_bytes')) {
-        $size = @filesize($jsonPath);
-        if ($size !== false && $size > 0 && $size < rkrk_feldkatalog_min_bytes() && @filesize($xmlDir . 'RKRKFelder.xml') >= rkrk_feldkatalog_min_bytes()) {
-            return false;
-        }
+    clearstatcache(true, $jsonPath);
+    $afterSize = is_file($jsonPath) ? (int)@filesize($jsonPath) : 0;
+    $afterMtime = is_file($jsonPath) ? (int)@filemtime($jsonPath) : 0;
+    $min = function_exists('rkrk_feldkatalog_min_bytes') ? (int)rkrk_feldkatalog_min_bytes() : 20480;
+    if ($beforeSize >= $min && ($afterSize < (int)floor($beforeSize * 0.5) || ($afterSize === $beforeSize && $afterMtime === $beforeMtime))) {
+        $GLOBALS['editorCatalogSaveError'] = 'Der JSON-Feldkatalog wurde nicht geschrieben. Die kleine XML-Kopie darf ihn nicht ersetzen.';
+        return false;
+    }
+    if ($afterSize > 0 && $afterSize < $min && is_file($xmlDir . 'RKRKFelder.xml') && (int)@filesize($xmlDir . 'RKRKFelder.xml') >= $min) {
+        $GLOBALS['editorCatalogSaveError'] = 'Der JSON-Feldkatalog ist nach dem Speichern unvollständig.';
+        return false;
     }
     return is_file($jsonPath) && is_file($xmlDir . 'RKRKFelder.xml');
 }
 
-function editor_persist_catalog(string $xmlPath, SimpleXMLElement $xml): bool
+function editor_persist_catalog(string $xmlPath, SimpleXMLElement $xml, array $omitFeldIds = []): bool
 {
-    return editor_save_catalog_compatible($xml);
+    return editor_save_catalog_compatible($xml, $omitFeldIds);
+}
+
+function editor_catalog_stored_mission_files(string $xmlPath, string $feldId): array
+{
+    $empty = ['jason_file' => '', 'kmz_file' => '', 'suchfeld_bild' => '', 'flugplan_bild' => ''];
+    $feldId = trim($feldId);
+    if ($feldId === '') {
+        return $empty;
+    }
+    $jsonPath = function_exists('rkrk_catalog_json_path') ? rkrk_catalog_json_path($xmlPath) : '';
+    if (is_string($jsonPath) && $jsonPath !== '' && function_exists('rkrk_read_json_file')) {
+        clearstatcache(true, $jsonPath);
+        rkrk_read_json_file($jsonPath, true);
+    }
+    if (($jsonPath === '' || !is_file($jsonPath)) && !is_file($xmlPath)) {
+        return $empty;
+    }
+    $fresh = false;
+    if (function_exists('rkrk_catalog_load_simplexml')) {
+        try {
+            $fresh = rkrk_catalog_load_simplexml($xmlPath);
+        } catch (Throwable $e) {
+            $fresh = false;
+        }
+    }
+    if (!($fresh instanceof SimpleXMLElement)) {
+        $fresh = @simplexml_load_file($xmlPath);
+    }
+    if (!($fresh instanceof SimpleXMLElement)) {
+        return $empty;
+    }
+    foreach ($fresh->Feld as $f) {
+        if (strcasecmp(trim((string)($f->FeldID ?? '')), $feldId) !== 0) {
+            continue;
+        }
+        $norm = static function ($value): string {
+            return trim(str_replace('\\', '/', (string)$value));
+        };
+        return [
+            'jason_file' => $norm($f->JasonFile ?? ''),
+            'kmz_file' => $norm($f->KMZFile ?? ''),
+            'suchfeld_bild' => $norm($f->SuchfeldBild ?? ''),
+            'flugplan_bild' => $norm($f->FlugplanBild ?? ''),
+        ];
+    }
+    return $empty;
 }
 
 function editor_catalog_rel(string $rel): string
@@ -2308,6 +2579,47 @@ function editor_field_delete_rels(SimpleXMLElement $feld): array
             $norm = editor_catalog_rel($stem . '.' . $alt);
             if ($norm !== '') {
                 $rels[strtolower($norm)] = $norm;
+            }
+        }
+    }
+    if ($token !== '') {
+        $dirs = [];
+        foreach ($rels as $rel) {
+            $dir = trim(str_replace('\\', '/', dirname((string)$rel)), '/');
+            if ($dir !== '' && $dir !== '.') {
+                $dirs[strtolower($dir)] = $dir;
+            }
+        }
+        editor_load_name_tables();
+        $jg = trim((string)($feld->JG ?? ''));
+        $regions = $GLOBALS['RegionSettings'] ?? [];
+        if ($jg !== '' && isset($regions[$jg]) && is_array($regions[$jg])) {
+            $regionDir = trim(str_replace('\\', '/', (string)($regions[$jg]['Dir'] ?? '')), '/');
+            if ($regionDir !== '') {
+                $dirs[strtolower($regionDir)] = $regionDir;
+            }
+        }
+        foreach ($dirs as $relDir) {
+            $absDir = editor_region_mission_dir($relDir);
+            if ($absDir === '' || !is_dir($absDir)) {
+                continue;
+            }
+            $names = scandir($absDir);
+            if (!is_array($names)) {
+                continue;
+            }
+            foreach ($names as $name) {
+                if ($name === '.' || $name === '..' || !editor_basename_has_field_token($name, $token)) {
+                    continue;
+                }
+                $ext = strtolower((string)pathinfo($name, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['json', 'kml', 'kmz', 'jpg', 'jpeg'], true)) {
+                    continue;
+                }
+                $norm = editor_catalog_rel($relDir . '/' . $name);
+                if ($norm !== '') {
+                    $rels[strtolower($norm)] = $norm;
+                }
             }
         }
     }
@@ -2454,18 +2766,39 @@ function editor_delete_catalog_field(array $payload): void
         fail(500, 'delete_failed', 'Es wäre nicht genau ein Feld entfernt worden. Nichts gelöscht.');
     }
     editor_prepare_catalog_save();
-    $saved = editor_persist_catalog($xmlPath, $xml);
+    $saved = editor_persist_catalog($xmlPath, $xml, [$feldId]);
+    $jsonSnap = (string)$snap['json']['path'];
+    $xmlSnap = (string)$snap['xml']['path'];
+    if ($jsonSnap !== '') {
+        clearstatcache(true, $jsonSnap);
+        if (function_exists('rkrk_read_json_file')) {
+            rkrk_read_json_file($jsonSnap, true);
+        }
+    }
+    if ($xmlSnap !== '') {
+        clearstatcache(true, $xmlSnap);
+    }
     $afterIds = editor_ids_from_catalog_files([
-        'json' => (string)$snap['json']['path'],
-        'xml' => (string)$snap['xml']['path'],
+        'json' => $jsonSnap,
+        'xml' => $xmlSnap,
     ]);
     $lost = editor_catalog_lost_ids($beforeIds, $afterIds, $feldId);
     $stillThere = isset($afterIds[strtolower($feldId)]);
     if (!$saved || $stillThere || $lost !== []) {
         editor_catalog_snapshot_restore($snap);
         editor_catalog_snapshot_discard($snap);
+        if ($jsonSnap !== '' && function_exists('rkrk_read_json_file')) {
+            rkrk_read_json_file($jsonSnap, true);
+        }
         if ($lost !== []) {
             fail(500, 'catalog_shrink', 'Der Feldkatalog wäre um mehr als dieses Feld verkleinert worden. Die Änderung wurde zurückgenommen.');
+        }
+        $saveError = trim((string)($GLOBALS['editorCatalogSaveError'] ?? ''));
+        if ($saveError !== '') {
+            fail(500, 'delete_failed', $saveError . ' Nichts gelöscht.');
+        }
+        if ($stillThere) {
+            fail(500, 'delete_failed', 'Das Feld steht nach dem Speichern noch im Katalog. Nichts gelöscht.');
         }
         fail(500, 'delete_failed', 'Feldkatalog konnte nicht gespeichert werden. Nichts gelöscht.');
     }
@@ -2588,7 +2921,18 @@ function editor_store_plan_pictures(SimpleXMLElement $xml, string $xmlPath): voi
     if (!editor_persist_catalog($xmlPath, $xml)) {
         fail(500, 'save_failed', 'Planbilder wurden geschrieben, der Feldkatalog aber nicht');
     }
-    echo json_encode(['ok' => true] + $written, JSON_UNESCAPED_UNICODE);
+    $stored = editor_catalog_stored_mission_files($xmlPath, $feldId);
+    $same = static function (string $catalog, string $written): bool {
+        return $catalog !== '' && strcasecmp($catalog, $written) === 0;
+    };
+    $suchWritten = (string)($written['suchfeld_bild'] ?? '');
+    $flugWritten = (string)($written['flugplan_bild'] ?? '');
+    echo json_encode(['ok' => true] + $written + [
+        'catalog_suchfeld' => (string)($stored['suchfeld_bild'] ?? ''),
+        'catalog_flugplan' => (string)($stored['flugplan_bild'] ?? ''),
+        'catalog_suchfeld_updated' => $suchWritten !== '' && $same((string)($stored['suchfeld_bild'] ?? ''), $suchWritten),
+        'catalog_flugplan_updated' => $flugWritten !== '' && $same((string)($stored['flugplan_bild'] ?? ''), $flugWritten),
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -2735,12 +3079,7 @@ if (!empty($GLOBALS['editor_catalog_absent'])) {
     $xmlPath = '';
 } else {
     $xmlPath = editor_mission_catalog_xml();
-    $xml = function_exists('rkrk_catalog_load_simplexml')
-        ? rkrk_catalog_load_simplexml($xmlPath)
-        : false;
-    if (!($xml instanceof SimpleXMLElement) && is_file($xmlPath) && (!function_exists('rkrk_feldkatalog_file_complete') || rkrk_feldkatalog_file_complete($xmlPath))) {
-        $xml = simplexml_load_file($xmlPath);
-    }
+    $xml = editor_load_catalog_simplexml($xmlPath);
     if (!($xml instanceof SimpleXMLElement)) {
         fail(500, 'catalog_missing', 'Feldkatalog (JSON) nicht gefunden');
     }
@@ -2889,7 +3228,11 @@ if ($mode === 'preview') {
     $placeCandidates[] = $poly[0];
     $place = editor_place_from_points($placeCandidates);
     $gemeinde = $place['gemeinde'];
-    $jg = $place['jg'];
+    $postedJg = editor_region_jg(trim((string)($data['jg'] ?? '')));
+    if ($postedJg === '') {
+        $postedJg = editor_region_jg_from_feld_id(trim((string)($data['feld_id'] ?? '')));
+    }
+    $jg = $postedJg !== '' ? $postedJg : $place['jg'];
     $zentrum = format_center_text(editor_polygon_centroid($poly));
     $allowMissing = !empty($data['allow_missing_place']);
     if ($jg === '' && !$allowMissing) {
@@ -2922,7 +3265,7 @@ if ($mode === 'preview') {
         'feld_id' => $issued['feld_id'],
         'number' => $issued['number'],
         'jg' => $jg,
-        'jg_name' => $jg !== '' ? ($place['jg_name'] ?? editor_place_name($jg, 'Jgd')) : '',
+        'jg_name' => $jg === '' ? '' : (((string)($place['jg'] ?? '') === $jg && trim((string)($place['jg_name'] ?? '')) !== '') ? $place['jg_name'] : editor_place_name($jg, 'Jgd')),
         'gemeinde' => $gemeinde,
         'gemeinde_name' => $gemeinde !== '' ? ($place['gemeinde_name'] ?? editor_place_name($gemeinde, 'Gde')) : '',
         'missing_jg' => $jg === '',
@@ -2948,7 +3291,11 @@ if ($mode === 'create') {
     $placeCandidates = [editor_polygon_centroid($poly), $startPairs[0], $poly[0]];
     $place = editor_place_from_points($placeCandidates);
     $gemeinde = $place['gemeinde'];
-    $jg = $place['jg'];
+    $postedJg = editor_region_jg(trim((string)($data['jg'] ?? '')));
+    if ($postedJg === '') {
+        $postedJg = editor_region_jg_from_feld_id(trim((string)($data['feld_id'] ?? '')));
+    }
+    $jg = $postedJg !== '' ? $postedJg : $place['jg'];
     $zentrum = format_center_text(editor_polygon_centroid($poly));
     $confirmMissing = !empty($data['confirm_missing_place']);
     if ($jg === '' && !$confirmMissing) {
@@ -2960,7 +3307,7 @@ if ($mode === 'create') {
     $requested = editor_normalize_feld_id((string)($data['feld_id'] ?? ''));
     $confirmReuse = !empty($data['confirm_existing_feld_id']);
     $jgKey = $jg !== '' ? $jg : 'OHNE';
-    $requestedOk = ($requested !== '' && preg_match('/^\d+-\d+$/', $requested));
+    $requestedOk = ($requested !== '' && editor_suffix_of($jgKey, $requested) > 0);
     $foreignReserve = false;
     $usedElsewhere = $requestedOk && isset(editor_foreign_feld_ids()[strtolower($requested)]);
     if ($requestedOk && $reserveToken !== '') {
@@ -3143,6 +3490,14 @@ if (!$saved) {
 
 $jsonWritten = is_array($mission ?? null) && !empty($mission['json_written']) && $missionFile !== '' && is_file((string)($mission['absolute'] ?? ''));
 $kmzWritten = is_array($mission ?? null) && !empty($mission['kmz_written']) && $kmzFile !== '' && is_file((string)($mission['kmz_absolute'] ?? ''));
+$catalogFiles = editor_catalog_stored_mission_files($xmlPath, $feldId);
+$catalogJson = (string)($catalogFiles['jason_file'] ?? '');
+$catalogKmz = (string)($catalogFiles['kmz_file'] ?? '');
+$sameCatalogPath = static function (string $stored, string $written): bool {
+    $stored = strtolower(trim(str_replace('\\', '/', $stored)));
+    $written = strtolower(trim(str_replace('\\', '/', $written)));
+    return $stored !== '' && $written !== '' && $stored === $written;
+};
 $logWritten = ($jsonWritten || $kmzWritten)
     ? editor_log_field_save($feldId, $jsonWritten ? $missionFile : '', $kmzWritten ? $kmzFile : '')
     : false;
@@ -3156,6 +3511,10 @@ echo json_encode([
     'aenderung' => $today,
     'json_written' => $jsonWritten,
     'kmz_written' => $kmzWritten,
+    'catalog_json' => $catalogJson,
+    'catalog_kmz' => $catalogKmz,
+    'catalog_json_updated' => $sameCatalogPath($catalogJson, $missionFile),
+    'catalog_kmz_updated' => $sameCatalogPath($catalogKmz, $kmzFile),
     'history_json' => is_array($mission ?? null) ? ($mission['history_json'] ?? null) : null,
     'history_kmz' => is_array($mission ?? null) ? ($mission['history_kmz'] ?? null) : null,
     'log_written' => $logWritten,

@@ -28,7 +28,7 @@ window.RKRK_HELP_CATALOG = {
       title: 'Uebersicht Editor',
       use: 'Feldplanung in sechs Schritten, gleich wie auf der Fernsteuerung: Flaeche, Start, Flugpfad, 4 - Prüfen, Speichern, Daten. Die GIS-Nummer folgt erst aus der gezeichneten Flaeche.',
       inputs: [
-        { name: 'Feld', where: 'Liste links oder Schnellzugriff', required: true },
+        { name: 'Feld', where: 'Liste links. Schnellzugriff Felder nur mit ?DEBUG', required: true },
         { name: 'Feldrand', where: 'Karte / Flaechendaten', required: true },
         { name: 'Startpunkt', where: 'Karte oder Startplatz', required: true }
       ]
@@ -36,7 +36,7 @@ window.RKRK_HELP_CATALOG = {
     'editor.field_select': {
       page: 'editor',
       title: 'Feldauswahl',
-      use: 'Bestehendes Feld laden oder Schnellslot setzen.',
+      use: 'Bestehendes Feld laden. Schnellzugriff Felder nur mit ?DEBUG und ?KAT.',
       inputs: [
         { name: 'Suchtext', where: 'Feld suchen', required: false },
         { name: 'Feldklick', where: 'Feldliste', required: true }
@@ -107,7 +107,7 @@ window.RKRK_HELP_CATALOG = {
     'editor.coverage': {
       page: 'editor',
       title: 'Abdeckung & Anzeige',
-      use: 'Suchabdeckung und nicht abgedeckte Flaechen. Neigung −90 oder nicht gesetzt: Streifen mittig auf der Route, Bodenbreite und Bodenlänge aus Flughöhe und Sichtfeld. Neigung ungleich −90: schräger Footprint in Gierrichtung, versetzt von der Route, blasser ab 150 m und Ende bei 320 m.',
+      use: 'Suchabdeckung und nicht abgedeckte Flaechen. Neigung −90 oder nicht gesetzt: Streifen entlang der Route, Bodenbreite und Bodenlänge aus der programmierten Flughöhe und dem Sichtfeld. Neigung ungleich −90: das Bein nimmt Neigung und Gierrichtung des Wegpunkts, den das Fluggerät verlässt. Am Abflug gilt dessen programmierte Höhe, am Ankommen die programmierte Höhe des nächsten Punkts, mit derselben Neigung. Die Fläche wird auf dieses Segment beschnitten. Die Höhe in Klammern ist relativ zum Start und geht nicht in den Footprint.',
       inputs: [
         { name: 'Suchabdeckung', where: 'Schritt 3 Flugpfad', required: true },
         { name: 'Nicht abgedeckte Flaechen', where: 'Schritt 3 Flugpfad, unter der Suchabdeckung', required: false },
@@ -174,7 +174,7 @@ window.RKRK_HELP_CATALOG = {
     'rc.route': {
       page: 'rc',
       title: '3 Flugpfad',
-      use: 'Die Route wird vom Server gerechnet. Suchabdeckung, Hoehe auf der Route, Anflug und Flugrichtung gehoeren zu diesem Schritt. Neigung −90 zeichnet den Streifen auf der Route, eine andere Neigung den schrägen Footprint in Blickrichtung. Wegpunkte der Route lassen sich waehlen, verschieben, einfuegen und loeschen.',
+      use: 'Die Route wird vom Server gerechnet. Suchabdeckung, Hoehe auf der Route, Anflug und Flugrichtung gehoeren zu diesem Schritt. Neigung −90 zeichnet den Streifen entlang der Route. Eine andere Neigung nimmt Neigung, Gierrichtung und die programmierte Höhe des Wegpunkts, den das Fluggerät verlässt, und bleibt auf diesem Bein. Die Höhe in Klammern ist relativ zum Start und geht nicht in den Footprint. Wegpunkte der Route lassen sich waehlen, verschieben, einfuegen und loeschen.',
       inputs: [
         { name: 'Umrandung und Start', where: 'Schritte 1 und 2', required: true },
         { name: 'Flughoehe', where: 'Hoehe plus und minus', required: true },
@@ -193,7 +193,7 @@ window.RKRK_HELP_CATALOG = {
     'rc.name': {
       page: 'rc',
       title: '5 Speichern',
-      use: 'Feldname setzen und speichern. Fehlen Jagdgebiet oder Gemeinde, kommt zuerst eine Bestaetigung. Ein neues Feld bekommt die Freigabe NEU. Ueberarbeiten schreibt dasselbe Katalogfeld fort.',
+      use: 'Feldname, ein Feld Feldkatalognummer und die GIS-Nummer. Der Vorschlag der CadastralWebMap aus der gezeichneten Fläche steht auch hier, Knopf Vorschlag übernehmen. Mit ?DEBUG zeigt TF den Ordner TF_Testfelder und Nächste freie TF, XX den Ordner XX_Andere und Nächste freie XX. Der Knopf füllt nur ein leeres oder unverändertes Feld und schreibt keine Datei. Ohne ?DEBUG gibt es keine zweite Nummer. Fehlen Jagdgebiet oder Gemeinde, kommt zuerst eine Bestaetigung. Ein neues Feld bekommt die Freigabe NEU. Ueberarbeiten schreibt dasselbe Katalogfeld fort.',
       inputs: [
         { name: 'Feldname', where: 'Eingabe links', required: true },
         { name: 'Umrandung, Start und Route', where: 'vorherige Schritte', required: true }
@@ -276,7 +276,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor', 'analyse'],
       views: ['editor.field_select', 'analyse.overview'],
       title: 'Schnellzugriff Felder',
-      what: 'Vier Slots fuer haeufige Felder. Klick laedt, Alt+Klick speichert das aktuelle Feld in den Slot.',
+      what: 'Nur mit ?DEBUG und ?KAT. Vier Slots fuer haeufige Felder. Klick laedt, Alt+Klick speichert das aktuelle Feld in den Slot. Ohne ?DEBUG ist Schnellzugriff Felder nicht da.',
       inputs: [{ name: 'Aktuelles Feld', where: 'fuer Alt+Klick', required: false }]
     },
     {
@@ -365,10 +365,11 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.fielddata'],
       title: 'Neues Feld anlegen',
-      what: 'Schritt 1 Flaeche: bestehendes Feld laden oder neues Feld starten, Ort suchen, Umrandung zeichnen. Die GIS-Nummer wird erst gelesen, wenn die Flaeche gezeichnet ist. Fehlt sie im Katalog, schlaegt die CadastralWebMap die Parzelle im Feldinnern vor. Jagdgebiet, Gemeinde und die naechste freie Katalognummer folgen aus der Umrandung. Schritt 5 Speichern schreibt das Feld, Schritt 6 Daten zeigt die zusaetzlichen Feldkatalogdaten.',
+      what: 'Neu oben neben der Drohne schliesst ein geladenes Feld und startet ein leeres. Schritt 1 Flaeche: bestehendes Feld laden oder neues Feld starten, Ort suchen, Umrandung zeichnen. Ein neues Feld löscht den POI. Die GIS-Nummer wird erst gelesen, wenn die Flaeche gezeichnet ist. Fehlt sie im Katalog, schlaegt die CadastralWebMap die Parzelle im Feldinnern vor. Derselbe Vorschlag steht in Schritt 5 Speichern, Knopf Vorschlag übernehmen. Es gibt ein Feld Feldkatalognummer. Jagdgebiet, Gemeinde und die naechste freie Katalognummer folgen aus der Umrandung. Mit ?DEBUG zeigt TF den Ordner TF_Testfelder und den Knopf Nächste freie TF, XX den Ordner XX_Andere und den Knopf Nächste freie XX. Der Knopf füllt nur ein leeres oder unverändertes Feld und schreibt keine Datei. Ohne ?DEBUG gibt es keine zweite Nummer. Schritt 5 Speichern schreibt das Feld, Schritt 6 Daten zeigt die zusaetzlichen Feldkatalogdaten.',
       inputs: [
         { name: 'Bestehendes Feld oder Neues Feld', where: 'Schritt 1 Flaeche', required: true },
-        { name: 'GIS-Nummer', where: 'Schritt 1 Flaeche, nach der Umrandung', required: true },
+        { name: 'GIS-Nummer', where: 'Schritt 1 Flaeche und Schritt 5 Speichern', required: true },
+        { name: 'Feldkatalognummer', where: 'Schritt 5 Speichern, ein Feld', required: true },
         { name: 'Feldname', where: 'Schritt 5 Speichern', required: true },
         { name: 'Umrandung und Startpunkt', where: 'Schritte 1 und 2', required: true }
       ]
@@ -378,10 +379,10 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.fielddata'],
       title: 'Aktuelles Feld speichern',
-      what: 'Schreibt Geometrie, Flugweg, GIS-Nummer und Stammdaten und setzt das Aenderungsdatum. JSON und KMZ werden neu geschrieben. Die bisherige Datei kommt in die History, ein Logeintrag wird geschrieben. Die Meldung nennt beide Dateinamen und sagt, wenn eine Datei fehlt. Ohne GIS-Nummer wird nicht gespeichert und nicht exportiert. Ein neues Feld landet in der bestehenden Missionsstruktur des Jagdgebiets.',
+      what: 'Schreibt Geometrie, Flugweg, GIS-Nummer und Stammdaten und setzt das Aenderungsdatum. JSON und KMZ werden neu geschrieben und im Katalog eingetragen. Suchfeld- und Flugplanbild werden danach von der Katalogkarte erneuert und ebenfalls im Katalog eingetragen. Unter dem grünen Speichern bleiben geschriebene Zeilen normal. Nicht aktualisierte Zeilen sind rot und nennen die Datei, zum Beispiel «JSON im Katalog nicht aktualisiert: TF-067_….json». Dasselbe gilt für KMZ, Suchfeldbild und Flugplanbild. Das Pilotenkürzel im Dateinamen kommt aus den Initialen der Anmeldung. Ohne GIS-Nummer wird nicht gespeichert und nicht exportiert. Ein neues Feld landet in der bestehenden Missionsstruktur des Jagdgebiets.',
       inputs: [
         { name: 'FeldID + Name', where: 'Felddaten-Box', required: true },
-        { name: 'GIS-Nummer', where: 'Schritt 1 Flaeche, nach der Umrandung', required: true },
+        { name: 'GIS-Nummer', where: 'Schritt 1 Flaeche und Schritt 5 Speichern', required: true },
         { name: 'Startplatz + Flaechendaten', where: 'Felddaten-Box', required: true }
       ]
     },
@@ -390,15 +391,28 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.mission', 'editor.edit_path'],
       title: 'Missions- / KMZ-Parameter',
-      what: 'Gemeinsame Vorgaben im einfachen Modus, solange das Feld keine lokalen Abweichungen speichert: Direkt zum Startpunkt fliegen Nein, Geschwindigkeit 4.5 m/s, Endaktion Aufgabe beenden, Gierrichtung Richtung zum naechsten Wegpunkt, Wegpunkttyp Koordinierte Drehung ueberspringt den Wegpunkt, Wendedistanz 5 m, sichere Startflughoehe 20 m, Startgeschwindigkeit aus, Neigung −90 und nicht gesetzt, Hoehenmodus ALT relativ zum Startpunkt. DESK Schritt 3 zeigt dabei Suchabdeckung, nicht abgedeckte Flaechen, Hoehenanzeige, Anflug, Geschwindigkeit, Startgeschwindigkeit aus und gesperrt, Missionshoehe und Flugrichtung. Endaktion, Gierrichtung der Mission, Wegpunkttyp, Wendedistanz, Gimbalsteuerung, Randfaktor und FOV stehen im Reiter Flugroute und bleiben im einfachen Modus verborgen. Sichere Startflughoehe und Hoehenmodus haengen in Schritt 1, Direkt zur Startposition in Schritt 2. MOB Schritt Flugpfad zeigt Suchabdeckung, Hoehe auf der Route, Abweichung von der Sollflughoehe, Anflug, Geschwindigkeit, Startgeschwindigkeit, Missionshoehe und Flugrichtung. Die Startgeschwindigkeit ist im einfachen Modus gesperrt. Expertenmodus gibt diese Missionsfelder frei und schaltet die Startgeschwindigkeit frei. Neigung ungleich −90 schreibt den Winkel an den Wegpunkt. −90 bleibt der Standard und schreibt in der KMZ keinen Winkel. Gierrichtung Definiert braucht den Richtungs-Winkel. Fokus POI braucht einen POI. Schwenkachse sperren haelt die Nase fest. Flugrichtung im Flugpfad: Vorschlag oder fester Winkel. Mit ?DEBUG steht unter dem Label der JSON- und KMZ-Name.',
+      what: 'Gemeinsame Vorgaben im einfachen Modus, solange das Feld keine lokalen Abweichungen speichert: Direkt zur Startposition fliegen Nein, Geschwindigkeit 4.5 m/s, Endaktion Aufgabe beenden, Gierrichtung Richtung zum naechsten Wegpunkt, Wegpunkttyp Koordinierte Drehung ueberspringt den Wegpunkt, Wendedistanz 5 m, sichere Startflughoehe 20 m, Startgeschwindigkeit aus, Neigung −90 und nicht gesetzt, Hoehenmodus ALT relativ zum Startpunkt. DESK Schritt 3 Flugpfad zeigt Suchabdeckung, nicht abgedeckte Flaechen, Hoehenanzeige, Anflug, Geschwindigkeit, Missionshoehe und Flugrichtung. Schritt 4 - Prüfen hat die Reiter Flugroute und Wegpunkt. Im einfachen Modus bleiben im Reiter Flugroute nur Flughöhe, Flugrichtung, Geschwindigkeit und Überlappung. Ein neues Feld startet mit 30 Prozent Überlappung. Der Regler geht von 0 bis 95 Prozent und steuert die Bahnbreite B. S ist die Suchbreite aus der Bahnberechnung und bleibt dabei gleich. Ein gespeichertes Feld behält seine Überlappung. Direkt zur Startposition fliegen, Startgeschwindigkeit einschalten, Stützpunkte anzeigen und Alle Stützpunkte setzen stehen nur im Expertenmodus in diesem Reiter. MOB hat kein Direkt zur Startposition fliegen. Im Expertenmodus hängt dort im Schritt 4 - Prüfen der Block Flugroute mit Startgeschwindigkeit einschalten, Stützpunkte anzeigen und Alle Stützpunkte setzen. Der einfache Modus blendet diesen Block aus. Ist Startgeschwindigkeit einschalten aus, gilt die Fluggeschwindigkeit. Schon gesetzte Wegpunkte bleiben beim Wechsel des Modus. Endaktion, Gierrichtung der Mission, Wegpunkttyp, Wendedistanz, Gimbalsteuerung, Randfaktor und FOV stehen im Reiter Flugroute und bleiben im einfachen Modus verborgen. Sichere Startflughoehe und Hoehenmodus hängen in Schritt 1. Neigung ungleich −90 schreibt den Winkel an den Wegpunkt. −90 bleibt der Standard und schreibt in der KMZ keinen Winkel. Gierrichtung Definiert braucht den Richtungs-Winkel. Fokus POI braucht einen POI. Schwenkachse sperren haelt die Nase fest. Flugrichtung im Flugpfad: Vorschlag oder fester Winkel. Mit ?DEBUG steht unter dem Label der JSON- und KMZ-Name.',
       images: [
-        { src: 'help/einfach-desk-flugpfad.png', alt: 'DESK einfacher Modus, Schritt Flugpfad', caption: 'DESK, einfacher Modus, Schritt Flugpfad: Geschwindigkeit 4.5 m/s, Startgeschwindigkeit aus.' },
-        { src: 'help/experte-mob-flugpfad.png', alt: 'MOB Expertenmodus, Schritt Flugpfad', caption: 'MOB, Expertenmodus, Schritt Flugpfad. Die Startgeschwindigkeit bleibt aus, bis der Schalter an ist.' }
+        { src: 'help/einfach-desk-flugpfad.png', alt: 'DESK einfacher Modus, Schritt Flugpfad', caption: 'DESK, einfacher Modus, Schritt Flugpfad: Geschwindigkeit 4.5 m/s. Startgeschwindigkeit einschalten liegt im Expertenmodus unter 4 - Prüfen, Reiter Flugroute.' },
+        { src: 'help/experte-mob-flugpfad.png', alt: 'MOB Expertenmodus', caption: 'MOB, Expertenmodus. Startgeschwindigkeit einschalten steht im Block Flugroute unter 4 - Prüfen und bleibt aus, bis der Schalter an ist.' }
       ],
       inputs: [
         { name: 'Drohnentyp und Flughoehe', where: 'Schritt 1 Flaeche', required: true },
         { name: 'Flugrichtung', where: 'Schritt 3 Flugpfad, Regler oder Vorschlag', required: false },
-        { name: 'Uebrige Missionswerte', where: 'Schritt 5, Reiter Flugroute, Expertenmodus', required: false }
+        { name: 'Direkt zur Startposition fliegen, Startgeschwindigkeit, Stützpunkte', where: 'Schritt 4 - Prüfen, Reiter Flugroute, nur Expertenmodus. MOB ohne Direkt zur Startposition fliegen', required: false },
+        { name: 'Uebrige Missionswerte', where: 'Schritt 4 - Prüfen, Reiter Flugroute, Expertenmodus', required: false }
+      ]
+    },
+    {
+      id: 'editor.support',
+      pages: ['editor', 'rc'],
+      views: ['editor.waypoint', 'rc.wp'],
+      title: 'Stützpunkte',
+      what: 'Nur im Expertenmodus, Schritt 4 - Prüfen. DESK: Reiter Flugroute. MOB: Block Flugroute. Stützpunkte anzeigen setzt hellviolette Punkte über die Suchabdeckung. An jedem Punkt steht die Höhenabweichung zum Flugpfad in demselben Violett, zum Beispiel +12.0 m. Das weisse + setzt nur diesen Wegpunkt. Alle Stützpunkte setzen übernimmt jeden aktuellen Vorschlag. Der Katalog bleibt, bis Speichern. Ziel sind so wenige Punkte wie möglich, solange die reale Höhe in der Toleranz der Sollflughöhe bleibt, Vorgabe ±10 m. Die Auswahl ist Optimal Min-WP (Vorgabe), Douglas-Peucker oder Sliding Sleeve. Der einfache Modus blendet Stützpunkte anzeigen und Alle Stützpunkte setzen aus. Schon gesetzte Wegpunkte bleiben beim Wechsel des Modus.',
+      inputs: [
+        { name: 'Stützpunkte anzeigen', where: 'Schritt 4 - Prüfen, Flugroute, Expertenmodus', required: false },
+        { name: 'Alle Stützpunkte setzen', where: 'dieselbe Stelle, schreibt erst beim Speichern in den Katalog', required: false },
+        { name: 'Algorithmus', where: 'Optimal Min-WP, Douglas-Peucker, Sliding Sleeve', required: false }
       ]
     },
     {
@@ -424,7 +438,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.coverage', 'editor.edit_path', 'editor.waypoint', 'editor.mission'],
       title: 'Anzeigekontrolle',
-      what: 'Wegpunkt blau (#2f6dff): Hoehe, Geschwindigkeit, Wegpunkttyp und Gierrichtung folgen der Mission, und die Neigung ist −90 oder nicht gesetzt. Wegpunkt orange (#ff8c00): lokale Abweichung bei Hoehe, Geschwindigkeit, Wegpunkttyp oder Gierrichtung, oder ein gesetzter Neigungswinkel ungleich −90. Der gewaehlte Wegpunkt ist gelb (#f5d90a), auch wenn er sonst orange waere. −90 zeigt keine Gradzahl, der Punkt bleibt blau, sofern keine andere Abweichung vorliegt. Eine spezifische Neigung steht klein in Grad neben der Flughoehe. Die Zahl ueber dem Punkt ist die Wegpunktnummer. Darunter steht die programmierte Flughoehe, in Klammern die Hoehe ab Startpunkt. Gierrichtung: Dreieck entlang des naechsten Abschnitts, bei Definiert entlang des Winkels, bei Fokus POI zum POI. Manuell ohne Dreieck. Schwenkachse sperren ist ein rotes X. Der POI ist ein eigener markierter Punkt mit Beschriftung. Suchabdeckung bei Neigung −90 oder nicht gesetzt: hellblauer Streifen mittig auf der Route. Bodenbreite und Bodenlänge kommen aus Flughöhe und Sichtfeld. Die Nase entlang der Bahn nimmt die halbe Bodenbreite, quer zur Bahn die halbe Bodenlänge. Start und Ende haben eine Kappe, eine Kurve einen äusseren Kreisausschnitt. Neigung ungleich −90 zeichnet den schrägen Footprint in Gierrichtung, versetzt von der Route. Ab 150 m Bodenabstand wird er blasser und endet bei 320 m. Punkte mit −90 behalten den einfachen Streifen. Nicht abgedeckte Flaechen, nur DESK, sind das Raster im Feld ausserhalb des Streifens. Wendekurven anzeigen zeichnet bei Koordinierte Drehung eine graue Kurve: sie verlaesst den ankommenden Abschnitt um die Wendedistanz vor dem Punkt und trifft den abgehenden Abschnitt dieselbe Distanz danach. MOB zeichnet dieselbe graue Kurve auf der Route, ohne eigenen Schalter. Neben dem Massstab stehen A− und A+. Sie aendern die Schrift der Wegpunktnummer, der Hoehe, der Gradzahl und der Klammerhoehe. Abweichung von der Sollflughoehe setzt einen roten Punkt (#e10600), wo die Hoehe ueber Grund um mehr als die Toleranz abweicht, Vorgabe ±10 m.',
+      what: 'Wegpunkt blau (#2f6dff): Hoehe, Geschwindigkeit, Wegpunkttyp und Gierrichtung folgen der Mission, und die Neigung ist −90 oder nicht gesetzt. Wegpunkt orange (#ff8c00): lokale Abweichung bei Hoehe, Geschwindigkeit, Wegpunkttyp oder Gierrichtung, oder ein gesetzter Neigungswinkel ungleich −90. Der gewaehlte Wegpunkt ist gelb (#f5d90a), auch wenn er sonst orange waere. −90 zeigt keine Gradzahl, der Punkt bleibt blau, sofern keine andere Abweichung vorliegt. Eine spezifische Neigung steht klein in Grad neben der Flughoehe. Die Zahl ueber dem Punkt ist die Wegpunktnummer. Darunter steht die programmierte Flughoehe, in Klammern die Hoehe ab Startpunkt. Diese Klammerhoehe geht nicht in die Suchabdeckung. Gierrichtung: Dreieck entlang des naechsten Abschnitts, bei Definiert entlang des Winkels, bei Fokus POI zum POI. Manuell ohne Dreieck. Schwenkachse sperren ist ein rotes X. Der POI ist ein eigener markierter Punkt mit Beschriftung. Suchabdeckung bei Neigung −90 oder nicht gesetzt: hellblauer Streifen entlang der Route. Die Breite quer zur Bahn ist S, die Suchbreite aus der Bahnberechnung. Die Überlappung steuert die Bahnbreite B. Ein neues Feld startet bei 30 Prozent, Bereich 0 bis 95 Prozent. Ein gespeichertes Feld behält seine Überlappung. Start und Ende haben eine Kappe, eine Kurve einen äusseren Kreisausschnitt. Neigung ungleich −90 nimmt Neigung und Gierrichtung des Wegpunkts, den das Fluggerät verlässt, und beschneidet die Fläche auf dieses Bein. Ab 150 m Bodenabstand wird er blasser und endet bei 320 m. Punkte mit −90 behalten den einfachen Streifen. Nicht abgedeckte Flaechen, nur DESK, sind das Raster im Feld ausserhalb des Streifens. Wendekurven anzeigen zeichnet bei Koordinierte Drehung eine graue Kurve: sie verlaesst den ankommenden Abschnitt um die Wendedistanz vor dem Punkt und trifft den abgehenden Abschnitt dieselbe Distanz danach. MOB zeichnet dieselbe graue Kurve auf der Route, ohne eigenen Schalter. Neben dem Massstab stehen A− und A+. Sie aendern die Schrift der Wegpunktnummer, der Hoehe, der Gradzahl und der Klammerhoehe. Abweichung von der Sollflughoehe setzt einen roten Punkt (#e10600), wo die Hoehe ueber Grund um mehr als die Toleranz abweicht, Vorgabe ±10 m.',
       images: [
         { src: 'help/farbcodierung-desk.png', alt: 'DESK Karte mit orangen Wegpunkten, blauer Route und roten Hoehenpunkten', caption: 'DESK, TF-053: orange Wegpunkte mit Abweichung, blaue Route, hellblaue Suchabdeckung, rote Punkte der Hoehenabweichung. Gelb (#f5d90a) ist der gewaehlte Wegpunkt; in diesem Ausschnitt liegt die gelbe Marke am Start.' },
         { src: 'help/farbcodierung-mob-blau.png', alt: 'Blaue Wegpunkte und gelber gewaehlter Punkt', caption: 'MOB, Feld ohne Abweichung: Wegpunkte blau, der gewaehlte Punkt gelb. Kleine blaue Kreuze markieren die Abschnittsrichtung.' }
@@ -441,7 +455,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor', 'rc'],
       views: ['editor.coverage', 'editor.edit_path', 'editor.waypoint', 'rc.route', 'rc.wp', 'rc.field'],
       title: 'Suchabdeckung berechnen',
-      what: 'Zwei Rechnungen, je nach Neigung. Einfach, Neigung −90 oder nicht gesetzt: Die Kamera blickt senkrecht nach unten. Die Bodenbreite ist zweimal die Flughöhe mal dem Tangens des halben horizontalen Sichtfelds. Die Bodenlänge in Blickrichtung ist dieselbe Rechnung mit dem vertikalen Sichtfeld. Der hellblaue Streifen liegt mittig auf der Route. Zeigt die Nase entlang der Bahn, ist die halbe Streifenbreite die halbe Bodenbreite. Zeigt die Nase quer zur Bahn, ist sie die halbe Bodenlänge. Dazwischen werden beide Anteile gemischt. Start und Ende erhalten eine Kappe um diese halbe Länge in Blickrichtung. An einem Richtungswechsel füllt ein Kreisausschnitt die äussere Lücke. Komplex, gesetzte Neigung ungleich −90: Die Kamera blickt schräg in Gierrichtung. Der Winkel aus dem Lot ist die Neigung plus 90 Grad. Der nahe und der ferne Bildrand liegen bei Flughöhe mal Tangens aus diesem Winkel, minus und plus dem halben vertikalen Sichtfeld. Ein Strahl, der den Horizont erreicht oder darüber liegt, hat keinen Bodenpunkt. Die Breite an einem Abstand ist die Schrägentfernung mal Tangens des halben horizontalen Sichtfelds. Die Schrägentfernung ist die Wurzel aus dem Quadrat der Flughöhe plus dem Quadrat des Bodenabstands. Der Streifen sitzt in Blickrichtung vor der Drohne und folgt der Bahn versetzt. Ab 150 m Bodenabstand wird er blasser und endet bei 320 m. Wegpunkte mit −90 auf derselben Route behalten den einfachen Streifen.',
+      what: 'Zwei Rechnungen, je nach Neigung. Die Höhe ist die programmierte Flughöhe. Die Zahl in Klammern ist die Höhe ab Start und geht nicht in den Footprint. Einfach, Neigung −90 oder nicht gesetzt: Die Kamera blickt senkrecht nach unten. Die Bodenbreite ist zweimal die Flughöhe mal dem Tangens des halben horizontalen Sichtfelds. Die Bodenlänge in Blickrichtung ist dieselbe Rechnung mit dem vertikalen Sichtfeld. Der hellblaue Streifen liegt entlang der Route. Seine Breite quer zur Bahn ist S. S kommt aus der Bahnberechnung, Feldsuche vorwärts: Winkelanteil k ist 0.15, ab 50 m geteilt durch 1 plus (Höhe minus 50) durch 65. S ist zweimal die Höhe mal dem Tangens aus dem halben horizontalen Sichtfeld minus diesem Winkel je Seite. W, S und B sind auf den nächsten halben Meter gerundet. B ist die Bahnbreite, (1 minus Überlappung) mal Sichtbreite. Die Überlappung steuert nur B, Bereich 0 bis 95 Prozent. Ein neues Feld startet bei 30 Prozent. Ein gespeichertes Feld behält seine Überlappung. Start und Ende erhalten eine Kappe um diese halbe Länge in Blickrichtung. An einem Richtungswechsel füllt ein Kreisausschnitt die äussere Lücke. Komplex, gesetzte Neigung ungleich −90: Die Kamera blickt schräg in Gierrichtung. Ein geneigtes Bein nimmt Neigung und Gierrichtung des Wegpunkts, den das Fluggerät verlässt. Am Abflug gilt dessen programmierte Höhe, am Ankommen die programmierte Höhe des nächsten Punkts, mit derselben Neigung. Der Winkel aus dem Lot ist die Neigung plus 90 Grad. Der nahe und der ferne Bildrand liegen bei dieser Höhe mal Tangens aus diesem Winkel, minus und plus dem halben vertikalen Sichtfeld. Ein Strahl, der den Horizont erreicht oder darüber liegt, hat keinen Bodenpunkt. Die Breite an einem Abstand ist die Schrägentfernung mal Tangens des halben horizontalen Sichtfelds. Die Schrägentfernung ist die Wurzel aus dem Quadrat der Flughöhe plus dem Quadrat des Bodenabstands. Die Fläche wird auf das Segment beschnitten, damit ein kurzes Bein die ferne Kante nicht über spätere Bahnen wirft. Ab 150 m Bodenabstand wird er blasser und endet bei 320 m. Wegpunkte mit −90 auf derselben Route behalten den einfachen Streifen.',
       inputs: [
         { name: 'Neigung −90', where: 'einfacher Streifen auf der Route', required: false },
         { name: 'Neigung ungleich −90', where: 'schräger Footprint in Gierrichtung, −90 bis 30', required: false },
@@ -453,7 +467,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.overview'],
       title: 'Layersteuerung',
-      what: 'Schwebende Box wie im Overlay-Editor: Kartenansicht Karte, Satellit, S/W oder OSM, darunter SwissTopo-Overlays mit Deckkraft. Optional Strom, Grenzen, Jagdbanngebiete AuLaV, RPAS, UAS, Wohngebiete nach AuLaV, swissALTI3D und swissSURFACE3D Relief, DABS, Hindernisse, Grundbuch, Naturschutz, Seilbahnen, Strassennamen, Wanderwege. AuLaV und beide Relief-Ebenen sind standard aus.',
+      what: 'Schwebende Box wie im Overlay-Editor: Kartenansicht Karte, Satellit, S/W oder OSM, darunter SwissTopo-Overlays mit Deckkraft. Optional Strom, Grenzen, Jagdbanngebiete AuLaV, RPAS, UAS, Wohngebiete nach AuLaV, swissALTI3D und swissSURFACE3D Relief, DABS, Hindernisse, Grundbuch, Naturschutz, Seilbahnen, Strassennamen, Wanderwege. AuLaV und beide Relief-Ebenen sind standard aus. Mit ?DEBUG steht neben der Layersteuerung ein Tabellen-Icon für die Wegpunktdaten. Es blendet die Tabelle ein und aus. Die Tabelle hat dasselbe Aussehen wie die SwissTopo-Box und zeigt acht Zeilen. Die untere rechte Ecke lässt sich mit der Maus ziehen. MOB hat denselben Kopf und den Knopf Wegpunktdaten, ebenfalls nur mit ?DEBUG. Dort zieht die untere Kante die Tabelle.',
       inputs: [{ name: 'Kartenbasis', where: 'Swisstopo-Box', required: false }]
     },
     {
@@ -461,7 +475,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['editor'],
       views: ['editor.export'],
       title: 'UAV JSON exportieren',
-      what: 'Missions-JSON herunterladen. lineString ist der Flugpfad. polygonLineString und die GeoJSON-Linie sind die offene Feldumrandung, ohne den Flugpfad und ohne wiederholten Schlusspunkt. Der Dateiname ist Katalognummer_Feldname_GIS_Flughoehe_Pilot_Jahr.',
+      what: 'Missions-JSON herunterladen. lineString ist der Flugpfad. polygonLineString und die GeoJSON-Linie sind die offene Feldumrandung, ohne den Flugpfad und ohne wiederholten Schlusspunkt. Der Dateiname ist Katalognummer_Feldname_GIS_Flughoehe_Pilot_Jahr. Das Pilotenkürzel kommt aus den Initialen der Anmeldung.',
       inputs: [
         { name: 'Feld, GIS-Nummer und Flugweg', where: 'Flaeche, nach der Umrandung, und Karte', required: true }
       ]
@@ -567,8 +581,8 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.list', 'rc.ring'],
       title: 'Neues Feld starten',
-      what: 'Neu oeffnet die sechs Schritte: Flaeche, Start, Flugpfad, 4 - Prüfen, Speichern, Daten. Ohne Geraeteposition zentriert die Karte auf Knonau, sonst auf die Position der Fernsteuerung.',
-      inputs: [{ name: 'Neu', where: 'Feldliste', required: true }]
+      what: 'Neu oeffnet die sechs Schritte: Flaeche, Start, Flugpfad, 4 - Prüfen, Speichern, Daten. Dabei wird der POI gelöscht. Ist ein Feld geladen, steht Neu auch oben in der Karte und schliesst dieses Feld. Ohne Geraeteposition zentriert die Karte auf Knonau, sonst auf die Position der Fernsteuerung.',
+      inputs: [{ name: 'Neu', where: 'Feldliste und, bei geladenem Feld, Karte', required: true }]
     },
     {
       id: 'rc.draw',
@@ -624,7 +638,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.route', 'rc.wp', 'rc.field'],
       title: 'Suchabdeckung und Hoehe auf der Route',
-      what: 'Suchabdeckung bei Neigung −90 oder nicht gesetzt: hellblauer Streifen zur programmierten Flughoehe, mittig auf der Route, mit Kappe an Start und Ende und Kreisausschnitt an der Kurve. Neigung ungleich −90 zeichnet den schrägen Footprint in Gierrichtung, versetzt von der Route, blasser ab 150 m und Ende bei 320 m. Punkte mit −90 behalten den einfachen Streifen. Die Zahl unter dem Punkt ist die programmierte Hoehe, in Klammern die Hoehe ab Startpunkt. Ein Neigungswinkel ungleich −90 steht klein daneben in Grad und faerbt den Punkt orange. Der gewaehlte Punkt bleibt gelb. MOB hat keinen Schalter fuer nicht abgedeckte Flaechen. Die Wendekurve bei Koordinierte Drehung ist grau und folgt der Wendedistanz. A− und A+ im Menue Anzeige aendern dieselbe Beschriftung.',
+      what: 'Suchabdeckung bei Neigung −90 oder nicht gesetzt: hellblauer Streifen zur programmierten Flughoehe, entlang der Route, quer zur Bahn so breit wie die Suchbreite S aus der Bahnberechnung. Die Überlappung steuert die Bahnbreite B. Ein neues Feld startet bei 30 Prozent. Kappe an Start und Ende, Kreisausschnitt an der Kurve. Neigung ungleich −90 nimmt Neigung und Gierrichtung des Wegpunkts, den das Fluggerät verlässt. Am Abflug gilt dessen programmierte Höhe, am Ankommen die des nächsten Punkts. Die Fläche bleibt auf diesem Bein, damit ein kurzes Bein die ferne Kante nicht über spätere Bahnen wirft. Blasser ab 150 m, Ende bei 320 m. Punkte mit −90 behalten den einfachen Streifen. Die Zahl unter dem Punkt ist die programmierte Hoehe, in Klammern die Hoehe ab Startpunkt. Diese Klammerhoehe geht nicht in die Suchabdeckung. Ein Neigungswinkel ungleich −90 steht klein daneben in Grad und faerbt den Punkt orange. Der gewaehlte Punkt bleibt gelb. MOB hat keinen Schalter fuer nicht abgedeckte Flaechen. Die Wendekurve bei Koordinierte Drehung ist grau und folgt der Wendedistanz. A− und A+ im Menue Anzeige aendern dieselbe Beschriftung.',
       images: [
         { src: 'help/farbcodierung-mob.png', alt: 'MOB Karte mit orangen Wegpunkten, gelbem Punkt, POI und Gradzahlen', caption: 'MOB, TF-065: orange bei Abweichung oder Neigung ungleich −90, gelb der gewaehlte Punkt, POI beschriftet, kleine Gradzahl neben der Hoehe, hellblaue Suchabdeckung.' }
       ],
@@ -665,7 +679,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.name'],
       title: 'Feld speichern',
-      what: 'JSON & KMZ speichern schreibt das geaenderte Feld in den Katalog, setzt das Aenderungsdatum und erneuert beide Missionsdateien. Die Meldung nennt JSON und KMZ einzeln, ob sie geschrieben wurden, ob die Vorversion in der History liegt und ob der Logeintrag geschrieben wurde. Fehlt eine Datei, steht das in der Meldung. Der Knopf steht ab dem Flugpfad, auch vor dem Schritt Speichern. JSON herunterladen und KMZ herunterladen legen nur die Datei auf dieses Geraet. Ein neues Feld bekommt die Freigabe NEU. Ohne Jagdgebiet oder Gemeinde muss das vorher bestaetigt werden.',
+      what: 'JSON & KMZ speichern schreibt das geaenderte Feld in den Katalog, setzt das Aenderungsdatum und erneuert beide Missionsdateien. Geschriebene Zeilen bleiben normal. Nicht aktualisierte Zeilen sind rot und nennen die Datei, zum Beispiel «JSON im Katalog nicht aktualisiert: TF-067_….json». Dasselbe gilt für KMZ, Suchfeldbild und Flugplanbild. Das Pilotenkürzel im Dateinamen kommt aus den Initialen der Anmeldung. Die Meldung nennt auch, ob die Vorversion in der History liegt und ob der Logeintrag geschrieben wurde. Der Knopf steht ab dem Flugpfad, auch vor dem Schritt Speichern. JSON herunterladen und KMZ herunterladen legen nur die Datei auf dieses Geraet. Ein neues Feld bekommt die Freigabe NEU. Ohne Jagdgebiet oder Gemeinde muss das vorher bestaetigt werden.',
       inputs: [
         { name: 'Feldname', where: 'Schritt Speichern', required: true },
         { name: 'Route', where: 'Schritt Flugpfad', required: true }
@@ -692,7 +706,7 @@ window.RKRK_HELP_CATALOG = {
       pages: ['rc'],
       views: ['rc.field', 'rc.ring', 'rc.start', 'rc.route', 'rc.wp', 'rc.check'],
       title: 'Anzeige',
-      what: 'Feld einpassen, Satellit oder Karte, Relief, Route, Suchabdeckung, Hoehe auf der Route, Abweichung von der Sollflughoehe, RPAS, Strom, Hindernisse, DABS und Flugzone. Farbcodierung wie auf DESK: blau folgt der Mission, orange ist eine lokale Abweichung oder eine Neigung ungleich −90, gelb ist der gewaehlte Punkt. −90 ohne andere Abweichung bleibt blau und ohne Gradzahl. Gierrichtung als Dreieck, Manuell ohne Dreieck, Schwenkachse sperren als rotes X. Ein POI ist ein eigener Punkt mit Beschriftung. Der rote Punkt markiert die Abweichung der Hoehe ueber Grund. Die Suchabdeckung ist bei Neigung −90 der hellblaue Streifen auf der Route und bei anderer Neigung der versetzte Footprint in Blickrichtung. Bei Koordinierte Drehung liegt eine graue Wendekurve um die Wendedistanz. A− und A+ im Menue Anzeige aendern die Wegpunktbeschriftung. Die linke Leiste laesst sich einklappen und in der Breite ziehen.',
+      what: 'Feld einpassen, Satellit oder Karte, Relief, Route, Suchabdeckung, Hoehe auf der Route, Abweichung von der Sollflughoehe, RPAS, Strom, Hindernisse, DABS und Flugzone. Farbcodierung wie auf DESK: blau folgt der Mission, orange ist eine lokale Abweichung oder eine Neigung ungleich −90, gelb ist der gewaehlte Punkt. −90 ohne andere Abweichung bleibt blau und ohne Gradzahl. Gierrichtung als Dreieck, Manuell ohne Dreieck, Schwenkachse sperren als rotes X. Ein POI ist ein eigener Punkt mit Beschriftung. Der rote Punkt markiert die Abweichung der Hoehe ueber Grund. Die Suchabdeckung ist bei Neigung −90 der hellblaue Streifen entlang der Route. Bei anderer Neigung gelten Neigung und Gierrichtung des Wegpunkts, den das Fluggerät verlässt, und die Fläche bleibt auf diesem Bein. Die Höhe in Klammern ist relativ zum Start und geht nicht in den Footprint. Bei Koordinierte Drehung liegt eine graue Wendekurve um die Wendedistanz. A− und A+ im Menue Anzeige aendern die Wegpunktbeschriftung. Die linke Leiste laesst sich einklappen und in der Breite ziehen.',
       images: [
         { src: 'help/farbcodierung-mob.png', alt: 'Farbcodierung auf der MOB-Karte', caption: 'MOB, TF-065: blaue Route, orange Wegpunkte, gelber gewaehlter Punkt, POI, Gradzahl, hellblaue Suchabdeckung.' }
       ],

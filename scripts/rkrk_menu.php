@@ -1245,7 +1245,7 @@ KML%7Chttps://tchr-frog.synology.me/rkropen/test/rkrk_dokml.php?Reg=21+24+25+26+
 						"image" => "/settings.png",
 						"image_small" => "/settings.png",
 						"desc_short" => "Admin: Konfiguration",
-						"desc_long" => "<b>Konfiguration</b></br>Missionsbibliotheken, Regionen, Piloten, Menü, Branding und Nachrichten (Mail, Telegram, WhatsApp).",
+						"desc_long" => "<b>Konfiguration</b></br>Missionsbibliotheken, Regionen, Piloten, Menü, Branding, Nachrichten und Datei-Sync auf externe Freigaben.",
 						"main_menu" => "Intern",
 						"release" => "test",
 						"sort" => $menuid++,
@@ -1473,12 +1473,91 @@ function MenuEntryAllowedUsersCsv($SiteKey) {
 	return "";
 }
 
+function MenuEntryDeniedUsersCsv($SiteKey) {
+	global $MainMenu;
+	if (!isset($MainMenu[$SiteKey]) || !is_array($MainMenu[$SiteKey])) {
+		return "";
+	}
+	$entry = $MainMenu[$SiteKey];
+	if (!empty($entry["deny_users"])) {
+		return strval($entry["deny_users"]);
+	}
+	return "";
+}
+
+function MenuEntryCurrentUserName() {
+	global $SessNme_RegisteredUser;
+	if (session_status() === PHP_SESSION_NONE) {
+		@session_start();
+	}
+	$userKey = isset($SessNme_RegisteredUser) ? $SessNme_RegisteredUser : 'Benutzername';
+	$user = trim(strval($_SESSION[$userKey] ?? $_SESSION['Benutzername'] ?? ''));
+	return $user;
+}
+
+function MenuEntryNormalizeUserToken($name) {
+	$name = trim(preg_replace('/\s+/u', ' ', strval($name)));
+	if ($name === '') {
+		return '';
+	}
+	if (function_exists('mb_strtolower')) {
+		return mb_strtolower($name, 'UTF-8');
+	}
+	return strtolower($name);
+}
+
+function MenuEntryUserInCsv($userName, $csv) {
+	$userNorm = MenuEntryNormalizeUserToken($userName);
+	if ($userNorm === '') {
+		return false;
+	}
+	$aliases = array($userNorm);
+	// Session may hold Benutzernamen while admin typed Initialen (or vice versa).
+	global $SessNme_RegisteredInitialen, $SessNme_RegisteredUser;
+	if (session_status() === PHP_SESSION_NONE) {
+		@session_start();
+	}
+	$initKey = isset($SessNme_RegisteredInitialen) ? $SessNme_RegisteredInitialen : 'Initialen';
+	$init = MenuEntryNormalizeUserToken($_SESSION[$initKey] ?? $_SESSION['Initialen'] ?? '');
+	if ($init !== '' && !in_array($init, $aliases, true)) {
+		$aliases[] = $init;
+	}
+	$userKey = isset($SessNme_RegisteredUser) ? $SessNme_RegisteredUser : 'Benutzername';
+	$sessionUser = MenuEntryNormalizeUserToken($_SESSION[$userKey] ?? $_SESSION['Benutzername'] ?? '');
+	if ($sessionUser !== '' && !in_array($sessionUser, $aliases, true)) {
+		$aliases[] = $sessionUser;
+	}
+	foreach (explode(',', strval($csv)) as $item) {
+		$itemNorm = MenuEntryNormalizeUserToken($item);
+		if ($itemNorm !== '' && in_array($itemNorm, $aliases, true)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function MenuEntryUserDenied($SiteKey) {
+	$deniedCsv = MenuEntryDeniedUsersCsv($SiteKey);
+	if ($deniedCsv === "") {
+		return false;
+	}
+	$currentUser = MenuEntryCurrentUserName();
+	if ($currentUser === "") {
+		return false;
+	}
+	return MenuEntryUserInCsv($currentUser, $deniedCsv);
+}
+
 function MenuEntryAccessGranted($SiteKey) {
 	global $MainMenu, $WebFreigabe, $SessNme_AccessLevel, $InputUserInfo;
 	if (!isset($MainMenu[$SiteKey])) {
 		return false;
 	}
 	if (array_key_exists("activ", $MainMenu[$SiteKey]) && !$MainMenu[$SiteKey]["activ"]) {
+		return false;
+	}
+	// Person-deny wins over group release and person allow.
+	if (MenuEntryUserDenied($SiteKey)) {
 		return false;
 	}
 	$releaseList = strval($MainMenu[$SiteKey]["release"] ?? "");
@@ -1509,18 +1588,46 @@ function MenuEntryAccessGranted($SiteKey) {
 	if ($allowedUsers === "") {
 		return false;
 	}
-	$currentUser = "";
-	if (session_status() === PHP_SESSION_NONE) {
-		@session_start();
-	}
-	if (!empty($_SESSION["Benutzername"])) {
-		$currentUser = trim(strval($_SESSION["Benutzername"]));
-	}
+	$currentUser = MenuEntryCurrentUserName();
 	if ($currentUser === "") {
 		return false;
 	}
-	$list = array_map('trim', explode(',', $allowedUsers));
-	return in_array($currentUser, $list, true);
+	return MenuEntryUserInCsv($currentUser, $allowedUsers);
+}
+
+/**
+ * True if any active menu row whose site basename is in $siteBasenames is granted
+ * (same rules as the menu: activ, deny_users, release, users).
+ * Use when a page is reached via several menu keys (e.g. RcEinsatz vs rc / rc_e).
+ */
+function MenuEntryAccessGrantedForSites($siteBasenames) {
+	global $MainMenu;
+	if (!is_array($MainMenu ?? null) || !function_exists('MenuEntryAccessGranted')) {
+		return false;
+	}
+	$want = array();
+	foreach ((array)$siteBasenames as $name) {
+		$base = basename(str_replace('\\', '/', trim((string)$name)));
+		if ($base !== '') {
+			$want[$base] = true;
+		}
+	}
+	if ($want === array()) {
+		return false;
+	}
+	foreach ($MainMenu as $key => $entry) {
+		if (!is_array($entry)) {
+			continue;
+		}
+		$site = basename(str_replace('\\', '/', (string)($entry['site'] ?? '')));
+		if ($site === '' || !isset($want[$site])) {
+			continue;
+		}
+		if (MenuEntryAccessGranted($key)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 Function CreateSiteLink ($SiteKey, $Parameters, $ShowSmall=false, $QM = true) {

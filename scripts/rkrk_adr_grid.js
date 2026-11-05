@@ -113,9 +113,12 @@
         inp.placeholder = '...';
         inp.setAttribute('aria-label', 'Filter ' + (ths[f].textContent || '').trim());
         inp.dataset.col = String(f);
-        inp.addEventListener('input', function () { apply(table); });
+        inp.addEventListener('input', function () { onFelderFilterInput(table); });
         inp.addEventListener('keydown', function (ev) {
-          if (ev.key === 'Enter') ev.preventDefault();
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            onFelderFilterInput(table, true);
+          }
         });
         th.appendChild(inp);
       }
@@ -214,11 +217,16 @@
       searchLab.appendChild(document.createTextNode('Suche '));
       var search = document.createElement('input');
       search.type = 'search';
-      search.placeholder = 'Alle sichtbaren Spalten...';
+      search.placeholder = (table.getAttribute('data-adr-grid') || '') === 'felder'
+        ? 'Gesamter Katalog...'
+        : 'Alle sichtbaren Spalten...';
       search.setAttribute('aria-label', 'Liste durchsuchen');
-      search.addEventListener('input', function () { apply(table); });
+      search.addEventListener('input', function () { onFelderFilterInput(table); });
       search.addEventListener('keydown', function (ev) {
-        if (ev.key === 'Enter') ev.preventDefault();
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          onFelderFilterInput(table, true);
+        }
       });
       searchLab.appendChild(search);
       var count = document.createElement('span');
@@ -279,6 +287,7 @@
       rows.forEach(function (r) { body.appendChild(r); });
     });
 
+    restoreFelderFilters(table);
     try { apply(table); } catch (e) {}
 
     var addBtn = document.getElementById('rkrk-adr-add');
@@ -573,10 +582,68 @@
     return String(text || '').split(/[,;/]+/).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
   }
 
+  function isFelderCatalog(table) {
+    return (table.getAttribute('data-adr-grid') || '') === 'felder';
+  }
+
+  function felderFilterUrl(table) {
+    var url = new URL(window.location.href);
+    var drop = [];
+    url.searchParams.forEach(function (value, key) {
+      if (key.indexOf('cf[') === 0) drop.push(key);
+    });
+    drop.forEach(function (key) { url.searchParams.delete(key); });
+    var q = table._adrSearch ? table._adrSearch.value.trim() : '';
+    if (q) url.searchParams.set('q', q);
+    else url.searchParams.delete('q');
+    var heads = table.querySelectorAll('thead tr:first-child th');
+    table.querySelectorAll('thead tr.rkrk-adr-filter input').forEach(function (inp) {
+      var idx = parseInt(inp.dataset.col, 10);
+      var head = heads[idx];
+      var name = head ? (head.getAttribute('data-col') || '') : '';
+      var val = inp.value.trim();
+      if (!name || name.indexOf('__') === 0 || !val) return;
+      url.searchParams.set('cf[' + name + ']', val);
+    });
+    url.searchParams.set('ActPage', '1');
+    return url;
+  }
+
+  function restoreFelderFilters(table) {
+    if (!isFelderCatalog(table)) return;
+    var params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+    if (table._adrSearch) table._adrSearch.value = params.get('q') || '';
+    var heads = table.querySelectorAll('thead tr:first-child th');
+    table.querySelectorAll('thead tr.rkrk-adr-filter input').forEach(function (inp) {
+      var idx = parseInt(inp.dataset.col, 10);
+      var head = heads[idx];
+      var name = head ? (head.getAttribute('data-col') || '') : '';
+      if (!name) return;
+      inp.value = params.get('cf[' + name + ']') || '';
+    });
+  }
+
+  function onFelderFilterInput(table, immediate) {
+    if (!isFelderCatalog(table)) {
+      apply(table);
+      return;
+    }
+    if (table._felderFilterTimer) window.clearTimeout(table._felderFilterTimer);
+    var wait = immediate ? 0 : 400;
+    table._felderFilterTimer = window.setTimeout(function () {
+      var url = felderFilterUrl(table);
+      var next = url.pathname + url.search;
+      var now = window.location.pathname + window.location.search;
+      if (next !== now) window.location.assign(url.toString());
+    }, wait);
+  }
+
   function apply(table) {
     var form = formOf(table);
-    var search = table._adrSearch ? table._adrSearch.value.toLowerCase().trim() : '';
-    var filters = table.querySelectorAll('thead tr.rkrk-adr-filter input');
+    var felderServer = isFelderCatalog(table);
+    var search = (!felderServer && table._adrSearch) ? table._adrSearch.value.toLowerCase().trim() : '';
+    var filters = felderServer ? [] : table.querySelectorAll('thead tr.rkrk-adr-filter input');
     var typ = checkedLabels(form.querySelector('[data-adr-filter="typ"]'));
     var typIdx = colIndex(table, 'Typ');
     var jgIdx = colIndex(table, 'Jagdgebiet');

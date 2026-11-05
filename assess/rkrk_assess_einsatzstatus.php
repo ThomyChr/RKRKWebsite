@@ -84,6 +84,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $canEdit && isset($_POST["es_save"]
 }
 
 $rows = rkrk_es_build_rows();
+if (function_exists("rkrk_es_snapshot_reconcile")) {
+	rkrk_es_snapshot_reconcile($rows);
+}
+if (isset($_GET["feed"]) && (string) $_GET["feed"] === "1") {
+	while (ob_get_level() > 0) {
+		@ob_end_clean();
+	}
+	$feedPath = function_exists("rkrk_es_snapshot_path") ? rkrk_es_snapshot_path() : "";
+	$feedOut = ($feedPath !== "" && is_file($feedPath)) ? (string) @file_get_contents($feedPath) : "";
+	if (trim($feedOut) === "") {
+		$feedOut = "{\"version\":1,\"columns\":[],\"rows\":[]}";
+	}
+	header("Content-Type: application/json; charset=UTF-8");
+	header("Cache-Control: private, max-age=0");
+	echo $feedOut;
+	exit;
+}
 $filterQ = trim((string) ($_GET["q"] ?? ""));
 $filterStatus = trim((string) ($_GET["status"] ?? ""));
 $filterExam = rkrk_es_norm_exam_code((string) ($_GET["exam"] ?? ""));
@@ -236,6 +253,10 @@ $self = rkrk_es_page_href();
 .es-in.note{max-width:10rem;min-width:7rem;}
 .es-in.date{max-width:8.4rem;}
 .es-mark{display:inline-flex;align-items:center;justify-content:center;}
+.es-pair{display:inline-flex;align-items:center;gap:4px;}
+.es-rep{display:inline-flex;color:#003366;text-decoration:none;}
+.es-rep .es-ico{width:16px;height:16px;}
+.es-rep:hover{color:#0a4a80;}
 .es-ok{color:#166534;}
 .es-bad{color:#b91c1c;}
 .es-neutral{color:#64748b;}
@@ -263,6 +284,13 @@ $self = rkrk_es_page_href();
 .es-cfg .hint{font-weight:400;color:#64748b;font-size:11px;margin-top:3px;}
 .es-cfg .es-cfg-flags{display:flex;flex-wrap:wrap;gap:10px 16px;margin:10px 0 14px;font-weight:600;}
 .es-cfg .es-acts{margin-top:8px;}
+.es-info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;padding:0;border:1.5px solid #fff;border-radius:50%;background:transparent;color:#fff;font:700 11px/1 Georgia,"Times New Roman",serif;cursor:pointer;vertical-align:middle;}
+.es-info:hover,.es-info[aria-expanded="true"]{background:#fff;color:#003366;}
+.es-help{position:fixed;z-index:80;width:min(24rem,calc(100vw - 16px));background:#fff;color:#1f2937;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-size:13px;font-weight:400;line-height:1.45;box-shadow:0 8px 24px rgba(15,23,42,.18);text-align:left;white-space:normal;}
+.es-help h2{margin:0 0 6px;font-size:14px;color:#003366;}
+.es-help p{margin:0 0 6px;}
+.es-help ul{margin:0 0 8px;padding-left:1.1rem;}
+.es-help li{margin:0 0 3px;}
 </style>
 <?php
 $cfgHref = rkrk_es_page_href(array("cfg" => "1"));
@@ -430,7 +458,9 @@ endif;
 					<th class="es-th-sort" data-col="4" title="Nächste Lizenzerneuerung, alle <?php echo (int) $esCfg["lizenz_jahre"]; ?> Jahre">Lizenz bis</th>
 					<th class="es-th-sort" data-col="5" title="Material">Mat</th>
 					<th class="es-th-sort" data-col="6" title="Praxis">Prx</th>
-					<th class="es-th-sort" data-col="7" title="Status"></th>
+					<th class="es-th-sort" data-col="7" title="Status">
+						<button type="button" class="es-info" id="es-status-info" aria-expanded="false" aria-controls="es-status-help" title="Wie der Status entsteht" aria-label="Wie der Status entsteht">i</button>
+					</th>
 					<th class="es-th-sort" data-col="8">Bemerkung</th>
 					<th></th>
 				</tr>
@@ -533,11 +563,14 @@ endif;
 					$licTip = rkrk_es_renew_tip("Lizenz", $licDue, (string) $r["license_cls"]);
 					?>
 					<td class="es-due-<?php echo rkrk_es_h((string) $r["theory_cls"]); ?>" data-sv="<?php echo rkrk_es_h(rkrk_es_ymd($thDue)); ?>" title="<?php echo rkrk_es_h($thTip); ?>">
+						<span class="es-pair">
 						<?php if ($canEdit && $saveKey !== ""): ?>
 							<input class="es-in date" form="<?php echo rkrk_es_h($formId); ?>" type="date" name="theorie_gueltig" title="<?php echo rkrk_es_h($thTip); ?>" value="<?php echo rkrk_es_h(rkrk_es_ymd($thDue)); ?>">
 						<?php else: ?>
 							<?php echo $thDue ? rkrk_es_h(rkrk_es_fmt_date($thDue)) : "—"; ?>
 						<?php endif; ?>
+						<?php echo rkrk_es_report_link(is_array($r["theory_report"] ?? null) ? $r["theory_report"] : null, "Theorie"); ?>
+						</span>
 					</td>
 					<td class="es-due-<?php echo rkrk_es_h((string) $r["license_cls"]); ?>" data-sv="<?php echo rkrk_es_h(rkrk_es_ymd($licDue)); ?>" title="<?php echo rkrk_es_h($licTip); ?>">
 						<?php if ($canEdit && $saveKey !== ""): ?>
@@ -546,8 +579,8 @@ endif;
 							<?php echo $licDue ? rkrk_es_h(rkrk_es_fmt_date($licDue)) : "—"; ?>
 						<?php endif; ?>
 					</td>
-					<td data-sv="<?php echo rkrk_es_h($chkSort($matHit)); ?>"><?php echo rkrk_es_state_icon($matHit); ?></td>
-					<td data-sv="<?php echo rkrk_es_h($chkSort($praHit)); ?>"><?php echo rkrk_es_state_icon($praHit); ?></td>
+					<td data-sv="<?php echo rkrk_es_h($chkSort($matHit)); ?>"><span class="es-pair"><?php echo rkrk_es_state_icon($matHit); ?><?php echo rkrk_es_report_link($matHit, "Material"); ?></span></td>
+					<td data-sv="<?php echo rkrk_es_h($chkSort($praHit)); ?>"><span class="es-pair"><?php echo rkrk_es_state_icon($praHit); ?><?php echo rkrk_es_report_link($praHit, "Praxis"); ?></span></td>
 					<td data-sv="<?php echo rkrk_es_h($stSort); ?>"><span class="es-mark <?php echo $stCls; ?>" title="<?php echo rkrk_es_h($stTip); ?>"><?php echo rkrk_es_ico($stIco); ?></span></td>
 					<td data-sv="<?php echo rkrk_es_h($r["bemerkung"]); ?>">
 						<?php if ($canEdit && $saveKey !== ""): ?>
@@ -571,6 +604,31 @@ endif;
 			<?php endforeach; ?>
 			</tbody>
 		</table>
+	</div>
+	<?php
+	$pflichtShow = (string) ($esCfg["pflicht_ab"] ?? "2027-09-01");
+	$pflichtDt = function_exists("rkrk_es_parse_date") ? rkrk_es_parse_date($pflichtShow) : null;
+	if ($pflichtDt) {
+		$pflichtShow = rkrk_es_fmt_date($pflichtDt);
+	}
+	?>
+	<div class="es-help" id="es-status-help" hidden>
+		<h2>Status</h2>
+		<p>Der Status wird beim Laden berechnet. In der Zeile änderst du ihn so, danach die Diskette:</p>
+		<ul>
+			<li><b>Verbotsschild</b> setzt suspendiert, sofort und unabhängig von den übrigen Punkten.</li>
+			<li><b>Theorie bis</b> und <b>Lizenz bis</b>: ein Datum in der Zukunft gilt als gültig.</li>
+			<li><b>EXAM</b> wird mitgespeichert und ändert den Status nicht allein.</li>
+		</ul>
+		<p>Was die Zeichen bedeuten:</p>
+		<ul>
+			<li><b>Häkchen, berechtigt:</b> nicht suspendiert, Material und Praxis mindestens einmal bestanden, Theorie und Lizenz nicht abgelaufen.</li>
+			<li><b>Kreis, neutral:</b> bis <?php echo rkrk_es_h($pflichtShow); ?> bleibt der Pilot flugbereit, wenn die Lizenz in Ordnung oder noch nicht erfasst ist und die Prüfung noch offen ist.</li>
+			<li><b>Gesperrt:</b> nach diesem Datum, wenn nicht alle vier Punkte erfüllt sind.</li>
+			<li><b>Kreuz, nicht berechtigt:</b> vor diesem Datum, wenn die erfasste Lizenz bereits abgelaufen ist.</li>
+		</ul>
+		<p>Material und Praxis kommen aus den Checklisten und bleiben nach dem ersten Bestehen. Ein Datum in einsatzpruefung_rkrsplus im Personal zählt als Ersatz, wenn noch kein Report vorliegt. Die Theorie gilt sonst <?php echo (int) $esCfg["theorie_jahre"]; ?> Jahre ab dem Prüfungsdatum.</p>
+		<p>Stichtag und Theorie-Jahre stehen in der Konfiguration. Die Häkchen «nötig» ändern diese Berechnung nicht.</p>
 	</div>
 	<p class="es-legend">
 		EXAM, Theorie- und Lizenzablauf je Zeile editieren, Diskette speichert. Spaltenkopf sortiert.
@@ -611,8 +669,49 @@ endif;
 		if (a > b) return 1;
 		return 0;
 	}
+	var infoBtn = document.getElementById("es-status-info");
+	var infoPanel = document.getElementById("es-status-help");
+	function closeStatusHelp() {
+		if (!infoBtn || !infoPanel) return;
+		infoBtn.setAttribute("aria-expanded", "false");
+		infoPanel.hidden = true;
+	}
+	function placeStatusHelp() {
+		if (!infoBtn || !infoPanel || infoPanel.hidden) return;
+		var r = infoBtn.getBoundingClientRect();
+		var w = infoPanel.offsetWidth;
+		var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
+		infoPanel.style.top = (r.bottom + 6) + "px";
+		infoPanel.style.left = left + "px";
+	}
+	if (infoBtn && infoPanel) {
+		infoBtn.addEventListener("click", function(ev) {
+			ev.preventDefault();
+			ev.stopPropagation();
+			var open = infoBtn.getAttribute("aria-expanded") === "true";
+			if (open) {
+				closeStatusHelp();
+				return;
+			}
+			document.body.appendChild(infoPanel);
+			infoPanel.hidden = false;
+			infoBtn.setAttribute("aria-expanded", "true");
+			placeStatusHelp();
+		});
+		document.addEventListener("click", function(ev) {
+			if (infoPanel.hidden) return;
+			if (ev.target === infoBtn || infoPanel.contains(ev.target)) return;
+			closeStatusHelp();
+		});
+		document.addEventListener("keydown", function(ev) {
+			if (ev.key === "Escape") closeStatusHelp();
+		});
+		window.addEventListener("resize", placeStatusHelp);
+		window.addEventListener("scroll", closeStatusHelp, true);
+	}
 	table.querySelectorAll("th.es-th-sort").forEach(function(th) {
-		th.addEventListener("click", function() {
+		th.addEventListener("click", function(ev) {
+			if (ev.target && ev.target.closest && ev.target.closest(".es-info")) return;
 			var col = parseInt(th.getAttribute("data-col") || "-1", 10);
 			if (col < 0) return;
 			if (state.col === col) state.dir = -state.dir;

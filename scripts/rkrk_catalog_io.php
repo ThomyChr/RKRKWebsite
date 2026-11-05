@@ -358,10 +358,13 @@ if (!function_exists('rkrk_catalog_write_json')) {
 		if (is_file($jsonPath)) {
 			rkrk_catalog_history_copy($jsonPath);
 		}
-		if ($encoded !== null) {
-			return rkrk_write_utf8_file($jsonPath, $encoded . "\n");
+		$written = ($encoded !== null)
+			? rkrk_write_utf8_file($jsonPath, $encoded . "\n")
+			: rkrk_write_json_file($jsonPath, $data);
+		if ($written && function_exists('rkrk_read_json_file')) {
+			rkrk_read_json_file($jsonPath, true);
 		}
-		return rkrk_write_json_file($jsonPath, $data);
+		return $written;
 	}
 }
 

@@ -836,6 +836,26 @@ function rkrk_live_personel_echo_column_visibility_panel(array $columns, array $
 
 function rkrk_live_personel_save_rows(string $path, array $columns, array $rows): bool
 {
+    $beforeSig = "";
+    if (!function_exists("rkrk_es_personel_relevant_signature")) {
+        $__esInc = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+        if (is_file($__esInc)) {
+            include_once $__esInc;
+        }
+    }
+    if (function_exists("rkrk_es_personel_relevant_signature") && is_file($path)) {
+        $rawOld = @file_get_contents($path);
+        $old = is_string($rawOld) ? json_decode($rawOld, true) : null;
+        $oldPilots = array();
+        if (is_array($old)) {
+            if (isset($old["pilots"]) && is_array($old["pilots"])) {
+                $oldPilots = $old["pilots"];
+            } elseif (isset($old["rows"]) && is_array($old["rows"])) {
+                $oldPilots = $old["rows"];
+            }
+        }
+        $beforeSig = rkrk_es_personel_relevant_signature($oldPilots);
+    }
     $dir = dirname($path);
     if ($dir !== "" && !is_dir($dir)) {
         @mkdir($dir, 0777, true);
@@ -883,6 +903,9 @@ function rkrk_live_personel_save_rows(string $path, array $columns, array $rows)
     }
 
     rkrk_live_personel_history_cleanup($path, 30);
+    if (function_exists("rkrk_es_after_personel_save")) {
+        rkrk_es_after_personel_save($pilotsNorm, $beforeSig);
+    }
     return true;
 }
 
@@ -983,7 +1006,11 @@ function rkrk_live_personel_es_map(): array
         if (!function_exists("rkrk_es_build_rows")) {
             return $map;
         }
-        foreach (rkrk_es_build_rows() as $er) {
+        $rows = rkrk_es_build_rows();
+        if (function_exists("rkrk_es_snapshot_reconcile")) {
+            rkrk_es_snapshot_reconcile($rows);
+        }
+        foreach ($rows as $er) {
             if (!is_array($er)) {
                 continue;
             }

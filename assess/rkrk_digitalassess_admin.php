@@ -1436,6 +1436,49 @@ if ($pageMode === "manage") {
 		}
 	}
 	.da-right-topbar { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+	.da-work-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+	.da-work-tab {
+		border: 1px solid var(--border);
+		background: var(--kpi-bg, #f4f7f3);
+		color: var(--text);
+		border-radius: 999px;
+		padding: 6px 12px;
+		font: inherit;
+		font-size: 13px;
+		font-weight: 700;
+		line-height: 1.2;
+		cursor: pointer;
+		text-decoration: none;
+	}
+	.da-work-tab.is-on { background: var(--brand, #4a8c34); color: #fff; border-color: transparent; }
+	.da-panel { display: none; }
+	.da-panel.is-active { display: block; }
+	.da-setup-group {
+		grid-column: 1 / -1;
+		margin: 10px 0 0;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: .04em;
+		text-transform: uppercase;
+		opacity: .65;
+	}
+	.da-fields-setup > .da-setup-group:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+	.da-table.da-cols-core .da-col-herkunft,
+	.da-table.da-cols-core .da-col-frage-bild,
+	.da-table.da-cols-core .da-col-bildformat,
+	.da-table.da-cols-core .da-col-loesungs-bild,
+	.da-table.da-cols-core .da-col-loesungstext,
+	.da-table.da-cols-core .da-col-antwort,
+	.da-table.da-cols-core .da-col-drone,
+	.da-table.da-cols-core .da-col-zeit,
+	.da-table.da-cols-core .da-col-audienz,
+	.da-table.da-cols-core .da-col-rueckmeldung,
+	.da-table.da-cols-core .da-col-rueckmeldungtext,
+	.da-table.da-cols-core .da-col-aktiv,
+	.da-table.da-cols-core .da-col-locked,
+	.da-table.da-cols-core .da-col-nderung { display: none; }
 	.da-read-list { display:grid; gap:10px; }
 	.da-read-item { border:1px solid #d8dfd6; border-radius:8px; background:#ffffff; padding:10px; }
 	.da-read-item.da-read-muted { opacity:0.55; background:#f8faf8; }
@@ -1564,6 +1607,12 @@ if ($pageMode === "manage") {
 				? rkrk_assess_append_setting_href("rkrk_digitalassess_aufruf_hilfe.php")
 				: "rkrk_digitalassess_aufruf_hilfe.php",
 		);
+		$da_help_links[] = array(
+			"label" => "Rollen und Zugriffe",
+			"href" => function_exists("rkrk_assess_append_setting_href")
+				? rkrk_assess_append_setting_href("rkrk_assess_zugriff_hilfe.php")
+				: "rkrk_assess_zugriff_hilfe.php",
+		);
 	}
 	if ($da_portal_is_admin) {
 		$da_help_links[] = array(
@@ -1587,6 +1636,13 @@ if ($pageMode === "manage") {
 			echo '<div id="rkrk-portal-nav-slot" class="rkrk-portal-nav-slot">' . $__rkrk_portal_out . "</div>\n";
 		}
 	}
+	$daStatsQuery = array("scope" => "pruefung");
+	if ($selectedKey !== "") {
+		$daStatsQuery["quiz"] = $selectedKey;
+	}
+	$daStatsHref = function_exists("rkrk_assess_append_setting_href")
+		? rkrk_assess_append_setting_href("rkrk_digitalassess_question_stats.php?" . http_build_query(function_exists("rkrk_assess_merge_query_with_setting") ? rkrk_assess_merge_query_with_setting($daStatsQuery) : $daStatsQuery))
+		: ("rkrk_digitalassess_question_stats.php?" . http_build_query($daStatsQuery));
 	?>
 	<div class="da-wrap">
 		<datalist id="da-audienz-suggestions">
@@ -1618,7 +1674,7 @@ if ($pageMode === "manage") {
 					?>
 				</summary>
 				<div class="da-section-body">
-				<h3 class="da-title">AssessmentListe.csv</h3>
+				<h3 class="da-title" style="margin-bottom:8px;">Assessment wählen</h3>
 				<form method="get" class="da-inline da-assessment-toolbar">
 					<input type="hidden" name="mode" value="manage">
 					<?php da_echo_ui_persist_hidden_inputs(); ?>
@@ -1651,7 +1707,34 @@ if ($pageMode === "manage") {
 							<div class="da-fields da-fields-setup">
 								<?php
 								$daSetupSpan2 = array("Titel", "Kurzbeschreibung", "Einfuehrung", "Bild", "DriveLocation", "LernDatei", "FragenDatei");
-								foreach ($assessmentHeaders as $h) {
+								$daSetupGroupOf = array(
+									"Nr" => "Inhalt", "Key" => "Inhalt", "Titel" => "Inhalt", "Kurzbeschreibung" => "Inhalt", "Bild" => "Inhalt", "Einfuehrung" => "Inhalt",
+									"Erfuellt" => "Prüfung", "PunkteModus" => "Prüfung", "AnzQuestions" => "Prüfung", "QuizTime" => "Prüfung", "Quiz" => "Prüfung", "Schulung" => "Prüfung", "AntwortMischen" => "Prüfung", "FragenBildAnzeigen" => "Prüfung",
+									"DriveLocation" => "Dateien", "LernDatei" => "Dateien", "FragenDatei" => "Dateien",
+									"Audienz" => "Freigabe", "Aktiv" => "Freigabe", "Locked" => "Freigabe",
+								);
+								$daSetupOrder = array("Nr", "Key", "Titel", "Kurzbeschreibung", "Bild", "Einfuehrung", "AnzQuestions", "QuizTime", "Erfuellt", "PunkteModus", "Quiz", "Schulung", "AntwortMischen", "FragenBildAnzeigen", "DriveLocation", "LernDatei", "FragenDatei", "Audienz", "Aktiv", "Locked");
+								$daHeadersLeft = array();
+								foreach ($assessmentHeaders as $daH) {
+									$daHeadersLeft[$daH] = true;
+								}
+								$daLoopHeaders = array();
+								foreach ($daSetupOrder as $daH) {
+									if (isset($daHeadersLeft[$daH])) {
+										$daLoopHeaders[] = $daH;
+										unset($daHeadersLeft[$daH]);
+									}
+								}
+								foreach (array_keys($daHeadersLeft) as $daH) {
+									$daLoopHeaders[] = $daH;
+								}
+								$daSetupLastGroup = "";
+								foreach ($daLoopHeaders as $h) {
+									$daGroupName = isset($daSetupGroupOf[$h]) ? $daSetupGroupOf[$h] : "";
+									if ($daGroupName !== "" && $daGroupName !== $daSetupLastGroup) {
+										echo "<div class='da-setup-group'>" . da_h($daGroupName) . "</div>";
+										$daSetupLastGroup = $daGroupName;
+									}
 									$hCompactKey = ($h === "Key");
 									$hCompactNum = ($h === "AnzQuestions" || $h === "QuizTime" || $h === "Erfuellt" || $h === "PunkteModus");
 									$labClass = "da-field-label";
@@ -1741,7 +1824,7 @@ if ($pageMode === "manage") {
 				</details>
 				<?php if ($selectedKey !== "") { ?>
 				<details class="da-section">
-					<summary>Assessment loeschen</summary>
+					<summary>Assessment löschen</summary>
 					<div class="da-section-body">
 						<form method="post" onsubmit="return confirm('Assessment wirklich loeschen?');">
 							<input type="hidden" name="mode" value="manage">
@@ -1749,7 +1832,7 @@ if ($pageMode === "manage") {
 							<input type="hidden" name="admin_action" value="delete_assessment">
 							<input type="hidden" name="delete_key" value="<?php echo da_h($selectedKey); ?>">
 							<?php da_echo_ui_persist_hidden_inputs(); ?>
-							<button class="da-btn da-btn-danger" type="submit">Assessment loeschen</button>
+							<button class="da-btn da-btn-danger" type="submit">Assessment löschen</button>
 						</form>
 					</div>
 				</details>
@@ -1760,11 +1843,24 @@ if ($pageMode === "manage") {
 			<div class="da-splitter" id="da-splitter" title="Breite ziehen"></div>
 			<div class="da-card" id="da-rightbox">
 				<div class="da-right-topbar">
+					<?php if ($selectedKey === "") { ?>
 					<h3 class="da-title" style="margin:0;">Fragen + Schulung</h3>
+					<?php } else { ?>
+					<nav class="da-work-nav" aria-label="Arbeitsbereiche">
+						<button type="button" class="da-work-tab is-on" data-da-tab="fragen">Fragen</button>
+						<a class="da-work-tab" href="<?php echo da_h($daStatsHref); ?>">Auswertung</a>
+						<button type="button" class="da-work-tab" data-da-tab="review">Review</button>
+						<button type="button" class="da-work-tab" data-da-tab="chance">Auswahl</button>
+						<button type="button" class="da-work-tab" data-da-tab="lesen">Lesen</button>
+						<button type="button" class="da-work-tab" data-da-tab="bilder">Bilder</button>
+						<button type="button" class="da-work-tab" data-da-tab="schulung">Schulung</button>
+					</nav>
+					<?php } ?>
 				</div>
 				<?php if ($selectedKey === "") { ?>
 					<p>Zuerst links ein Assessment speichern oder laden.</p>
 				<?php } else { ?>
+					<div class="da-panel is-active" data-da-panel="fragen">
 					<details class="da-section" open>
 						<summary>Fragen bearbeiten</summary>
 						<div class="da-section-body">
@@ -1783,6 +1879,7 @@ if ($pageMode === "manage") {
 									<div class="da-question-file-actions">
 										<button class="da-btn" type="submit" title="Fragen-CSV speichern">Speichern</button>
 										<button class="da-btn" type="button" id="da-add-question-btn" title="Neue Fragezeile">+ Frage</button>
+										<button class="da-btn da-btn-secondary" type="button" id="da-cols-toggle" aria-pressed="false">Alle Spalten</button>
 										<a class="da-btn" style="text-decoration:none;" href="<?php echo da_h(rkrk_assess_append_setting_href("rkrk_digitalassess_review.php?" . http_build_query(rkrk_assess_merge_query_with_setting(array("selected_quiz" => $selectedKey))))); ?>" title="Fragen Review">Review</a>
 										<?php if ($selectedKey !== "" && function_exists("rkrk_dga_paper_form_href")) {
 											$daPaperPoolHref = rkrk_dga_paper_form_href($selectedKey, array(
@@ -1798,7 +1895,7 @@ if ($pageMode === "manage") {
 									<div class="da-msg da-err" style="margin-bottom:10px;"><?php echo da_h($daQuestionsFileWarn); ?></div>
 								<?php } ?>
 								<div class="da-table-wrap">
-									<table class="da-table">
+									<table class="da-table da-cols-core" id="da-question-table">
 										<thead><tr><th class="da-col-action"<?php echo da_attr_title("Zeile per Drag ⋮⋮ verschieben; Zeile löschen mit Papierkorb."); ?>>Aktion</th><?php foreach ($questionHeaders as $qh) {
 											$qhThClass = da_question_header_col_class($qh);
 											echo "<th class='" . da_h($qhThClass) . "'" . da_attr_title(da_question_header_tooltip($qh)) . ">" . da_h($qh) . "</th>";
@@ -1888,6 +1985,8 @@ if ($pageMode === "manage") {
 							<div class="da-help">Bilder in `Frage-Bild` / `Loesungs-Bild` relativ zu `data/assess/images/` eintragen (z.B. `saison2026/meteo.png`).</div>
 						</div>
 					</details>
+					</div>
+					<div class="da-panel" data-da-panel="chance">
 					<details class="da-section" id="fragen-probability">
 						<summary>Quiz-Auswahl — Anzeige-Wahrscheinlichkeit</summary>
 						<div class="da-section-body">
@@ -2080,7 +2179,9 @@ if ($pageMode === "manage") {
 							<?php } ?>
 						</div>
 					</details>
-					<details class="da-section" id="fragen-review" open>
+					</div>
+					<div class="da-panel" data-da-panel="review">
+					<details class="da-section" id="fragen-review">
 						<summary>Fragen Review</summary>
 						<div class="da-section-body">
 							<?php
@@ -2219,7 +2320,9 @@ if ($pageMode === "manage") {
 							<?php } ?>
 						</div>
 					</details>
-					<details class="da-section">
+					</div>
+					<div class="da-panel" data-da-panel="lesen">
+					<details class="da-section" id="fragen-lesen">
 						<summary>Fragen Leseansicht</summary>
 						<div class="da-section-body">
 							<?php
@@ -2305,6 +2408,8 @@ if ($pageMode === "manage") {
 							<?php } ?>
 						</div>
 					</details>
+					</div>
+					<div class="da-panel" data-da-panel="bilder">
 					<details class="da-section">
 						<summary>Bilder hochladen</summary>
 						<div class="da-section-body">
@@ -2343,7 +2448,9 @@ if ($pageMode === "manage") {
 							</form>
 						</div>
 					</details>
-					<details class="da-section">
+					</div>
+					<div class="da-panel" data-da-panel="schulung">
+					<details class="da-section" id="fragen-schulung">
 						<summary>Schulungstext bearbeiten</summary>
 						<div class="da-section-body">
 							<?php
@@ -2415,6 +2522,7 @@ if ($pageMode === "manage") {
 							</div>
 						</div>
 					</details>
+					</div>
 					<datalist id="da-image-options">
 						<?php foreach ($imageSelectOptions as $imgOpt) { ?>
 							<option value="<?php echo da_h($imgOpt); ?>"></option>
@@ -2951,6 +3059,65 @@ if ($pageMode === "manage") {
 		}
 
 		daRestoreSections();
+		(function daWorkPanels() {
+			const nav = document.querySelector(".da-work-nav");
+			if (!nav) return;
+			const key = "rkrk_da_admin_panel_" + daQuizKey;
+			function show(name) {
+				document.querySelectorAll("[data-da-panel]").forEach(function (panel) {
+					const on = panel.getAttribute("data-da-panel") === name;
+					panel.classList.toggle("is-active", on);
+					if (on) {
+						panel.querySelectorAll("details.da-section").forEach(function (d) {
+							if (d.parentElement !== panel) return;
+							if (!d.open) d.open = true;
+						});
+						panel.dispatchEvent(new CustomEvent("da-panel-show", { bubbles: true }));
+					}
+				});
+				nav.querySelectorAll("[data-da-tab]").forEach(function (btn) {
+					btn.classList.toggle("is-on", btn.getAttribute("data-da-tab") === name);
+				});
+				try { localStorage.setItem(key, name); } catch (e) {}
+			}
+			nav.querySelectorAll("[data-da-tab]").forEach(function (btn) {
+				btn.addEventListener("click", function () {
+					show(btn.getAttribute("data-da-tab") || "fragen");
+				});
+			});
+			let initial = "fragen";
+			const hash = String(location.hash || "");
+			if (hash === "#fragen-review") initial = "review";
+			else if (hash === "#fragen-probability") initial = "chance";
+			else if (hash === "#fragen-lesen") initial = "lesen";
+			else if (hash === "#fragen-schulung") initial = "schulung";
+			else {
+				try {
+					const saved = localStorage.getItem(key);
+					if (saved && document.querySelector('[data-da-panel="' + saved + '"]')) initial = saved;
+				} catch (e) {}
+			}
+			show(initial);
+		})();
+		(function daQuestionColumns() {
+			const table = document.getElementById("da-question-table");
+			const btn = document.getElementById("da-cols-toggle");
+			if (!table || !btn) return;
+			const key = "rkrk_da_admin_cols_full";
+			function apply(full) {
+				table.classList.toggle("da-cols-core", !full);
+				btn.textContent = full ? "Weniger Spalten" : "Alle Spalten";
+				btn.setAttribute("aria-pressed", full ? "true" : "false");
+			}
+			let full = false;
+			try { full = localStorage.getItem(key) === "1"; } catch (e) {}
+			apply(full);
+			btn.addEventListener("click", function () {
+				full = table.classList.contains("da-cols-core");
+				apply(full);
+				try { localStorage.setItem(key, full ? "1" : "0"); } catch (e) {}
+			});
+		})();
 		if (daWrap) {
 			daWrap.querySelectorAll('details.da-section, details.da-leftbox').forEach(function (d) {
 				d.addEventListener('toggle', daSaveSections);
@@ -3064,6 +3231,8 @@ if ($pageMode === "manage") {
 					resizeLearnEditor();
 					return;
 				}
+				const learnPanel = learnDetails ? learnDetails.closest(".da-panel") : null;
+				if (learnPanel && !learnPanel.classList.contains("is-active")) return;
 				if (learnDetails && !learnDetails.open) return;
 				window.__daLearnEditorInited = true;
 
@@ -3078,9 +3247,15 @@ if ($pageMode === "manage") {
 					license_key: 'gpl',
 					promotion: false,
 					branding: false,
+					entity_encoding: 'raw',
 					convert_urls: false,
 					relative_urls: false,
 					remove_script_host: false,
+					urlconverter_callback: function (url) { return url; },
+					protect: [
+						/<script[\s\S]*?<\/script>/gi,
+						/<style[\s\S]*?<\/style>/gi
+					],
 					plugins: 'lists link image table code anchor charmap searchreplace visualblocks',
 					toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright | bullist numlist outdent indent | link image table | removeformat | code',
 					content_css: contentCss.length ? contentCss : false,
@@ -3115,6 +3290,16 @@ if ($pageMode === "manage") {
 					}
 				});
 			}
+			document.addEventListener("da-panel-show", function (ev) {
+				const panel = ev.target;
+				if (!learnDetails || !panel || typeof panel.contains !== "function" || !panel.contains(learnDetails)) return;
+				if (!learnDetails.open) {
+					learnDetails.open = true;
+					return;
+				}
+				startLearnEditor();
+				requestAnimationFrame(resizeLearnEditor);
+			});
 			startLearnEditor();
 			window.addEventListener('resize', resizeLearnEditor);
 		})();

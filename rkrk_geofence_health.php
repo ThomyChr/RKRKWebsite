@@ -232,7 +232,8 @@ global $xmlMissionLocation, $RKRKFelderfileXML, $colorOKtext, $colorNOKtext, $co
 }
 
 
-$RegList = array_diff($RegionSettings, array('NO','ALL'));
+// Keys filtern (Werte sind Arrays → array_diff würde "Array to string conversion" erzeugen)
+$RegList = array_diff_key($RegionSettings, array_flip(array('NO', 'ALL')));
 $EnabledRegion = Array();
 $RegionList = Array();
 

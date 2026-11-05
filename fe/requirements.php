@@ -73,13 +73,13 @@ $mapllBrand = mapll_favicon_brand();
       <details class="formula-details">
         <summary>Spurabstand</summary>
         <div class="formula-content">
-          <p class="detail-text"><strong>S = (1 - overlap) * W</strong><br>Bei 15% Überlappung gilt: S = 0.85 * W. Die angezeigte Bandbreite ist das Mittel aus S und W: S + (W − S) / 2. Die Sichttiefe L = 2 * h * tan(VFOV / 2) verlängert Start und Ende um L / 2.</p>
+          <p class="detail-text"><strong>S aus der Bahnberechnung, B aus der Überlappung</strong><br>S = gerundet 2 · h · tan(HFOV / 2 − ua). ua = HFOV · k. k ist der Kernparameter overlap, Vorgabe 0.15, ab 50 m geteilt durch 1 + (h − 50) / 65. Die Suchabdeckung folgt S. B = gerundet (1 − Überlappung) · W. B ist die Bahnbreite. Der Regler geht von 0 bis 95 Prozent, Schritt 1. Standard eines neuen Feldes: 30 Prozent. W, S und B sind auf den nächsten halben Meter gerundet. Die Sichttiefe L = 2 * h * tan(VFOV / 2) verlängert Start und Ende um L / 2.</p>
         </div>
       </details>
       <details class="formula-details">
         <summary>Randregel</summary>
         <div class="formula-content">
-          <p class="detail-text"><strong>d = 0.40 * S, wenn keine Lücke entsteht, sonst kleiner</strong><br>40 Prozent der Bahnbreite vom Feldrand, seitlich und an den Bahnenden, solange nichts ungedeckt bleibt. Entsteht eine Lücke, wird der Abstand kleiner, bis die Fläche gedeckt ist. Nicht weit ausserhalb des Feldes fliegen. Kurzer Überstand höchstens eine Bahnbreite.</p>
+          <p class="detail-text"><strong>d = 0.40 * B, wenn keine Lücke entsteht, sonst kleiner</strong><br>40 Prozent der Bahnbreite vom Feldrand, seitlich und an den Bahnenden. Die Suchbreite deckt diesen Streifen, die Bahn fliegt den Rand nicht ab. Entsteht eine Lücke, wird der Abstand kleiner, bis die Fläche gedeckt ist. Nicht weit ausserhalb des Feldes fliegen. Kurzer Überstand höchstens eine Bahnbreite.</p>
         </div>
       </details>
       <details class="formula-details">

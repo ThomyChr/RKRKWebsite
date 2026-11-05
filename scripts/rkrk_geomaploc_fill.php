@@ -39,7 +39,7 @@ function rkrk_geomaploc_fill_file($path) {
 		fwrite(STDERR, "Lesen fehlgeschlagen: " . $path . PHP_EOL);
 		return $stats;
 	}
-	$header = fgetcsv($handle, 1048576, ';');
+	$header = fgetcsv($handle, 1048576, ';', '"', '\\');
 	if (!is_array($header) || count($header) === 0) {
 		fclose($handle);
 		fwrite(STDERR, "Kopfzeile fehlt: " . $path . PHP_EOL);
@@ -47,7 +47,7 @@ function rkrk_geomaploc_fill_file($path) {
 	}
 	$header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string)$header[0]);
 	$rows = array();
-	while (($cols = fgetcsv($handle, 1048576, ';')) !== false) {
+	while (($cols = fgetcsv($handle, 1048576, ';', '"', '\\')) !== false) {
 		if ($cols === array(null) || (count($cols) === 1 && trim((string)$cols[0]) === '')) {
 			continue;
 		}

@@ -34,7 +34,11 @@ if (!is_object($json)) {
 	exit;
 }
 $feldId = rkrk_feld_id_from_mission_filename($rel);
-rkrk_json_apply_control_flights($json, $feldId);
+$day = trim((string)($_GET['day'] ?? ''));
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+	$day = '';
+}
+rkrk_json_apply_control_flights($json, $feldId, null, $day);
 $mission = trim((string)($RKRKMissionSelected ?? $mdb));
 if ($mission === '3T' || $mission === 'D' || $mission === '') {
 	rkrk_json_ensure_mavic3t_drone_type($json);

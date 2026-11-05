@@ -34,6 +34,7 @@ include_once(__DIR__ . '/rkrk_assess_exam_session.inc.php');
 include_once(__DIR__ . '/rkrk_assess_checklist_progress.inc.php');
 include_once(__DIR__ . '/rkrk_assess_quiz_progress.inc.php');
 include_once(__DIR__ . '/rkrk_assess_archive.inc.php');
+include_once(__DIR__ . '/rkrk_assess_name_assign.inc.php');
 if (!isset($SecParamters) || !is_array($SecParamters)) {
 	$SecParamters = array();
 }
@@ -417,6 +418,29 @@ if (
 	exit;
 }
 
+if (
+	$_SERVER['REQUEST_METHOD'] === 'POST'
+	&& !empty($_POST['exam_admin_assign_group'])
+	&& $canUseExtendedAdmin
+	&& $isAdminMode
+	&& function_exists('rkrk_na_assign_group')
+) {
+	$assigned = rkrk_na_assign_group(
+		trim((string)($_POST['group_name'] ?? '')),
+		trim((string)($_POST['person_id'] ?? ''))
+	);
+	$loc = function_exists('rkrk_assess_append_setting_href')
+		? rkrk_assess_append_setting_href('rkrk_assess_admin.php?page=planning&na_assigned=' . (int)$assigned . ($assigned < 1 ? '&na_err=1' : ''))
+		: 'rkrk_assess_admin.php?page=planning&na_assigned=' . (int)$assigned;
+	while (function_exists('ob_get_level') && ob_get_level() > 0) {
+		ob_end_clean();
+	}
+	if (!headers_sent()) {
+		header('Location: ' . $loc, true, 303);
+		exit;
+	}
+}
+
 rkrk_assess_theme_link_tags();
 rkrk_assess_emit_setting_carry_script();
 if ($onRKRS) {
@@ -475,11 +499,51 @@ function exam_admin_theory_modus_is_uebung(array $attempt): bool {
 }
 
 function exam_admin_theory_modus_badge_html(array $attempt): string {
-	$label = (string)($attempt['modus_label'] ?? 'Übung');
-	$cls = exam_admin_theory_modus_is_uebung($attempt)
-		? 'exam-theory-art exam-theory-art--uebung'
-		: 'exam-theory-art exam-theory-art--pruefung';
-	return '<span class="' . esc_html($cls) . '">' . esc_html($label) . '</span>';
+	$code = exam_admin_art_code(array(
+		'type' => 'theory',
+		'modus_label' => (string)($attempt['modus_label'] ?? ''),
+		'quiz_modus' => (string)($attempt['quiz_modus'] ?? ''),
+		'exam_code' => (string)($attempt['exam_code'] ?? ''),
+	));
+	return exam_admin_art_badge_html($code);
+}
+
+/**
+ * Prüfung oder Übung.
+ * Prüfung: QuizModus pruefung, oder Einsatz- und Materialprüfung.
+ * Ein EXAM-Code allein reicht nicht: denselben Code gibt es auch für Schulungsübungen.
+ * Theorie ohne Prüfungsmodus ist eine Übung. Beurteilungen bleiben ohne Etikett.
+ *
+ * @param array<string,mixed> $ctx
+ */
+function exam_admin_art_code(array $ctx): string {
+	$type = strtolower(trim((string)($ctx['type'] ?? '')));
+	$label = (string)($ctx['label'] ?? '');
+	$ref = (string)($ctx['ref'] ?? '');
+	$modus = trim((string)($ctx['modus_label'] ?? ''));
+	$quizModus = trim((string)($ctx['quiz_modus'] ?? ''));
+	$isTheory = ($type === 'theory' || $type === 'quiz_progress'
+		|| mb_stripos($label, 'Theorie:', 0, 'UTF-8') === 0);
+	$isPracticalExam = !empty($ctx['is_material'])
+		|| exam_admin_is_material_assessment($label, $ref)
+		|| exam_admin_is_einsatzpruefung_assessment($label, $ref);
+	if ($isPracticalExam || exam_admin_theory_is_exam_modus($modus, $quizModus)) {
+		return 'pruefung';
+	}
+	if ($isTheory) {
+		return 'uebung';
+	}
+	return '';
+}
+
+function exam_admin_art_badge_html(string $code): string {
+	if ($code === 'pruefung') {
+		return '<span class="mgr-art mgr-art--pruefung">Prüfung</span>';
+	}
+	if ($code === 'uebung') {
+		return '<span class="mgr-art mgr-art--uebung">Übung</span>';
+	}
+	return '';
 }
 
 function exam_admin_debug_log($runId, $hypothesisId, $location, $message, $data = array()) {
@@ -679,13 +743,13 @@ function exam_admin_read_csv_rows($path, $headers) {
 function exam_admin_write_csv_rows($path, $headers, $rows) {
     $fh = @fopen($path, 'wb');
     if ($fh === false) return false;
-    fputcsv($fh, $headers, ';');
+    fputcsv($fh, $headers, ';', '"', '\\');
     foreach ($rows as $row) {
         $line = array();
         foreach ($headers as $h) {
             $line[] = isset($row[$h]) ? (string)$row[$h] : '';
         }
-        fputcsv($fh, $line, ';');
+        fputcsv($fh, $line, ';', '"', '\\');
     }
     fclose($fh);
     return true;
@@ -1531,6 +1595,9 @@ foreach ($quizRows as $q) {
         : 'standard';
 }
 
+if ($canUseExtendedAdmin && function_exists('rkrk_na_sync_quiz_names')) {
+    rkrk_na_sync_quiz_names();
+}
 $rows = function_exists('rkrk_assess_quiz_results_load_rows')
     ? rkrk_assess_quiz_results_load_rows(rtrim((string)$QuizLocResults, "/\\"))
     : array();
@@ -4282,6 +4349,15 @@ foreach ((array)$managerPilotNames as $pilotName) {
             'group' => 'planned',
             'kind' => $kindCat,
             'type_label' => ($pType === 'theory') ? 'Theorie' : (($pType === 'assessment_template') ? 'Assessment' : 'Beurteilung'),
+            'art' => exam_admin_art_code(array(
+                'type' => $pType,
+                'label' => $pLabel,
+                'ref' => $pRef,
+                'modus_label' => (string)($prow['_modus_label'] ?? ''),
+                'quiz_modus' => (string)($prow['_quiz_modus'] ?? ''),
+                'exam_code' => trim((string)($prow['_exam_code'] ?? '')),
+                'is_material' => !empty($prow['_is_material']),
+            )),
             'test_label' => $pLabel,
             'series' => trim((string)($prow['SeriesTitle'] ?? '')) !== '' ? (string)$prow['SeriesTitle'] : 'Standard-Serie',
             'status' => (string)($meta['label'] ?? ''),
@@ -4342,6 +4418,15 @@ foreach ((array)$managerPilotNames as $pilotName) {
                 'group' => 'result',
                 'kind' => $kindCat,
                 'type_label' => $typeLabel,
+                'art' => exam_admin_art_code(array(
+                    'type' => (string)($done['type'] ?? ''),
+                    'label' => $doneLabel,
+                    'ref' => (string)($done['delete_quiz'] ?? $done['result_id'] ?? ''),
+                    'modus_label' => (string)($done['modus_label'] ?? ''),
+                    'quiz_modus' => (string)($done['quiz_modus'] ?? ''),
+                    'exam_code' => trim((string)($done['exam_code'] ?? '')),
+                    'is_material' => !empty($done['is_material']),
+                )),
                 'test_label' => $doneLabel,
                 'series' => '',
                 'status' => $statusLabel,
@@ -4381,6 +4466,14 @@ foreach ((array)$managerPilotNames as $pilotName) {
             'group' => 'progress',
             'kind' => $kindCat,
             'type_label' => $typeLabel,
+            'art' => exam_admin_art_code(array(
+                'type' => $ipType,
+                'label' => trim((string)($ip['label'] ?? '')),
+                'ref' => trim((string)($ip['quiz_key'] ?? '')),
+                'modus_label' => (string)($ip['modus_label'] ?? ''),
+                'quiz_modus' => (string)($ip['quiz_modus'] ?? ''),
+                'exam_code' => trim((string)($ip['exam_code'] ?? '')),
+            )),
             'test_label' => trim((string)($ip['label'] ?? '')),
             'series' => '',
             'status' => trim((string)($ip['status'] ?? 'In progress')),
@@ -4434,6 +4527,7 @@ if (in_array($requestedPage, $allowedPages, true)) {
     $adminPage = ($adminView === 'overview') ? 'results' : 'planning';
 }
 $planningHref = rkrk_assess_append_setting_href('rkrk_assess_admin.php?page=planning');
+$pruefungstagHref = rkrk_assess_append_setting_href('rkrk_assess_pruefungstag.php');
 $resultsHref = rkrk_assess_append_setting_href('rkrk_assess_admin.php?page=results');
 $planningChipsHref = rkrk_assess_append_setting_href(
     'rkrk_assess_admin.php?' . http_build_query(array_filter(array(
@@ -4501,6 +4595,24 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
       <img src="<?php echo esc_html($QuizIconLoc . $logopic); ?>" alt="RKRK Logo" style="height:56px;">
     </div>
   </div>
+
+  <?php
+    $naGroups = array();
+    $naPeople = array();
+    if ($canUseExtendedAdmin && $isAdminMode && function_exists('rkrk_na_groups')) {
+      $naGroups = rkrk_na_groups();
+      $naPeople = function_exists('rkrk_na_people') ? rkrk_na_people() : array();
+    }
+  ?>
+  <?php if ($canUseExtendedAdmin && $isAdminMode && function_exists('rkrk_na_groups') && isset($_GET['na_assigned'])): ?>
+    <div class="card rkrk-card" style="margin-bottom:12px;<?php echo ((int)$_GET['na_assigned'] > 0) ? 'border-color:#86efac;background:#f0fdf4;color:#166534;' : 'border-color:#fda4af;background:#fff1f2;color:#9f1239;'; ?>">
+      <?php if ((int)$_GET['na_assigned'] > 0): ?>
+        <?php echo esc_html((string)(int)$_GET['na_assigned']); ?> Versuch(e) dem Mitglied zugewiesen. JSON und PDF sind umgestellt.
+      <?php else: ?>
+        Zuweisen ist fehlgeschlagen. Der Name oder das Mitglied wurde nicht erkannt.
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
 
   <?php if ($adminPage === 'planning'): ?>
   <?php if (!empty($examAdminReportEnsure['created'])): ?>
@@ -4588,6 +4700,12 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
           .mgr-tile-select input{width:12px;height:12px;margin:0;accent-color:#48673a;cursor:pointer;}
           .mgr-archive-bar{position:sticky;bottom:8px;z-index:40;display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid #c5d0c3;border-radius:10px;background:#f8faf8;box-shadow:0 6px 18px rgba(15,23,42,.12);}
           .mgr-archive-bar.is-visible{display:flex;}
+          .mgr-art{display:inline-block;margin:0 0 2px;padding:0 4px;border-radius:3px;font-size:8px;font-weight:800;letter-spacing:.02em;line-height:1.35;white-space:nowrap;}
+          .mgr-art--pruefung{background:#1e3a8a;color:#fff;border:1px solid #1e3a8a;}
+          .mgr-art--uebung{background:#fff7ed;color:#9a3412;border:1px dashed #ea580c;}
+          .mgr-chip--pruefung{outline:2px solid #1e3a8a;outline-offset:1px;}
+          .mgr-chip--uebung{outline:2px dashed #ea580c;outline-offset:1px;}
+          .manager-flat-table .mgr-art{font-size:11px;padding:1px 6px;}
         </style>
         <div class="mgr-view-toggle" role="group" aria-label="Ansicht wählen">
           <a
@@ -4609,6 +4727,7 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
             <span>Liste</span>
           </a>
         </div>
+        <a class="ql-btn" href="<?php echo htmlspecialchars($pruefungstagHref, ENT_QUOTES, 'UTF-8'); ?>">Prüfungstag</a>
         <?php if ($canUseExtendedAdmin): ?>
         <button id="manager-new-btn" class="btn btn-primary" type="button">+ Neue Test-Serie</button>
         <?php endif; ?>
@@ -4672,6 +4791,8 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
     <div style="margin:0 0 10px;color:#64748b;font-size:12px;">
       <?php echo esc_html((string)count($managerFlatRows)); ?> Einträge
       <?php if ($managerFilterLayout === 'list'): ?> · Listenansicht<?php else: ?> · Block-Ansicht<?php endif; ?>
+      · <span class="mgr-art mgr-art--pruefung">Prüfung</span>
+      <span class="mgr-art mgr-art--uebung">Übung</span>
     </div>
 
     <?php if ($managerFilterLayout === 'list'): ?>
@@ -4744,7 +4865,7 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
               <?php endif; ?>
               <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;white-space:nowrap;vertical-align:top;"><?php echo esc_html($frDate !== '' ? $frDate : '-'); ?></td>
               <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;"><?php echo esc_html((string)($fr['pilot'] ?? '')); ?></td>
-              <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;white-space:nowrap;"><?php echo esc_html((string)($fr['type_label'] ?? '')); ?></td>
+              <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;white-space:nowrap;"><?php echo esc_html((string)($fr['type_label'] ?? '')); ?><?php $frArtHtml = exam_admin_art_badge_html((string)($fr['art'] ?? '')); if ($frArtHtml !== '') { echo '<div style="margin-top:3px;">' . $frArtHtml . '</div>'; } ?></td>
               <td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;">
                 <?php if ($frJson !== '' && $canUseExtendedAdmin): ?>
                   <button type="button" class="manager-entry-btn" data-row="<?php echo $frJson; ?>" data-launch-url="<?php echo htmlspecialchars((string)($fr['launch_url'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" style="border:0;background:transparent;padding:0;color:#0f172a;cursor:pointer;text-align:left;font:inherit;">
@@ -4922,6 +5043,22 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
                         if ($chipExamCode !== '') {
                             $tooltip .= "\nEXAM: " . $chipExamCode;
                         }
+                        $chipArt = exam_admin_art_code(array(
+                            'type' => $type,
+                            'label' => $testLabel,
+                            'ref' => $testRef,
+                            'modus_label' => (string)($row['_modus_label'] ?? ''),
+                            'quiz_modus' => (string)($row['_quiz_modus'] ?? ''),
+                            'exam_code' => $chipExamCode,
+                            'is_material' => $isMaterialChip,
+                        ));
+                        $chipArtClass = ($chipArt !== '') ? (' mgr-chip mgr-chip--' . $chipArt) : '';
+                        $chipArtHtml = exam_admin_art_badge_html($chipArt);
+                        if ($chipArt === 'pruefung') {
+                            $tooltip .= "\nArt: Prüfung";
+                        } elseif ($chipArt === 'uebung') {
+                            $tooltip .= "\nArt: Übung";
+                        }
                         $chipReportHref = trim((string)($row['_report_href'] ?? ''));
                         $chipArchiveHtml = $examAdminShowPlanningDeletes
                           ? exam_admin_archive_checkbox_html(exam_admin_archive_payload_from_planned($row))
@@ -4932,7 +5069,7 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
                   <?php echo $chipArchiveHtml; ?>
                   <button
                     type="button"
-                    class="manager-entry-btn"
+                    class="manager-entry-btn<?php echo $chipArtClass; ?>"
                     data-row="<?php echo $rowJson; ?>"
                     data-launch-url="<?php echo htmlspecialchars($launchUrl, ENT_QUOTES, 'UTF-8'); ?>"
                     title="<?php echo esc_html($tooltip); ?>"
@@ -4940,10 +5077,12 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
                   >
                   <?php else: ?>
                   <div
+                    class="<?php echo trim($chipArtClass); ?>"
                     title="<?php echo esc_html($tooltip); ?>"
                     style="border:0;<?php echo $chipInnerStyle; ?>background:<?php echo esc_html($btnBg); ?>;color:<?php echo esc_html($btnFg); ?>;box-shadow:0 1px 1px rgba(0,0,0,.1);"
                   >
                   <?php endif; ?>
+                    <?php echo $chipArtHtml; ?>
                     <?php if ($dateLabel !== ''): ?>
                     <div style="<?php echo $chipTextStyle; ?>font-weight:700;<?php echo $chipLineEllipsis; ?>"><?php echo esc_html($dateLabel); ?></div>
                     <?php endif; ?>
@@ -5013,11 +5152,26 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
                       $ipArchiveHtml = $examAdminShowPlanningDeletes
                         ? exam_admin_archive_checkbox_html(exam_admin_archive_payload_from_entry($ip))
                         : '';
+                      $ipArt = exam_admin_art_code(array(
+                        'type' => (string)($ip['type'] ?? ''),
+                        'label' => $ipLabel,
+                        'ref' => $ipQuiz,
+                        'modus_label' => (string)($ip['modus_label'] ?? ''),
+                        'quiz_modus' => (string)($ip['quiz_modus'] ?? ''),
+                        'exam_code' => $ipExam,
+                      ));
+                      $ipArtClass = ($ipArt !== '') ? (' mgr-chip mgr-chip--' . $ipArt) : '';
+                      if ($ipArt === 'pruefung') {
+                        $ipTooltip .= "\nArt: Prüfung";
+                      } elseif ($ipArt === 'uebung') {
+                        $ipTooltip .= "\nArt: Übung";
+                      }
                     ?>
                     <span class="mgr-tile" style="display:inline-flex;align-items:flex-start;gap:1px;">
                     <?php echo $ipArchiveHtml; ?>
-                    <span title="<?php echo esc_html($ipTooltip); ?>" style="display:inline-flex;align-items:flex-start;gap:1px;<?php echo $chipInnerStyle; ?>background:#fff;border:2px solid #2563eb;color:#1e3a8a;">
+                    <span class="<?php echo trim($ipArtClass); ?>" title="<?php echo esc_html($ipTooltip); ?>" style="display:inline-flex;align-items:flex-start;gap:1px;<?php echo $chipInnerStyle; ?>background:#fff;border:2px solid #2563eb;color:#1e3a8a;">
                       <span style="display:inline-block;min-width:0;">
+                        <?php echo exam_admin_art_badge_html($ipArt); ?>
                         <?php if ($ipDateShort !== ''): ?>
                         <div style="<?php echo $chipTextStyle; ?>font-weight:700;<?php echo $chipLineEllipsis; ?>"><?php echo esc_html($ipDateShort); ?></div>
                         <?php endif; ?>
@@ -5125,11 +5279,27 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
                       $udArchiveHtml = $examAdminShowPlanningDeletes
                         ? exam_admin_archive_checkbox_html(exam_admin_archive_payload_from_entry($ud))
                         : '';
+                      $udArt = exam_admin_art_code(array(
+                        'type' => (string)($ud['type'] ?? ''),
+                        'label' => (string)($ud['label'] ?? ''),
+                        'ref' => (string)($ud['delete_quiz'] ?? $ud['result_id'] ?? ''),
+                        'modus_label' => (string)($ud['modus_label'] ?? ''),
+                        'quiz_modus' => (string)($ud['quiz_modus'] ?? ''),
+                        'exam_code' => $udExamCode,
+                        'is_material' => $udIsMaterial,
+                      ));
+                      $udArtClass = ($udArt !== '') ? (' mgr-chip mgr-chip--' . $udArt) : '';
+                      if ($udArt === 'pruefung') {
+                        $udTitle .= "\nArt: Prüfung";
+                      } elseif ($udArt === 'uebung') {
+                        $udTitle .= "\nArt: Übung";
+                      }
                     ?>
                     <span class="mgr-tile" style="display:inline-flex;align-items:flex-start;gap:1px;">
                     <?php echo $udArchiveHtml; ?>
-                    <span title="<?php echo esc_html($udTitle); ?>" style="display:inline-flex;align-items:flex-start;gap:1px;<?php echo $chipInnerStyle; ?>background:<?php echo esc_html($bg); ?>;color:<?php echo esc_html($fg); ?>;box-shadow:0 1px 1px rgba(0,0,0,.1);">
+                    <span class="<?php echo trim($udArtClass); ?>" title="<?php echo esc_html($udTitle); ?>" style="display:inline-flex;align-items:flex-start;gap:1px;<?php echo $chipInnerStyle; ?>background:<?php echo esc_html($bg); ?>;color:<?php echo esc_html($fg); ?>;box-shadow:0 1px 1px rgba(0,0,0,.1);">
                       <span style="display:inline-block;min-width:0;">
+                      <?php echo exam_admin_art_badge_html($udArt); ?>
                       <?php if ($udDateShort !== ''): ?>
                       <div style="<?php echo $chipTextStyle; ?>font-weight:700;<?php echo $chipLineEllipsis; ?>"><?php echo esc_html($udDateShort); ?></div>
                       <?php endif; ?>
@@ -5516,37 +5686,16 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
 
     <h4 style="margin:0 0 8px 0;">Resultate (letzte Versuche zuerst)</h4>
     <style>
-    .exam-theory-row--uebung td {
-      background: #f8fafc;
-      color: #64748b;
-    }
-    .exam-theory-row--uebung td.ok,
-    .exam-theory-row--uebung td.bad {
-      opacity: 0.88;
-    }
-    .exam-theory-art {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.88em;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .exam-theory-art--uebung {
-      background: #f1f5f9;
-      color: #94a3b8;
-      border: 1px solid #e2e8f0;
-    }
-    .exam-theory-art--pruefung {
-      background: #dbeafe;
-      color: #1e40af;
-      border: 1px solid #93c5fd;
-    }
+    .exam-theory-row--uebung td:first-child { box-shadow: inset 3px 0 0 #ea580c; }
+    .exam-theory-row--pruefung td:first-child { box-shadow: inset 3px 0 0 #1e3a8a; }
+    .mgr-art{display:inline-block;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.35;white-space:nowrap;}
+    .mgr-art--pruefung{background:#1e3a8a;color:#fff;border:1px solid #1e3a8a;}
+    .mgr-art--uebung{background:#fff7ed;color:#9a3412;border:1px dashed #ea580c;}
     </style>
     <table style="margin-bottom:14px;">
       <tr><th>Zeit</th><th>Name</th><th>Test</th><th>Art</th><th>Richtig</th><th>Fragen</th><th>Score</th><th>Status</th><?php if ($examAdminShowDeletes): ?><th>Aktion</th><?php endif; ?></tr>
       <?php foreach ($theoryDisplayRows as $a): ?>
-      <tr<?php echo exam_admin_theory_modus_is_uebung($a) ? ' class="exam-theory-row--uebung"' : ''; ?>>
+      <tr class="<?php echo exam_admin_art_code(array('type' => 'theory', 'modus_label' => (string)($a['modus_label'] ?? ''), 'quiz_modus' => (string)($a['quiz_modus'] ?? ''), 'exam_code' => (string)($a['exam_code'] ?? ''))) === 'uebung' ? 'exam-theory-row--uebung' : 'exam-theory-row--pruefung'; ?>">
         <td><?php echo esc_html($a['date']); ?></td>
         <td><?php echo esc_html($a['name']); ?></td>
         <td><?php echo esc_html($a['quiz_title']); ?></td>
@@ -5823,6 +5972,53 @@ $examAdminShowPlanningDeletes = ($canUseExtendedAdmin && $isAdminMode);
       <?php endif; ?>
     </table>
   </div>
+  <?php endif; ?>
+
+  <?php if ($canUseExtendedAdmin && $isAdminMode && function_exists('rkrk_na_groups')): ?>
+  <details class="card rkrk-card" id="na-assign-card" style="margin-top:12px;">
+    <summary style="cursor:pointer;font-weight:700;">Ungültige Namen<?php if ($naGroups !== array()): ?> (<?php echo esc_html((string)count($naGroups)); ?>)<?php endif; ?></summary>
+    <div style="margin-top:10px;">
+    <p style="margin:0 0 10px;color:#475569;font-size:13px;">Versuche, deren Name keinem registrierten Mitglied entspricht, stehen hier als Gruppe. Eine Zuweisung übernimmt alle Tests dieser Gruppe, schreibt den Namen in die JSON und stellt die PDFs neu.</p>
+    <?php if ($naGroups === array()): ?>
+      <p style="margin:0;color:#475569;font-size:13px;">Keine offenen Namen.</p>
+    <?php else: ?>
+      <?php foreach ($naGroups as $naGroup):
+        $naItems = isset($naGroup['items']) && is_array($naGroup['items']) ? $naGroup['items'] : array();
+        $naBits = array();
+        foreach ($naItems as $naItem) {
+          $when = trim((string)($naItem['when'] ?? ''));
+          if (strlen($when) >= 10) {
+            $when = substr(str_replace('T', ' ', $when), 0, 10);
+          }
+          $bit = trim((string)($naItem['what'] ?? ''));
+          if ($when !== '') {
+            $bit .= ($bit !== '' ? ' · ' : '') . $when;
+          }
+          if ($bit !== '') {
+            $naBits[] = $bit;
+          }
+        }
+      ?>
+      <form method="post" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;padding:8px 0;border-top:1px solid #e5e7eb;" onsubmit="return confirm('Alle Versuche dieses Namens dem gewählten Mitglied zuweisen? JSON und PDF werden umgestellt.');">
+        <?php if (function_exists('rkrk_assess_echo_setting_hidden_input')) { rkrk_assess_echo_setting_hidden_input(); } ?>
+        <input type="hidden" name="exam_admin_assign_group" value="1">
+        <input type="hidden" name="group_name" value="<?php echo esc_html((string)($naGroup['name'] ?? '')); ?>">
+        <div style="min-width:180px;">
+          <b><?php echo esc_html((string)($naGroup['name'] ?? '')); ?></b>
+          <div style="font-size:12px;color:#64748b;"><?php echo esc_html((string)count($naItems)); ?> Versuch<?php echo count($naItems) === 1 ? '' : 'e'; ?><?php if ($naBits !== array()): ?> · <?php echo esc_html(implode(' / ', $naBits)); ?><?php endif; ?></div>
+        </div>
+        <select name="person_id" required style="max-width:320px;">
+          <option value="">Mitglied wählen</option>
+          <?php foreach ($naPeople as $np): ?>
+          <option value="<?php echo esc_html((string)$np['id']); ?>"><?php echo esc_html((string)$np['name'] . ($np['rkrs'] !== '' ? ' · ' . $np['rkrs'] : '')); ?></option>
+          <?php endforeach; ?>
+        </select>
+        <button type="submit" class="ql-btn">Ganze Gruppe zuweisen</button>
+      </form>
+      <?php endforeach; ?>
+    <?php endif; ?>
+    </div>
+  </details>
   <?php endif; ?>
 
 </div>

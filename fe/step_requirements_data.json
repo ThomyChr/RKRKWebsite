@@ -120,8 +120,8 @@
         {
           "id": "S3-R1",
           "priority": "must",
-          "formula": "overlap = 0.15; S = (1-overlap) * W",
-          "description": "Spurabstand aus Sichtbreite und 15% Ueberlappung (Default)."
+          "formula": "S aus Bahnberechnung mit k = 0.15; B = (1-overlap_pct)*W; overlap_pct standard 0.30, Bereich 0..0.95",
+          "description": "S ist die Suchbreite aus der Bahnberechnung. B ist die Bahnbreite. Die lineare Standardueberlappung eines neuen Feldes ist 30 Prozent, Bereich 0 bis 95 Prozent."
         },
         {
           "id": "S3-R2",

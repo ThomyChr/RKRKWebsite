@@ -15,7 +15,35 @@
     return 1;
   }
 
-  function metricsFromFov(aglM, hfovDeg, vfovDeg, overlapFraction) {
+  function roundHalfMeter(meters) {
+    const n = Number(meters);
+    if (!Number.isFinite(n)) return n;
+    return Math.round(n * 2) / 2;
+  }
+
+  // Winkelanteil der Bahnberechnung. Kernparameter overlap, ab 50 m verkleinert.
+  function bahnAngleK(heightM, overlapFactor) {
+    let factor = Number(overlapFactor);
+    if (!Number.isFinite(factor) || factor <= 0) factor = 0.15;
+    if (factor > 1) factor /= 100;
+    factor = Math.min(0.95, Math.max(0, factor));
+    const height = Number(heightM);
+    if (height > 50) factor /= (1 + ((height - 50) / 65));
+    return factor;
+  }
+
+  // Suchbreite S aus der Bahnformel, Feldsuche vorwärts. Nicht die Überlappung des Reglers.
+  function searchWidthM(heightM, hfovDeg, overlapFactor) {
+    const height = Number(heightM);
+    const opening = Number(hfovDeg);
+    if (!(height > 0) || !(opening > 1)) return NaN;
+    const half = opening / 2;
+    const ua = opening * bahnAngleK(height, overlapFactor);
+    if (!(half > ua)) return NaN;
+    return 2 * height * Math.tan((half - ua) * Math.PI / 180);
+  }
+
+  function metricsFromFov(aglM, hfovDeg, vfovDeg, overlapFraction, angleFactor) {
     const agl = Number(aglM);
     const hfovRad = (Number(hfovDeg) * Math.PI) / 180;
     const vfovRad = (Number(vfovDeg) * Math.PI) / 180;
@@ -28,26 +56,27 @@
     const lengthM = Number.isFinite(agl) && agl > 0 && Number.isFinite(vfovRad)
       ? (2 * agl * Math.tan(vfovRad / 2))
       : NaN;
-    const spacingM = Number.isFinite(widthM) && widthM > 0
+    const searchRaw = searchWidthM(agl, hfovDeg, angleFactor);
+    const spacingRaw = Number.isFinite(widthM) && widthM > 0
       ? Math.max(0, (1 - overlap) * widthM)
       : NaN;
     return {
-      widthM: widthM,
+      widthM: roundHalfMeter(widthM),
       lengthM: lengthM,
-      spacingM: spacingM,
+      searchM: roundHalfMeter(searchRaw),
+      spacingM: roundHalfMeter(spacingRaw),
       hfovDeg: Number(hfovDeg),
       vfovDeg: Number(vfovDeg),
     };
   }
 
-  // Same factor as the green S line: S = (1 − overlap) · W, so S / W.
-  // coverageWindow "W" is the full camera window. Missing or "S" is the default.
+  // Suchabdeckung nutzt S / W. Kamerasicht (W) bleibt das volle Fenster.
   function laneScale(metrics) {
     if (metrics && metrics.coverageWindow === 'W') return 1;
     const widthM = Number(metrics && metrics.widthM);
-    const spacingM = Number(metrics && metrics.spacingM);
-    if (Number.isFinite(widthM) && widthM > 0 && Number.isFinite(spacingM) && spacingM >= 0) {
-      return spacingM / widthM;
+    const searchM = Number(metrics && metrics.searchM);
+    if (Number.isFinite(widthM) && widthM > 0 && Number.isFinite(searchM) && searchM > 0) {
+      return searchM / widthM;
     }
     return 1;
   }
@@ -58,15 +87,15 @@
     if (!(base > 0)) return null;
     const scale = Number.isFinite(refAgl) && refAgl > 0 ? (base / refAgl) : 1;
     const widthM = Number(metrics && metrics.widthM) * scale;
+    const searchM = Number(metrics && metrics.searchM) * scale;
     const spacingM = Number(metrics && metrics.spacingM) * scale;
-    if (!(widthM > 0) || !Number.isFinite(spacingM) || spacingM < 0) return null;
+    const bandM = Number.isFinite(searchM) && searchM > 0 ? searchM : spacingM;
+    if (!(widthM > 0) || !Number.isFinite(bandM) || bandM <= 0) return null;
     const lookM = Number(metrics && metrics.lengthM) * scale;
-    const trackM = Number.isFinite(lookM) && lookM > 0 ? lookM : widthM;
-    const swathHalfM = (widthM + trackM) / 4;
     return {
-      displayM: spacingM + ((widthM - spacingM) / 2),
+      displayM: bandM,
       lookM: Number.isFinite(lookM) && lookM > 0 ? lookM : 0,
-      swathHalfM: Number.isFinite(swathHalfM) && swathHalfM > 0 ? swathHalfM : (widthM * 0.5),
+      swathHalfM: bandM * 0.5,
     };
   }
 
@@ -174,18 +203,12 @@
       const k = (Number.isFinite(ref) && ref > 0 && agl > 1) ? (agl / ref) : 1;
       const factor = laneScale(metrics);
       const widthM = Number(metrics && metrics.widthM) * k * factor;
-      const lengthM = Number(metrics && metrics.lengthM) * k * factor;
       const hfovHalf = Number.isFinite(widthM) && widthM > 0 ? widthM * 0.5 : 0;
-      const depthHalf = Number.isFinite(lengthM) && lengthM > 0 ? lengthM * 0.5 : hfovHalf;
       const piece = sized[idx];
-      if (!(hfovHalf > 0)) {
-        const fallbackHalf = Number(piece && piece.swathHalfM);
-        const meters = Number.isFinite(fallbackHalf) && fallbackHalf > 0 ? fallbackHalf : (piece.displayM * 0.5);
-        return meters * meterScaleAt(pathCoords[idx]);
-      }
-      const along = Math.abs(look.x * tx + look.y * ty);
-      const across = Math.abs(look.x * (-ty) + look.y * tx);
-      return Math.max(along * hfovHalf + across * depthHalf, 0.5) * meterScaleAt(pathCoords[idx]);
+      const meters = hfovHalf > 0
+        ? hfovHalf
+        : (Number(piece && piece.displayM) > 0 ? piece.displayM * 0.5 : 0.5);
+      return Math.max(meters, 0.5) * meterScaleAt(pathCoords[idx]);
     }
     function alongMap(idx, tx, ty, look) {
       const h = Number(aglList && aglList[idx]);
@@ -289,8 +312,12 @@
   }
 
   // Tilted gimbal only. The window stays in the camera axes (HFOV across the
-  // look, VFOV along the look). A leg only slides that window along the
-  // segment. −90 points are not drawn here. Fade 150–320 m applies here.
+  // look, VFOV along the look) and slides along a forward leg. A short piece
+  // between two turns is only the connector, drawn at the footprint width,
+  // without swinging the far edge through the turn. The first waypoint often
+  // still stores 0° while the gimbal is set to the survey angle; that leg
+  // starts at the angle the route holds. −90 points are not drawn as legs here.
+  // Fade 150–320 m applies here.
   function buildCoveragePolygons(pathCoords, aglList, metrics, fallbackAgl, lonLatPts, pitchList, bearingList, headingModeList) {
     if (!Array.isArray(pathCoords) || pathCoords.length < 2) return [];
     let anyTilt = false;
@@ -353,10 +380,12 @@
       return Number.isFinite(pitch) ? pitch : -90;
     }
     // HFOV is across the look, VFOV is along the look. The corners are not
-    // rotated onto the leg.
-    function windowCorners(xy, agl, pitch, look) {
-      if (!xy || !look || nadirPitch(pitch)) return null;
-      const span = obliqueSpan(agl, pitch, hfovUse, vfovUse);
+    // rotated onto the leg. allowNadir is only for the morph into a −90 window.
+    function windowCorners(xy, agl, pitch, look, allowNadir) {
+      if (!xy || !look) return null;
+      const pitchN = Number(pitch);
+      if (!allowNadir && nadirPitch(pitchN)) return null;
+      const span = obliqueSpan(agl, nadirPitch(pitchN) ? -90 : pitchN, hfovUse, vfovUse);
       if (!span) return null;
       const factor = laneScale(metrics);
       const scaleRaw = meterScaleAt(xy);
@@ -407,6 +436,83 @@
       ring.push(ring[0].slice());
       rings.push({ ring: ring, fill: fillOf(fade) });
     }
+    function legLook(index, tx, ty) {
+      if (followsNextWaypoint(headingModeList && headingModeList[index])) return { x: tx, y: ty };
+      return lookOf(index);
+    }
+    // Keep the across-look half of the window. Do not pad by the along-look
+    // ground range, or a short leg keeps a far edge aimed at a later strip.
+    function alongPad(pose, origin, look, tx, ty) {
+      if (!pose || !origin || !look) return 0;
+      let pad = 0;
+      pose.corners.forEach((c) => {
+        const vx = c[0] - origin[0];
+        const vy = c[1] - origin[1];
+        const crossLook = vx * (-look.y) + vy * look.x;
+        const alongLeg = Math.abs((-look.y) * crossLook * tx + look.x * crossLook * ty);
+        if (alongLeg > pad) pad = alongLeg;
+      });
+      return pad;
+    }
+    function clipHalfPlane(ring, axisX, axisY, limit, keepBelow) {
+      const src = (ring || []).filter((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+      if (src.length < 3) return [];
+      const out = [];
+      const inside = (p) => {
+        const d = p[0] * axisX + p[1] * axisY;
+        return keepBelow ? d <= limit + 1e-4 : d >= limit - 1e-4;
+      };
+      const cut = (a, b) => {
+        const da = a[0] * axisX + a[1] * axisY;
+        const db = b[0] * axisX + b[1] * axisY;
+        const den = db - da;
+        const t = Math.abs(den) < 1e-9 ? 0 : (limit - da) / den;
+        const u = Math.max(0, Math.min(1, t));
+        return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+      };
+      for (let k = 0; k < src.length; k++) {
+        const prev = src[(k + src.length - 1) % src.length];
+        const cur = src[k];
+        const pin = inside(prev);
+        const cin = inside(cur);
+        if (cin) {
+          if (!pin) out.push(cut(prev, cur));
+          out.push(cur.slice());
+        } else if (pin) {
+          out.push(cut(prev, cur));
+        }
+      }
+      return out;
+    }
+    const pitchUse = [];
+    const pitchHold = [];
+    for (let i = 0; i < pathCoords.length; i++) {
+      pitchUse.push(pitchOf(i));
+      pitchHold.push(false);
+    }
+    // 0° am Anfang ist der Gimbal, bevor er gestellt wird. Die Abdeckung
+    // beginnt mit dem Winkel, den die folgenden Wegpunkte halten.
+    let settledPitch = null;
+    for (let i = 0; i < pitchUse.length; i++) {
+      const p = pitchUse[i];
+      if (Math.abs(p) <= 2 || nadirPitch(p)) continue;
+      let run = 1;
+      for (let j = i + 1; j < pitchUse.length; j++) {
+        if (Math.round(pitchUse[j]) !== Math.round(p)) break;
+        run += 1;
+      }
+      if (run >= 2 || i + run >= pitchUse.length) {
+        settledPitch = p;
+        break;
+      }
+    }
+    if (settledPitch != null) {
+      for (let i = 0; i < pitchUse.length && Math.abs(pitchUse[i]) <= 2; i++) {
+        pitchUse[i] = settledPitch;
+        pitchHold[i] = true;
+      }
+    }
+    const legs = [];
     for (let i = 0; i < pathCoords.length - 1; i++) {
       const a = pathCoords[i];
       const b = pathCoords[i + 1];
@@ -417,34 +523,192 @@
       if (!(len > 1e-3)) continue;
       const tx = dx / len;
       const ty = dy / len;
-      const follow = followsNextWaypoint(headingModeList && headingModeList[i]);
-      const look0 = follow ? { x: tx, y: ty } : lookOf(i);
-      const endFollow = followsNextWaypoint(headingModeList && headingModeList[i + 1]);
-      const look1 = follow ? { x: tx, y: ty } : (endFollow ? { x: tx, y: ty } : lookOf(i + 1));
+      const forward = followsNextWaypoint(headingModeList && headingModeList[i]);
+      const look = legLook(i, tx, ty);
       const h0 = aglOf(i);
-      const h1 = nadirPitch(pitchList && pitchList[i + 1]) ? h0 : aglOf(i + 1);
-      const p0 = pitchOf(i);
-      const p1 = nadirPitch(pitchList && pitchList[i + 1]) ? p0 : pitchOf(i + 1);
-      const yaw0 = Math.atan2(look0.x, look0.y);
-      const yaw1 = Math.atan2(look1.x, look1.y);
-      let dYaw = yaw1 - yaw0;
-      while (dYaw > Math.PI) dYaw -= Math.PI * 2;
-      while (dYaw < -Math.PI) dYaw += Math.PI * 2;
-      const steps = (!follow && (Math.abs(dYaw) > 0.14 || Math.abs(h1 - h0) > 2 || Math.abs(p1 - p0) > 1)) ? 4 : 1;
-      const pts = [];
+      const h1 = aglOf(i + 1);
+      const p0 = pitchUse[i];
+      const span = obliqueSpan(h0, p0, hfovUse, vfovUse);
+      const scale = meterScaleAt(a);
+      const lenM = scale > 0 ? len / scale : len;
+      const farM = span ? Math.min(span.far, COVERAGE_FADE_END_M) * laneScale(metrics) : 0;
+      legs.push({
+        i: i, a: a, b: b, tx: tx, ty: ty, look: look,
+        h0: h0, h1: h1, p0: p0, forward: forward,
+        lenM: lenM, farM: farM, turnLink: false,
+        holdPitch: !!pitchHold[i],
+      });
+    }
+    function legSweep(fromLeg, toLeg) {
+      return Math.atan2(
+        fromLeg.look.x * toLeg.look.y - fromLeg.look.y * toLeg.look.x,
+        fromLeg.look.x * toLeg.look.x + fromLeg.look.y * toLeg.look.y
+      );
+    }
+    const sharp = 35 * Math.PI / 180;
+    legs.forEach((leg, k) => {
+      if (!leg.forward || !(leg.farM > 8)) return;
+      const prev = k > 0 && legs[k - 1].i === leg.i - 1 ? legs[k - 1] : null;
+      const next = k + 1 < legs.length && legs[k + 1].i === leg.i + 1 ? legs[k + 1] : null;
+      const into = prev && prev.forward ? Math.abs(legSweep(prev, leg)) : 0;
+      const outOf = next && next.forward ? Math.abs(legSweep(leg, next)) : 0;
+      // Nur das kurze Stück zwischen zwei Abbiegungen ist die Kurve.
+      // Eine Arbeitsbahn bleibt der gleitende Footprint.
+      leg.turnLink = leg.lenM < Math.max(16, leg.farM * 0.9) && into > sharp && outOf > sharp;
+    });
+    function emitClippedLeg(leg) {
+      const depart = windowCorners(leg.a, leg.h0, leg.p0, leg.look);
+      const arrive = windowCorners(leg.b, leg.h1, leg.p0, leg.look);
+      const legPts = [];
       let fade = 1;
-      for (let s = 0; s <= steps; s++) {
-        const t = s / steps;
-        const xy = [a[0] + dx * t, a[1] + dy * t];
-        const yaw = yaw0 + dYaw * t;
-        const look = { x: Math.sin(yaw), y: Math.cos(yaw) };
-        const pose = windowCorners(xy, h0 + (h1 - h0) * t, p0 + (p1 - p0) * t, look);
-        if (!pose) continue;
+      [depart, arrive].forEach((pose) => {
+        if (!pose) return;
         fade = Math.min(fade, pose.fade);
-        pose.corners.forEach((c) => pts.push(c));
+        pose.corners.forEach((c) => legPts.push(c));
+      });
+      const legRing = hull(legPts);
+      if (!legRing) return;
+      const pad = Math.max(alongPad(depart, leg.a, leg.look, leg.tx, leg.ty), alongPad(arrive, leg.b, leg.look, leg.tx, leg.ty));
+      const startDot = leg.a[0] * leg.tx + leg.a[1] * leg.ty;
+      const endDot = leg.b[0] * leg.tx + leg.b[1] * leg.ty;
+      const lo = Math.min(startDot, endDot) - pad;
+      const hi = Math.max(startDot, endDot) + pad;
+      const clipped = clipHalfPlane(clipHalfPlane(legRing, leg.tx, leg.ty, hi, true), leg.tx, leg.ty, lo, false);
+      if (clipped.length >= 3) pushRing(clipped, fade);
+    }
+    function stationPose(xy, agl, pitch, look) {
+      const span = obliqueSpan(agl, pitch, hfovUse, vfovUse);
+      if (!span || !xy || !look) return null;
+      const factor = laneScale(metrics);
+      const scaleRaw = meterScaleAt(xy);
+      const scale = scaleRaw > 0 ? scaleRaw : 1;
+      const nearM = span.near;
+      const farM = Math.min(span.far, COVERAGE_FADE_END_M);
+      if (!(farM > nearM + 0.4) || nearM >= COVERAGE_FADE_END_M) return null;
+      const fade = coverageFade((nearM + farM) / 2);
+      if (!(fade > 0.04)) return null;
+      const near = nearM * factor * scale;
+      const far = farM * factor * scale;
+      const halfN = span.halfAt(nearM) * factor * scale;
+      const halfF = span.halfAt(farM) * factor * scale;
+      const px = -look.y;
+      const py = look.x;
+      const at = (along, half, sign) => [
+        xy[0] + look.x * along + px * half * sign,
+        xy[1] + look.y * along + py * half * sign,
+      ];
+      return {
+        fade: fade,
+        halfF: halfF,
+        corners: {
+          nearL: at(near, halfN, 1),
+          farL: at(far, halfF, 1),
+          farR: at(far, halfF, -1),
+          nearR: at(near, halfN, -1),
+        },
+      };
+    }
+    // Gleitender Footprint: schmal an der Nahkante, breit bis zur Fernkante am Ende.
+    // Der Winkel am Start bleibt, wenn der Gimbal dort von 0° auf den Endwinkel ging.
+    function emitForwardBand(leg) {
+      const p1 = leg.holdPitch ? leg.p0 : pitchUse[leg.i + 1];
+      const pitchDelta = Math.abs(p1 - leg.p0);
+      const heightDelta = Math.abs(leg.h1 - leg.h0);
+      const n = Math.max(1, Math.ceil(Math.max(heightDelta / 12, pitchDelta / 6)));
+      const stations = [];
+      for (let s = 0; s <= n; s++) {
+        const t = s / n;
+        const xy = [leg.a[0] + (leg.b[0] - leg.a[0]) * t, leg.a[1] + (leg.b[1] - leg.a[1]) * t];
+        const agl = leg.h0 + (leg.h1 - leg.h0) * t;
+        const pitch = leg.p0 + (p1 - leg.p0) * t;
+        const pose = stationPose(xy, agl, pitch, leg.look);
+        if (pose) stations.push(pose);
       }
-      const ring = hull(pts);
-      if (ring) pushRing(ring, fade);
+      if (!stations.length) return;
+      const first = stations[0];
+      const left = [first.corners.nearL];
+      const right = [first.corners.nearR];
+      let fade = first.fade;
+      let halfF = first.halfF;
+      stations.forEach((st) => {
+        left.push(st.corners.farL);
+        right.push(st.corners.farR);
+        fade = Math.min(fade, st.fade);
+        if (st.halfF > halfF) halfF = st.halfF;
+      });
+      right.reverse();
+      let ring = left.concat(right);
+      const k = legs.indexOf(leg);
+      const next = (k >= 0 && k + 1 < legs.length && legs[k + 1].i === leg.i + 1) ? legs[k + 1] : null;
+      if (next && Math.abs(legSweep(leg, next)) > 20 * Math.PI / 180) {
+        const limit = leg.b[0] * leg.look.x + leg.b[1] * leg.look.y;
+        ring = clipHalfPlane(ring, leg.look.x, leg.look.y, limit, true);
+      }
+      if (ring.length >= 3) pushRing(ring, fade);
+      const last = stations[stations.length - 1];
+      leg.band = { start: first.corners, end: last.corners, halfF: halfF, fade: fade };
+    }
+    // Kurzes Kurvenstück: Band in Footprint-Breite entlang der Verbindung,
+    // ohne die Fernkante in die nächste Bahn zu werfen.
+    function emitTurnBand(leg) {
+      const p1 = leg.holdPitch ? leg.p0 : pitchUse[leg.i + 1];
+      const poseA = stationPose(leg.a, leg.h0, leg.p0, { x: leg.tx, y: leg.ty });
+      const poseB = stationPose(leg.b, leg.h1, p1, { x: leg.tx, y: leg.ty });
+      if (!poseA || !poseB) return;
+      const half = Math.max(poseA.halfF, poseB.halfF);
+      const px = -leg.ty;
+      const py = leg.tx;
+      const side = (xy, sign) => [xy[0] + px * half * sign, xy[1] + py * half * sign];
+      const fade = Math.min(poseA.fade, poseB.fade);
+      pushRing([side(leg.a, 1), side(leg.b, 1), side(leg.b, -1), side(leg.a, -1)], fade);
+      leg.band = { halfF: half, fade: fade };
+    }
+    function emitBridge(fromLeg, toLeg) {
+      const a = fromLeg.band && fromLeg.band.end;
+      const b = toLeg.band && toLeg.band.start;
+      if (!a || !b) return;
+      const ring = hull([a.farL, a.farR, b.nearL, b.nearR]);
+      if (ring) pushRing(ring, Math.min(fromLeg.band.fade, toLeg.band.fade));
+    }
+    // Direkte Kurve ohne Verbindungsstück: nur die Aussenkante in Footprint-Breite.
+    function emitOuterJoin(fromLeg, toLeg) {
+      if (!fromLeg.band || !toLeg.band || !fromLeg.look || !toLeg.look) return;
+      const sweep = legSweep(fromLeg, toLeg);
+      if (Math.abs(sweep) < 12 * Math.PI / 180) return;
+      const center = fromLeg.b;
+      const half = Math.max(fromLeg.band.halfF, toLeg.band.halfF);
+      if (!(half > 1)) return;
+      const lookAng = Math.atan2(fromLeg.look.y, fromLeg.look.x);
+      const outerOff = sweep > 0 ? -Math.PI / 2 : Math.PI / 2;
+      const a0 = lookAng + outerOff;
+      const steps = Math.max(2, Math.ceil(Math.abs(sweep) / (Math.PI / 12)));
+      const ring = [center.slice()];
+      for (let s = 0; s <= steps; s++) {
+        const ang = a0 + sweep * (s / steps);
+        ring.push([center[0] + Math.cos(ang) * half, center[1] + Math.sin(ang) * half]);
+      }
+      pushRing(ring, Math.min(fromLeg.band.fade, toLeg.band.fade));
+    }
+    legs.forEach((leg) => {
+      if (leg.turnLink) emitTurnBand(leg);
+      else if (leg.forward) emitForwardBand(leg);
+      else emitClippedLeg(leg);
+    });
+    for (let k = 0; k < legs.length; k++) {
+      if (legs[k].turnLink || !legs[k].forward || !legs[k].band) continue;
+      let n = k + 1;
+      if (n >= legs.length || legs[n].i !== legs[k].i + 1) continue;
+      let via = 0;
+      while (n < legs.length && legs[n].turnLink && legs[n].i === legs[n - 1].i + 1) {
+        via += 1;
+        n += 1;
+      }
+      if (via > 0) continue;
+      if (n >= legs.length || legs[n].turnLink || legs[n].i !== legs[n - 1].i + 1) continue;
+      if (!legs[n].forward || !legs[n].band) continue;
+      const sweep = Math.abs(legSweep(legs[k], legs[n]));
+      if (sweep < 12 * Math.PI / 180) emitBridge(legs[k], legs[n]);
+      else emitOuterJoin(legs[k], legs[n]);
     }
     rings.forEach((ring) => ringsOut.push(ring));
     return ringsOut;
@@ -609,33 +873,98 @@
     return (bold ? 'bold ' : '') + size + 'px Arial, Helvetica, sans-serif';
   }
 
+  function confirmBasename(path) {
+    const text = String(path || '').replace(/\\/g, '/').trim();
+    const cut = text.lastIndexOf('/');
+    return cut >= 0 ? text.slice(cut + 1) : text;
+  }
+
+  function confirmFileName(ok, catalogPath, writtenPath) {
+    const catalog = confirmBasename(catalogPath);
+    const written = confirmBasename(writtenPath);
+    return ok ? (catalog || written) : (written || catalog);
+  }
+
+  function confirmFileLine(ok, kind, failLabel, name) {
+    return {
+      fail: !ok,
+      text: ok
+        ? (kind + ' ' + name + ' im Katalog aktualisiert')
+        : (failLabel + (name ? (': ' + name) : ''))
+    };
+  }
+
+  function confirmLineFails(text) {
+    return /nicht aktualisiert|fehlgeschlagen|nicht geschrieben/.test(String(text || ''));
+  }
+
+  function splitConfirmText(text) {
+    const raw = String(text || '').trim();
+    if (!raw) return [];
+    const pieces = raw.indexOf('\n') >= 0
+      ? raw.split(/\n+/)
+      : raw.replace(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/g, '$1§$2§$3').split(/\.\s+/);
+    return pieces.map((part) => {
+      const line = String(part || '').replace(/§/g, '.').replace(/\.$/, '').trim();
+      return { text: line, fail: confirmLineFails(line) };
+    }).filter((line) => line.text);
+  }
+
+  function paintConfirm(el, source) {
+    if (!el) return;
+    const lines = Array.isArray(source)
+      ? source
+      : (source && Array.isArray(source.lines) ? source.lines : splitConfirmText(source && source.text != null ? source.text : source));
+    el.replaceChildren();
+    lines.forEach((line) => {
+      const body = String(line && line.text != null ? line.text : line || '').trim();
+      if (!body) return;
+      const span = document.createElement('span');
+      const fail = !!(line && line.fail) || confirmLineFails(body);
+      span.className = 'save-confirm-line' + (fail ? ' save-miss' : '');
+      span.textContent = body.endsWith('.') ? body : (body + '.');
+      el.append(span);
+    });
+  }
+
   function saveConfirmText(data) {
     const d = data && typeof data === 'object' ? data : {};
-    const base = (path) => {
-      const text = String(path || '').replace(/\\/g, '/').trim();
-      const cut = text.lastIndexOf('/');
-      return cut >= 0 ? text.slice(cut + 1) : text;
-    };
-    const jsonName = base(d.jason_file);
-    const kmzName = base(d.kmz_file);
-    const jsonOk = d.json_written === true && jsonName !== '';
-    const kmzOk = d.kmz_written === true && kmzName !== '';
-    const parts = [];
-    parts.push(jsonOk
-      ? ('JSON ' + jsonName + ' geschrieben und angepasst')
-      : ('JSON nicht geschrieben' + (jsonName ? (': ' + jsonName) : '')));
-    parts.push(kmzOk
-      ? ('KMZ ' + kmzName + ' geschrieben und angepasst')
-      : ('KMZ nicht geschrieben' + (kmzName ? (': ' + kmzName) : '')));
-    if (d.aenderung) parts.push('Änderungsdatum ' + d.aenderung);
+    const jsonKnown = d.catalog_json_updated === true || d.catalog_json_updated === false;
+    const kmzKnown = d.catalog_kmz_updated === true || d.catalog_kmz_updated === false;
+    const jsonHasName = confirmBasename(d.catalog_json || d.jason_file) !== '';
+    const kmzHasName = confirmBasename(d.catalog_kmz || d.kmz_file) !== '';
+    const jsonOk = jsonKnown ? (d.catalog_json_updated === true && jsonHasName) : (d.json_written === true && jsonHasName);
+    const kmzOk = kmzKnown ? (d.catalog_kmz_updated === true && kmzHasName) : (d.kmz_written === true && kmzHasName);
+    const jsonName = confirmFileName(jsonOk, d.catalog_json, d.jason_file);
+    const kmzName = confirmFileName(kmzOk, d.catalog_kmz, d.kmz_file);
+    const lines = [];
+    lines.push(confirmFileLine(jsonOk, 'JSON', 'JSON im Katalog nicht aktualisiert', jsonName));
+    lines.push(confirmFileLine(kmzOk, 'KMZ', 'KMZ im Katalog nicht aktualisiert', kmzName));
+    if (d.pictures_attempted === true) {
+      const suchHasName = confirmBasename(d.catalog_suchfeld || d.suchfeld_bild) !== '';
+      const flugHasName = confirmBasename(d.catalog_flugplan || d.flugplan_bild) !== '';
+      const suchOk = d.catalog_suchfeld_updated === true && suchHasName;
+      const flugOk = d.catalog_flugplan_updated === true && flugHasName;
+      const suchName = confirmFileName(suchOk, d.catalog_suchfeld, d.suchfeld_bild);
+      const flugName = confirmFileName(flugOk, d.catalog_flugplan, d.flugplan_bild);
+      lines.push(confirmFileLine(suchOk, 'Suchfeld', 'Suchfeldbild im Katalog nicht aktualisiert', suchName));
+      lines.push(confirmFileLine(flugOk, 'Flugplan', 'Flugplanbild im Katalog nicht aktualisiert', flugName));
+    }
+    if (d.aenderung) lines.push({ fail: false, text: 'Änderungsdatum ' + d.aenderung });
     const hist = [];
     if (d.history_json === true) hist.push('JSON');
     if (d.history_kmz === true) hist.push('KMZ');
-    if (hist.length) parts.push('Vorversion ' + hist.join(' und ') + ' in der History');
-    else if (d.history_json === false || d.history_kmz === false) parts.push('History-Kopie fehlgeschlagen');
-    if (d.log_written === true) parts.push('Logeintrag geschrieben');
-    else if (d.log_written === false) parts.push('Logeintrag nicht geschrieben');
-    return { ok: jsonOk && kmzOk, text: parts.join('. ') + '.' };
+    if (hist.length) lines.push({ fail: false, text: 'Vorversion ' + hist.join(' und ') + ' in der History' });
+    else if (d.history_json === false || d.history_kmz === false) lines.push({ fail: true, text: 'History-Kopie fehlgeschlagen' });
+    if (d.log_written === true) lines.push({ fail: false, text: 'Logeintrag geschrieben' });
+    else if (d.log_written === false) lines.push({ fail: true, text: 'Logeintrag nicht geschrieben' });
+    const picturesOk = d.pictures_attempted !== true
+      || (d.catalog_suchfeld_updated === true && d.catalog_flugplan_updated === true);
+    return {
+      ok: jsonOk && kmzOk && picturesOk,
+      text: lines.map((line) => line.text).join('. ') + '.',
+      lines: lines
+    };
   }
 
   function nextLegBearingDeg(mapCoords, index0) {
@@ -820,6 +1149,49 @@
     const dy = Number(to[1]) - Number(from[1]);
     if (!(Math.hypot(dx, dy) > 1e-6)) return 0;
     return (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+  }
+
+  function missionStoredAsEasy(doc, parsed) {
+    if (!parsed || parsed.anyFalse === true) return false;
+    if (parsed.easyModeForm === true) return true;
+    if (parsed.easyModeForm !== false) return false;
+    const pilot = doc && doc.missionSettings && doc.missionSettings.djiPilot2;
+    if (!pilot) return false;
+    const easy = easyMissionDefaults();
+    const speed = Number(pilot.speed);
+    if (Number.isFinite(speed) && Math.abs(speed - easy.speed_m_s) >= 0.05) return false;
+    const heading = headingModeFromUav(pilot.directionMode || pilot.headingMode || pilot.yawDirection);
+    if (heading && heading !== easy.heading_mode) return false;
+    const type = waypointTypeFromUav(pilot.waypointType);
+    if (type && type !== easy.waypoint_type) return false;
+    const gimbal = gimbalModeFromUav(pilot.gimbalControl);
+    if (gimbal && gimbal !== easy.gimbal_mode) return false;
+    if (jsonFlag(pilot.transitionalSpeedActive) === true) return false;
+    return true;
+  }
+
+  // Bahnbreiten-Tool, Feldsuche vorwärts, Formel neu.
+  // ua = HFOV * k, k = Kernparameter overlap, ab 50 m durch 1 + (h - 50) / 65 geteilt.
+  // Bahnbreite = abgerundet 2 * h * tan(HFOV / 2 - ua).
+  // Der Reglerwert ist die lineare Überlappung, bei der der Bahnabstand diese Bahnbreite trifft.
+  function bahnbreiteOverlapPct(heightM, hfovDeg, overlapFactor) {
+    const height = Number(heightM);
+    const opening = Number(hfovDeg);
+    let factor = Number(overlapFactor);
+    if (!Number.isFinite(factor) || factor <= 0) factor = 0.15;
+    if (factor > 1) factor /= 100;
+    factor = Math.min(0.95, Math.max(0, factor));
+    if (!(height > 0) || !(opening > 1)) return Math.round(factor * 100);
+    let k = factor;
+    if (height > 50) k /= (1 + ((height - 50) / 65));
+    const ua = opening * k;
+    const half = opening / 2;
+    if (!(half > ua)) return Math.round(factor * 100);
+    const rad = Math.PI / 180;
+    const sight = 2 * height * Math.tan(half * rad);
+    const lane = Math.floor(2 * height * Math.tan((half - ua) * rad));
+    if (!(sight > 0) || !(lane > 0) || lane >= sight) return Math.round(factor * 100);
+    return Math.round((1 - (lane / sight)) * 100);
   }
 
   function easyMissionDefaults() {
@@ -1127,11 +1499,14 @@
       }
       const heightFlag = wpmlTag(block, 'useGlobalHeight');
       const kmzHeight = Number(wpmlTag(block, 'height'));
-      if (flagIsOff(heightFlag)) {
+      // ALT relativ zum Start schreibt useGlobalHeight 0, damit die Geländedifferenz in der Höhe steht.
+      // Das ist keine lokale Abweichung, wenn das JSON den Punkt schon der Mission folgen lässt.
+      const jsonFollowsHeight = jsonFlag(row.use_mission_height) === true;
+      if (!jsonFollowsHeight && flagIsOff(heightFlag)) {
         row.use_mission_height = false;
         parsed.anyFalse = true;
         if (Number.isFinite(kmzHeight)) row.rel_height_m = kmzHeight;
-      } else if (heightFlag == null && differs(kmzHeight, globalHeight)) {
+      } else if (!jsonFollowsHeight && heightFlag == null && differs(kmzHeight, globalHeight)) {
         row.use_mission_height = false;
         parsed.anyFalse = true;
         row.rel_height_m = kmzHeight;
@@ -1288,6 +1663,342 @@
     return '';
   }
 
+  /**
+   * Vertical deviation of values[start..end] against the straight chord,
+   * measured in sample-index space. Same rule as maxVerticalDeviation in
+   * the AGL flight-path optimizer (optimal_min_wp).
+   */
+  function maxIndexDeviation(values, startIdx, endIdx) {
+    const totalSteps = endIdx - startIdx;
+    if (totalSteps <= 1) return 0;
+    const startVal = Number(values[startIdx]);
+    const endVal = Number(values[endIdx]);
+    let maxDist = 0;
+    for (let i = startIdx + 1; i < endIdx; i++) {
+      const sample = Number(values[i]);
+      const interp = startVal + (endVal - startVal) * ((i - startIdx) / totalSteps);
+      const dist = Math.abs(sample - interp);
+      if (dist > maxDist) maxDist = dist;
+    }
+    return maxDist;
+  }
+
+  /** Signed terrain-minus-chord meters, same caption as the red AGL dots: +12.0m / -8.0m. */
+  function signedAglDeviationLabel(meters) {
+    const n = Number(meters);
+    if (!Number.isFinite(n)) return '';
+    return (n >= 0 ? '+' : '') + n.toFixed(1) + 'm';
+  }
+
+  function chordDeviationM(values, index) {
+    const series = Array.isArray(values) ? values : [];
+    const i = Number(index);
+    const n = series.length;
+    if (!Number.isInteger(i) || i <= 0 || i >= n - 1) return NaN;
+    const startVal = Number(series[0]);
+    const endVal = Number(series[n - 1]);
+    const sample = Number(series[i]);
+    if (![startVal, endVal, sample].every(Number.isFinite)) return NaN;
+    const interp = startVal + (endVal - startVal) * (i / (n - 1));
+    return sample - interp;
+  }
+
+  const SUPPORT_WAYPOINT_COLOR = '#c084fc';
+
+  /** Named modes from the AGL flight-path optimizer. Default is the first. */
+  const supportAlgorithms = [
+    { key: 'optimal_min_wp', label: 'Optimal Min-WP' },
+    { key: 'rdp_vertical', label: 'Douglas-Peucker' },
+    { key: 'sliding_sleeve', label: 'Sliding Sleeve' },
+  ];
+
+  function supportBand(tolM) {
+    const tol = Number(tolM);
+    return Number.isFinite(tol) && tol > 0 ? tol : 10;
+  }
+
+  function uniqueSortedIndices(arr) {
+    return Array.from(new Set((arr || []).filter((i) => Number.isFinite(i)))).sort((a, b) => a - b);
+  }
+
+  /**
+   * Fewest sample indices so every chord stays within ±tolM of the soll
+   * series. Copy of optimalMinWp: edge i→j is allowed only when
+   * maxIndexDeviation <= tolM; shortest path in hops from 0 to n−1.
+   * Always includes both endpoints. Those endpoints are the waypoints
+   * already on the leg. Indices strictly between them are support waypoints.
+   */
+  function optimalMinWaypointIndices(values, tolM) {
+    const series = Array.isArray(values) ? values : [];
+    const n = series.length;
+    if (n <= 0) return [];
+    if (n === 1) return [0];
+    const band = supportBand(tolM);
+    const dist = new Array(n).fill(Infinity);
+    const prev = new Array(n).fill(-1);
+    dist[0] = 0;
+    for (let i = 0; i < n; i++) {
+      if (dist[i] === Infinity) continue;
+      for (let j = i + 1; j < n; j++) {
+        if (maxIndexDeviation(series, i, j) <= band) {
+          const candidate = dist[i] + 1;
+          if (candidate < dist[j]) {
+            dist[j] = candidate;
+            prev[j] = i;
+          }
+        }
+      }
+    }
+    const kept = [];
+    let cur = n - 1;
+    if (prev[cur] === -1 && cur !== 0) {
+      for (let i = 0; i < n; i++) kept.push(i);
+    } else {
+      while (cur !== -1) {
+        kept.push(cur);
+        cur = prev[cur];
+      }
+      kept.reverse();
+    }
+    return uniqueSortedIndices(kept);
+  }
+
+  /** Vertical Douglas-Peucker, same split rule as rdpVertical in the optimizer. */
+  function rdpVerticalIndices(values, startIdx, endIdx, epsilon, outIndices) {
+    const totalSteps = endIdx - startIdx;
+    if (totalSteps <= 1) return;
+    const startVal = Number(values[startIdx]);
+    const endVal = Number(values[endIdx]);
+    let maxDist = 0;
+    let index = -1;
+    for (let i = startIdx + 1; i < endIdx; i++) {
+      const interp = startVal + (endVal - startVal) * ((i - startIdx) / totalSteps);
+      const dist = Math.abs(Number(values[i]) - interp);
+      if (dist > maxDist) {
+        maxDist = dist;
+        index = i;
+      }
+    }
+    if (maxDist > epsilon && index !== -1) {
+      rdpVerticalIndices(values, startIdx, index, epsilon, outIndices);
+      outIndices.push(index);
+      rdpVerticalIndices(values, index, endIdx, epsilon, outIndices);
+    }
+  }
+
+  function rdpWaypointIndices(values, tolM) {
+    const series = Array.isArray(values) ? values : [];
+    const n = series.length;
+    if (n <= 0) return [];
+    if (n <= 2) return uniqueSortedIndices(series.map((_, i) => i));
+    const kept = [0];
+    rdpVerticalIndices(series, 0, n - 1, supportBand(tolM), kept);
+    kept.push(n - 1);
+    return uniqueSortedIndices(kept);
+  }
+
+  /** Sliding sleeve: new anchor at the last sample that still stays inside ±tolM. */
+  function slidingSleeveIndices(values, tolM) {
+    const series = Array.isArray(values) ? values : [];
+    const n = series.length;
+    if (n <= 0) return [];
+    if (n <= 2) return uniqueSortedIndices(series.map((_, i) => i));
+    const band = supportBand(tolM);
+    const kept = [0];
+    let anchor = 0;
+    for (let i = 2; i < n; i++) {
+      if (maxIndexDeviation(series, anchor, i) > band) {
+        anchor = i - 1;
+        kept.push(anchor);
+      }
+    }
+    if (kept[kept.length - 1] !== n - 1) kept.push(n - 1);
+    return uniqueSortedIndices(kept);
+  }
+
+  function supportAlgorithmKey(algoKey) {
+    const key = String(algoKey || '');
+    return supportAlgorithms.some((item) => item.key === key) ? key : 'optimal_min_wp';
+  }
+
+  function waypointIndicesForAlgorithm(values, tolM, algoKey) {
+    const key = supportAlgorithmKey(algoKey);
+    if (key === 'rdp_vertical') return rdpWaypointIndices(values, tolM);
+    if (key === 'sliding_sleeve') return slidingSleeveIndices(values, tolM);
+    return optimalMinWaypointIndices(values, tolM);
+  }
+
+  function supportWaypointSampleIndices(values, tolM, algoKey) {
+    const series = Array.isArray(values) ? values : [];
+    const n = series.length;
+    if (n < 3) return [];
+    if (series.some((v) => !Number.isFinite(Number(v)))) return [];
+    return waypointIndicesForAlgorithm(series, tolM, algoKey).filter((i) => i > 0 && i < n - 1);
+  }
+
+  function maxKeptDeviation(values, indices) {
+    const kept = uniqueSortedIndices(indices);
+    let maxDist = 0;
+    for (let k = 0; k + 1 < kept.length; k++) {
+      maxDist = Math.max(maxDist, maxIndexDeviation(values, kept[k], kept[k + 1]));
+    }
+    return maxDist;
+  }
+
+  /**
+   * Display candidates for one path. beforeM is the max |terrain − chord|
+   * on the current waypoints. afterM is the same measure with the chosen
+   * algorithm's intermediate samples inserted. Points are not stored.
+   */
+  function planSupportLegs(legs, tolM, algoKey) {
+    const list = Array.isArray(legs) ? legs : [];
+    const key = supportAlgorithmKey(algoKey);
+    let beforeM = 0;
+    let afterM = 0;
+    let any = false;
+    const points = [];
+    list.forEach((leg, legIndex) => {
+      const samples = Array.isArray(leg && leg.samples) ? leg.samples : [];
+      const heights = Array.isArray(leg && leg.heights) ? leg.heights : [];
+      const n = Math.min(samples.length, heights.length);
+      if (n < 2) return;
+      const series = heights.slice(0, n).map((v) => Number(v));
+      if (series.some((v) => !Number.isFinite(v))) return;
+      any = true;
+      const beforeDev = maxIndexDeviation(series, 0, n - 1);
+      const kept = waypointIndicesForAlgorithm(series, tolM, key);
+      const afterDev = maxKeptDeviation(series, kept.length ? kept : [0, n - 1]);
+      beforeM = Math.max(beforeM, beforeDev);
+      afterM = Math.max(afterM, afterDev);
+      kept.forEach((i) => {
+        if (i <= 0 || i >= n - 1) return;
+        const p = samples[i];
+        if (!Array.isArray(p) || p.length < 2) return;
+        const lon = Number(p[0]);
+        const lat = Number(p[1]);
+        if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
+        points.push({
+          lon: lon,
+          lat: lat,
+          legIndex: legIndex,
+          sampleIndex: i,
+          sampleCount: n,
+          deviationM: chordDeviationM(series, i),
+        });
+      });
+    });
+    return {
+      beforeM: any ? beforeM : NaN,
+      afterM: any ? afterM : NaN,
+      points: points,
+      algoKey: key,
+    };
+  }
+
+  function supportFraction(candidate) {
+    const n = Number(candidate && candidate.sampleCount);
+    const i = Number(candidate && candidate.sampleIndex);
+    if (Number.isFinite(n) && n > 1 && Number.isFinite(i)) {
+      return Math.max(0, Math.min(1, i / (n - 1)));
+    }
+    const t = Number(candidate && candidate.t);
+    return Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0.5;
+  }
+
+  function supportNearMeters(a, b, limitM) {
+    const lat = ((Number(a[1]) + Number(b[1])) / 2) * Math.PI / 180;
+    const dx = (Number(b[0]) - Number(a[0])) * 111320 * Math.cos(lat);
+    const dy = (Number(b[1]) - Number(a[1])) * 110540;
+    return Math.hypot(dx, dy) <= limitM;
+  }
+
+  /**
+   * Insert display candidates into a waypoint triplet path.
+   * Higher legs first, and within a leg the later sample first, so each
+   * splice index stays at the start of that leg. Skips a candidate that
+   * already sits on a waypoint. insertedAt lists the 0-based splice indices
+   * in the order they were applied, for waypoint-override reindexing.
+   */
+  function insertSupportIntoPath(path, candidates) {
+    const pts = (Array.isArray(path) ? path : [])
+      .map((p) => [Number(p[0]), Number(p[1]), Number(p[2] || 0)])
+      .filter((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    const groups = new Map();
+    (Array.isArray(candidates) ? candidates : []).forEach((c) => {
+      const leg = Number(c && c.legIndex);
+      if (!Number.isInteger(leg) || leg < 0) return;
+      const list = groups.get(leg) || [];
+      list.push(c);
+      groups.set(leg, list);
+    });
+    const insertedAt = [];
+    Array.from(groups.keys()).sort((a, b) => b - a).forEach((leg) => {
+      if (leg + 1 >= pts.length) return;
+      const a = pts[leg];
+      const b = pts[leg + 1];
+      const list = groups.get(leg).slice().sort((left, right) => supportFraction(right) - supportFraction(left));
+      list.forEach((c) => {
+        const lon = Number(c.lon);
+        const lat = Number(c.lat);
+        if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
+        if (pts.some((p) => supportNearMeters(p, [lon, lat], 2.5))) return;
+        const t = supportFraction(c);
+        const alt = Number(a[2]) + (Number(b[2]) - Number(a[2])) * t;
+        pts.splice(leg + 1, 0, [lon, lat, Math.round(alt * 10) / 10]);
+        insertedAt.push(leg + 1);
+      });
+    });
+    return { path: pts, insertedAt: insertedAt };
+  }
+
+  /**
+   * Inclusive samples along one leg, about stepMeters apart in Web Mercator.
+   * Index spacing matches the optimizer, which interpolates in sample-index space.
+   */
+  function sampleLegLonLat(startLonLat, endLonLat, stepMeters) {
+    const aLon = Number(startLonLat && startLonLat[0]);
+    const aLat = Number(startLonLat && startLonLat[1]);
+    const bLon = Number(endLonLat && endLonLat[0]);
+    const bLat = Number(endLonLat && endLonLat[1]);
+    if (![aLon, aLat, bLon, bLat].every(Number.isFinite)) return [];
+    if (!global.ol || !ol.proj) return [[aLon, aLat], [bLon, bLat]];
+    const a = ol.proj.fromLonLat([aLon, aLat]);
+    const b = ol.proj.fromLonLat([bLon, bLat]);
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const segLen = Math.hypot(dx, dy);
+    const stepM = Math.max(8, Number(stepMeters) || 25);
+    const stepMap = stepM * meterScaleAt(a);
+    const segments = Math.max(1, Math.ceil(segLen / Math.max(stepMap, 1e-6)));
+    const out = [];
+    for (let s = 0; s <= segments; s++) {
+      const t = s / segments;
+      const lonlat = ol.proj.toLonLat([a[0] + dx * t, a[1] + dy * t]);
+      if (!Array.isArray(lonlat) || lonlat.length < 2) continue;
+      out.push([Number(lonlat[0]), Number(lonlat[1])]);
+    }
+    return out;
+  }
+
+  /** Intermediate lon/lat only. Endpoints of the leg stay the existing waypoints. */
+  function supportWaypointLonLat(samples, heights, tolM, algoKey) {
+    const pts = Array.isArray(samples) ? samples : [];
+    const vals = Array.isArray(heights) ? heights : [];
+    const n = Math.min(pts.length, vals.length);
+    if (n < 3) return [];
+    const idxs = supportWaypointSampleIndices(vals.slice(0, n), tolM, algoKey);
+    const out = [];
+    idxs.forEach((i) => {
+      const p = pts[i];
+      if (!Array.isArray(p) || p.length < 2) return;
+      const lon = Number(p[0]);
+      const lat = Number(p[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
+      out.push([lon, lat]);
+    });
+    return out;
+  }
+
   global.RkrkField = {
     meterScaleAt: meterScaleAt,
     metricsFromFov: metricsFromFov,
@@ -1301,6 +2012,7 @@
     setMapLabelScale: setMapLabelScale,
     mapLabelFont: mapLabelFont,
     saveConfirmText: saveConfirmText,
+    paintConfirm: paintConfirm,
     nextLegBearingDeg: nextLegBearingDeg,
     formatMeterLabel: formatMeterLabel,
     programmedFlightHeightM: programmedFlightHeightM,
@@ -1314,7 +2026,9 @@
     yawSymbol: yawSymbol,
     yawSymbolLayout: yawSymbolLayout,
     lensBearingDeg: lensBearingDeg,
+    bahnbreiteOverlapPct: bahnbreiteOverlapPct,
     easyMissionDefaults: easyMissionDefaults,
+    missionStoredAsEasy: missionStoredAsEasy,
     overridesNeedExpert: overridesNeedExpert,
     jsonFlag: jsonFlag,
     shownByFlag: shownByFlag,
@@ -1326,6 +2040,16 @@
     alignOverridesToPath: alignOverridesToPath,
     templateKmlFromKmz: templateKmlFromKmz,
     paintDebugParamHints: paintDebugParamHints,
+    SUPPORT_WAYPOINT_COLOR: SUPPORT_WAYPOINT_COLOR,
+    supportAlgorithms: supportAlgorithms,
+    supportAlgorithmKey: supportAlgorithmKey,
+    optimalMinWaypointIndices: optimalMinWaypointIndices,
+    supportWaypointSampleIndices: supportWaypointSampleIndices,
+    signedAglDeviationLabel: signedAglDeviationLabel,
+    planSupportLegs: planSupportLegs,
+    insertSupportIntoPath: insertSupportIntoPath,
+    sampleLegLonLat: sampleLegLonLat,
+    supportWaypointLonLat: supportWaypointLonLat,
   };
 
   function paintDebugParamHints(pairs, visible) {
@@ -1336,7 +2060,9 @@
       const text = pair && pair[1];
       const el = id ? document.getElementById(id) : null;
       if (!el || !text) return;
-      const anchor = el.closest('label') || el;
+      // Steuerzeilen (− / Wert / +) nicht aufbrechen: Hinweis hinter die ganze Zeile.
+      const row = el.closest('.wp-alt-step, .wp-slider-row, .plan-stepper, .height-edit');
+      const anchor = row || el.closest('label') || el;
       if (!anchor.parentNode) return;
       const hint = document.createElement('div');
       hint.className = 'debug-param';

@@ -37,7 +37,7 @@ function rkrk_dabs_load($day)
 {
 	$cacheTtl = 20 * 60;
 	$cacheDir = rtrim(sys_get_temp_dir(), '\\/') . DIRECTORY_SEPARATOR;
-	$cacheFile = $cacheDir . 'rkrk_dabs_' . $day . '_agl200_aip3.json';
+	$cacheFile = $cacheDir . 'rkrk_dabs_' . $day . '_agl200_aip4.json';
 	if (is_file($cacheFile) && (time() - (int)filemtime($cacheFile)) < $cacheTtl) {
 		$cached = json_decode((string)file_get_contents($cacheFile), true);
 		if (is_array($cached) && !empty($cached['ok'])) {
@@ -96,6 +96,14 @@ function rkrk_dabs_load($day)
 		if (!rkrk_dabs_affects_agl($item, $maxAgl)) {
 			$skipped++;
 			continue;
+		}
+		if (rkrk_dabs_normalize_area_id($item['area'] ?? '') === '') {
+			$inferred = rkrk_dabs_area_key($item);
+			if ($inferred !== '') {
+				$item['area'] = $inferred;
+				$notam = trim((string)($item['notam'] ?? ''));
+				$item['name'] = ($notam !== '') ? ($inferred . ' · ' . $notam) : $inferred;
+			}
 		}
 		$item['agl_filter_m'] = $maxAgl;
 		$rr = rkrk_dabs_remark_radius_m((string)($item['remark'] ?? ''));
@@ -294,7 +302,7 @@ function rkrk_dabs_find_meta($strings, $prefix)
 
 function rkrk_dabs_is_id($s)
 {
-	return (bool)preg_match('/^(LSR\d+[A-Z]?|W\d{4}\/\d{2})$/i', $s);
+	return (bool)preg_match('/^(LS-?[RD]\s*\d+[A-Z]?|W\d{4}\/\d{2})$/i', trim((string)$s));
 }
 
 function rkrk_dabs_is_validity($s)
@@ -402,8 +410,8 @@ function rkrk_dabs_normalize_area_id($s)
 {
 	$u = strtoupper(trim((string)$s));
 	$u = str_replace(array('-', ' '), '', $u);
-	if (preg_match('/^LSR([0-9]{1,3}[A-Z]{0,2})$/', $u, $m)) {
-		return 'LSR' . $m[1];
+	if (preg_match('/^LS([RD])([0-9]{1,3}[A-Z]{0,2})$/', $u, $m)) {
+		return 'LS' . $m[1] . $m[2];
 	}
 	return '';
 }
@@ -415,8 +423,8 @@ function rkrk_dabs_area_key($item)
 		return $direct;
 	}
 	$blob = strtoupper((string)($item['area'] ?? '') . ' ' . ($item['name'] ?? '') . ' ' . ($item['remark'] ?? ''));
-	if (preg_match('/\bLS-?R\s*([0-9]{1,3}[A-Z]{0,2})\b/', $blob, $m)) {
-		return 'LSR' . $m[1];
+	if (preg_match('/\bLS-?([RD])\s*([0-9]{1,3}[A-Z]{0,2})\b/', $blob, $m)) {
+		return 'LS' . $m[1] . $m[2];
 	}
 	return '';
 }

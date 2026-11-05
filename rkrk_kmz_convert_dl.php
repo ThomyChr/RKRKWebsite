@@ -68,7 +68,11 @@ if ($convert && $ext === 'kmz') {
 	}
 	$converted = json_decode((string)file_get_contents($out));
 	if (is_object($converted) && function_exists('rkrk_json_apply_control_flights')) {
-		rkrk_json_apply_control_flights($converted, rkrk_feld_id_from_mission_filename($rel));
+		$day = trim((string)($_GET['day'] ?? ''));
+		if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+			$day = '';
+		}
+		rkrk_json_apply_control_flights($converted, rkrk_feld_id_from_mission_filename($rel), null, $day);
 		$encoded = rkrk_json_encode_export($converted);
 		if ($encoded !== '') {
 			file_put_contents($out, $encoded);

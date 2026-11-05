@@ -25,7 +25,15 @@ include_once $appRoot . '/rkrk_access_control.php';
 CheckIPandExit();
 
 function rc_einsatz_allowed() {
-	return function_exists('MenuEntryAccessGranted') && MenuEntryAccessGranted('RcEinsatz');
+	// Menü-Referenz: nicht nur Key RcEinsatz (kann activ=false sein), sondern jede
+	// freigegebene Zeile, die auf diese Seite oder den RC-Zugang zeigt (z.B. rc / rc_e).
+	if (function_exists('MenuEntryAccessGranted') && MenuEntryAccessGranted('RcEinsatz')) {
+		return true;
+	}
+	if (function_exists('MenuEntryAccessGrantedForSites')) {
+		return MenuEntryAccessGrantedForSites(array('rkrk_rc_einsatz.php', 'rkrk_rc_access.php'));
+	}
+	return false;
 }
 
 function rc_einsatz_date($value) {
@@ -1120,5 +1128,6 @@ document.querySelectorAll('button.drop').forEach((btn) => {
   });
 });
 </script>
+<script src="rkrk_fullscreen.js?v=20261026fs2"></script>
 </body>
 </html>

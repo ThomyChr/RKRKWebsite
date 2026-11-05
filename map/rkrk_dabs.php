@@ -1,15 +1,10 @@
 <?php
 /**
- * Local DABS entry so map/ can run standalone (rkrs/map) or inside test27.
- * Prefers the site-level API when present; otherwise scrapes without site chrome.
+ * Local DABS entry for this map folder (test27/map, rkrs/map, or tools /map/).
+ * Always loads the core beside this file. A straight copy must not jump to a
+ * parent rkrk_dabs.php or a scripts/ directory that is not part of the copy.
  */
 declare(strict_types=1);
-
-$parent = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'rkrk_dabs.php';
-if (is_file($parent) && realpath($parent) !== realpath(__FILE__)) {
-	require $parent;
-	exit;
-}
 
 $core = __DIR__ . DIRECTORY_SEPARATOR . 'rkrk_dabs_core.php';
 if (is_file($core)) {

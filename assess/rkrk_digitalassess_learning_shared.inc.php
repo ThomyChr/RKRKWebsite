@@ -6,7 +6,9 @@
 if (!function_exists("rkrk_dle_learning_editor_parts")) {
 	function rkrk_dle_learning_editor_parts($html) {
 		$html = (string) $html;
-		if (preg_match("~(<body[^>]*>)(.*?)(</body>)~is", $html, $m)) {
+		// Kopf (PHP-Gate, DOCTYPE, charset, CSS) und Abschluss bleiben erhalten.
+		// Nur der Inhalt zwischen <body> und </body> geht in den Editor.
+		if (preg_match("~^(.*?<body[^>]*>)(.*?)(</body>.*)$~is", $html, $m)) {
 			return array(
 				"body" => $m[2],
 				"prefix_b64" => base64_encode($m[1]),
@@ -20,6 +22,130 @@ if (!function_exists("rkrk_dle_learning_editor_parts")) {
 			"suffix_b64" => "",
 			"fragment" => true,
 		);
+	}
+}
+
+if (!function_exists("rkrk_dle_clean_image_rel")) {
+	function rkrk_dle_clean_image_rel(string $rel): string {
+		$rel = str_replace("\\", "/", rawurldecode($rel));
+		$rel = rawurldecode($rel);
+		$rel = ltrim($rel, "/");
+		if ($rel === "" || strpos($rel, "..") !== false) {
+			return "";
+		}
+		return $rel;
+	}
+}
+
+if (!function_exists("rkrk_dle_proxy_src_to_images_rel")) {
+	/**
+	 * Proxy-, Absolut- oder Host-URL einer Lernabbildung → images/… neben der HTML-Datei.
+	 * Gilt für frog und rehkitzrettung.ch, auch wenn der Editor die URL absolut macht.
+	 */
+	function rkrk_dle_proxy_src_to_images_rel(string $url): string {
+		$orig = $url;
+		$u = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, "UTF-8");
+		$u = trim(str_replace(array("&amp;", "\\"), array("&", "/"), $u));
+		if ($u === "" || $u[0] === "#" || preg_match('#^(mailto:|tel:|data:)#i', $u) === 1) {
+			return $orig;
+		}
+		if (preg_match('~^(?:\./)?images/([^?#]+)$~i', $u, $already) === 1) {
+			$rel = rkrk_dle_clean_image_rel((string) $already[1]);
+			return $rel === "" ? $orig : ("images/" . $rel);
+		}
+		if (stripos($u, "rkrk_assess_image.php") !== false
+			&& preg_match('~rkrk_assess_image\\.php\\?([^#\\s"\']+)~i', $u, $qm) === 1
+		) {
+			$params = array();
+			parse_str((string) $qm[1], $params);
+			$f = rkrk_dle_clean_image_rel((string) ($params["f"] ?? ""));
+			$d = trim(str_replace("\\", "/", rawurldecode((string) ($params["d"] ?? ""))), "/");
+			if ($f === "" || strpos($d, "..") !== false) {
+				return $orig;
+			}
+			$f = str_replace("/", "", $f);
+			return "images/" . ($d !== "" ? $d . "/" : "") . $f;
+		}
+		if (preg_match('~/(?:quiz/)?images/([^?#]+)~i', $u, $im) === 1
+			&& (stripos($u, "data/assess") !== false || stripos($u, "rkrsplusassessment") !== false)
+		) {
+			$rel = rkrk_dle_clean_image_rel((string) $im[1]);
+			return $rel === "" ? $orig : ("images/" . $rel);
+		}
+		return $orig;
+	}
+}
+
+if (!function_exists("rkrk_dle_relativize_learn_image_urls")) {
+	/**
+	 * Gespeicherte Schulungs-HTML bleibt host-neutral: images/Ordner/Datei.png
+	 * funktioniert auf frog und auf rehkitzrettung.ch.
+	 */
+	function rkrk_dle_relativize_learn_image_urls(string $html): string {
+		$out = preg_replace_callback(
+			'/\b(src|data-src|poster)\s*=\s*(["\'])([^"\']+)\2/i',
+			static function ($m) {
+				$rel = rkrk_dle_proxy_src_to_images_rel((string) $m[3]);
+				if ($rel === (string) $m[3]) {
+					return $m[0];
+				}
+				return $m[1] . "=" . $m[2] . htmlspecialchars($rel, ENT_QUOTES, "UTF-8") . $m[2];
+			},
+			$html
+		);
+		return is_string($out) ? $out : $html;
+	}
+}
+
+if (!function_exists("rkrk_dle_learning_needs_php_gate")) {
+	function rkrk_dle_learning_needs_php_gate(string $learnFile, string $html): bool {
+		$base = basename(str_replace("\\", "/", $learnFile));
+		if (in_array($base, array("RKRSplus_Schulung.html", "RKRS Einsatzpruefung.html"), true)) {
+			return true;
+		}
+		return strpos($html, "_hash_protect.php") !== false;
+	}
+}
+
+if (!function_exists("rkrk_dle_ensure_learning_document_shell")) {
+	/**
+	 * Direkter Aufruf der .html (als PHP) braucht charset-Header plus Stylesheet-Kopf.
+	 * Der Editor darf diesen Rahmen nicht durch den Body-Inhalt ersetzen.
+	 */
+	function rkrk_dle_ensure_learning_document_shell(string $html, string $learnFile): string {
+		$needsPhp = rkrk_dle_learning_needs_php_gate($learnFile, $html);
+		$hasCharset = preg_match('/<meta\s+charset\s*=\s*["\']?\s*utf-8/i', $html) === 1;
+		$hasCss = stripos($html, "lernunterlagen.css") !== false;
+		$hasPhp = strpos($html, "_hash_protect.php") !== false;
+		if ($hasCharset && $hasCss && (!$needsPhp || $hasPhp)) {
+			if (stripos($html, "</html>") === false && preg_match('/<\/body>/i', $html) === 1) {
+				$html = preg_replace('/<\/body>/i', "</body>\n</html>", $html, 1);
+			}
+			return $html;
+		}
+		$inner = $html;
+		if (preg_match('~<body[^>]*>(.*)</body>~is', $html, $m)) {
+			$inner = $m[1];
+		}
+		$title = "";
+		if (preg_match('~<h1[^>]*>(.*?)</h1>~is', $inner, $hm)) {
+			$title = trim(html_entity_decode(strip_tags($hm[1]), ENT_QUOTES, "UTF-8"));
+		}
+		$titleTag = $title !== "" ? "<title>" . htmlspecialchars($title, ENT_QUOTES, "UTF-8") . "</title>\n" : "";
+		$php = $needsPhp ? "<?php require __DIR__ . '/../rkrsplus_ep/_hash_protect.php'; ?>\n" : "";
+		$prefix = $php
+			. "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n"
+			. "<!-- RKRS Schulungs-Standard: lernunterlagen.css + Tabellen/Ergänzungen -->\n"
+			. "<meta charset=\"UTF-8\">\n"
+			. $titleTag
+			. "<link rel=\"stylesheet\" href=\"lernunterlagen.css\">\n"
+			. "<link rel=\"stylesheet\" href=\"public/rkrk_schulung_lern.css\">\n"
+			. "<link rel=\"icon\" type=\"image/x-icon\" href=\"RKRS.ico\" id=\"rkrs-favicon\">\n"
+			. "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"RKRS_onrkrs.png\" id=\"rkrs-favicon-16\">\n"
+			. "<script src=\"favicon_env.js\"></script>\n"
+			. "<script src=\"portal_protect.js\"></script>\n"
+			. "</head>\n<body>";
+		return $prefix . $inner . "</body>\n</html>\n";
 	}
 }
 
@@ -113,16 +239,20 @@ if (!function_exists("rkrk_dle_process_save_learning_html")) {
 			(string) ($post["learning_html_doc_suffix_b64"] ?? ""),
 			(string) ($post["learning_html_fragment"] ?? "") === "1"
 		);
-		if ($learnFile !== "" && function_exists("rkrk_dga_rh_normalize_learn_inner_html")) {
+		if ($learnFile !== "" && function_exists("rkrk_dle_relativize_learn_image_urls")) {
 			$saveParts = rkrk_dle_learning_editor_parts($html);
-			$saveParts["body"] = rkrk_dga_rh_normalize_learn_inner_html((string) $saveParts["body"], $learnFile);
+			$body = (string) $saveParts["body"];
+			$body = preg_replace('#/data/assess/quiz/images/#i', "/data/assess/images/", $body);
+			$body = preg_replace('#(["\'(])quiz/images/#i', '$1images/', (string) $body);
+			$body = rkrk_dle_relativize_learn_image_urls((string) $body);
+			$saveParts["body"] = $body;
 			$html = rkrk_dle_learning_rebuild_from_post(
-				(string) $saveParts["body"],
+				$body,
 				(string) ($saveParts["prefix_b64"] ?? ""),
 				(string) ($saveParts["suffix_b64"] ?? ""),
 				!empty($saveParts["fragment"])
 			);
-			$learnBody = (string) $saveParts["body"];
+			$learnBody = $body;
 		}
 		$baselineHash = trim((string) ($post["learning_html_baseline_hash"] ?? ""));
 		$currentBodyHash = md5($learnBody);
@@ -142,6 +272,7 @@ if (!function_exists("rkrk_dle_process_save_learning_html")) {
 			exit;
 		}
 
+		$html = rkrk_dle_ensure_learning_document_shell($html, $learnFile);
 		$targetLearningPath = $quizLoc . $learnFile;
 		if (function_exists("rkrk_assess_fragenkatalog_before_overwrite")) {
 			rkrk_assess_fragenkatalog_before_overwrite($targetLearningPath, $quizLoc);

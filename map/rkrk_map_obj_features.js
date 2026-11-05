@@ -339,6 +339,9 @@
         margin-top: 0 !important;
         width: 100% !important;
       }
+      #drawingsPanelDetails .panel-details-content > button#newDrawingBtn {
+        grid-column: 1 / -1 !important;
+      }
       /* Beschriftete Punkte: Buttons nebeneinander */
       #objEmbeddedLabeledPoints {
         display: grid !important;
@@ -15400,8 +15403,54 @@ function stopLiveShareViewerPoll() {
   }
 
   function clearSessionDraft() {
+    if (sessionDraftTimer) {
+      clearTimeout(sessionDraftTimer);
+      sessionDraftTimer = null;
+    }
     try { localStorage.removeItem(SESSION_DRAFT_KEY); } catch (_) { /* noop */ }
   }
+
+  function drawingCanvasHasContent() {
+    if (Array.isArray(managedObjects) && managedObjects.length) return true;
+    if (Array.isArray(managedObjectGroups) && managedObjectGroups.length) return true;
+    if (Array.isArray(freehandDraftCoords) && freehandDraftCoords.length) return true;
+    if (Array.isArray(importedKmlLayers) && importedKmlLayers.some((e) => e && String(e.kmlText || "").trim())) return true;
+    return false;
+  }
+
+  function onNewDrawingStarted() {
+    try { resetFreehandInteractionState(); } catch (_) { /* noop */ }
+    try { setFreehandDragPanEnabled(true); } catch (_) { /* noop */ }
+    try { if (typeof deactivateGridRuler === "function") deactivateGridRuler(); } catch (_) { /* noop */ }
+    try { if (typeof clearGridRotationOverlay === "function") clearGridRotationOverlay(); } catch (_) { /* noop */ }
+    managedObjects = [];
+    managedObjectGroups = [];
+    managedListOrder = [];
+    managedObjectIdSeq = 1;
+    managedObjectGroupIdSeq = 1;
+    selectedManagedObjectId = null;
+    managedEditPaused = false;
+    editBaselineSnapshot = null;
+    try { objListSelectedIds.clear(); } catch (_) { /* noop */ }
+    try { syncManagedListOrder(); } catch (_) { /* noop */ }
+    try { renderManagedObjects(); } catch (_) { /* noop */ }
+    try { refreshManagedObjectList(); } catch (_) { /* noop */ }
+    try {
+      applyImportedKmlFromDrawing({ importedKml: { version: 1, seq: 0, layers: [] } }, { force: true });
+    } catch (_) { /* noop */ }
+    try { clearFixedHistory(); } catch (_) { /* noop */ }
+    try { markFixedHistoryCursor(); } catch (_) { /* noop */ }
+    try { refreshObjectActionButtons(); } catch (_) { /* noop */ }
+    try { managedStatusText("Neue Zeichnung (leer)."); } catch (_) { /* noop */ }
+    try { clearSessionDraft(); } catch (_) { /* noop */ }
+    try { scheduleLiveSharePush(); } catch (_) { /* noop */ }
+  }
+
+  try {
+    window.__rkrkClearSessionDraft = clearSessionDraft;
+    window.__rkrkDrawingCanvasHasContent = drawingCanvasHasContent;
+    window.__rkrkOnNewDrawingStarted = onNewDrawingStarted;
+  } catch (_) { /* noop */ }
 
   function readSessionDraft() {
     try {

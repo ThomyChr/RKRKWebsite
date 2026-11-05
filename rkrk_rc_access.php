@@ -31,6 +31,7 @@ echo '<style>
   .rc-brand span { color:#5c6b7a; font-size:13px; }
 </style>';
 echo '<a class="rc-brand" href="rkrk.php"><img src="' . htmlspecialchars($logoSrc, ENT_QUOTES, 'UTF-8') . '" alt="RKRK"><div><strong>RKRK</strong><span>Rehkitzrettung Knonaueramt</span></div></a>';
+echo '<script src="fe/rkrk_fullscreen.js?v=20261026fs2"></script>';
 GrantAccess();
 
 if (empty($LoggedOn)) {

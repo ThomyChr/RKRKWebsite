@@ -17,6 +17,9 @@ $folderoffset = "../";
 include_once $folderoffset . "scripts/rkrk_inputforms.php";
 include_once $folderoffset . "scripts/rkrk_csvfiles.php";
 include_once __DIR__ . "/rkrk_assess_common.php";
+if (function_exists("opcache_invalidate")) {
+	opcache_invalidate(__DIR__ . "/rkrk_digitalassess_learning_shared.inc.php", true);
+}
 include_once __DIR__ . "/rkrk_digitalassess_learning_shared.inc.php";
 include_once __DIR__ . "/rkrk_digitalassess_read_render.php";
 
@@ -238,21 +241,8 @@ if (function_exists("rkrk_dga_rh_web_assess_root")) {
 } elseif (function_exists("rkrk_assess_quiz_data_assess_web_prefix")) {
 	$daLearnAssessRoot = rkrk_assess_quiz_data_assess_web_prefix();
 }
-if ((string) $daLearnEditor["body"] !== "") {
-	$bodyNorm = (string) $daLearnEditor["body"];
-	if ($daLearnLernRel !== "" && function_exists("rkrk_dga_rh_normalize_learn_inner_html")) {
-		$daLearnDrive = function_exists("rkrk_assess_effective_drive_location")
-			? rkrk_assess_effective_drive_location($selectedAssessment, array())
-			: (string) ($selectedAssessment["DriveLocation"] ?? "");
-		$bodyNorm = rkrk_dga_rh_normalize_learn_inner_html($bodyNorm, $daLearnLernRel, $daLearnDrive);
-	} else {
-		$bodyNorm = preg_replace('#/data/assess/quiz/images/#i', "/data/assess/images/", $bodyNorm);
-		$bodyNorm = preg_replace('#(["\'(])quiz/images/#i', '$1images/', $bodyNorm);
-		if ($daLearnBaseHref !== "" && function_exists("rkrk_dga_rh_resolve_relative_urls_in_fragment")) {
-			$bodyNorm = rkrk_dga_rh_resolve_relative_urls_in_fragment($bodyNorm, $daLearnBaseHref);
-		}
-	}
-	$daLearnEditor["body"] = $bodyNorm;
+if ((string) $daLearnEditor["body"] !== "" && function_exists("rkrk_dle_relativize_learn_image_urls")) {
+	$daLearnEditor["body"] = rkrk_dle_relativize_learn_image_urls((string) $daLearnEditor["body"]);
 }
 $daLearnBodyHash = md5((string) $daLearnEditor["body"]);
 $daLearnContentCss = array();
@@ -1087,10 +1077,16 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 			license_key: 'gpl',
 			promotion: false,
 			branding: false,
+			entity_encoding: 'raw',
 			convert_urls: false,
-			relative_urls: true,
+			relative_urls: false,
 			remove_script_host: false,
+			urlconverter_callback: function (url) { return url; },
 			document_base_url: tinymceBase,
+			protect: [
+				/<script[\s\S]*?<\/script>/gi,
+				/<style[\s\S]*?<\/style>/gi
+			],
 			plugins: 'lists link image table code anchor charmap searchreplace visualblocks',
 			toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image table | removeformat | code',
 			content_css: contentCss.length ? contentCss : false,

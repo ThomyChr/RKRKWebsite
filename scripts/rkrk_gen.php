@@ -75,6 +75,14 @@ function rkrk_expert_catalogs_visible(): bool {
 	return rkrk_request_flag('EXPERT');
 }
 
+function rkrk_catalog_requires_debug(string $key): bool {
+	return $key === 'D';
+}
+
+function rkrk_debug_catalogs_visible(): bool {
+	return rkrk_request_flag('DEBUG');
+}
+
 Function SetMissionLocation() {
 	global 	//$DebugWork, 
 			$SessNme_MissionDBSetting,
@@ -125,6 +133,9 @@ Function SetMissionLocation() {
 		$RKRKMissionSelected = "3T";
 	}
 	if (rkrk_catalog_requires_expert($RKRKMissionSelected) && !rkrk_expert_catalogs_visible()) {
+		$RKRKMissionSelected = "3T";
+	}
+	if (rkrk_catalog_requires_debug($RKRKMissionSelected) && !rkrk_debug_catalogs_visible()) {
 		$RKRKMissionSelected = "3T";
 	}
 
@@ -2977,7 +2988,7 @@ function rkrk_stats_read_map($filename, $logArt)
 		return $map;
 	}
 	$header = null;
-	while (($cols = fgetcsv($fh, 1048576, ';')) !== false) {
+	while (($cols = fgetcsv($fh, 1048576, ';', '"', '\\')) !== false) {
 		if ($cols === array(null) || $cols === false) {
 			continue;
 		}
@@ -3705,7 +3716,21 @@ if (!function_exists('rkrk_check_release_or_user_access')) {
 		if ($userToCheck === '') {
 			return false;
 		}
-		return in_array($userToCheck, $userItems, true);
+		if (function_exists('MenuEntryUserInCsv')) {
+			return MenuEntryUserInCsv($userToCheck, $allowedUsersCsv);
+		}
+		$checkNorm = function_exists('MenuEntryNormalizeUserToken')
+			? MenuEntryNormalizeUserToken($userToCheck)
+			: strtolower(trim(preg_replace('/\s+/', ' ', $userToCheck)));
+		foreach ($userItems as $item) {
+			$itemNorm = function_exists('MenuEntryNormalizeUserToken')
+				? MenuEntryNormalizeUserToken($item)
+				: strtolower(trim(preg_replace('/\s+/', ' ', strval($item))));
+			if ($itemNorm !== '' && $itemNorm === $checkNorm) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -3809,7 +3834,7 @@ function rkrk_apply_m3t_catalog_paths(): void {
 	$xmlMissionLocation = $RKRKLocalLoactionMissionFiles . $xmlFileDirectory;
 }
 
-function rkrk_file_convert_download_href($rel) {
+function rkrk_file_convert_download_href($rel, $day = '') {
 	if (!rkrk_use_m3t_catalog_for_convert()) {
 		return '';
 	}
@@ -3817,7 +3842,12 @@ function rkrk_file_convert_download_href($rel) {
 	if ($rel === '' || strpos($rel, '..') !== false || !preg_match('/\.(kmz|json)$/i', $rel)) {
 		return '';
 	}
-	return 'rkrk_kmz_convert_dl.php?file=' . rawurlencode($rel) . '&from=3T&to=4TD';
+	$href = 'rkrk_kmz_convert_dl.php?file=' . rawurlencode($rel) . '&from=3T&to=4TD';
+	$day = trim((string)$day);
+	if ($day !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) && preg_match('/\.json$/i', $rel)) {
+		$href .= '&day=' . rawurlencode($day);
+	}
+	return $href;
 }
 
 function rkrk_kmz_convert_download_href($rel) {

@@ -1517,7 +1517,7 @@ function balance_track_rows_to_polygon(
     return $seedRows;
 }
 
-function build_lawnmower_points_for_rows(array $rotPoly, array $rows, float $angleDeg, float $endpointInset, bool $rowsForward = true): array
+function build_lawnmower_points_for_rows(array $rotPoly, array $rows, float $angleDeg, float $endpointInset, bool $rowsForward = true, bool $phaseFlip = false, array $holePolys = []): array
 {
     $points = [];
     $nRows = count($rows);
@@ -1530,6 +1530,15 @@ function build_lawnmower_points_for_rows(array $rotPoly, array $rows, float $ang
     foreach ($rowIndices as $rowIdx) {
         $rowY = floatval($rows[$rowIdx]);
         $segments = horizontal_intersections($rotPoly, $rowY);
+        if ($holePolys !== []) {
+            $cuts = [];
+            foreach ($holePolys as $hole) {
+                foreach (horizontal_intersections($hole, $rowY) as $cut) {
+                    $cuts[] = $cut;
+                }
+            }
+            $segments = subtract_x_segments($segments, $cuts);
+        }
         foreach ($segments as $seg) {
             $sx0 = floatval($seg[0]);
             $sx1 = floatval($seg[1]);
@@ -1549,7 +1558,11 @@ function build_lawnmower_points_for_rows(array $rotPoly, array $rows, float $ang
             }
             $a = [$x0, $rowY];
             $b = [$x1, $rowY];
-            if ($rowIdx % 2 === 1) {
+            $flip = ($rowIdx % 2 === 1);
+            if ($phaseFlip) {
+                $flip = !$flip;
+            }
+            if ($flip) {
                 $tmp = $a;
                 $a = $b;
                 $b = $tmp;
@@ -1659,6 +1672,536 @@ function smooth_polyline_with_angle_step_xy(array $points, float $headingStepDeg
     return $out;
 }
 
+function round_half_meter(float $meters): float
+{
+    if (!is_finite($meters)) {
+        return $meters;
+    }
+    return round($meters * 2.0) / 2.0;
+}
+
+function bahn_angle_k(float $heightM, float $factor = 0.15): float
+{
+    if (!is_finite($factor) || $factor <= 0.0) {
+        $factor = 0.15;
+    }
+    if ($factor > 1.0) {
+        $factor /= 100.0;
+    }
+    $factor = max(0.0, min(0.95, $factor));
+    if ($heightM > 50.0) {
+        $factor /= (1.0 + (($heightM - 50.0) / 65.0));
+    }
+    return $factor;
+}
+
+function bahn_search_width_m(float $heightM, float $hfovDeg, float $factor = 0.15): float
+{
+    if ($heightM <= 0.0 || $hfovDeg <= 1.0) {
+        return 0.0;
+    }
+    $half = $hfovDeg / 2.0;
+    $ua = $hfovDeg * bahn_angle_k($heightM, $factor);
+    if ($half <= $ua) {
+        return 0.0;
+    }
+    return round_half_meter(2.0 * $heightM * tan(deg2rad($half - $ua)));
+}
+
+function subtract_x_segments(array $segs, array $cuts): array
+{
+    foreach ($cuts as $cut) {
+        if (!is_array($cut) || count($cut) < 2) {
+            continue;
+        }
+        $c0 = min(floatval($cut[0]), floatval($cut[1]));
+        $c1 = max(floatval($cut[0]), floatval($cut[1]));
+        if ($c1 - $c0 < 0.2) {
+            continue;
+        }
+        $next = [];
+        foreach ($segs as $seg) {
+            $a = min(floatval($seg[0]), floatval($seg[1]));
+            $b = max(floatval($seg[0]), floatval($seg[1]));
+            if ($c1 <= $a + 0.05 || $c0 >= $b - 0.05) {
+                $next[] = [$a, $b];
+                continue;
+            }
+            if ($c0 > $a + 0.3) {
+                $next[] = [$a, $c0];
+            }
+            if ($c1 < $b - 0.3) {
+                $next[] = [$c1, $b];
+            }
+        }
+        $segs = $next;
+    }
+    return $segs;
+}
+
+function ring_offset_xy(array $ring, float $dist): array
+{
+    $pts = [];
+    foreach ($ring as $p) {
+        if (is_array($p) && count($p) >= 2) {
+            $pts[] = [floatval($p[0]), floatval($p[1])];
+        }
+    }
+    $n = count($pts);
+    if ($n >= 2 && hypot($pts[0][0] - $pts[$n - 1][0], $pts[0][1] - $pts[$n - 1][1]) < 0.05) {
+        array_pop($pts);
+        $n--;
+    }
+    if ($n < 3) {
+        return $pts;
+    }
+    if ($dist <= 0.0) {
+        $pts[] = $pts[0];
+        return $pts;
+    }
+    $cx = 0.0;
+    $cy = 0.0;
+    foreach ($pts as $p) {
+        $cx += $p[0];
+        $cy += $p[1];
+    }
+    $cx /= $n;
+    $cy /= $n;
+    $out = [];
+    for ($i = 0; $i < $n; $i++) {
+        $cur = $pts[$i];
+        $nx = $cur[0] - $cx;
+        $ny = $cur[1] - $cy;
+        $nn = normalize_vec2([$nx, $ny]);
+        if (!$nn) {
+            $out[] = $cur;
+            continue;
+        }
+        $out[] = [$cur[0] + $nn[0] * $dist, $cur[1] + $nn[1] * $dist];
+    }
+    $out[] = $out[0];
+    return $out;
+}
+
+function xy_segments_cross(array $a, array $b, array $c, array $d): bool
+{
+    $cross = static function (array $p, array $q, array $r): float {
+        return (floatval($q[0]) - floatval($p[0])) * (floatval($r[1]) - floatval($p[1]))
+            - (floatval($q[1]) - floatval($p[1])) * (floatval($r[0]) - floatval($p[0]));
+    };
+    $o1 = $cross($a, $b, $c);
+    $o2 = $cross($a, $b, $d);
+    $o3 = $cross($c, $d, $a);
+    $o4 = $cross($c, $d, $b);
+    if (abs($o1) < 1e-6 || abs($o2) < 1e-6 || abs($o3) < 1e-6 || abs($o4) < 1e-6) {
+        return false;
+    }
+    return ($o1 > 0.0) !== ($o2 > 0.0) && ($o3 > 0.0) !== ($o4 > 0.0);
+}
+
+function path_has_crossing(array $pts): bool
+{
+    $n = count($pts);
+    for ($i = 0; $i + 1 < $n; $i++) {
+        for ($j = $i + 2; $j + 1 < $n; $j++) {
+                if (xy_segments_cross($pts[$i], $pts[$i + 1], $pts[$j], $pts[$j + 1])) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function segment_hits_ring(array $a, array $b, array $ring): bool
+{
+    $n = count($ring);
+    if ($n < 2) {
+        return false;
+    }
+    $limit = ($ring[0] === $ring[$n - 1]) ? $n - 1 : $n;
+    for ($i = 0; $i < $limit; $i++) {
+        $j = ($i + 1) % $limit;
+        if (xy_segments_cross($a, $b, $ring[$i], $ring[$j])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function ring_hits_along(array $a, array $b, array $ring): array
+{
+    $n = count($ring);
+    if ($n < 2) {
+        return [];
+    }
+    $limit = (hypot(floatval($ring[0][0]) - floatval($ring[$n - 1][0]), floatval($ring[0][1]) - floatval($ring[$n - 1][1])) < 0.05) ? $n - 1 : $n;
+    $dx = floatval($b[0]) - floatval($a[0]);
+    $dy = floatval($b[1]) - floatval($a[1]);
+    $len2 = $dx * $dx + $dy * $dy;
+    if ($len2 < 1e-9) {
+        return [];
+    }
+    $hits = [];
+    for ($i = 0; $i < $limit; $i++) {
+        $c = $ring[$i];
+        $d = $ring[($i + 1) % $limit];
+        if (!xy_segments_cross($a, $b, $c, $d)) {
+            continue;
+        }
+        $hit = intersect_lines_xy($a, [$dx, $dy], $c, [floatval($d[0]) - floatval($c[0]), floatval($d[1]) - floatval($c[1])]);
+        if (!$hit) {
+            continue;
+        }
+        $t = (($hit[0] - floatval($a[0])) * $dx + ($hit[1] - floatval($a[1])) * $dy) / $len2;
+        if ($t < -0.02 || $t > 1.02) {
+            continue;
+        }
+        $hits[] = ['t' => $t, 'p' => $hit];
+    }
+    usort($hits, static function ($u, $v) {
+        return $u['t'] <=> $v['t'];
+    });
+    $out = [];
+    foreach ($hits as $hit) {
+        if ($out !== [] && distance_m($out[count($out) - 1], $hit['p']) < 0.4) {
+            continue;
+        }
+        $out[] = $hit['p'];
+    }
+    return $out;
+}
+
+function first_ring_hit_xy(array $a, array $b, array $ring): ?array
+{
+    $n = count($ring);
+    if ($n < 2) {
+        return null;
+    }
+    $limit = ($ring[0] === $ring[$n - 1]) ? $n - 1 : $n;
+    $best = null;
+    $bestT = INF;
+    $dx = floatval($b[0]) - floatval($a[0]);
+    $dy = floatval($b[1]) - floatval($a[1]);
+    $len2 = $dx * $dx + $dy * $dy;
+    if ($len2 < 1e-9) {
+        return null;
+    }
+    for ($i = 0; $i < $limit; $i++) {
+        $c = $ring[$i];
+        $d = $ring[($i + 1) % $limit];
+        if (!xy_segments_cross($a, $b, $c, $d) && !xy_segments_cross($c, $d, $a, $b)) {
+            continue;
+        }
+        $hit = intersect_lines_xy($a, [$dx, $dy], $c, [floatval($d[0]) - floatval($c[0]), floatval($d[1]) - floatval($c[1])]);
+        if (!$hit) {
+            continue;
+        }
+        $t = (($hit[0] - floatval($a[0])) * $dx + ($hit[1] - floatval($a[1])) * $dy) / $len2;
+        if ($t < -0.02 || $t > 1.02) {
+            continue;
+        }
+        if ($t < $bestT) {
+            $bestT = $t;
+            $best = $hit;
+        }
+    }
+    return $best;
+}
+
+function detour_between(array $a, array $b, array $rings): array
+{
+    foreach ($rings as $ring) {
+        if (!segment_hits_ring($a, $b, $ring)) {
+            continue;
+        }
+        $n = count($ring);
+        $limit = ($n >= 2 && $ring[0] === $ring[$n - 1]) ? $n - 1 : $n;
+        if ($limit < 3) {
+            continue;
+        }
+        $best = null;
+        $bestD = INF;
+        for ($i = 0; $i < $limit; $i++) {
+            $p = $ring[$i];
+            $d = distance_m($a, $p) + distance_m($p, $b);
+            if (segment_hits_ring($a, $p, $ring) || segment_hits_ring($p, $b, $ring)) {
+                continue;
+            }
+            if ($d < $bestD) {
+                $bestD = $d;
+                $best = $p;
+            }
+        }
+        if ($best) {
+            return [$best, $b];
+        }
+    }
+    return [$b];
+}
+
+function link_around_holes(array $start, array $points, array $rings): array
+{
+    if ($points === []) {
+        return ['points' => [], 'crosses' => false];
+    }
+    $out = [];
+    $prev = $start;
+    $crosses = false;
+    foreach ($points as $p) {
+        $hits = false;
+        foreach ($rings as $ring) {
+            if (segment_hits_ring($prev, $p, $ring)) {
+                $hits = true;
+                break;
+            }
+        }
+        if ($hits) {
+            $crosses = true;
+            $via = detour_between($prev, $p, $rings);
+            foreach ($via as $q) {
+                if ($out === [] || distance_m($out[count($out) - 1], $q) > 0.4) {
+                    $out[] = $q;
+                }
+            }
+        } elseif ($out === [] || distance_m($out[count($out) - 1], $p) > 0.4) {
+            $out[] = $p;
+        }
+        $prev = $p;
+    }
+    return ['points' => $out, 'crosses' => $crosses || path_has_crossing($out)];
+}
+
+function polyline_length_from(array $start, array $pts): float
+{
+    $len = 0.0;
+    $prev = $start;
+    foreach ($pts as $p) {
+        $len += distance_m($prev, $p);
+        $prev = $p;
+    }
+    return $len;
+}
+
+function compass_from_xy(array $from, array $to): string
+{
+    $dx = floatval($to[0]) - floatval($from[0]);
+    $dy = floatval($to[1]) - floatval($from[1]);
+    $deg = rad2deg(atan2($dx, $dy));
+    if ($deg < 0.0) {
+        $deg += 360.0;
+    }
+    $names = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
+    return $names[((int)round($deg / 45.0)) % 8];
+}
+
+function obstacle_world_rings(array $obstacles, float $lon0, float $lat0, float $bufferM, string $mode): array
+{
+    $out = [];
+    foreach ($obstacles as $ob) {
+        if (!is_array($ob)) {
+            continue;
+        }
+        $obMode = strtolower(trim((string)($ob['mode'] ?? 'avoid')));
+        if ($obMode === '') {
+            $obMode = 'avoid';
+        }
+        if ($obMode !== $mode) {
+            continue;
+        }
+        $ring = [];
+        $raw = is_array($ob['ring'] ?? null) ? $ob['ring'] : [];
+        foreach ($raw as $p) {
+            if (!is_array($p) || count($p) < 2) {
+                continue;
+            }
+            $lon = floatval($p[0]);
+            $lat = floatval($p[1]);
+            if (!is_finite($lon) || !is_finite($lat)) {
+                continue;
+            }
+            $ring[] = lonlat_to_xy([$lon, $lat], $lon0, $lat0);
+        }
+        if (count($ring) < 3) {
+            continue;
+        }
+        $dist = (isset($ob['buffer_m']) && is_numeric($ob['buffer_m'])) ? max(0.0, floatval($ob['buffer_m'])) : $bufferM;
+        $off = ring_offset_xy($ring, $dist);
+        if (count($off) < 4) {
+            continue;
+        }
+        $height = (isset($ob['height_m']) && is_numeric($ob['height_m'])) ? floatval($ob['height_m']) : 0.0;
+        $climb = (isset($ob['climb_mps']) && is_numeric($ob['climb_mps'])) ? floatval($ob['climb_mps']) : 3.0;
+        $out[] = ['xy' => $off, 'height' => $height, 'climb' => max(0.5, $climb)];
+    }
+    return $out;
+}
+
+function rotate_rings(array $rings, float $angleDeg): array
+{
+    $out = [];
+    foreach ($rings as $ring) {
+        $xy = $ring['xy'] ?? $ring;
+        $rot = [];
+        foreach ($xy as $p) {
+            $rot[] = rotate_xy($p, -$angleDeg);
+        }
+        if ($rot !== [] && $rot[0] !== $rot[count($rot) - 1]) {
+            $rot[] = $rot[0];
+        }
+        $out[] = $rot;
+    }
+    return $out;
+}
+
+function lawnmower_lane_chords(array $rotPoly, array $rows, float $angleDeg, float $endpointInset, array $holePolys): array
+{
+    $chords = [];
+    foreach ($rows as $rowY) {
+        $segments = horizontal_intersections($rotPoly, floatval($rowY));
+        $cuts = [];
+        foreach ($holePolys as $hole) {
+            foreach (horizontal_intersections($hole, floatval($rowY)) as $cut) {
+                $cuts[] = $cut;
+            }
+        }
+        $segments = subtract_x_segments($segments, $cuts);
+        foreach ($segments as $seg) {
+            $sx0 = min(floatval($seg[0]), floatval($seg[1]));
+            $sx1 = max(floatval($seg[0]), floatval($seg[1]));
+            $localInset = min($endpointInset, max(0.0, 0.5 * ($sx1 - $sx0) - 0.25));
+            $x0 = $sx0 + $localInset;
+            $x1 = $sx1 - $localInset;
+            if ($x1 <= $x0) {
+                continue;
+            }
+            $chords[] = [rotate_xy([$x0, floatval($rowY)], $angleDeg), rotate_xy([$x1, floatval($rowY)], $angleDeg)];
+        }
+    }
+    return $chords;
+}
+
+function greedy_chord_order(array $chords, int $chordIndex, int $endIndex, array $rings): array
+{
+    $n = count($chords);
+    if ($n < 1 || !isset($chords[$chordIndex])) {
+        return [];
+    }
+    $used = [$chordIndex => true];
+    $a = $chords[$chordIndex][$endIndex];
+    $b = $chords[$chordIndex][1 - $endIndex];
+    $points = [$a, $b];
+    $cur = $b;
+    while (count($used) < $n) {
+        $bestI = -1;
+        $bestEnd = 0;
+        $bestD = INF;
+        $bestHit = true;
+        foreach ($chords as $i => $ch) {
+            if (isset($used[$i])) {
+                continue;
+            }
+            foreach ([0, 1] as $end) {
+                $d = distance_m($cur, $ch[$end]);
+                $hit = false;
+                foreach ($rings as $ring) {
+                    if (segment_hits_ring($cur, $ch[$end], $ring)) {
+                        $hit = true;
+                        break;
+                    }
+                }
+                $score = $d + ($hit ? 100000.0 : 0.0);
+                if ($score < $bestD) {
+                    $bestD = $score;
+                    $bestI = $i;
+                    $bestEnd = $end;
+                    $bestHit = $hit;
+                }
+            }
+        }
+        if ($bestI < 0) {
+            break;
+        }
+        $used[$bestI] = true;
+        $near = $chords[$bestI][$bestEnd];
+        $far = $chords[$bestI][1 - $bestEnd];
+        if ($bestHit) {
+            foreach (detour_between($cur, $near, $rings) as $q) {
+                $points[] = $q;
+            }
+        } else {
+            $points[] = $near;
+        }
+        $points[] = $far;
+        $cur = $far;
+    }
+    return $points;
+}
+
+function apply_overfly_heights(array $path, array $zones, float $lon0, float $lat0, float $flightAlt, float $speed): array
+{
+    if ($path === [] || $zones === []) {
+        return $path;
+    }
+    $speed = max(1.0, $speed);
+    foreach ($zones as $zone) {
+        $ring = $zone['xy'] ?? [];
+        if (count($ring) < 4) {
+            continue;
+        }
+        $high = floatval($zone['height'] ?? $flightAlt);
+        if ($high < $flightAlt + 0.5) {
+            $high = $flightAlt + 30.0;
+        }
+        $climb = max(0.5, floatval($zone['climb'] ?? 3.0));
+        $lead = abs($high - $flightAlt) / $climb * $speed;
+        $next = [];
+        $n = count($path);
+        $xyOf = static function (array $p) use ($lon0, $lat0): array {
+            return lonlat_to_xy([floatval($p[0]), floatval($p[1])], $lon0, $lat0);
+        };
+        $pushLl = static function (array $xy, float $z) use (&$next, $lon0, $lat0): void {
+            $ll = xy_to_lonlat($xy, $lon0, $lat0);
+            $next[] = [$ll[0], $ll[1], $z];
+        };
+        for ($i = 0; $i < $n; $i++) {
+            $xy = $xyOf($path[$i]);
+            $inside = point_in_polygon_xy($xy, $ring);
+            if ($i > 0) {
+                $prevXy = $xyOf($path[$i - 1]);
+                $was = point_in_polygon_xy($prevXy, $ring);
+                $hits = ring_hits_along($prevXy, $xy, $ring);
+                if (count($hits) >= 2 && !$was && !$inside) {
+                    $dir = normalize_vec2([floatval($xy[0]) - floatval($prevXy[0]), floatval($xy[1]) - floatval($prevXy[1])]);
+                    if ($dir) {
+                        $enter = $hits[0];
+                        $exit = $hits[count($hits) - 1];
+                        $pushLl([floatval($enter[0]) - $dir[0] * $lead, floatval($enter[1]) - $dir[1] * $lead], $flightAlt);
+                        $pushLl($enter, $high);
+                        $pushLl($exit, $high);
+                        $pushLl([floatval($exit[0]) + $dir[0] * $lead, floatval($exit[1]) + $dir[1] * $lead], $flightAlt);
+                    }
+                } elseif ($was !== $inside && $hits !== []) {
+                    $hit = $was ? $hits[count($hits) - 1] : $hits[0];
+                    $dir = normalize_vec2([floatval($xy[0]) - floatval($prevXy[0]), floatval($xy[1]) - floatval($prevXy[1])]);
+                    if ($dir) {
+                        if (!$was && $inside) {
+                            $pushLl([floatval($hit[0]) - $dir[0] * $lead, floatval($hit[1]) - $dir[1] * $lead], $flightAlt);
+                            $pushLl($hit, $high);
+                        } else {
+                            $pushLl($hit, $high);
+                            $pushLl([floatval($hit[0]) + $dir[0] * $lead, floatval($hit[1]) + $dir[1] * $lead], $flightAlt);
+                        }
+                    }
+                }
+            }
+            $z = $inside ? $high : floatval($path[$i][2] ?? $flightAlt);
+            $next[] = [floatval($path[$i][0]), floatval($path[$i][1]), $z];
+        }
+        $path = $next;
+    }
+    return $path;
+}
+
 function plan_lawnmower(
     array $polygon_lonlat,
     array $start_lonlat,
@@ -1668,7 +2211,11 @@ function plan_lawnmower(
     float $edge_factor,
     string $preferred_direction = 'auto',
     ?float $fixed_angle_deg = null,
-    float $curveWaypointAngleStepDeg = 20.0
+    float $curveWaypointAngleStepDeg = 20.0,
+    float $vfov_deg = 40.0,
+    array $obstacles = [],
+    string $entryId = 'auto',
+    float $speed_m_s = 4.5
 ): array
 {
     if (count($polygon_lonlat) < 3) {
@@ -1697,9 +2244,23 @@ function plan_lawnmower(
     }
     $start_xy = lonlat_to_xy($start_lonlat, $lon0, $lat0);
 
-    $W = 2.0 * $agl_m * tan(deg2rad($hfov_deg / 2.0));
-    $S = max(2.0, (1.0 - $overlap) * $W);
-    $edge_margin = $edge_factor * $S;
+    $Wraw = 2.0 * $agl_m * tan(deg2rad($hfov_deg / 2.0));
+    $W = round_half_meter($Wraw);
+    $searchM = bahn_search_width_m($agl_m, $hfov_deg);
+    $bahnM = round_half_meter((1.0 - $overlap) * $Wraw);
+    // Bahnabstand B folgt der Überlappung, darf aber nicht breiter sein als die
+    // Suchbreite S. Sonst bleibt zwischen den Bahnen eine rote Lücke.
+    $spacing = $bahnM;
+    if ($searchM > 2.0) {
+        $spacing = min($bahnM, $searchM);
+    }
+    $S = max(2.0, $spacing);
+    $searchHalf = $searchM > 2.0 ? ($searchM * 0.5) : ($S * 0.5);
+    // R-003: d = edge_factor * Bahnbreite, seitlich und an den Enden.
+    // Höchstens die halbe Suchbreite, damit das Band den Feldrand noch deckt.
+    $edge_margin = min(max(0.0, $edge_factor) * $S, $searchHalf);
+    $avoidRings = obstacle_world_rings($obstacles, $lon0, $lat0, $edge_margin, 'avoid');
+    $overRings = obstacle_world_rings($obstacles, $lon0, $lat0, $edge_margin, 'overfly');
 
     // Narrow-field rule: if width < 2*S, force lanes parallel to a real field edge (prefer longest edge).
     $majorAxisDeg = estimate_polygon_main_axis_deg($poly_xy);
@@ -1758,6 +2319,7 @@ function plan_lawnmower(
             $inset = max(0.05 * $spanY, min(0.25 * $spanY, 1.0));
             $rows = [$miny + $inset, $maxy - $inset];
         }
+        // Randfaktor: die Bahn stoppt im Abstand d vor dem Feldrand. Die Suchbreite deckt den Rest.
         $endpointInset = $edge_margin;
         if (!$ultraNarrow && !($isNarrowField && count($rows) < 2)) {
             $rows = balance_track_rows_to_polygon(
@@ -1770,17 +2332,20 @@ function plan_lawnmower(
                 2.0 * $endpointInset + 1.0
             );
         }
+        $holesRot = rotate_rings($avoidRings, $angle);
         // Try both stripe orders so the leg from the configured start to the first in-field
         // waypoint is as short as practical (same coverage, less deadhead / edge overlap).
         $bestPointsThisAngle = [];
         $bestScoreThisAngle = INF;
+        $bestRowsThisAngle = $rows;
         foreach ([true, false] as $rowsForward) {
-            $points = build_lawnmower_points_for_rows($rot_poly, $rows, $angle, $endpointInset, $rowsForward);
+            $usedRows = $rows;
+            $points = build_lawnmower_points_for_rows($rot_poly, $rows, $angle, $endpointInset, $rowsForward, false, $holesRot);
 
             // For narrow fields, enforce at least two lanes if geometry allows.
             if ($isNarrowField && count($points) < 4 && $spanY > 1e-6) {
-                $fallbackRows = [$miny + 0.2 * $spanY, $miny + 0.8 * $spanY];
-                $points = build_lawnmower_points_for_rows($rot_poly, $fallbackRows, $angle, $endpointInset, $rowsForward);
+                $usedRows = [$miny + 0.2 * $spanY, $miny + 0.8 * $spanY];
+                $points = build_lawnmower_points_for_rows($rot_poly, $usedRows, $angle, $endpointInset, $rowsForward, false, $holesRot);
             }
 
             if (empty($points)) {
@@ -1800,6 +2365,7 @@ function plan_lawnmower(
             if ($score < $bestScoreThisAngle) {
                 $bestScoreThisAngle = $score;
                 $bestPointsThisAngle = $points;
+                $bestRowsThisAngle = $usedRows;
             }
         }
 
@@ -1816,33 +2382,191 @@ function plan_lawnmower(
                 'angle' => $angle,
                 'W' => $W,
                 'S' => $S,
+                'search_m' => $searchM,
+                'bahn_m' => $bahnM,
                 'edge_margin' => $edge_margin,
-                'endpoint_inset' => $endpointInset
+                'endpoint_inset' => $endpointInset,
+                'rows' => $bestRowsThisAngle,
+                'rot_poly' => $rot_poly,
             ];
         }
     }
 
-    $out = [];
-    if (!empty($best['points']) && count($poly_xy) >= 4) {
+    $entryPack = lawnmower_score_entries(
+        $best,
+        $start_xy,
+        $avoidRings,
+        $entryId,
+        $poly_xy
+    );
+    $chosen = $entryPack['points'];
+    if ($chosen !== [] && count($poly_xy) >= 4) {
         $allow = floatval($best['S'] ?? $S);
-        // Eck-Sporne (Fuss, Spitze, Fuss) nicht in den Flugweg. Eine Bahnecke bleibt ein Wegpunkt.
-        $best['points'] = clip_polyline_outside_overhang($best['points'], $poly_xy, $allow);
+        $chosen = clip_polyline_outside_overhang($chosen, $poly_xy, $allow);
     }
-    foreach ($best['points'] as $p) {
+    $out = [];
+    foreach ($chosen as $p) {
         $ll = xy_to_lonlat($p, $lon0, $lat0);
         $out[] = [$ll[0], $ll[1], $agl_m];
+    }
+    if ($overRings !== []) {
+        foreach ($overRings as &$zone) {
+            if (floatval($zone['height'] ?? 0.0) < $agl_m + 0.5) {
+                $zone['height'] = $agl_m + 30.0;
+            }
+        }
+        unset($zone);
+        $out = apply_overfly_heights($out, $overRings, $lon0, $lat0, $agl_m, $speed_m_s);
     }
     return [
         'path' => $out,
         'angle' => $best['angle'] ?? 0.0,
         'W' => $best['W'] ?? 0.0,
         'S' => $best['S'] ?? 0.0,
+        'search_m' => $best['search_m'] ?? ($searchM ?? 0.0),
+        'bahn_m' => $best['bahn_m'] ?? 0.0,
         'narrow_field' => $isNarrowField,
         'field_width_m' => $fieldWidthAlongMinor,
         'narrow_field_threshold_m' => 2.0 * $S,
         'edge_margin' => $best['edge_margin'] ?? 0.0,
-        'endpoint_inset' => $best['endpoint_inset'] ?? 0.0
-        ,'curve_waypoint_angle_step_deg' => max(1.0, $curveWaypointAngleStepDeg)
+        'endpoint_inset' => $best['endpoint_inset'] ?? 0.0,
+        'curve_waypoint_angle_step_deg' => max(1.0, $curveWaypointAngleStepDeg),
+        'entries' => $entryPack['entries'],
+        'entry_id' => $entryPack['entry_id'],
+    ];
+}
+
+function lawnmower_score_entries(array $best, array $startXy, array $avoidRings, string $entryId, array $polyXy): array
+{
+    $empty = ['points' => $best['points'] ?? [], 'entries' => [], 'entry_id' => 'auto'];
+    $rows = $best['rows'] ?? [];
+    $rot = $best['rot_poly'] ?? [];
+    $angle = floatval($best['angle'] ?? 0.0);
+    $inset = floatval($best['endpoint_inset'] ?? 0.0);
+    if ($rows === [] || $rot === []) {
+        return $empty;
+    }
+    $holesRot = rotate_rings($avoidRings, $angle);
+    $holeXy = [];
+    foreach ($avoidRings as $ring) {
+        $holeXy[] = $ring['xy'];
+    }
+    $variants = [];
+    $n = 0;
+    foreach ([false, true] as $phase) {
+        foreach ([true, false] as $forward) {
+            $pts = build_lawnmower_points_for_rows($rot, $rows, $angle, $inset, $forward, $phase, $holesRot);
+            if (count($pts) < 2) {
+                continue;
+            }
+            $linked = link_around_holes($startXy, $pts, $holeXy);
+            if (count($linked['points']) < 2) {
+                continue;
+            }
+            $variants[] = [
+                'id' => 'c' . $n,
+                'points' => $linked['points'],
+                'crosses' => !empty($linked['crosses']),
+                'length' => polyline_length_from($startXy, $linked['points']),
+                'first' => $linked['points'][0],
+            ];
+            $n++;
+        }
+    }
+    if ($holeXy !== []) {
+        $chords = lawnmower_lane_chords($rot, $rows, $angle, $inset, $holesRot);
+        $seeds = [];
+        foreach ($chords as $i => $ch) {
+            foreach ([0, 1] as $end) {
+                $seeds[] = [$i, $end, distance_m($startXy, $ch[$end])];
+            }
+        }
+        usort($seeds, static function ($a, $b) {
+            return $a[2] <=> $b[2];
+        });
+        $usedSeed = [];
+        $added = 0;
+        foreach ($seeds as $seed) {
+            if ($added >= 4) {
+                break;
+            }
+            $key = $seed[0] . ':' . $seed[1];
+            if (isset($usedSeed[$key])) {
+                continue;
+            }
+            $usedSeed[$key] = true;
+            $pts = greedy_chord_order($chords, $seed[0], $seed[1], $holeXy);
+            if (count($pts) < 2) {
+                continue;
+            }
+            $linked = link_around_holes($startXy, $pts, $holeXy);
+            $variants[] = [
+                'id' => 'c' . $n,
+                'points' => $linked['points'],
+                'crosses' => !empty($linked['crosses']),
+                'length' => polyline_length_from($startXy, $linked['points']),
+                'first' => $linked['points'][0],
+            ];
+            $n++;
+            $added++;
+        }
+    }
+    if ($variants === []) {
+        return $empty;
+    }
+    $open = array_values(array_filter($variants, static function ($v) {
+        return empty($v['crosses']);
+    }));
+    $pool = $open !== [] ? $open : $variants;
+    usort($pool, static function ($a, $b) {
+        return $a['length'] <=> $b['length'];
+    });
+    $auto = $pool[0];
+    $picked = $auto;
+    $want = trim($entryId);
+    if ($want !== '' && $want !== 'auto') {
+        foreach ($variants as $v) {
+            if ($v['id'] === $want) {
+                $picked = $v;
+                break;
+            }
+        }
+    }
+    $cx = 0.0;
+    $cy = 0.0;
+    $cn = 0;
+    foreach ($polyXy as $p) {
+        $cx += floatval($p[0]);
+        $cy += floatval($p[1]);
+        $cn++;
+    }
+    if ($cn > 0) {
+        $cx /= $cn;
+        $cy /= $cn;
+    }
+    $entries = [[
+        'id' => 'auto',
+        'label' => 'Automatisch',
+        'detail' => 'kürzeste ohne Kreuzung',
+        'extra_m' => 0,
+        'crosses' => !empty($auto['crosses']),
+        'selected' => ($want === '' || $want === 'auto'),
+    ]];
+    foreach ($variants as $v) {
+        $extra = (int)max(0, round($v['length'] - $auto['length']));
+        $entries[] = [
+            'id' => $v['id'],
+            'label' => 'Ecke ' . compass_from_xy([$cx, $cy], $v['first']),
+            'detail' => $extra > 0 ? ('+' . $extra . ' m') : 'kürzeste',
+            'extra_m' => $extra,
+            'crosses' => !empty($v['crosses']),
+            'selected' => $v['id'] === $picked['id'] && $want !== '' && $want !== 'auto',
+        ];
+    }
+    return [
+        'points' => $picked['points'],
+        'entries' => $entries,
+        'entry_id' => ($want !== '' && $want !== 'auto') ? $picked['id'] : 'auto',
     ];
 }
 

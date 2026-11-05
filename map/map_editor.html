@@ -126,6 +126,25 @@
       background: #1d4e89;
       border-color: #1d4e89;
     }
+    #measureBtnRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      width: 100%;
+      margin-top: 6px;
+      align-items: stretch;
+    }
+    #measureBtnRow > button {
+      width: 100% !important;
+      min-width: 0;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      white-space: nowrap;
+      padding: 5px 6px !important;
+      font-size: 12px !important;
+      line-height: 1.2 !important;
+      box-sizing: border-box;
+    }
     #calcFlightPathBtn.flight-ready {
       background: #48673A;
       border-color: #48673A;
@@ -588,8 +607,10 @@
         <div class="mono" id="coordDisplay">Kein Punkt ausgewählt.</div>
         <button id="locateBtn" type="button">Zum aktuellen Standort (5x5 km)</button>
         <p class="small" id="locateStatus"></p>
-        <button id="measureBtn" type="button" title="Punkte auf die Karte setzen und die Distanz messen">Distanz messen</button>
-        <button id="measureClearBtn" type="button" title="Gesetzte Messpunkte entfernen">Messung löschen</button>
+        <div id="measureBtnRow">
+          <button id="measureBtn" type="button" title="Punkte auf die Karte setzen und die Distanz messen">Distanz messen</button>
+          <button id="measureClearBtn" type="button" title="Gesetzte Messpunkte entfernen">Messung löschen</button>
+        </div>
         <p class="small" id="measureStatus">Aus. «Distanz messen» aktivieren, dann Punkte auf die Karte klicken. Doppelklick beendet.</p>
       </div>
     </details>
@@ -738,6 +759,7 @@
     <details class="panel-details" id="drawingsPanelDetails">
       <summary>Zeichnungen speichern</summary>
       <div class="panel-details-content">
+        <button id="newDrawingBtn" type="button" title="Leere Zeichnung auf der Karte beginnen. Gespeicherte Zeichnungen auf dem Server bleiben erhalten.">Neue Zeichnung</button>
         <label for="drawingName">Zeichnungsname</label>
         <input id="drawingName" type="text" placeholder="z. B. mission-gebiet-1" />
         <button id="saveDrawingBtn" type="button" title="Zeichnung speichern">Speichern</button>
@@ -6211,6 +6233,99 @@
       renderLabeledPoints();
       updateLabeledPointStatus("All labeled points cleared.");
     });
+
+    function mapHasDrawingContent() {
+      if (Array.isArray(polygonVertices) && polygonVertices.length) return true;
+      if (Array.isArray(labeledPoints) && labeledPoints.length) return true;
+      if (Array.isArray(flightPathPoints) && flightPathPoints.length) return true;
+      if (Array.isArray(flightPolygonVertices) && flightPolygonVertices.length) return true;
+      if (previewActive) return true;
+      if (Array.isArray(selectedLonLat) && selectedLonLat.length === 2) return true;
+      try {
+        if (typeof window.__rkrkDrawingCanvasHasContent === "function" && window.__rkrkDrawingCanvasHasContent()) {
+          return true;
+        }
+      } catch (_) { /* noop */ }
+      return false;
+    }
+
+    function clearDrawingSessionDraft() {
+      try {
+        if (typeof window.__rkrkClearSessionDraft === "function") {
+          window.__rkrkClearSessionDraft();
+          return;
+        }
+        if (typeof clearSessionDraft === "function") {
+          clearSessionDraft();
+          return;
+        }
+        localStorage.removeItem("rkrk_map_session_draft_v1");
+      } catch (_) {
+        try { localStorage.removeItem("rkrk_map_session_draft_v1"); } catch (__) { /* noop */ }
+      }
+    }
+
+    function startNewDrawing() {
+      const name = drawingNameEl ? String(drawingNameEl.value || "").trim() : "";
+      let hasContent = false;
+      try {
+        hasContent = mapHasDrawingContent();
+      } catch (_) {
+        hasContent = true;
+      }
+      if ((hasContent || name) && !window.confirm(
+        "Die aktuelle Zeichnung auf der Karte wird geleert. Eine gespeicherte Zeichnung auf dem Server wird nicht gelöscht."
+      )) {
+        return;
+      }
+      const emptyState = {
+        version: 1,
+        exportType: exportTypeEl ? exportTypeEl.value : "grid",
+        previewActive: false,
+        selectedLonLat: null,
+        polygon: { vertices: [] },
+        labeledPoints: [],
+        managedObjects: [],
+        managedObjectGroups: [],
+        managedListOrder: [],
+        managedObjectIdSeq: 1,
+        managedObjectGroupIdSeq: 1,
+        selectedManagedObjectId: null,
+        importedKml: { version: 1, seq: 0, layers: [] }
+      };
+      try {
+        if (typeof applyDrawingState === "function") applyDrawingState(emptyState);
+      } catch (_) { /* Overlay-Hook leert verwaltete Objekte zusätzlich. */ }
+      if (drawingNameEl) drawingNameEl.value = "";
+      if (drawingListEl) {
+        let blank = drawingListEl.querySelector("option[data-no-current-drawing]");
+        if (!blank) {
+          blank = document.createElement("option");
+          blank.value = "";
+          blank.textContent = "";
+          blank.setAttribute("data-no-current-drawing", "1");
+          drawingListEl.insertBefore(blank, drawingListEl.firstChild);
+        }
+        drawingListEl.value = "";
+      }
+      drawingArmed = false;
+      try {
+        if (typeof window.__rkrkOnNewDrawingStarted === "function") window.__rkrkOnNewDrawingStarted();
+        else clearDrawingSessionDraft();
+      } catch (_) {
+        clearDrawingSessionDraft();
+      }
+      if (drawingStatusEl) {
+        drawingStatusEl.textContent = "Neue Zeichnung ist leer. Speichern schreibt sie unter dem Namen in die gemeinsame Server-Liste. Andere Nutzer laden sie mit Aktualisieren und danach Laden.";
+      }
+    }
+
+    const newDrawingBtnEl = document.getElementById("newDrawingBtn");
+    if (newDrawingBtnEl) {
+      newDrawingBtnEl.addEventListener("click", () => {
+        startNewDrawing();
+      });
+    }
 
     saveDrawingBtnEl.addEventListener("click", async () => {
       await saveDrawing();

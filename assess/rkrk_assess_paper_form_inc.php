@@ -144,17 +144,17 @@ if (!function_exists("rkrk_paper_h")) {
 .pf-rich p{margin:.25em 0;}
 .pf-rich ul,.pf-rich ol{margin:.3em 0;padding-left:1.25em;}
 .pf-rich li{margin:.15em 0;}
-.pf-rich figure,.print-text-content figure,.print-text-intro figure{margin:8px 0;text-align:center;}
-.pf-rich img,.print-text-content img,.print-text-intro img{max-width:100%;height:auto;width:auto;display:block;margin:6px auto;border-radius:5px 15% 10px;object-fit:contain;}
-.pf-rich img.lernimagelarge,.print-text-content img.lernimagelarge,.print-text-intro img.lernimagelarge{max-height:500px;}
-.pf-rich img.lernimage,.print-text-content img.lernimage,.print-text-intro img.lernimage{max-height:300px;}
-.pf-rich img.lernimagesmall,.print-text-content img.lernimagesmall,.print-text-intro img.lernimagesmall{max-height:200px;}
-.pf-rich img.lernimageverysmall,.print-text-content img.lernimageverysmall,.print-text-intro img.lernimageverysmall{max-height:100px;}
-.pf-rich img.lernimagefixwidth,.print-text-content img.lernimagefixwidth,.print-text-intro img.lernimagefixwidth{width:600px;max-width:100%;height:auto;}
-.pf-rich img.lernimagefixheight,.print-text-content img.lernimagefixheight,.print-text-intro img.lernimagefixheight{max-height:200px;}
-.pf-rich img.lernimagefixlargeheight,.print-text-content img.lernimagefixlargeheight,.print-text-intro img.lernimagefixlargeheight{max-height:500px;}
-.pf-rich img.lernimagesmallfixwidth,.print-text-content img.lernimagesmallfixwidth,.print-text-intro img.lernimagesmallfixwidth{width:450px;max-width:100%;height:auto;}
-.pf-rich figcaption,.print-text-content figcaption,.print-text-intro figcaption{font-size:8.5pt;color:#64748b;margin-top:3px;}
+.pf-rich figure,.print-text-content figure,.print-text-intro figure,.pf-sb-ov figure{margin:8px 0;text-align:center;}
+.pf-rich img,.print-text-content img,.print-text-intro img,.pf-sb-ov img{max-width:100%;height:auto;width:auto;display:block;margin:6px auto;border-radius:5px 15% 10px;object-fit:contain;}
+.pf-rich img.lernimagelarge,.print-text-content img.lernimagelarge,.print-text-intro img.lernimagelarge,.pf-sb-ov img.lernimagelarge{max-height:500px;}
+.pf-rich img.lernimage,.print-text-content img.lernimage,.print-text-intro img.lernimage,.pf-sb-ov img.lernimage{max-height:300px;}
+.pf-rich img.lernimagesmall,.print-text-content img.lernimagesmall,.print-text-intro img.lernimagesmall,.pf-sb-ov img.lernimagesmall{max-height:200px;}
+.pf-rich img.lernimageverysmall,.print-text-content img.lernimageverysmall,.print-text-intro img.lernimageverysmall,.pf-sb-ov img.lernimageverysmall{max-height:100px;}
+.pf-rich img.lernimagefixwidth,.print-text-content img.lernimagefixwidth,.print-text-intro img.lernimagefixwidth,.pf-sb-ov img.lernimagefixwidth{width:600px;max-width:100%;height:auto;}
+.pf-rich img.lernimagefixheight,.print-text-content img.lernimagefixheight,.print-text-intro img.lernimagefixheight,.pf-sb-ov img.lernimagefixheight{max-height:200px;}
+.pf-rich img.lernimagefixlargeheight,.print-text-content img.lernimagefixlargeheight,.print-text-intro img.lernimagefixlargeheight,.pf-sb-ov img.lernimagefixlargeheight{max-height:500px;}
+.pf-rich img.lernimagesmallfixwidth,.print-text-content img.lernimagesmallfixwidth,.print-text-intro img.lernimagesmallfixwidth,.pf-sb-ov img.lernimagesmallfixwidth{width:450px;max-width:100%;height:auto;}
+.pf-rich figcaption,.print-text-content figcaption,.print-text-intro figcaption,.pf-sb-ov figcaption{font-size:8.5pt;color:#64748b;margin-top:3px;}
 .pf-line-write{border-bottom:1px solid #334155;min-height:1.35em;margin-top:4px;}
 .pf-line-write.tall{min-height:3.2em;}
 .pf-chk-row{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px;}
@@ -262,7 +262,7 @@ if (!function_exists("rkrk_paper_h")) {
 .pf-phase-prep{grid-column:1/-1;margin:0 0 6px;padding:5px 8px;border-left:3px solid #94a3b8;background:#f8fafc;font-size:9pt;color:#475569;}
 .pf-sec-story{border:1px solid #c5d4c0;border-radius:8px;padding:8px 10px;background:#f8faf7;margin:0 0 12px;}
 .pf-sec-story h2{margin:0 0 6px;border:0;padding:0;color:#1f3d1f;}
-.pf-sb-ov{font-size:9.5pt;line-height:1.35;color:#334155;}
+.pf-sb-ov{font-size:9.5pt;line-height:1.35;color:#334155;max-width:100%;min-width:0;}
 .pf-sb-ov__title{font-size:11pt;margin:0 0 6px;color:#1f3d1f;}
 .pf-sb-ov__meta{font-size:8.5pt;color:#64748b;margin:0 0 6px;}
 .pf-sb-ov__phase{margin:6px 0 8px;padding:4px 6px;border-left:3px solid #48673a;background:#fff;page-break-inside:avoid;}

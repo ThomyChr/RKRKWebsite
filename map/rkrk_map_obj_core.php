@@ -4,10 +4,19 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 $folderoffset = "../";
-@chdir(__DIR__ . '/..');
-include_once(__DIR__ . '/../scripts/rkrk_gen.php');
-include_once(__DIR__ . '/../scripts/rkrk_menu.php');
-include_once(__DIR__ . '/../rkrk_access_control.php');
+$rkrkGen = __DIR__ . '/../scripts/rkrk_gen.php';
+$rkrkMenu = __DIR__ . '/../scripts/rkrk_menu.php';
+$rkrkAccess = __DIR__ . '/../rkrk_access_control.php';
+if (is_file($rkrkGen)) {
+    @chdir(__DIR__ . '/..');
+    include_once $rkrkGen;
+}
+if (is_file($rkrkMenu)) {
+    include_once $rkrkMenu;
+}
+if (is_file($rkrkAccess)) {
+    include_once $rkrkAccess;
+}
 $MenuDirOffset = $folderoffset;
 
 if (function_exists('CheckIPandExit')) {

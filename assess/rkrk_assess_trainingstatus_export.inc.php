@@ -63,6 +63,12 @@ if (!function_exists("rkrk_tr_overall_text")) {
 	function rkrk_tr_overall_text(array $row): string {
 		$st = (string) ($row["status"] ?? "");
 		if ($st === "ok") {
+			$sum = isset($row["sum"]) && is_array($row["sum"]) ? $row["sum"] : array();
+			$total = (int) ($sum["total"] ?? 0);
+			$passed = (int) ($sum["passed"] ?? 0);
+			if ($total > 0 && $passed < $total) {
+				return "OK (≥1)";
+			}
 			return "Vollständig";
 		}
 		if ($st === "fail") {
@@ -254,7 +260,17 @@ if (!function_exists("rkrk_tr_status_sheet")) {
 	 * @return array{name:string,headers:list<string>,rows:list<list<string>>}
 	 */
 	function rkrk_tr_status_sheet(array $visible, array $codes, string $listName, bool $withRemark = false): array {
-		$headers = array("Nachname", "Vorname", "Name", "RKRS-ID");
+		$headers = array("Anwesend", "Nachname", "Vorname", "Name", "RKRS-ID", "Drohnentyp");
+		$feeDue = false;
+		foreach ($visible as $probe) {
+			if (is_array($probe) && !empty($probe["fee_due"])) {
+				$feeDue = true;
+				break;
+			}
+		}
+		if ($feeDue) {
+			array_splice($headers, 1, 0, array("Bezahlt"));
+		}
 		foreach ($codes as $c) {
 			$headers[] = (string) $c;
 		}
@@ -269,12 +285,18 @@ if (!function_exists("rkrk_tr_status_sheet")) {
 			}
 			$off = !empty($r["disabled"]);
 			$line = array(
+				!empty($r["present"]) ? "Ja" : "Nein",
 				(string) ($r["nachname"] ?? ""),
 				(string) ($r["vorname"] ?? ""),
 				(string) ($r["name"] ?? ""),
 				(string) (($r["rkrs_id"] ?? "") !== "" ? $r["rkrs_id"] : ($r["pilot_id"] ?? "")),
+				(string) ($r["drohnentyp"] ?? ""),
 			);
-			$fill = array("", "", "", "");
+			$fill = array(!empty($r["present"]) ? "ok" : "", "", "", "", "", "");
+			if ($feeDue) {
+				array_splice($line, 1, 0, array(!empty($r["paid"]) ? "Ja" : "Nein"));
+				array_splice($fill, 1, 0, array(!empty($r["paid"]) ? "ok" : ""));
+			}
 			foreach ($codes as $code) {
 				$cell = isset($r["cells"][$code]) && is_array($r["cells"][$code]) ? $r["cells"][$code] : array();
 				$hit = isset($cell["hit"]) && is_array($cell["hit"]) ? $cell["hit"] : null;
@@ -340,6 +362,7 @@ if (!function_exists("rkrk_tr_personel_lookup")) {
 				$src["rkrs_pilot_id"] = rkrk_assess_personel_row_effective_rkrs_id($src);
 			}
 			$src["aktiv"] = empty($v["disabled"]) ? "Ja" : "Nein";
+			$src["anwesend"] = !empty($v["present"]) ? "Ja" : "Nein";
 			$src["bemerkung"] = (string) ($v["remark"] ?? "");
 			$out[] = $src;
 		}
@@ -386,6 +409,7 @@ if (!function_exists("rkrk_tr_personel_sheet")) {
 			"instruktor" => "Instruktor",
 			"fpl_gueltig" => "FPL gültig bis",
 			"aktiv" => "Aktiv",
+			"anwesend" => "Anwesend",
 			"bemerkung" => "Bemerkung",
 		);
 		$headers = array("Liste");
@@ -454,6 +478,53 @@ if (!function_exists("rkrk_tr_mailto_href")) {
 	}
 }
 
+if (!function_exists("rkrk_tr_mailto_one_href")) {
+	/** Mailto an eine Person: Adresse, Betreff = Listenname, kurze Anrede. */
+	function rkrk_tr_mailto_one_href(string $email, string $name, string $listName): string {
+		$email = trim($email);
+		if ($email === "" || strpos($email, "@") === false || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return "";
+		}
+		$subj = $listName !== "" ? $listName : "Teilnehmerliste";
+		$nm = trim($name);
+		$body = $nm !== "" ? ("Guten Tag " . $nm . ",\n\n") : "";
+		$q = array(
+			"subject" => $subj,
+			"body" => $body,
+		);
+		return "mailto:" . $email . "?" . http_build_query($q, "", "&", PHP_QUERY_RFC3986);
+	}
+}
+
+if (!function_exists("rkrk_tr_mailto_by_id")) {
+	/**
+	 * Mailto-Links je Teilnehmer-ID der sichtbaren Zeilen.
+	 *
+	 * @param list<array<string,mixed>> $visible
+	 * @return array<string,string>
+	 */
+	function rkrk_tr_mailto_by_id(array $visible, string $listName): array {
+		$out = array();
+		$srcs = rkrk_tr_personel_lookup($visible);
+		foreach ($visible as $i => $v) {
+			if (!is_array($v)) {
+				continue;
+			}
+			$id = (string) ($v["id"] ?? "");
+			if ($id === "") {
+				continue;
+			}
+			$src = isset($srcs[$i]) && is_array($srcs[$i]) ? $srcs[$i] : array();
+			$em = trim((string) ($src["email"] ?? ($src["e-mail"] ?? ($src["Email"] ?? ""))));
+			$href = rkrk_tr_mailto_one_href($em, (string) ($v["name"] ?? ""), $listName);
+			if ($href !== "") {
+				$out[$id] = $href;
+			}
+		}
+		return $out;
+	}
+}
+
 if (!function_exists("rkrk_tr_pdf_html")) {
 	/**
 	 * @param list<array<string,mixed>> $visible
@@ -466,6 +537,13 @@ if (!function_exists("rkrk_tr_pdf_html")) {
 			$title .= " — " . $listName;
 		}
 		$n = count($visible);
+		$feeDue = false;
+		foreach ($visible as $probe) {
+			if (is_array($probe) && !empty($probe["fee_due"])) {
+				$feeDue = true;
+				break;
+			}
+		}
 		$nOk = 0;
 		$nFail = 0;
 		$nOpen = 0;
@@ -489,7 +567,11 @@ td{border:0.3pt solid #cbd5e1;padding:3pt 4pt;}
 </style>';
 		$html .= "<h1>" . $h($title) . "</h1>";
 		$html .= '<p class="meta">' . $h(date("d.m.Y H:i")) . " · " . (int) $n . " Personen · " . (int) $nOk . " vollständig · offen " . (int) $nOpen . " · nicht bestanden " . (int) $nFail . "</p>";
-		$html .= "<table cellpadding=\"3\" cellspacing=\"0\"><thead><tr><th>Teilnehmer</th>";
+		$html .= "<table cellpadding=\"3\" cellspacing=\"0\"><thead><tr><th class=\"c\">Anwesend</th>";
+		if ($feeDue) {
+			$html .= "<th class=\"c\">Bezahlt</th>";
+		}
+		$html .= "<th>Teilnehmer</th><th>Drohnentyp</th>";
 		foreach ($codes as $c) {
 			$html .= "<th class=\"c\">" . $h((string) $c) . "</th>";
 		}
@@ -504,12 +586,17 @@ td{border:0.3pt solid #cbd5e1;padding:3pt 4pt;}
 			$st = (string) ($r["status"] ?? "");
 			$id = (string) (($r["rkrs_id"] ?? "") !== "" ? $r["rkrs_id"] : ($r["pilot_id"] ?? ""));
 			$html .= "<tr>";
+			$html .= '<td class="c"' . (!empty($r["present"]) ? ' bgcolor="#d9f2c9"' : "") . ">" . (!empty($r["present"]) ? "Ja" : "Nein") . "</td>";
+			if ($feeDue) {
+				$html .= '<td class="c"' . (!empty($r["paid"]) ? ' bgcolor="#d9f2c9"' : "") . ">" . (!empty($r["paid"]) ? "Ja" : "Nein") . "</td>";
+			}
 			$nameBg = !empty($r["disabled"]) ? ' bgcolor="#e2e8f0"' : "";
 			$html .= "<td" . $nameBg . "><b>" . $h((string) ($r["name"] ?? "")) . "</b>";
 			if ($id !== "") {
 				$html .= " " . $h($id);
 			}
 			$html .= "</td>";
+			$html .= "<td>" . $h((string) ($r["drohnentyp"] ?? "")) . "</td>";
 			foreach ($codes as $code) {
 				$cell = isset($r["cells"][$code]) && is_array($r["cells"][$code]) ? $r["cells"][$code] : array();
 				$hit = isset($cell["hit"]) && is_array($cell["hit"]) ? $cell["hit"] : null;
@@ -534,7 +621,7 @@ td{border:0.3pt solid #cbd5e1;padding:3pt 4pt;}
 			$html .= "</tr>";
 		}
 		if ($visible === array()) {
-			$colspan = 4 + count($codes);
+			$colspan = 6 + count($codes) + ($feeDue ? 1 : 0);
 			$html .= '<tr><td colspan="' . (int) $colspan . '">Keine Teilnehmer in dieser Liste.</td></tr>';
 		}
 		$html .= "</tbody></table>";

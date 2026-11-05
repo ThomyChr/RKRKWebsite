@@ -22,7 +22,7 @@
 	CreateTopMenu();
 	PrintRKRKHeader($pagetitle);
 echo "<link rel='stylesheet' href='scripts/rkrk_adr_grid.css?v=20261012col1'>";
-echo "<script src='scripts/rkrk_adr_grid.js?v=20261012rows1'></script>";
+echo "<script src='scripts/rkrk_adr_grid.js?v=20261019find1'></script>";
 echo "<style>
 .rkrk-card-table {
   width: 100%;
@@ -412,6 +412,33 @@ if (!function_exists('rkrk_list_fstr')) {
 	}
 }
 
+if (!function_exists('rkrk_list_fold')) {
+	function rkrk_list_fold($value) {
+		$value = trim((string)$value);
+		$value = function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value);
+		return str_replace(
+			array('ä', 'ö', 'ü', 'é', 'è', 'ê', 'à', 'á'),
+			array('a', 'o', 'u', 'e', 'e', 'e', 'a', 'a'),
+			$value
+		);
+	}
+}
+
+if (!function_exists('rkrk_list_search_text')) {
+	function rkrk_list_search_text($feld) {
+		$keys = array(
+			'FeldID', 'Number', 'JG', 'Feldname', 'Flurname', 'GrundstueckID', 'Gemeinde',
+			'Betrieb', 'Freigabe', 'Warnung', 'Jaeger', 'Bemerkung', 'Flug', 'Funde',
+			'Bauer', 'Notiz', 'Erstellt', 'Aenderung', 'Update', 'StdFlughohe',
+		);
+		$parts = array();
+		foreach ($keys as $key) {
+			$parts[] = rkrk_list_fstr($feld, $key);
+		}
+		return rkrk_list_fold(implode(' ', $parts));
+	}
+}
+
 if (!function_exists('rkrk_list_is_neu')) {
 	function rkrk_list_is_neu($feld) {
 		$frei = rkrk_list_fstr($feld, 'Freigabe');
@@ -641,6 +668,23 @@ if (isset($_GET["Reg"])) {
 	}
 	if ($filterChanged) {
 		$regUrl .= '&Changed=1';
+	}
+	$filterQuery = trim((string)($_GET['q'] ?? ''));
+	$columnFilters = array();
+	if (isset($_GET['cf']) && is_array($_GET['cf'])) {
+		foreach ($_GET['cf'] as $cfKey => $cfVal) {
+			$cfKey = preg_replace('/[^A-Za-z0-9_]/', '', (string)$cfKey);
+			$cfVal = trim((string)$cfVal);
+			if ($cfKey !== '' && $cfVal !== '') {
+				$columnFilters[$cfKey] = $cfVal;
+			}
+		}
+	}
+	if ($filterQuery !== '') {
+		$regUrl .= '&q=' . rawurlencode($filterQuery);
+	}
+	foreach ($columnFilters as $cfKey => $cfVal) {
+		$regUrl .= '&cf[' . rawurlencode($cfKey) . ']=' . rawurlencode($cfVal);
 	}
 	if (isset($_POST["FontSize"]) and $_POST["FontSize"]!="") {
 		$FontSize= $_POST["FontSize"];
@@ -1310,6 +1354,26 @@ $FeldkatalogList = GetFeldKatalogList ($Feldkatalog);
 			}
 		}
 	}
+	if ($filterQuery !== '' || $columnFilters !== array()) {
+		$needle = rkrk_list_fold($filterQuery);
+		foreach ($FeldkatalogList as $fid => $Feld) {
+			if (!is_array($Feld)) {
+				unset($FeldkatalogList[$fid]);
+				continue;
+			}
+			if ($needle !== '' && strpos(rkrk_list_search_text($Feld), $needle) === false) {
+				unset($FeldkatalogList[$fid]);
+				continue;
+			}
+			foreach ($columnFilters as $cfKey => $cfVal) {
+				$cell = rkrk_list_fold(rkrk_list_fstr($Feld, $cfKey));
+				if ($cell === '' || strpos($cell, rkrk_list_fold($cfVal)) === false) {
+					unset($FeldkatalogList[$fid]);
+					break;
+				}
+			}
+		}
+	}
 	aasort($FeldkatalogList, "FeldID");
 	aasort($FeldkatalogList, $ColSort);
     //pre_r($Feldkatalog);
@@ -1863,7 +1927,7 @@ $FeldkatalogList = GetFeldKatalogList ($Feldkatalog);
   } catch (e) {}
 })();
 </script>" .chr(10);
-			echo "<script src='scripts/rkrk_adr_grid.js?v=20261012rows1'></script>" .chr(10);
+			echo "<script src='scripts/rkrk_adr_grid.js?v=20261019find1'></script>" .chr(10);
 			echo "</div>" . chr(10);
 			echo "<div id='Info' class='tabcontent'>" . chr(10);
 			echo "</div>" . chr(10);

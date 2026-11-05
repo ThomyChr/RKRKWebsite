@@ -3,6 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 include_once(__DIR__ . '/rkrk_rt_shell.php');
+require_once __DIR__ . '/rkrk_swissqr.inc.php';
 rkrk_rt_boot();
 
 $resolvedDataDir = realpath(__DIR__ . '/../../rkrk/data/rt');
@@ -53,6 +54,16 @@ function ensure_dir(string $dir): bool {
         return true;
     }
     return @mkdir($dir, 0775, true);
+}
+function admin_finanz_creditor(array $finanz): array {
+    return [
+        "name" => (string)($finanz["empfaenger"] ?? ""),
+        "street" => (string)($finanz["strasse"] ?? ""),
+        "zip" => (string)($finanz["plz"] ?? ""),
+        "city" => (string)($finanz["ort"] ?? ""),
+        "country" => (string)($finanz["land"] ?? ""),
+        "iban" => (string)($finanz["iban"] ?? ""),
+    ];
 }
 function upload_image_as_png(string $field, string $destFile, ?int $idx = null, ?string &$error = null): bool {
     if (!isset($_FILES[$field])) {
@@ -257,7 +268,8 @@ if (isset($_POST["save_global_cat"])) {
 
         $cfg["logoset"]    = $_POST["logoset"]  ?? "";
         $cfg["styleset"]   = $_POST["styleset"] ?? "";
-        $cfg["zusatzinfo"] = $_POST["zusatzinfo_cat"] ?? "";
+        $zusatzCat = trim((string) ($_POST["zusatzinfo_cat"] ?? ""));
+        $cfg["zusatzinfo"] = function_exists("mb_substr") ? mb_substr($zusatzCat, 0, 60, "UTF-8") : substr($zusatzCat, 0, 60);
         $cfg["abschlussslogan"] = $_POST["abschlussslogan_cat"] ?? "";
 
         if (!isset($cfg["finanz"]) || !is_array($cfg["finanz"])) {
@@ -275,14 +287,6 @@ if (isset($_POST["save_global_cat"])) {
 
         $uploadDir = $imagesDir;
         ensure_dir($uploadDir);
-
-        $upErr = null;
-        $qrDest = $uploadDir . "/{$kat}_qr.png";
-        if (upload_image_as_png("swissqrcode_cat", $qrDest, null, $upErr)) {
-            $cfg["swissqrcode"] = "{$kat}_qr.png";
-        } elseif ($upErr !== null) {
-            $msg = $upErr;
-        }
 
         $upErr = null;
         $wmDest = $uploadDir . "/{$kat}_watermark.png";
@@ -672,6 +676,56 @@ $katGlobal = $_POST["kat_global"] ?? array_key_first($DEFAULTS["kategorien"]);
 $katGlobalCfg = $katGlobal && isset($DEFAULTS["kategorien"][$katGlobal])
     ? $DEFAULTS["kategorien"][$katGlobal]
     : null;
+
+$qrNamesChanged = false;
+ensure_dir($imagesDir);
+foreach ($DEFAULTS["kategorien"] as $qrKat => &$qrCfg) {
+    if (!is_array($qrCfg)) {
+        continue;
+    }
+    $qrFinanz = (isset($qrCfg["finanz"]) && is_array($qrCfg["finanz"])) ? $qrCfg["finanz"] : [];
+    $qrPng = rkrk_swissqr_png(admin_finanz_creditor($qrFinanz), [], null, "CHF", "Freibetrag");
+    if ($qrPng === "") {
+        continue;
+    }
+    $qrFile = $imagesDir . "/" . $qrKat . "_qr.png";
+    if (@file_put_contents($qrFile, $qrPng) === false) {
+        continue;
+    }
+    if (($qrCfg["swissqrcode"] ?? "") !== $qrKat . "_qr.png") {
+        $qrCfg["swissqrcode"] = $qrKat . "_qr.png";
+        $qrNamesChanged = true;
+    }
+}
+unset($qrCfg);
+if ($qrNamesChanged) {
+    save_defaults($defaultsFile, $DEFAULTS);
+    if ($katGlobal && isset($DEFAULTS["kategorien"][$katGlobal])) {
+        $katGlobalCfg = $DEFAULTS["kategorien"][$katGlobal];
+    }
+}
+$katQrPreview = "";
+if (isset($_GET["download_qr"])) {
+    $dlKat = (string)$_GET["download_qr"];
+    $dlCfg = $DEFAULTS["kategorien"][$dlKat] ?? null;
+    $dlFinanz = (is_array($dlCfg) && isset($dlCfg["finanz"]) && is_array($dlCfg["finanz"])) ? $dlCfg["finanz"] : [];
+    $dlPng = rkrk_swissqr_png(admin_finanz_creditor($dlFinanz), [], null, "CHF", "Freibetrag");
+    if ($dlPng !== "") {
+        $dlName = preg_replace('/[^A-Za-z0-9_-]+/', '_', $dlKat);
+        if ($dlName === "") {
+            $dlName = "QR";
+        }
+        header("Content-Type: image/png");
+        header('Content-Disposition: attachment; filename="' . $dlName . '_Freibetrag.png"');
+        header("Content-Length: " . strlen($dlPng));
+        echo $dlPng;
+        exit;
+    }
+}
+if (is_array($katGlobalCfg)) {
+    $previewFinanz = (isset($katGlobalCfg["finanz"]) && is_array($katGlobalCfg["finanz"])) ? $katGlobalCfg["finanz"] : [];
+    $katQrPreview = rkrk_swissqr_img(rkrk_swissqr_svg(admin_finanz_creditor($previewFinanz), [], null, "CHF", "Freibetrag"), "width:160px;height:160px;display:block;");
+}
 
 $currentGroup = $_POST["current_group"] ?? ($_GET["current_group"] ?? array_key_first($DEFAULTS["standardgruppen"]));
 rkrk_rt_emit_chrome('rkrk_rt.css');
@@ -1191,18 +1245,21 @@ rkrk_rt_emit_chrome('rkrk_rt.css');
             </div>
         </div>
 
-        <h4>Zusatzinfo</h4>
-        <textarea name="zusatzinfo_cat" rows="3" style="width:100%;"><?= safe($katGlobalCfg["zusatzinfo"] ?? "") ?></textarea>
+        <h4>Zusatzinfo <span style="font-weight:400;font-size:12px;color:#555;">(maximal 60 Zeichen)</span></h4>
+        <textarea name="zusatzinfo_cat" rows="2" maxlength="60" style="width:100%;"><?= safe($katGlobalCfg["zusatzinfo"] ?? "") ?></textarea>
         <h4>Abschlussslogan</h4>
         <textarea name="abschlussslogan_cat" rows="2" style="width:100%;"><?= safe($katGlobalCfg["abschlussslogan"] ?? "") ?></textarea>
 
         <h4>QR &amp; Wasserzeichen</h4>
         <div class="rkrk-row">
             <div>
-                <label>Swiss QR-Code</label>
-                <input type="file" name="swissqrcode_cat">
-                <?php if (!empty($katGlobalCfg["swissqrcode"])): ?>
-                    <div><img src="<?= safe(media_web_src((string)$katGlobalCfg["swissqrcode"])) ?>" style="max-height:80px;"></div>
+                <label>Swiss QR-Code (Freibetrag)</label>
+                <?php if ($katQrPreview !== ""): ?>
+                    <div><?= $katQrPreview ?></div>
+                    <p style="margin:6px 0 0;font-size:12px;color:#555;">Aus IBAN und Empfänger, Betrag offen.</p>
+                    <p style="margin:8px 0 0;"><a class="btn" href="?download_qr=<?= rawurlencode((string)$katGlobal) ?>&amp;active_tab=view-global">QR herunterladen</a></p>
+                <?php else: ?>
+                    <p style="margin:6px 0 0;font-size:12px;color:#555;">IBAN, Empfänger, PLZ und Ort ausfüllen, dann erscheint der Code.</p>
                 <?php endif; ?>
             </div>
             <div>

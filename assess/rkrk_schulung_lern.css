@@ -137,6 +137,18 @@ body table tbody tr:hover {
   margin-top: 0.35rem;
 }
 
+body table.tabelle-kompakt {
+  line-height: 1.2 !important;
+  margin: 0.45rem 0 0.8rem;
+}
+
+body table.tabelle-kompakt thead th,
+body table.tabelle-kompakt tbody td,
+body table.tabelle-kompakt tbody th {
+  padding: 0.12rem 0.5rem !important;
+  line-height: 1.2 !important;
+}
+
 @media (max-width: 720px) {
   body table {
     display: block;

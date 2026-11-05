@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Assess — Rollen und Zugriffe</title>
+	<style>
+		:root {
+			--text: #1e293b;
+			--muted: #64748b;
+			--border: #d8e0d7;
+			--card: #fff;
+			--brand: #48673a;
+			--brand-bg: #f4f7f3;
+			--code-bg: #f1f5f9;
+			--warn-bg: #fffbeb;
+			--warn-border: #f59e0b;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+			font-size: 16px;
+			line-height: 1.55;
+			color: var(--text);
+			background: #f8faf8;
+		}
+		.wrap { max-width: 980px; margin: 0 auto; padding: 24px 18px 48px; }
+		h1 { font-size: 1.65rem; color: var(--brand); margin: 0 0 0.35em; line-height: 1.25; }
+		.lead { color: var(--muted); margin: 0 0 1.5rem; font-size: 1.02rem; }
+		h2 {
+			font-size: 1.2rem;
+			margin: 2rem 0 0.75rem;
+			padding-bottom: 0.35rem;
+			border-bottom: 2px solid var(--border);
+			color: #334155;
+		}
+		h3 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; color: #475569; }
+		.card {
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 16px 18px;
+			margin: 1rem 0;
+			box-shadow: 0 1px 3px rgba(0,0,0,.04);
+		}
+		.card--hint { background: var(--brand-bg); border-color: #c5d4c0; }
+		.card--warn { background: var(--warn-bg); border-color: var(--warn-border); }
+		code {
+			font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+			font-size: 0.9em;
+			background: var(--code-bg);
+			border-radius: 4px;
+			padding: 0.1em 0.35em;
+		}
+		table { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 0.75rem 0; }
+		th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+		th { background: var(--brand-bg); font-weight: 600; }
+		ul, ol { margin: 0.4rem 0 0.8rem; padding-left: 1.35rem; }
+		li { margin: 0.25rem 0; }
+		.muted { color: var(--muted); font-size: 0.88rem; margin-top: 0.2rem; }
+		.tag {
+			display: inline-block;
+			font-size: 0.78rem;
+			padding: 2px 7px;
+			border-radius: 4px;
+			background: #e2e8f0;
+			color: #475569;
+		}
+		.tag--yes { background: #dcfce7; color: #166534; }
+		.tag--no { background: #fee2e2; color: #991b1b; }
+		footer {
+			margin-top: 2.5rem;
+			padding-top: 1rem;
+			border-top: 1px solid var(--border);
+			font-size: 0.88rem;
+			color: var(--muted);
+		}
+		a { color: var(--brand); }
+	</style>
+</head>
+<body>
+<div class="wrap">
+	<h1>Rollen und Zugriffe</h1>
+	<p class="lead">
+		Wer eine Assess-Seite öffnen darf, hängt vom Server, von der Anmeldung und von den Flags in der URL ab.
+		Diese Hilfe beschreibt das Verhalten, das der Code heute umsetzt. Die Tabelle am Ende liest die gespeicherte Policy dieses Servers.
+	</p>
+
+	<div class="card card--hint">
+		<strong>Kurz.</strong>
+		Auf dem Portal und auf rehkitzrettung.ch entscheiden Moodle-Cohorts, ein gültiger <code>cs</code>-Link und — nur wo die Policy es erlaubt — die Flags <code>ADMIN</code>, <code>INSTR</code> und <code>NOH</code>.
+		Auf drohnenrehkitzrettung.ch entscheidet der RKRK-Login. Die Flags <code>ADMIN</code> und <code>INSTR</code> öffnen dort vor allem das Staff-Menü.
+		<code>RKRS</code>, <code>RKRSplus</code> und <code>RKRSprev</code> wählen den Datenkanal und das graue Theme. Sie sind keine Rolle.
+	</div>
+
+	<h2>Wo <code>cs</code> nötig ist</h2>
+	<p>
+		<code>cs</code> ist die Prüfsumme eines fertigen Links. Sie ist nur in den beiden Fällen unten Pflicht.
+		Überall sonst öffnet die Seite ohne <code>cs</code>.
+	</p>
+	<table>
+		<thead>
+			<tr><th>Wo</th><th>Für wen</th><th>Was im Link stehen muss</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>
+					Portal <code>portal.rehkitzrettung.ch</code>, Seiten <code>rkrk_digitalassess.php</code> und <code>rkrk_assess.php</code>,
+					und nur bei den Quiz-Keys <code>RKRSp-doku</code>, <code>RKRSp-EP</code>, <code>RKRSp-EP-preuf</code>.
+				</td>
+				<td>
+					Teilnehmer ohne <code>ADMIN</code>, <code>INSTR</code> oder <code>NOH</code>.
+					Diese drei Flags überspringen die Prüfsumme, weil die Zelle «Quiz-Hash-Gate» sie auf dem Portal erlaubt.
+				</td>
+				<td>
+					Gültiges <code>cs</code> über die Felder aus Abschnitt 5.
+					Andere Quiz-Keys auf dem Portal brauchen kein <code>cs</code>; sie brauchen <code>ADMIN</code>, <code>INSTR</code> oder <code>NOH</code>, um die Seite Schulung &amp; Quiz zu öffnen.
+				</td>
+			</tr>
+			<tr>
+				<td>
+					Portal und RKRS Live, Seiten Personal, Pilotenkarte, Einsatzberechtigung und Teilnehmerliste.
+				</td>
+				<td>
+					Wer nicht Kerngruppe, nicht Koordinator und nicht Moodle-Site-Admin ist.
+					<code>ADMIN</code> und <code>INSTR</code> allein öffnen diese Seiten dort nicht.
+				</td>
+				<td>
+					<code>cs</code> zusammen mit <code>Name</code> und <code>PilotID</code> oder <code>RKRSPilotID</code>.
+					Kerngruppe, Koordinatoren und Site-Admins öffnen dieselben Seiten ohne <code>cs</code>.
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<div class="card card--hint">
+		<strong>Ohne <code>cs</code>.</strong>
+		RKRS Live, RKRK und NAS prüfen die drei Quiz-Keys nicht (Hash-Gate aus).
+		Tagesübersicht, Assessments, Beurteilungen, Planung, Fragen-Manager und Zugriffsrechte verlangen kein <code>cs</code>.
+		Der Teilnehmerlink eines Prüfungstags heisst <code>einsicht</code> und ist eine eigene Freigabe.
+		Auf der NAS lässt <code>?ADMIN</code> ein Extra-Gate zusätzlich durch.
+	</div>
+
+	<h2>1. Server</h2>
+	<p>Dieselbe Installation erkennt vier Profile. Die Policy-Seite zeigt das Profil des aktuellen Aufrufs unter «Dieser Server».</p>
+	<table>
+		<thead>
+			<tr><th>Profil</th><th>Host</th><th>Anmeldung</th><th>Extra-Gate</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Portal</td>
+				<td><code>portal.rehkitzrettung.ch</code></td>
+				<td>Moodle</td>
+				<td>an für Personal, Schulung/Quiz, Hash-Gate und Zugriffsrechte</td>
+			</tr>
+			<tr>
+				<td>RKRS Live</td>
+				<td><code>rehkitzrettung.ch</code> (ohne Portal, ohne Drohnen-Host)</td>
+				<td>Moodle</td>
+				<td>an für Personal und Zugriffsrechte</td>
+			</tr>
+			<tr>
+				<td>RKRK</td>
+				<td><code>drohnenrehkitzrettung.ch</code></td>
+				<td>RKRK-Login (GrantAccess)</td>
+				<td>aus. Der Login ist die Wand.</td>
+			</tr>
+			<tr>
+				<td>Sonst / Test</td>
+				<td>NAS, localhost, unbekannter Host. Der Pfad <code>/rkrs/</code> auf der NAS bleibt dieses Profil.</td>
+				<td>RKRK-Login, sofern die Seite ihn verlangt</td>
+				<td>aus. <code>?ADMIN</code> auf einem Nicht-Live-Host lässt ein angeschaltetes Extra-Gate zusätzlich durch.</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h2>2. Rollen</h2>
+	<p>
+		Es gibt zwei getrennte Vokabulare. Die Moodle-Cohorts sind Gruppen der Personen.
+		Die URL-Flags sind Schalter am Aufruf. Eine Instruktoren-Cohort ist nicht dasselbe wie <code>?INSTR</code>.
+	</p>
+
+	<h3>2.1 Moodle-Cohorts</h3>
+	<p>Gelesen über die Cohort-IDs, dieselbe Mitgliedschaft wie die Dateien <code>testpermissions_*.php</code>. Eine passende Gruppe genügt (ODER).</p>
+	<table>
+		<thead>
+			<tr><th>Rolle in der Policy</th><th>Moodle-Cohort</th><th>Wofür sie in der gespeicherten Policy vorgesehen ist</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Kerngruppe</td>
+				<td><code>RKRSplusKerngruppe</code></td>
+				<td>Personal (mit Koordinatoren) und die Seite Zugriffsrechte. Site-Admins sind dort gleichgestellt.</td>
+			</tr>
+			<tr>
+				<td>Koordinatoren</td>
+				<td><code>RKRSplusEinsatzleiter</code></td>
+				<td>Personal, Pilotenkarte, Einsatzberechtigung, Teilnehmerliste. Die Policy-Seite bleibt bei der Kerngruppe.</td>
+			</tr>
+			<tr>
+				<td>Instruktoren</td>
+				<td><code>RKRSplusInstruktorenDE</code></td>
+				<td>In der Auswahl der Policy vorhanden. Die gespeicherten Regeln haken diese Cohort auf keiner Seite an. Der Staff-Zugang der Instruktoren läuft über <code>?INSTR</code>.</td>
+			</tr>
+			<tr>
+				<td>Teilnehmer</td>
+				<td><code>RKRSplusTeilnehmer</code></td>
+				<td>Ebenfalls nur im Katalog. Ein Teilnehmer öffnet geschützte Seiten über einen <code>cs</code>-Link, nicht über die Cohort allein.</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>2.2 URL-Flags</h3>
+	<table>
+		<thead>
+			<tr><th>Flag</th><th>Menü</th><th>Zugriff</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td><code>ADMIN</code></td>
+				<td>Staff-Menü inklusive Fragen-Manager, Vorlagen, Link-Generatoren und dem Eintrag Zugriffsrechte.</td>
+				<td>Freigabe nur, wenn die Policy-Zelle «?ADMIN» für diese Seite und diesen Server an ist. Auf Portal und RKRS Live ist das für Schulung/Quiz und das Hash-Gate der Fall, für Personal und für die Policy-Seite nicht. Auf NAS/Test lässt <code>ADMIN</code> ein Extra-Gate zusätzlich durch, auch wenn die Zelle es nicht anbietet.</td>
+			</tr>
+			<tr>
+				<td><code>INSTR</code></td>
+				<td>Staff-Menü ohne Fragen-Manager, ohne Zusammenführen, ohne Vorlagen, ohne Link-Generatoren, ohne Zugriffsrechte. Fragen-Review bleibt sichtbar.</td>
+				<td>Wie <code>ADMIN</code>, über die eigene Zelle «?INSTR». Allein öffnet es die Policy-Seite nicht, sobald Moodle geladen ist.</td>
+			</tr>
+			<tr>
+				<td><code>NOH</code></td>
+				<td>kein Menüpunkt und kein Staff-Menü</td>
+				<td>Nur auf dem Portal. Überspringt das Hash-Gate und gilt als Freigabe für Schulung &amp; Quiz, wenn die Zelle «?NOH» an ist. Gedacht für Schulung ohne Prüfung.</td>
+			</tr>
+			<tr>
+				<td><code>NOM</code></td>
+				<td>Menü aus</td>
+				<td>keine Freigabe und kein Bypass</td>
+			</tr>
+			<tr>
+				<td><code>cs</code></td>
+				<td>kein Menü</td>
+				<td>Prüfsumme über die Felder des Links. Pflicht nur in den zwei Fällen unter «Wo cs nötig ist». Ein fremder oder gekürzter Link scheitert.</td>
+			</tr>
+			<tr>
+				<td><code>GA=gast</code></td>
+				<td>auf der Planungsseite kein erweitertes Admin-Menü</td>
+				<td>dieselbe Einschränkung wie Login-Stufe gast</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>2.3 RKRK-Login</h3>
+	<p>
+		Auf drohnenrehkitzrettung.ch und auf der NAS verlangt das Assess den RKRK-Login.
+		Stufe <span class="tag">gast</span> sieht die Planungs- und Ergebnisverwaltung ohne die erweiterten Admin-Aktionen.
+		Sobald die URL <code>RKRS</code>, <code>RKRSplus</code> oder <code>RKRSprev</code> trägt, ersetzt die Seite diesen Login durch eine RKRS-Umgebung: angemeldet gilt als erfüllt, und die Funktionsrechte (zum Beispiel Assessment-Vorlagen) sind offen. Die Moodle- und <code>cs</code>-Prüfungen des jeweiligen Server-Profils bleiben davon unberührt.
+	</p>
+
+	<div class="card card--warn">
+		<strong>Portal-Menü.</strong>
+		Auf <code>portal.rehkitzrettung.ch</code> erscheint der Menübalken nur mit <code>ADMIN</code> oder <code>INSTR</code> in der URL.
+		Mitgliedschaft in Kerngruppe oder Koordinatoren allein blendet ihn nicht ein. Die Seite selbst kann trotzdem erreichbar sein, wenn die Policy die Cohort erlaubt — dann per direkter Adresse.
+	</div>
+
+	<h2>3. Was das Menü zeigt</h2>
+	<p>Auf dem Portal gilt die Spalte «ohne Flag» nicht: ohne <code>ADMIN</code> oder <code>INSTR</code> gibt es keinen Balken. Auf den anderen Servern ist «Schulung &amp; Quiz» auch ohne Flag sichtbar, die übrigen Bereiche nur für Staff.</p>
+	<table>
+		<thead>
+			<tr><th>Eintrag</th><th>INSTR</th><th>ADMIN</th></tr>
+		</thead>
+		<tbody>
+			<tr><td>Home, Tagesübersicht</td><td><span class="tag tag--yes">ja</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Quiz, Schulung, jeweils mit Lesemodus</td><td><span class="tag tag--yes">ja</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Fragen-Review</td><td><span class="tag tag--yes">ja</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Schulungstext, Review zusammenführen, Fragen-Manager, Quiz-URL, Einsatzprüfung-Links</td><td><span class="tag tag--no">nein</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Assessments, Beurteilungen (ausfüllen und Liste)</td><td><span class="tag tag--yes">ja</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Vorlagen und Storyboards</td><td><span class="tag tag--no">nein</span></td><td><span class="tag tag--yes">ja</span>, zusätzlich RKRK-Recht «AssessmentTemplate». Unter einem RKRS-Kanal ist dieses Recht immer gesetzt.</td></tr>
+			<tr><td>URL-Generatoren für Assessments und Beurteilungen</td><td><span class="tag tag--no">nein</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Personal, Pilotenkarte, Einsatzberechtigung, Teilnehmerliste</td><td><span class="tag tag--yes">Menü</span></td><td><span class="tag tag--yes">Menü</span></td></tr>
+			<tr><td>Planung, Ergebnisse</td><td><span class="tag tag--yes">ja</span></td><td><span class="tag tag--yes">ja</span></td></tr>
+			<tr><td>Zugriffsrechte</td><td><span class="tag tag--no">Menüpunkt nein</span></td><td><span class="tag tag--yes">Menüpunkt ja</span>. Die Seite selbst prüft auf Portal und RKRS Live zusätzlich Kerngruppe oder Site-Admin.</td></tr>
+		</tbody>
+	</table>
+	<p class="muted">Das Menü ist die Navigation. Ob die Seite danach aufgeht, entscheidet das Extra-Gate in Abschnitt 4. Ein sichtbarer Eintrag «Personal» mit <code>?INSTR</code> auf dem Portal führt zur Sperre, solange die Personal-Zelle <code>INSTR</code> nicht als Freigabe führt.</p>
+
+	<h2>4. Prüf-Reihenfolge</h2>
+	<p>Jede geschützte Seite macht dasselbe, sobald ihr Extra-Gate an ist. Die erste zutreffende Zeile gewinnt.</p>
+	<ol>
+		<li>Extra-Gate aus: keine zusätzliche Sperre. Auf RKRK bleibt der Login davor.</li>
+		<li><code>ADMIN</code> und der Host ist nicht Live (weder Portal noch rehkitzrettung.ch): durch. Das ist der Arbeitszugang auf der NAS.</li>
+		<li>Gültiger <code>cs</code>-Link, wenn die Zelle ihn erlaubt.</li>
+		<li><code>ADMIN</code>, wenn die Zelle ihn erlaubt.</li>
+		<li><code>INSTR</code>, wenn die Zelle ihn erlaubt.</li>
+		<li><code>NOH</code>, wenn die Zelle ihn erlaubt.</li>
+		<li>Passende Moodle-Cohort oder Site-Admin, wenn die Zelle sie erlaubt. Ist Moodle nicht geladen und «Fail-closed» an, endet der Aufruf hier mit Sperre.</li>
+	</ol>
+	<p>Formular-Ansichten mit <code>mode=form</code>, <code>paperform</code>, <code>storyboards</code>, <code>editstoryboard</code>, <code>storyboardprint</code> oder <code>storyboardpdf</code> überspringen dieses Extra-Gate. Dasselbe gilt für die technischen Modi, die einen <code>cs</code> erzeugen.</p>
+
+	<h2>5. Hash-Gate für Quiz</h2>
+	<p>
+		Zusätzlich zur Seitensperre «Schulung &amp; Quiz». Aktiv nur auf dem Portal, und nur für diese Keys.
+		Dort ist <code>cs</code> Pflicht, ausser der Aufruf trägt <code>ADMIN</code>, <code>INSTR</code> oder <code>NOH</code>.
+		Andere Quiz-Keys und die anderen Server haben dieses Gate nicht.
+	</p>
+	<table>
+		<thead>
+			<tr><th>Quiz-Key</th><th>Felder, die in <code>cs</code> eingehen</th></tr>
+		</thead>
+		<tbody>
+			<tr><td><code>RKRSp-doku</code></td><td><code>quiz</code>, <code>PilotID</code>, <code>Name</code>, <code>Drone</code></td></tr>
+			<tr><td><code>RKRSp-EP</code></td><td><code>quiz</code>, <code>Schulung</code>, <code>EXAM</code>, <code>PilotID</code>. <code>Name</code> und <code>Drone</code> nur, wenn sie im Link stehen.</td></tr>
+			<tr><td><code>RKRSp-EP-preuf</code></td><td>wie Einsatzschulung, zusätzlich <code>QuizModus</code></td></tr>
+		</tbody>
+	</table>
+
+	<h2>6. Wer die Regeln ändert</h2>
+	<ul>
+		<li>Portal und RKRS Live: Kerngruppe oder Moodle-Site-Admin. <code>ADMIN</code> oder <code>INSTR</code> allein reichen nicht, solange Moodle geladen ist. Ist Moodle nicht geladen, dürfen die beiden Flags die Seite trotzdem öffnen.</li>
+		<li>RKRK und NAS: das Extra-Gate dieser Seite ist aus. Wer den RKRK-Login der Seite passiert hat, sieht das Formular. Die Stufe gast ist auf der Planungsseite von den erweiterten Aktionen ausgenommen; die Policy-Seite selbst hängt am Login.</li>
+	</ul>
+	<p>Speichern schreibt <code>data/access_policy.json</code> auf diesem Server. Ein anderer Host hat eine eigene Datei. «Standard wiederherstellen» setzt die im Code hinterlegten Defaults, inklusive <code>ADMIN</code> und <code>INSTR</code> als Freigabe fürs Personal.</p>
+
+	<h2>7. Regeln auf diesem Server</h2>
+	<p class="muted" id="live-host"><!--LIVE_HOST--></p>
+	<div style="overflow-x:auto;">
+	<table>
+		<thead>
+			<tr>
+				<th>Seite</th>
+				<th>Portal</th>
+				<th>RKRS Live</th>
+				<th>RKRK</th>
+				<th>Sonst / Test</th>
+			</tr>
+		</thead>
+		<tbody>
+			<!--LIVE_POLICY-->
+		</tbody>
+	</table>
+	</div>
+	<p class="muted">Leer oder «kein Extra-Gate» heisst: diese Zelle sperrt nicht zusätzlich. Massgeblich ist dann der Login des Profils bzw. ein anderes, noch aktives Gate (beim Quiz das Hash-Gate).</p>
+
+	<footer>
+		Hilfe zu Rollen und Zugriffen · Menü unter Administration · dieselbe Seite wie die Aufruf-Hilfen, nur mit <code>ADMIN</code>, <code>INSTR</code> oder als Kerngruppe auf Portal und RKRS Live.
+		Aufruf-Parameter stehen in der <a href="rkrk_digitalassess_aufruf_hilfe.php">Aufruf-Hilfe RKRS</a>
+		und der <a href="rkrk_digitalassess_aufruf_hilfe_rkrk.php">Aufruf-Hilfe RKRK</a>.
+	</footer>
+</div>
+</body>
+</html>

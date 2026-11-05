@@ -6815,7 +6815,18 @@ function saveChecklist(){
 		rkrk_redirect(rkrk_assess_append_setting_href("?mode=list"));
 	}
 
-    file_put_contents($path, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $__esWrote = file_put_contents($path, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+	if ($__esWrote !== false) {
+		if (!function_exists("rkrk_es_snapshot_refresh")) {
+			$__esInc = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+			if (is_file($__esInc)) {
+				include_once $__esInc;
+			}
+		}
+		if (function_exists("rkrk_es_snapshot_refresh")) {
+			rkrk_es_snapshot_refresh("assessment");
+		}
+	}
 
 	if (function_exists("rkrk_assess_checklist_progress_delete")) {
 		$__draft = preg_replace('/[^A-Za-z0-9_-]/', "", (string) ($_POST["checklist_draft_id"] ?? ""));
@@ -7692,6 +7703,40 @@ function einsatzpruefungLinkCsApi(): void {
 		}
 	}
 
+	if (trim((string)($src["kind"] ?? "")) === "form") {
+		$order = array(
+			"file", "story", "PersPick", "Pilot", "RKRSPilotID",
+			"RemotePilotID", "BetreiberID", "Kontaktnummer", "Instruktor", "Koptertyp", "Prüfungsort",
+		);
+		$formParams = array();
+		foreach ($order as $field) {
+			if (!array_key_exists($field, $src)) {
+				continue;
+			}
+			$val = trim((string)$src[$field]);
+			if ($val === "") {
+				continue;
+			}
+			$formParams[$field] = $val;
+		}
+		$assessmentOk = class_exists("assessment") && is_callable(array("assessment", "entry"));
+		$missingField = !isset($formParams["file"]) ? "file" : null;
+		$build = ($missingField === null && function_exists("rkrk_assess_hash_build_cs_for_form"))
+			? rkrk_assess_hash_build_cs_for_form($formParams)
+			: array("payload" => "", "cs" => "");
+		$cs = (string)($build["cs"] ?? "");
+		echo json_encode(array(
+			"ok" => $missingField === null && $cs !== "",
+			"gated" => false,
+			"payload" => (string)($build["payload"] ?? ""),
+			"cs" => $cs,
+			"required_fields" => array("file"),
+			"missing_field" => $missingField,
+			"assessment_ok" => $assessmentOk,
+		), JSON_UNESCAPED_UNICODE);
+		exit;
+	}
+
 	$quiz = trim((string)($src["quiz_key"] ?? ""));
 	if ($quiz === "") {
 		$quiz = trim((string)($src["quiz"] ?? ""));
@@ -7767,10 +7812,23 @@ function einsatzpruefungLinkCsApi(): void {
 	}
 
 	$cs = (string)($build["cs"] ?? "");
+	$payload = (string)($build["payload"] ?? "");
+	// Auch ohne Portal-Gate (z. B. A2) denselben kanonischen Payload hashen,
+	// damit jede Theorie-/Ziele-URL ein cs trägt.
+	if ($cs === "" && function_exists("rkrk_assess_hash_gate_build_payload_from_rule")) {
+		$fallback = rkrk_assess_hash_gate_build_payload_from_rule(
+			array("required_fields" => array()),
+			$params
+		);
+		$payload = (string)($fallback["payload"] ?? "");
+		if ($payload !== "") {
+			$cs = rkrk_assess_hash_compute_cs($payload);
+		}
+	}
 	echo json_encode(array(
-		"ok" => !$gated || $cs !== "",
+		"ok" => $cs !== "",
 		"gated" => $gated,
-		"payload" => $build["payload"] ?? "",
+		"payload" => $payload,
 		"cs" => $cs,
 		"required_fields" => $required,
 		"missing_field" => null,
@@ -7800,10 +7858,10 @@ function showEinsatzpruefungLinkBuilder(): void {
 	$personelMapBase = $scheme . "://" . $host . rtrim($dir, "/") . "/rkrk_assess_live_personel_map.php";
 	$personelCsApi = rkrk_assess_append_setting_href("rkrk_assess_live_personel.php?mode=personel_cs");
 	$carrySuffix = function_exists("rkrk_assess_carry_url_suffix") ? rkrk_assess_carry_url_suffix() : "";
-	// Generierte Einsatzprüfungs-Links: Kanal (RKRS / RKRSplus / RKRSprev) nicht mitgeben —
-	// Portal erkennt den Kontext über Host/Pfad; Audienz-Familie deckt das ab.
+	// Generierte Einsatzprüfungs-Links: Kanal und Staff-Flags nicht mitgeben.
+	// Portal erkennt den Kontext über Host/Pfad; ADMIN/INSTR bleiben nur auf dieser Seite.
 	if ($carrySuffix !== "") {
-		$carrySuffix = preg_replace('/(?:^|&)(?:RKRS|RKRSplus|RKRSprev)(?:=[^&]*)?/', "", $carrySuffix);
+		$carrySuffix = preg_replace('/(?:^|&)(?:RKRS|RKRSplus|RKRSprev|ADMIN|INSTR)(?:=[^&]*)?/', "", $carrySuffix);
 		$carrySuffix = ltrim((string) $carrySuffix, "&");
 		$carrySuffix = ($carrySuffix !== "") ? ("&" . $carrySuffix) : "";
 	}
@@ -7992,7 +8050,7 @@ function showEinsatzpruefungLinkBuilder(): void {
 	echo "<div style='margin-top:8px;'><button type='button' class='btn' onclick=\"eplb_copy('eplb_res_praxis', this)\">Kopieren</button></div>";
 
 	echo "<h3 style='margin-top:22px;'>3. Theorieprüfung</h3>";
-	echo "<p style='color:#64748b;font-size:13px;'>Pflicht für die Theorie-URL: <strong>Name</strong> und <strong>Drohne</strong>. Optional inkl. <code>cs</code> für Portal, falls für das Quiz erforderlich.</p>";
+	echo "<p style='color:#64748b;font-size:13px;'>Pflicht für die Theorie-URL: <strong>Name</strong> und <strong>Drohne</strong>. Die URL enthält immer <code>cs</code>, ohne <code>ADMIN</code>.</p>";
 	echo "<div class='field'><span class='field-label'>Modus</span>";
 	echo "<label style='display:block;margin:6px 0;'><input type='radio' name='eplb_theorie_modus' id='eplb_theorie_pruefung' value='pruefung' checked> Prüfung (<code>QuizModus=pruefung</code>)</label>";
 	echo "<label style='display:block;margin:6px 0;'><input type='radio' name='eplb_theorie_modus' id='eplb_theorie_schulung' value='schulung'> Schulung (<code>QuizModus=quiz</code> — kein Prüfungsmodus)</label>";
@@ -8199,6 +8257,55 @@ function eplb_savePrefs(btn){
   }).catch(function(){ if(hint)hint.textContent='Speichern fehlgeschlagen.'; alert('Speichern fehlgeschlagen.'); });
 }
 eplb_refillStories();
+function eplb_formFields(material, file, story){
+  var f={file:file, PersPick:'on'};
+  if(story) f.story=story;
+  var pilot=eplb_val('eplb_pilot'); if(pilot) f.Pilot=pilot;
+  var rk=eplb_val('eplb_rkrsid'); if(rk) f.RKRSPilotID=rk;
+  if(material){
+    var rm=eplb_val('eplb_remote'); if(rm) f.RemotePilotID=rm;
+    var bt=eplb_val('eplb_betreiber'); if(bt) f.BetreiberID=bt;
+  }
+  var kn=eplb_val('eplb_kontakt'); if(kn) f.Kontaktnummer=kn;
+  var ins=eplb_val('eplb_instr'); if(ins) f.Instruktor=ins;
+  var kop=eplb_val('eplb_kopter'); if(kop) f.Koptertyp=kop;
+  var ort=eplb_val('eplb_ort'); if(ort) f['Prüfungsort']=ort;
+  return f;
+}
+function eplb_finishFormUrl(u, fields, outId){
+  var body={kind:'form'};
+  Object.keys(fields).forEach(function(k){
+    if(fields[k]!==undefined && fields[k]!==null && String(fields[k])!=='') body[k]=String(fields[k]);
+  });
+  var apiQs='kind=form';
+  Object.keys(body).forEach(function(k){
+    if(k==='kind') return;
+    apiQs+='&'+encodeURIComponent(k)+'='+encodeURIComponent(body[k]);
+  });
+  var sep=(String(EPLB_CS_API).indexOf('?')>=0)?'&':'?';
+  fetch(EPLB_CS_API+sep+apiQs,{
+    method:'POST',
+    credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    return r.text().then(function(t){
+      var j=null;
+      try{ j=JSON.parse(t); }catch(e){ j=null; }
+      if(!j) throw new Error('cs-API lieferte kein JSON.');
+      return j;
+    });
+  }).then(function(j){
+    if(!j||j.assessment_ok===false){ alert('cs-Berechnung: assessment-Klasse fehlt auf dem Server.'); return; }
+    if(j.missing_field){ alert('cs: Pflichtfeld fehlt: '+j.missing_field); return; }
+    if(!j.ok||!j.cs){ alert('cs konnte nicht berechnet werden.'); return; }
+    document.getElementById(outId).value=u+'&cs='+encodeURIComponent(j.cs);
+    var csEl=document.getElementById('eplb_res_cs');
+    if(csEl) csEl.value=j.cs;
+    var pay=document.getElementById('eplb_res_payload');
+    if(pay) pay.value=j.payload||'';
+  }).catch(function(err){ alert('cs-Anfrage fehlgeschlagen'+(err&&err.message?': '+err.message:'.')); });
+}
 function eplb_genMaterial(){
   eplb_syncRkrsFromName({onlyEmpty:true});
   var file=eplb_val('eplb_tpl_material');
@@ -8206,7 +8313,7 @@ function eplb_genMaterial(){
   var u=EPLB_ASSESS+'?mode=form&file='+encodeURIComponent(file);
   var q=eplb_commonParams(true); if(q.length)u+='&'+q.join('&');
   if(EPLB_CARRY)u+=EPLB_CARRY;
-  document.getElementById('eplb_res_material').value=u;
+  eplb_finishFormUrl(u, eplb_formFields(true, file, ''), 'eplb_res_material');
 }
 function eplb_refillStories(){
   var sel=document.getElementById('eplb_story_praxis');
@@ -8241,7 +8348,7 @@ function eplb_genPraxis(){
   if(story) u+='&story='+encodeURIComponent(story);
   var q=eplb_commonParams(false); if(q.length)u+='&'+q.join('&');
   if(EPLB_CARRY)u+=EPLB_CARRY;
-  document.getElementById('eplb_res_praxis').value=u;
+  eplb_finishFormUrl(u, eplb_formFields(false, file, story), 'eplb_res_praxis');
 }
 function eplb_theorieModus(){
   var el=document.querySelector('input[name="eplb_theorie_modus"]:checked');
@@ -8319,9 +8426,8 @@ function eplb_genTheorie(){
     if(!j){ alert('cs-Antwort ungültig.'); return; }
     if(j.assessment_ok===false){ alert('cs-Berechnung: assessment-Klasse fehlt auf dem Server.'); return; }
     if(j.missing_field){ alert('cs: Pflichtfeld fehlt: '+j.missing_field); return; }
-    if(!j.ok || (j.gated && !j.cs)){ alert('cs konnte nicht berechnet werden'+(j.ok===false?' (ok=false).':'.')); return; }
-    var u=EPLB_QUIZ+'?'+qs;
-    if(j.cs) u+='&cs='+encodeURIComponent(j.cs);
+    if(!j.ok || !j.cs){ alert('cs konnte nicht berechnet werden'+(j.ok===false?' (ok=false).':'.')); return; }
+    var u=EPLB_QUIZ+'?'+qs+'&cs='+encodeURIComponent(j.cs);
     var carry=EPLB_CARRY||'';
     if(carry){
       carry=carry.replace(/&PersPick=[^&]*/g,'').replace(/\?PersPick=[^&]*/g,'?');
@@ -8375,9 +8481,8 @@ function eplb_genZiele(){
     if(!j){ alert('cs-Antwort ungültig.'); return; }
     if(j.assessment_ok===false){ alert('cs-Berechnung: assessment-Klasse fehlt auf dem Server.'); return; }
     if(j.missing_field){ alert('cs: Pflichtfeld fehlt: '+j.missing_field); return; }
-    if(!j.ok || (j.gated && !j.cs)){ alert('cs konnte nicht berechnet werden'+(j.ok===false?' (ok=false).':'.')); return; }
-    var u=EPLB_ZIELE+'?'+qs;
-    if(j.cs) u+='&cs='+encodeURIComponent(j.cs);
+    if(!j.ok || !j.cs){ alert('cs konnte nicht berechnet werden'+(j.ok===false?' (ok=false).':'.')); return; }
+    var u=EPLB_ZIELE+'?'+qs+'&cs='+encodeURIComponent(j.cs);
     var carry=EPLB_CARRY||'';
     if(carry){
       carry=carry.replace(/&PersPick=[^&]*/g,'').replace(/\?PersPick=[^&]*/g,'?');

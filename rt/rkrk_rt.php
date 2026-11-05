@@ -15,6 +15,11 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
 function h($v){ return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
+function rkrk_rt_clip_zusatzinfo($text){
+  $text = trim(str_replace(array("\r\n", "\r"), "\n", (string)$text));
+  if(function_exists('mb_substr')) return mb_substr($text, 0, 60, 'UTF-8');
+  return substr($text, 0, 60);
+}
 function chf_fmt($n){ return "CHF " . number_format((float)$n, 2, '.', '’'); }
 
 include_once(__DIR__ . '/rkrk_rt_shell.php');
@@ -303,6 +308,7 @@ if($mode==='save_invoice'){
   $data['id']=$id;
   $data['kategorie']=$kat;
   if(!isset($data['datum']) || $data['datum']==='') $data['datum']=date('Y-m-d');
+  if(array_key_exists('zusatzinfo', $data)) $data['zusatzinfo'] = rkrk_rt_clip_zusatzinfo($data['zusatzinfo']);
 
   computeTotals($data);
 
@@ -333,6 +339,7 @@ if($mode==='save_example'){
   $data['id']=$id;
   $data['kategorie']=$kat;
   if(!isset($data['datum']) || $data['datum']==='') $data['datum']=date('Y-m-d');
+  if(array_key_exists('zusatzinfo', $data)) $data['zusatzinfo'] = rkrk_rt_clip_zusatzinfo($data['zusatzinfo']);
 
   // schema parity (not required for UI)
   if(!isset($data['kunde_details']) || !is_array($data['kunde_details'])) $data['kunde_details']=['anrede'=>'','vorname'=>'','nachname'=>'','adresse'=>'','plz'=>'','ort'=>'','land'=>''];
@@ -414,12 +421,15 @@ $title = ($mode==='invoice')?'Rechnung bearbeiten':(($mode==='example')?'Beispie
 
 // Für Live-Logo/Farbe beim Kategorie-Wechsel im Editor (JS) — Schlüssel normalisiert wie category_design()
 $designByKat = [];
+$zusatzByKat = [];
 foreach (array_keys($KATEGORIEN) as $_kat) {
   $_kn = preg_replace('/[^A-Z]/', '', strtoupper((string)$_kat));
   if ($_kn === '') {
     continue;
   }
   $designByKat[$_kn] = category_design($_kn, $KATEGORIEN, $DEFAULTS);
+  $_katConf = category_conf_for_code($_kn, $KATEGORIEN);
+  $zusatzByKat[$_kn] = (string) ($_katConf['zusatzinfo'] ?? $_katConf['Zusatzinformation'] ?? '');
 }
 $listLogoKat = 'SC';
 if (!empty($DEFAULTS['kategorien_order']) && is_array($DEFAULTS['kategorien_order'])) {
@@ -435,6 +445,10 @@ if (!empty($DEFAULTS['kategorien_order']) && is_array($DEFAULTS['kategorien_orde
   $listLogoKat = (string) key($KATEGORIEN);
 }
 $listHeaderDesign = category_design($listLogoKat, $KATEGORIEN, $DEFAULTS);
+$zusatzByKat = $zusatzByKat ?? [];
+$invoiceKatConf = category_conf_for_code((string) ($doc['kategorie'] ?? ''), $KATEGORIEN);
+$invoiceZusatzDefault = (string) ($invoiceKatConf['zusatzinfo'] ?? $invoiceKatConf['Zusatzinformation'] ?? '');
+$invoiceZusatzValue = rkrk_rt_clip_zusatzinfo(array_key_exists('zusatzinfo', $doc) ? (string) $doc['zusatzinfo'] : $invoiceZusatzDefault);
 rkrk_rt_emit_chrome('rkrk_rt.css');
 ?>
   <style>
@@ -782,6 +796,14 @@ rkrk_rt_emit_chrome('rkrk_rt.css');
 
   <div class="rkrk-row" style="flex-direction:column; align-items:stretch; margin-top:12px;">
     <div>
+      <label><b>Zusatzinformation</b> <span class="mini">(nur diese Rechnung, unter dem Total im PDF, maximal 60 Zeichen. Leer = keine Zusatzinformation.)</span></label>
+      <textarea id="zusatzinfo" rows="2" maxlength="60" style="width:100%; box-sizing:border-box;"><?= h($invoiceZusatzValue) ?></textarea>
+      <div class="mini" id="zusatzinfoCount" style="text-align:right;"><?= (function_exists('mb_strlen') ? mb_strlen($invoiceZusatzValue, 'UTF-8') : strlen($invoiceZusatzValue)) ?>/60</div>
+    </div>
+  </div>
+
+  <div class="rkrk-row" style="flex-direction:column; align-items:stretch; margin-top:12px;">
+    <div>
       <label><b>Abschluss</b> <span class="mini">(mehrzeilig, erscheint nach der Totalzeile im PDF, vor Gruss/Signatur)</span></label>
       <textarea id="abschluss" rows="5" style="width:100%; box-sizing:border-box;"><?= h($doc['abschluss'] ?? '') ?></textarea>
     </div>
@@ -807,6 +829,7 @@ var DOC = <?= json_encode($doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
 var CUSTOMERS = <?= json_encode($CUSTOMERS, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 var DEFAULTS = <?= json_encode($DEFAULTS, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 var DESIGN_BY_KAT = <?= json_encode($designByKat, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+var ZUSATZ_BY_KAT = <?= json_encode($zusatzByKat, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 var MEDIA_WEB_BASE = <?= json_encode($webRtBase, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
 
@@ -1420,15 +1443,55 @@ function applyEditorDesign(rawKat){
   }
   document.documentElement.style.setProperty('--kat-color', color || '#333');
 }
+function katZusatzText(rawKat){
+  var kat = normKatKey(rawKat);
+  if(ZUSATZ_BY_KAT && Object.prototype.hasOwnProperty.call(ZUSATZ_BY_KAT, kat)){
+    return String(ZUSATZ_BY_KAT[kat] || '');
+  }
+  return '';
+}
 var katEl = document.getElementById('kategorie');
+var zusatzLastKat = katEl ? normKatKey(katEl.value) : '';
+function clipZusatz(v){
+  return Array.from(String(v||'')).slice(0,60).join('');
+}
+function zusatzLen(v){
+  return Array.from(String(v||'')).length;
+}
+function refreshZusatzCount(){
+  var ta = document.getElementById('zusatzinfo');
+  var c = document.getElementById('zusatzinfoCount');
+  if(!ta || !c) return;
+  var clipped = clipZusatz(ta.value);
+  if(ta.value !== clipped) ta.value = clipped;
+  c.textContent = zusatzLen(ta.value) + '/60';
+}
+function syncZusatzWithKategorie(nextRaw){
+  var ta = document.getElementById('zusatzinfo');
+  if(!ta) return;
+  var nextKat = normKatKey(nextRaw);
+  var prevDefault = clipZusatz(katZusatzText(zusatzLastKat));
+  var nextDefault = clipZusatz(katZusatzText(nextKat));
+  if(String(ta.value).trim() === String(prevDefault).trim()){
+    ta.value = nextDefault;
+  }
+  zusatzLastKat = nextKat;
+  refreshZusatzCount();
+}
 if(katEl){
   function onKategorieUiUpdate(){
+    syncZusatzWithKategorie(katEl.value);
     applyEditorDesign(katEl.value);
     renderSections();
     recalcAll();
   }
   katEl.addEventListener('change', onKategorieUiUpdate);
   if(document.getElementById('editorLogo')) applyEditorDesign(katEl.value);
+}
+var zusatzTa = document.getElementById('zusatzinfo');
+if(zusatzTa){
+  zusatzTa.addEventListener('input', refreshZusatzCount);
+  refreshZusatzCount();
 }
 
 renderSections();
@@ -1442,6 +1505,7 @@ document.getElementById('docForm').addEventListener('submit',function(e){
   payload.datum=document.getElementById('datum').value;
   payload.einleitung=document.getElementById('einleitung').value;
   payload.abschluss=document.getElementById('abschluss').value;
+  payload.zusatzinfo=clipZusatz(document.getElementById('zusatzinfo').value);
   payload.pdf_details_positionen=document.getElementById('pdf_details_positionen').checked;
   payload.pdf_positionen_sektionen=document.getElementById('pdf_positionen_sektionen').checked;
   payload.pdf_sektionen=document.getElementById('pdf_sektionen').checked;

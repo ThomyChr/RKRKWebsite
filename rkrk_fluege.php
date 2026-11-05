@@ -2504,14 +2504,15 @@ echo "<table class='rkrk-flight-main rkrk-files-collapsed rkrk-meta-collapsed'>"
 						}
 						$fileHref = $RKRKLocalLoactionMissionFiles . $Link;
 						$convHref = '';
+						$flightDay = trim((string)($dataline['Datum'] ?? ''));
 						if (($xmlLabel === 'JasonFile' || $xmlLabel === 'KMZFile') && function_exists('rkrk_file_convert_download_href')) {
-							$convHref = rkrk_file_convert_download_href($Link);
+							$convHref = rkrk_file_convert_download_href($Link, $xmlLabel === 'JasonFile' ? $flightDay : '');
 							if ($convHref !== '') {
 								$fileHref = $convHref;
 							}
 						}
 						if ($xmlLabel === 'JasonFile' && $convHref === '' && function_exists('rkrk_json_flight_export_href')) {
-							$exportHref = rkrk_json_flight_export_href($Link);
+							$exportHref = rkrk_json_flight_export_href($Link, $flightDay);
 							if ($exportHref !== '') {
 								$fileHref = $exportHref;
 							}

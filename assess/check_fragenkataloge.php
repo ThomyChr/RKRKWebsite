@@ -91,7 +91,7 @@ foreach ($assRows as $idx => $row) {
 
 	$hdr = null;
 	if (($fh = fopen($p, 'r')) !== false) {
-		$hdr = fgetcsv($fh, 1048576, ";");
+		$hdr = fgetcsv($fh, 1048576, ";", '"', '\\');
 		if (!is_array($hdr) || count($hdr) < 5) {
 			lineMsg("ER", $p, "Kopfzeile verdächtig kurz oder leer.");
 			fclose($fh);
@@ -99,7 +99,7 @@ foreach ($assRows as $idx => $row) {
 		} else {
 			$lineno = 1;
 			$mismatch = 0;
-			while (($row = fgetcsv($fh, 1048576, ";")) !== false) {
+			while (($row = fgetcsv($fh, 1048576, ";", '"', '\\')) !== false) {
 				$lineno++;
 				if (count($row) !== count($hdr)) {
 					$mismatch++;

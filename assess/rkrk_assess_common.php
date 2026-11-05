@@ -1,6 +1,10 @@
 <?php
 	$onRKRS = false;
-	$folderoffset = "../";
+	// Aufrufer im Root (z.B. rkrk_quiz_admin.php) setzen folderoffset=""; nicht überschreiben.
+	// Includes unten nutzen __DIR__, damit sie unabhängig vom CWD/Einstiegs-Skript greifen.
+	if (!isset($folderoffset)) {
+		$folderoffset = "../";
+	}
 	// Portal-Login hängt an MoodleSession. Eine schon aktive PHP-Session
 	// (auto_start / anderer Name) blockiert sonst das Lesen dieser Anmeldung.
 	$__rkrkHostEarly = strtolower(trim((string) ($_SERVER["HTTP_HOST"] ?? "")));
@@ -16,8 +20,8 @@
 		}
 	}
 	unset($__rkrkHostEarly, $__rkrkMoodleHostEarly, $__rkrkSessNameEarly);
-	include_once($folderoffset . 'scripts/rkrk_gen_ext.php');
-	$hashAssessmentPath = $folderoffset . 'scripts/hash_assessment.php';
+	include_once(__DIR__ . '/../scripts/rkrk_gen_ext.php');
+	$hashAssessmentPath = __DIR__ . '/../scripts/hash_assessment.php';
 	if (is_file($hashAssessmentPath)) {
 		include_once($hashAssessmentPath);
 	}
@@ -112,13 +116,15 @@
 				"allow_extra" => true,
 			),
 			"RKRSp-EP" => array(
-				"required_fields" => array("quiz", "Schulung", "EXAM", "PilotID", "Name", "Drone"),
-				"optional_fields" => array(),
+				// Name/Drone nicht Pflicht: Theorie-Link darf ohne Person erzeugt werden.
+				// Stehen sie in der URL, hasht das Gate sie mit (personalisierter Link).
+				"required_fields" => array("quiz", "Schulung", "EXAM", "PilotID"),
+				"optional_fields" => array("Name", "Drone"),
 				"allow_extra" => true,
 			),
 			"RKRSp-EP-preuf" => array(
-				"required_fields" => array("quiz", "Schulung", "QuizModus", "EXAM", "PilotID", "Name", "Drone"),
-				"optional_fields" => array(),
+				"required_fields" => array("quiz", "Schulung", "QuizModus", "EXAM", "PilotID"),
+				"optional_fields" => array("Name", "Drone"),
 				"allow_extra" => true,
 			),
 		);
@@ -232,11 +238,20 @@
 				);
 			}
 			// Flag-/optionale Parameter dürfen fehlen
-			// (Schulung = Flag; PilotID optional für Theorie-Links mit nur Name+Drohne;
+			// (Schulung = Flag; PilotID optional.
+			// Name und Drone sind bei RKRSp-EP / RKRSp-EP-preuf keine Pflichtfelder:
+			// fehlen sie in der URL, trägt der Teilnehmer sie selbst ein.
 			// QuizModus wird bei RKRSp-EP-preuf per Default gesetzt).
 			if (!array_key_exists($key, $request)) {
 				if (strcasecmp($key, "Schulung") === 0 || strcasecmp($key, "PilotID") === 0) {
 					continue;
+				}
+				// Übungsmodus: EXAM ist kein Pflichtfeld (Prüfungsmodus bleibt EXAM-pflichtig).
+				if (strcasecmp($key, "EXAM") === 0) {
+					$qmTrain = strtolower(trim((string) ($request["QuizModus"] ?? "")));
+					if (in_array($qmTrain, array("uebung", "übung", "quiz", "training"), true)) {
+						continue;
+					}
 				}
 				return array(
 					"payload" => null,
@@ -442,10 +457,18 @@
 	 */
 	function rkrk_assess_hash_gate_carry_fields_from_request(): array {
 		$out = array();
+		$urlKeys = rkrk_assess_hash_gate_url_param_keys();
 		foreach (array("quiz", "QuizModus", "EXAM", "RKRSPilotID", "Name", "Drone", "cs") as $k) {
-			if (isset($_GET[$k]) && trim((string) $_GET[$k]) !== "") {
-				$out[$k] = (string) $_GET[$k];
+			if (!isset($_GET[$k]) || trim((string) $_GET[$k]) === "") {
+				continue;
 			}
+			// Identität nur aus der signierten URL. Werte aus dem Formular (POST)
+			// dürfen Folge-Links und den cs nicht verändern.
+			if (in_array($k, array("RKRSPilotID", "Name", "Drone"), true)
+				&& !rkrk_assess_hash_gate_url_has_param($urlKeys, $k)) {
+				continue;
+			}
+			$out[$k] = (string) $_GET[$k];
 		}
 		return $out;
 	}
@@ -622,7 +645,7 @@
 			$scope = (string) ($result["scope"] ?? "");
 			$groups = ($scope === "sessions")
 				? "Kerngruppe oder Instruktoren"
-				: "die berechtigte Moodle-Gruppe";
+				: (($scope === "pruefungstag") ? "die Kerngruppe" : "die berechtigte Moodle-Gruppe");
 			$moodleUp = function_exists("rkrk_assess_rkrs_moodle_bootstrap") && rkrk_assess_rkrs_moodle_bootstrap();
 			$uid = function_exists("rkrk_assess_rkrs_moodle_user_id") ? rkrk_assess_rkrs_moodle_user_id() : 0;
 			$guest = function_exists("isguestuser") && isguestuser();
@@ -634,8 +657,12 @@
 			$portalLoginRow .= " (Moodle " . ($moodleUp ? "geladen" : "nicht geladen")
 				. ", Benutzer " . (string) $uid
 				. ", Session " . $sessName . ")";
-			$denyHint = "Zuerst im Portal anmelden (gleiche Browser-Sitzung), danach diese Seite neu laden. "
-				. "ADMIN allein genügt nicht. Zugriff haben " . $groups . " oder ein gültiger cs-Link.";
+			if ($scope === "pruefungstag") {
+				$denyHint = "Mit ?ADMIN oder ?INSTR in der URL öffnet sich die Planung. Ohne diese Flags zuerst im Portal als Kerngruppe anmelden und die Seite neu laden.";
+			} else {
+				$denyHint = "Zuerst im Portal anmelden (gleiche Browser-Sitzung), danach diese Seite neu laden. "
+					. "ADMIN allein genügt nicht. Zugriff haben " . $groups . " oder ein gültiger cs-Link.";
+			}
 		}
 		$publicRows = array(
 			"Quiz" => (string) ($result["quiz"] ?? ""),
@@ -1760,7 +1787,9 @@
 			"scope" => $scope,
 			"quiz" => "",
 			"rule_found" => false,
-			"required_fields" => ($scope === "sessions") ? array("cs") : array("RKRSPilotID", "Name", "cs"),
+			"required_fields" => ($scope === "pruefungstag")
+				? array()
+				: (($scope === "sessions") ? array("cs") : array("RKRSPilotID", "Name", "cs")),
 			"missing_field" => null,
 			"payload" => null,
 			"client_cs" => trim((string) ($_GET["cs"] ?? "")),
@@ -1816,13 +1845,21 @@
 	 */
 	function rkrk_assess_hash_gate_grant_fields_from_get(): array {
 		$out = array();
+		$urlKeys = rkrk_assess_hash_gate_url_param_keys();
 		// ohne_bilder / Status gehören NICHT in den Session-Grant:
 		// sonst landen sie beim nächsten Aufruf ohne diese URL-Parameter in $_GET
 		// und verfälschen den cs-Hash («hash_mismatch»).
+		// Name/Drohne/PilotID nur, wenn sie in der URL stehen. Sonst übernimmt
+		// die nächste Person auf demselben Gerät die Eingabe der vorherigen.
 		foreach (array("EXAM", "ExamCode", "QuizModus", "PilotID", "RKRSPilotID", "Name", "Drone", "Schulung", "cs") as $k) {
-			if (isset($_GET[$k]) && trim((string)$_GET[$k]) !== "") {
-				$out[$k] = (string)$_GET[$k];
+			if (!isset($_GET[$k]) || trim((string)$_GET[$k]) === "") {
+				continue;
 			}
+			if (in_array($k, array("PilotID", "RKRSPilotID", "Name", "Drone"), true)
+				&& !rkrk_assess_hash_gate_url_has_param($urlKeys, $k)) {
+				continue;
+			}
+			$out[$k] = (string)$_GET[$k];
 		}
 		return $out;
 	}
@@ -2170,9 +2207,9 @@
 	} else {
 		$onRKRS = false;
 		//echo "<br><br><div>ON RKRK</div>";
-		include_once($folderoffset . 'scripts/rkrk_gen.php');
+		include_once(__DIR__ . '/../scripts/rkrk_gen.php');
 		rkrk_assess_apply_folderoffset_to_mission_doc_paths();
-		$menuPath = $folderoffset . 'scripts/rkrk_menu.php';
+		$menuPath = __DIR__ . '/../scripts/rkrk_menu.php';
 		if (file_exists($menuPath)) {
 			include_once($menuPath);
 		}
@@ -2180,7 +2217,7 @@
 			(isset($_GET['mode']) && (string) $_GET['mode'] === 'paperform')
 			|| (isset($_GET['paper']) && (string) $_GET['paper'] === '1' && trim((string) ($_GET['quiz'] ?? '')) !== '')
 		);
-		$accessPath = $folderoffset . 'rkrk_access_control.php';
+		$accessPath = __DIR__ . '/../rkrk_access_control.php';
 		if (file_exists($accessPath) && !$__rkrkAssessPublicPaper) {
 			include_once($accessPath);
 		}
@@ -2966,6 +3003,24 @@ function rkrk_assess_personel_save_file(string $path, array $columns, array $pil
 		return false;
 	}
 	$tmp = $path . ".tmp." . substr(hash("sha1", microtime(true) . "|" . $path), 0, 10);
+	$beforeSig = "";
+	$__esInc = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+	if (!function_exists("rkrk_es_personel_relevant_signature") && is_file($__esInc)) {
+		include_once $__esInc;
+	}
+	if (function_exists("rkrk_es_personel_relevant_signature") && is_file($path)) {
+		$rawOld = @file_get_contents($path);
+		$old = is_string($rawOld) ? json_decode($rawOld, true) : null;
+		$oldPilots = array();
+		if (is_array($old)) {
+			if (isset($old["pilots"]) && is_array($old["pilots"])) {
+				$oldPilots = $old["pilots"];
+			} elseif (isset($old["rows"]) && is_array($old["rows"])) {
+				$oldPilots = $old["rows"];
+			}
+		}
+		$beforeSig = rkrk_es_personel_relevant_signature($oldPilots);
+	}
 	if (@file_put_contents($tmp, $json) === false) {
 		@unlink($tmp);
 		return false;
@@ -2973,7 +3028,13 @@ function rkrk_assess_personel_save_file(string $path, array $columns, array $pil
 	if (!@rename($tmp, $path)) {
 		$ok = @copy($tmp, $path);
 		@unlink($tmp);
+		if ($ok && function_exists("rkrk_es_after_personel_save")) {
+			rkrk_es_after_personel_save($pilots, $beforeSig);
+		}
 		return $ok;
+	}
+	if (function_exists("rkrk_es_after_personel_save")) {
+		rkrk_es_after_personel_save($pilots, $beforeSig);
 	}
 	return true;
 }
@@ -4152,6 +4213,15 @@ function rkrk_assess_quiz_results_save_rows(string $resultsDir, array $rows): bo
 			return false;
 		}
 	}
+	if (!function_exists("rkrk_es_snapshot_refresh")) {
+		$__esInc = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+		if (is_file($__esInc)) {
+			include_once $__esInc;
+		}
+	}
+	if (function_exists("rkrk_es_snapshot_refresh")) {
+		rkrk_es_snapshot_refresh("quiz");
+	}
 	return true;
 }
 
@@ -4272,7 +4342,7 @@ function rkrk_assess_quiz_title_from_key(string $quizKey): string {
 		if ($path !== "" && is_readable($path)) {
 			$fh = @fopen($path, "r");
 			if ($fh !== false) {
-				$headers = fgetcsv($fh, 0, ";");
+				$headers = fgetcsv($fh, 0, ";", '"', '\\');
 				if (is_array($headers)) {
 					$keyIdx = null;
 					$titelIdx = null;
@@ -5332,7 +5402,7 @@ function rkrk_assess_csv_fputcsv_row($fh, array $fields, string $delimiter = ";"
 		$escape = (PHP_VERSION_ID >= 80400) ? '"' : "\\";
 		return fputcsv($fh, $fields, $delimiter, $enclosure, $escape) !== false;
 	}
-	return fputcsv($fh, $fields, $delimiter, $enclosure) !== false;
+	return fputcsv($fh, $fields, $delimiter, $enclosure, '\\') !== false;
 }
 
 /**
@@ -5386,7 +5456,7 @@ function rkrk_assess_read_csv_file(string $path, ?array $expectedHeaders = null,
 	if ($fh === false) {
 		return array($headers, $rows);
 	}
-	$headerRow = fgetcsv($fh, 1048576, $delimiter);
+	$headerRow = fgetcsv($fh, 1048576, $delimiter, '"', '\\');
 	if (!is_array($headerRow) || count($headerRow) === 0) {
 		fclose($fh);
 		return array($headers, $rows);
@@ -5399,7 +5469,7 @@ function rkrk_assess_read_csv_file(string $path, ?array $expectedHeaders = null,
 		$headers[] = (string) $h;
 	}
 	$nH = count($headers);
-	while (($data = fgetcsv($fh, 1048576, $delimiter)) !== false) {
+	while (($data = fgetcsv($fh, 1048576, $delimiter, '"', '\\')) !== false) {
 		if ($data === array(null)) {
 			continue;
 		}
@@ -7724,8 +7794,10 @@ function rkrk_assess_favicon_link_tags_html(): string {
 			return '<link rel="icon" type="image/x-icon" href="' . $href . '">' . "\n";
 		}
 		$ico = rkrk_assess_rkrs_favicon_ico_basename();
+		/* RKRS_onrkrs.png ist 1663px. Als sizes=16x16 gewinnt sie gegen das ICO
+		   und der Tab zeigt ein schwarzes Quadrat. Tab-Icon nur aus dem ICO. */
 		return '<link rel="icon" type="image/x-icon" href="' . $h($ico) . '">' . "\n"
-			. '<link rel="icon" type="image/png" sizes="16x16" href="' . $h('RKRS_onrkrs.png') . '">' . "\n";
+			. '<link rel="shortcut icon" type="image/x-icon" href="' . $h($ico) . '">' . "\n";
 	}
 	return '<link rel="icon" type="image/x-icon" href="' . $h('rkrk.ico') . '">' . "\n"
 		. '<link rel="icon" type="image/png" sizes="32x32" href="' . $h('favicon-32x32.png') . '">' . "\n"
@@ -8270,6 +8342,7 @@ function rkrk_assess_portal_nav_html(array $o): string {
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u($esNav)) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Einsatzberechtigung</a>';
 		$trNav = function_exists("rkrk_tr_page_href") ? rkrk_tr_page_href() : "rkrk_assess_trainingstatus.php";
 		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u($trNav)) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Teilnehmerliste</a>';
+		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_pruefungstag.php")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Prüfungstag</a>';
 		$out .= "</div></div></li>";
 
 		$out .= '<li class="rkrk-portal-cell" data-rkrk-portal-tab="admin">';
@@ -8281,6 +8354,7 @@ function rkrk_assess_portal_nav_html(array $o): string {
 		if ($adm) {
 			$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_admin_access.php")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Zugriffsrechte</a>';
 		}
+		$out .= '<a class="rkrk-portal-item" role="menuitem" href="' . $h($u("rkrk_assess_zugriff_hilfe.php")) . '"><span class="rkrk-portal-ico" aria-hidden="true"></span>Rollen und Zugriffe</a>';
 		$out .= "</div></div></li>";
 	}
 

@@ -316,14 +316,14 @@ function rkrk_template_import_csv_upload(string $templateFolder, string $file, $
     if ($bom !== "\xEF\xBB\xBF") {
         rewind($fh);
     }
-    $header = fgetcsv($fh, 0, ";", '"');
+    $header = fgetcsv($fh, 0, ";", '"', '\\');
     if (!is_array($header)) {
         fclose($fh);
         return "hdr";
     }
     $header = array_map("trim", $header);
     $rows = [];
-    while (($row = fgetcsv($fh, 0, ";", '"')) !== false) {
+    while (($row = fgetcsv($fh, 0, ";", '"', '\\')) !== false) {
         if (!is_array($row) || count($row) < 2) {
             continue;
         }

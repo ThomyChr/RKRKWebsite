@@ -393,6 +393,7 @@ if (!function_exists('rkrk_config_apply_menu')) {
 				'image' => true,
 				'image_small' => true,
 				'users' => true,
+				'deny_users' => true,
 			);
 			foreach ($overlay[$key] as $field => $value) {
 				if (!isset($allowed[$field])) {
@@ -408,7 +409,7 @@ if (!function_exists('rkrk_config_apply_menu')) {
 						continue;
 					}
 					$mainMenu[$key][$field] = $icon;
-				} elseif ($field === 'users') {
+				} elseif ($field === 'users' || $field === 'deny_users') {
 					$mainMenu[$key][$field] = rkrk_config_sanitize_menu_users($value);
 				} elseif ($field === 'parameter') {
 					$mainMenu[$key][$field] = rkrk_config_sanitize_menu_parameter($value);
@@ -571,6 +572,7 @@ if (!function_exists('rkrk_config_menu_entry_from_overlay')) {
 			'activ' => !empty($row['activ']) && $row['activ'] !== '0' && $row['activ'] !== 'false',
 			'securl' => !empty($row['securl']) && $row['securl'] !== '0' && $row['securl'] !== 'false',
 			'users' => rkrk_config_sanitize_menu_users($row['users'] ?? ''),
+			'deny_users' => rkrk_config_sanitize_menu_users($row['deny_users'] ?? ''),
 		);
 	}
 }
@@ -773,6 +775,7 @@ if (!function_exists('rkrk_admin_nav')) {
 			'rkrk_admin_branding.php' => 'Branding / Karte',
 			'rkrk_admin_nachrichten.php' => 'Nachrichten',
 			'rkrk_admin_unterhalt.php' => 'Unterhalt',
+			'rkrk_admin_filesync.php' => 'Datei-Sync',
 		);
 		$msgOn = ($current === 'rkrk_admin_nachrichten.php' || isset(rkrk_admin_msg_pages()[$current]));
 		echo "<nav class='rkrk-sels rkrk-reg-pills rkrk-admin-nav' aria-label='Konfiguration'>";

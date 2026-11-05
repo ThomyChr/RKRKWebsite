@@ -206,10 +206,92 @@ if (!function_exists("rkrk_es_name_matches")) {
 	}
 }
 
+if (!function_exists("rkrk_es_push_unique_dir")) {
+	/** @param array<string,string> $dirs */
+	function rkrk_es_push_unique_dir(array &$dirs, string $path): void {
+		$path = rtrim(str_replace("\\", "/", trim($path)), "/");
+		if ($path === "" || !is_dir($path)) {
+			return;
+		}
+		$real = realpath($path);
+		$key = strtolower(str_replace("\\", "/", $real !== false ? $real : $path));
+		$dirs[$key] = ($real !== false ? str_replace("\\", "/", $real) : $path);
+	}
+}
+
+if (!function_exists("rkrk_es_server_data_root")) {
+	/**
+	 * Datenwurzel je nach Server.
+	 * …/rkrs/assess/public → …/rkrs/ (data liegt daneben).
+	 * …/test27/assess → …/rkropen/rkrk/.
+	 */
+	function rkrk_es_server_data_root(): string {
+		$dir = str_replace("\\", "/", __DIR__);
+		if (preg_match("#/public$#i", $dir) === 1) {
+			$dir = dirname($dir);
+		}
+		$site = dirname($dir);
+		$checks = array($site . "/data");
+		$rkropen = dirname($site);
+		if ($rkropen !== "" && $rkropen !== "." && $rkropen !== $site) {
+			$checks[] = $rkropen . "/rkrk/data";
+		}
+		if (!empty($GLOBALS["rkrkDataRoot"])) {
+			$g = rtrim(str_replace("\\", "/", (string) $GLOBALS["rkrkDataRoot"]), "/");
+			if ($g !== "") {
+				$checks[] = $g . "/data";
+			}
+		}
+		foreach ($checks as $data) {
+			if (is_dir($data . "/assess/results") || is_file($data . "/liveassess/personel/pilotenliste.json")) {
+				return rtrim(str_replace("\\", "/", dirname($data)), "/") . "/";
+			}
+		}
+		return "";
+	}
+}
+
+if (!function_exists("rkrk_es_result_dirs")) {
+	/** @return list<string> */
+	function rkrk_es_result_dirs(): array {
+		$dirs = array();
+		$root = rkrk_es_server_data_root();
+		if ($root !== "") {
+			rkrk_es_push_unique_dir($dirs, $root . "data/assess/results");
+		}
+		if ($dirs === array() && !empty($GLOBALS["QuizLocResults"])) {
+			rkrk_es_push_unique_dir($dirs, (string) $GLOBALS["QuizLocResults"]);
+		}
+		return array_values($dirs);
+	}
+}
+
+if (!function_exists("rkrk_es_server_personel_file")) {
+	function rkrk_es_server_personel_file(): string {
+		$root = rkrk_es_server_data_root();
+		if ($root === "") {
+			return "";
+		}
+		$path = rtrim($root, "/") . "/data/liveassess/personel/pilotenliste.json";
+		return is_file($path) ? $path : "";
+	}
+}
+
 if (!function_exists("rkrk_es_collect_theory")) {
 	/** @return list<array{name:string,exam_code:string,date:?DateTimeImmutable,passed:bool,quiz:string,pct:float}> */
 	function rkrk_es_collect_theory(): array {
 		$out = array();
+		$resultDirs = rkrk_es_result_dirs();
+		if ($resultDirs === array() && !empty($GLOBALS["QuizLocResults"])) {
+			$resultDirs[] = rtrim(str_replace("\\", "/", (string) $GLOBALS["QuizLocResults"]), "/");
+		}
+		$prevResults = array_key_exists("QuizLocResults", $GLOBALS) ? $GLOBALS["QuizLocResults"] : null;
+		foreach ($resultDirs as $resultsDirLoop) {
+			$resultsDirLoop = rtrim(str_replace("\\", "/", (string) $resultsDirLoop), "/");
+			if ($resultsDirLoop === "" || !is_dir($resultsDirLoop)) {
+				continue;
+			}
+			$GLOBALS["QuizLocResults"] = $resultsDirLoop . "/";
 		if (function_exists("rkrk_assess_exam_list_completed")) {
 			foreach (rkrk_assess_exam_list_completed() as $ex) {
 				if (!is_array($ex)) {
@@ -231,16 +313,19 @@ if (!function_exists("rkrk_es_collect_theory")) {
 				$out[] = array(
 					"name" => trim((string) ($ex["name"] ?? "")),
 					"exam_code" => rkrk_es_is_exam_code($code) ? $code : "",
+					"session_exam" => $code,
 					"date" => $d,
 					"passed" => !empty($ex["passed"]),
 					"quiz" => $quiz,
 					"pct" => (float) ($ex["pct"] ?? 0),
+					"stem" => trim((string) ($ex["stem"] ?? "")),
+					"store" => "assess",
+					"results_dir" => $resultsDirLoop,
 				);
 			}
 		}
-		$resultsDir = isset($GLOBALS["QuizLocResults"]) ? rtrim((string) $GLOBALS["QuizLocResults"], "/\\") : "";
-		if ($resultsDir !== "" && function_exists("rkrk_assess_quiz_results_load_rows")) {
-			foreach (rkrk_assess_quiz_results_load_rows($resultsDir) as $row) {
+		if (function_exists("rkrk_assess_quiz_results_load_rows")) {
+			foreach (rkrk_assess_quiz_results_load_rows($resultsDirLoop) as $row) {
 				if (!is_array($row)) {
 					continue;
 				}
@@ -253,15 +338,32 @@ if (!function_exists("rkrk_es_collect_theory")) {
 					? rkrk_assess_theory_result_metrics($row)
 					: array("passed" => false, "pct" => 0);
 				$d = rkrk_es_parse_date((string) ($row["Zeit"] ?? ($row["zeit"] ?? "")));
+				$quizStem = "";
+				foreach (array("stem", "result_stem", "Datei", "file", "Report") as $stemKey) {
+					$quizStem = trim((string) ($row[$stemKey] ?? ""));
+					if ($quizStem !== "") {
+						break;
+					}
+				}
 				$out[] = array(
 					"name" => trim((string) ($row["Name"] ?? ($row["name"] ?? ""))),
 					"exam_code" => rkrk_es_is_exam_code($code) ? $code : "",
+					"session_exam" => $code,
 					"date" => $d,
 					"passed" => !empty($metrics["passed"]),
 					"quiz" => $quiz,
 					"pct" => (float) ($metrics["pct"] ?? 0),
+					"stem" => $quizStem,
+					"store" => "assess",
+					"results_dir" => $resultsDirLoop,
 				);
 			}
+		}
+		}
+		if ($prevResults === null) {
+			unset($GLOBALS["QuizLocResults"]);
+		} else {
+			$GLOBALS["QuizLocResults"] = $prevResults;
 		}
 		return $out;
 	}
@@ -337,13 +439,21 @@ if (!function_exists("rkrk_es_checklist_dirs")) {
 	/** @return list<string> */
 	function rkrk_es_checklist_dirs(): array {
 		$dirs = array();
-		foreach (array("rkrkAssessResults", "rkrkLiveassessResults") as $gk) {
-			$d = isset($GLOBALS[$gk]) ? rtrim(str_replace(array("/", "\\"), DIRECTORY_SEPARATOR, (string) $GLOBALS[$gk]), DIRECTORY_SEPARATOR) : "";
-			if ($d !== "" && is_dir($d)) {
-				$dirs[$d] = true;
+		$root = rkrk_es_server_data_root();
+		if ($root !== "") {
+			foreach (array("data/assess/results/checklists", "data/liveassess/results/checklists") as $rel) {
+				rkrk_es_push_unique_dir($dirs, $root . $rel);
 			}
 		}
-		return array_keys($dirs);
+		if ($dirs === array()) {
+			foreach (array("rkrkAssessResults", "rkrkLiveassessResults") as $gk) {
+				$d = isset($GLOBALS[$gk]) ? rtrim(str_replace(array("/", "\\"), DIRECTORY_SEPARATOR, (string) $GLOBALS[$gk]), DIRECTORY_SEPARATOR) : "";
+				if ($d !== "" && is_dir($d)) {
+					rkrk_es_push_unique_dir($dirs, $d);
+				}
+			}
+		}
+		return array_values($dirs);
 	}
 }
 
@@ -453,6 +563,15 @@ if (!function_exists("rkrk_es_collect_checklists")) {
 					}
 				}
 			}
+			$stem = trim((string) ($data["result_stem"] ?? ""));
+			if ($stem === "") {
+				$stem = pathinfo($file, PATHINFO_FILENAME);
+			}
+			$store = (stripos(str_replace("\\", "/", $dir), "liveassess") !== false) ? "live" : "assess";
+			$resultsDir = str_replace("\\", "/", $dir);
+			if (preg_match("#/checklists$#i", $resultsDir) === 1) {
+				$resultsDir = dirname($resultsDir);
+			}
 			$out[] = array(
 				"kind" => $kind,
 				"name" => $name,
@@ -460,6 +579,9 @@ if (!function_exists("rkrk_es_collect_checklists")) {
 				"passed" => rkrk_es_verdict_passed($verdict),
 				"label" => $verdict,
 				"tpl" => $tpl,
+				"stem" => $stem,
+				"store" => $store,
+				"results_dir" => $resultsDir,
 			);
 		}
 		}
@@ -537,6 +659,126 @@ if (!function_exists("rkrk_es_pick_once_passed")) {
 	}
 }
 
+if (!function_exists("rkrk_es_hit_with_stem")) {
+	/**
+	 * Theorie: nur der neueste Abschluss. Liegt der Report am gleichen Tag unter einem anderen Stamm, den übernehmen.
+	 *
+	 * @param array<string,mixed>|null $hit
+	 * @param list<array<string,mixed>> $hits
+	 * @return array<string,mixed>|null
+	 */
+	function rkrk_es_hit_with_stem(?array $hit, array $hits): ?array {
+		if ($hit === null) {
+			return null;
+		}
+		if (trim((string) ($hit["stem"] ?? "")) !== "") {
+			return $hit;
+		}
+		$day = ($hit["date"] instanceof DateTimeImmutable) ? $hit["date"]->format("Y-m-d") : "";
+		if ($day === "") {
+			return $hit;
+		}
+		foreach ($hits as $other) {
+			if (trim((string) ($other["stem"] ?? "")) === "") {
+				continue;
+			}
+			$otherDay = ($other["date"] instanceof DateTimeImmutable) ? $other["date"]->format("Y-m-d") : "";
+			if ($otherDay !== $day) {
+				continue;
+			}
+			$hit["stem"] = (string) $other["stem"];
+			$hit["store"] = (string) ($other["store"] ?? "assess");
+			if (trim((string) ($hit["results_dir"] ?? "")) === "" && trim((string) ($other["results_dir"] ?? "")) !== "") {
+				$hit["results_dir"] = (string) $other["results_dir"];
+			}
+			break;
+		}
+		return $hit;
+	}
+}
+
+if (!function_exists("rkrk_es_report_href")) {
+	/** @param array<string,mixed>|null $hit */
+	function rkrk_es_report_href(?array $hit): string {
+		if (!is_array($hit)) {
+			return "";
+		}
+		$stem = trim((string) ($hit["stem"] ?? ""));
+		if ($stem === "") {
+			return "";
+		}
+		$inc = __DIR__ . "/rkrk_assess_report_pdf.inc.php";
+		if (!function_exists("rkrk_assess_report_download_href") && is_file($inc)) {
+			include_once $inc;
+		}
+		if (function_exists("rkrk_assess_report_stem_from_result")) {
+			$stem = rkrk_assess_report_stem_from_result($stem);
+		}
+		$stem = trim($stem);
+		if ($stem === "" || !function_exists("rkrk_assess_report_download_href")) {
+			return "";
+		}
+		$store = ((string) ($hit["store"] ?? "")) === "live" ? "live" : "assess";
+		$dirs = array();
+		$pushDir = static function (string $path) use (&$dirs): void {
+			$path = rtrim(str_replace("\\", "/", trim($path)), "/");
+			if ($path === "" || !is_dir($path)) {
+				return;
+			}
+			$real = realpath($path);
+			$key = strtolower(str_replace("\\", "/", $real !== false ? $real : $path));
+			$dirs[$key] = ($real !== false ? str_replace("\\", "/", $real) : $path);
+		};
+		$resultsDir = trim((string) ($hit["results_dir"] ?? ""));
+		if ($resultsDir !== "") {
+			$pushDir(rtrim($resultsDir, "/") . "/reports");
+		}
+		$root = rkrk_es_server_data_root();
+		if ($root !== "") {
+			$rels = ($store === "live")
+				? array("data/liveassess/results/reports", "data/assess/results/reports")
+				: array("data/assess/results/reports", "data/liveassess/results/reports");
+			foreach ($rels as $rel) {
+				$pushDir(rtrim($root, "/") . "/" . $rel);
+			}
+		}
+		foreach ($dirs as $dir) {
+			foreach (array("pdf", "html") as $fmt) {
+				$path = $dir . "/" . $stem . "." . $fmt;
+				if (is_file($path)) {
+					return rkrk_assess_report_download_href($path, $fmt, $store);
+				}
+			}
+		}
+		if (function_exists("rkrk_assess_report_href_for_result_stem")) {
+			return rkrk_assess_report_href_for_result_stem($stem, $store);
+		}
+		return "";
+	}
+}
+
+if (!function_exists("rkrk_es_report_link")) {
+	/** @param array<string,mixed>|null $hit */
+	function rkrk_es_report_link(?array $hit, string $label): string {
+		$href = rkrk_es_report_href($hit);
+		if ($href === "") {
+			return "";
+		}
+		$when = (is_array($hit) && (($hit["date"] ?? null) instanceof DateTimeImmutable))
+			? rkrk_es_fmt_date($hit["date"])
+			: "";
+		$tip = $label . "-Report";
+		if ($when !== "") {
+			$tip .= " vom " . $when;
+		}
+		if ($label === "Theorie") {
+			$code = is_array($hit) ? trim((string) ($hit["session_exam"] ?? "")) : "";
+			$tip .= $code !== "" ? (", EXAM " . $code) : ", konfigurierter EXAM";
+		}
+		return '<a class="es-rep" href="' . rkrk_es_h($href) . '" target="_blank" rel="noopener" title="' . rkrk_es_h($tip) . '" aria-label="' . rkrk_es_h($tip) . '">' . rkrk_es_ico("pdf") . "</a>";
+	}
+}
+
 if (!function_exists("rkrk_es_config_defaults")) {
 	/** @return array<string, mixed> */
 	function rkrk_es_config_defaults(): array {
@@ -560,6 +802,10 @@ if (!function_exists("rkrk_es_config_defaults")) {
 
 if (!function_exists("rkrk_es_config_path")) {
 	function rkrk_es_config_path(): string {
+		$personel = rkrk_es_server_personel_file();
+		if ($personel !== "") {
+			return dirname($personel) . DIRECTORY_SEPARATOR . "einsatzstatus_config.json";
+		}
 		$p = function_exists("rkrk_assess_personel_get_file_path") ? rkrk_assess_personel_get_file_path() : null;
 		if ($p) {
 			return dirname($p) . DIRECTORY_SEPARATOR . "einsatzstatus_config.json";
@@ -704,7 +950,11 @@ if (!function_exists("rkrk_es_config_save")) {
 			$out[$single] = $out[$multi] !== array() ? $out[$multi][0] : "";
 		}
 		$json = json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-		return is_string($json) && @file_put_contents($path, $json) !== false;
+		$ok = is_string($json) && @file_put_contents($path, $json) !== false;
+		if ($ok && function_exists("rkrk_es_snapshot_refresh")) {
+			rkrk_es_snapshot_refresh("config");
+		}
+		return $ok;
 	}
 }
 
@@ -738,14 +988,99 @@ if (!function_exists("rkrk_es_due_class")) {
 	}
 }
 
+if (!function_exists("rkrk_es_latest_theory_exam_code")) {
+	/**
+	 * EXAM-Code der jüngsten Theorieprüfung, die einen EP-Code trägt.
+	 *
+	 * @param list<array<string,mixed>> $hits
+	 */
+	function rkrk_es_latest_theory_exam_code(array $hits): string {
+		$best = "";
+		$bestTs = -1;
+		foreach ($hits as $h) {
+			if (!is_array($h)) {
+				continue;
+			}
+			$code = rkrk_es_norm_exam_code((string) ($h["exam_code"] ?? ""));
+			if (!rkrk_es_is_exam_code($code)) {
+				continue;
+			}
+			$ts = ($h["date"] instanceof DateTimeImmutable) ? $h["date"]->getTimestamp() : 0;
+			if ($best === "" || $ts > $bestTs || ($ts === $bestTs && strcmp($code, $best) > 0)) {
+				$best = $code;
+				$bestTs = $ts;
+			}
+		}
+		return $best;
+	}
+}
+
+if (!function_exists("rkrk_es_exam_code_allowed")) {
+	/** @param list<string> $allowed */
+	function rkrk_es_exam_code_allowed(string $code, array $allowed): bool {
+		$code = rkrk_es_norm_exam_code($code);
+		if ($code === "") {
+			return false;
+		}
+		foreach ($allowed as $a) {
+			$n = rkrk_es_norm_exam_code((string) $a);
+			if ($n !== "" && strcasecmp($n, $code) === 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
+if (!function_exists("rkrk_es_theory_report_hit")) {
+	/**
+	 * Jüngster Theorie-Report, dessen EXAM-Code in der Konfiguration steht.
+	 *
+	 * @param list<array<string,mixed>> $hits
+	 * @param list<string> $allowed
+	 * @return array<string,mixed>|null
+	 */
+	function rkrk_es_theory_report_hit(array $hits, array $allowed): ?array {
+		$keep = array();
+		foreach ($hits as $h) {
+			if (!is_array($h)) {
+				continue;
+			}
+			$code = (string) ($h["session_exam"] ?? ($h["exam_code"] ?? ""));
+			if (rkrk_es_exam_code_allowed($code, $allowed)) {
+				$keep[] = $h;
+			}
+		}
+		$best = rkrk_es_pick_best($keep, false);
+		if ($best === null) {
+			return null;
+		}
+		if (trim((string) ($best["stem"] ?? "")) !== "") {
+			return $best;
+		}
+		$want = rkrk_es_norm_exam_code((string) ($best["session_exam"] ?? ($best["exam_code"] ?? "")));
+		$same = array();
+		foreach ($keep as $h) {
+			$got = rkrk_es_norm_exam_code((string) ($h["session_exam"] ?? ($h["exam_code"] ?? "")));
+			if ($want !== "" && strcasecmp($got, $want) === 0) {
+				$same[] = $h;
+			}
+		}
+		return rkrk_es_hit_with_stem($best, $same !== array() ? $same : $keep);
+	}
+}
+
 if (!function_exists("rkrk_es_build_rows")) {
 	/**
 	 * @return list<array<string,mixed>>
 	 */
 	function rkrk_es_build_rows(): array {
-		$file = function_exists("rkrk_assess_personel_load_file")
-			? rkrk_assess_personel_load_file()
-			: array("pilots" => array());
+		$personelFile = rkrk_es_server_personel_file();
+		$file = ($personelFile !== "" && function_exists("rkrk_assess_personel_load_file"))
+			? rkrk_assess_personel_load_file($personelFile)
+			: (function_exists("rkrk_assess_personel_load_file")
+				? rkrk_assess_personel_load_file()
+				: array("pilots" => array()));
 		$pilots = isset($file["pilots"]) && is_array($file["pilots"]) ? $file["pilots"] : array();
 		$cfg = rkrk_es_config_load();
 		$theoryYears = max(0, (int) ($cfg["theorie_jahre"] ?? 2));
@@ -784,7 +1119,9 @@ if (!function_exists("rkrk_es_build_rows")) {
 					$praHits[] = $c;
 				}
 			}
-			$theory = rkrk_es_pick_best($thHits, false);
+			$theory = rkrk_es_hit_with_stem(rkrk_es_pick_best($thHits, false), $thHits);
+			$allowedExams = isset($cfg["exam_codes"]) && is_array($cfg["exam_codes"]) ? $cfg["exam_codes"] : array();
+			$theoryReport = rkrk_es_theory_report_hit($thHits, $allowedExams);
 			$material = rkrk_es_pick_once_passed($matHits);
 			$praxis = rkrk_es_pick_once_passed($praHits);
 
@@ -805,10 +1142,15 @@ if (!function_exists("rkrk_es_build_rows")) {
 			if ($manualCode !== "" && !rkrk_es_is_exam_code($manualCode)) {
 				$manualCode = trim((string) ($row["theorie_exam_code"] ?? ""));
 			}
+			$foundExam = rkrk_es_latest_theory_exam_code($thHits);
 			$manualDue = rkrk_es_parse_date((string) ($row["theorie_gueltig"] ?? ""));
-			$examCode = $manualCode !== ""
-				? $manualCode
-				: (is_array($theory) ? (string) ($theory["exam_code"] ?? "") : "");
+			if ($foundExam !== "") {
+				$examCode = $foundExam;
+			} elseif ($manualCode !== "") {
+				$examCode = $manualCode;
+			} else {
+				$examCode = is_array($theory) ? (string) ($theory["exam_code"] ?? "") : "";
+			}
 			$theoryDue = $manualDue ?: ($theoryDate ? $theoryDate->modify("+" . $theoryYears . " years") : null);
 			if (is_array($theory) && $examCode !== "") {
 				$theory["exam_code"] = $examCode;
@@ -897,7 +1239,9 @@ if (!function_exists("rkrk_es_build_rows")) {
 				"license_assumed" => $licenseAssumed,
 				"license_cls" => $licenseAssumed ? "assumed" : rkrk_es_due_class($license, $today, $warnDays),
 				"exam_code" => $examCode,
+				"exam_from_theory" => $foundExam,
 				"theory" => $theory,
+				"theory_report" => $theoryReport,
 				"theory_due" => $theoryDue,
 				"theory_cls" => rkrk_es_due_class($theoryDue, $today, $warnDays),
 				"material" => $material,
@@ -933,13 +1277,90 @@ if (!function_exists("rkrk_es_normalize_date_input")) {
 	}
 }
 
+if (!function_exists("rkrk_es_store_found_exam_codes")) {
+	/**
+	 * Schreibt den EXAM-Code der jüngsten Theorieprüfung in die Pilotenliste,
+	 * wenn er vom gespeicherten Wert abweicht.
+	 *
+	 * @param list<array{id?:string,rkrs?:string,code?:string}> $updates
+	 */
+	function rkrk_es_store_found_exam_codes(array $updates): bool {
+		if ($updates === array()) {
+			return true;
+		}
+		if (!function_exists("rkrk_assess_personel_load_file")
+			|| !function_exists("rkrk_assess_personel_save_file")
+		) {
+			return false;
+		}
+		$path = rkrk_es_server_personel_file();
+		if ($path === "") {
+			$path = function_exists("rkrk_assess_personel_get_file_path") ? (string) rkrk_assess_personel_get_file_path() : "";
+		}
+		if ($path === "") {
+			return false;
+		}
+		$pack = rkrk_assess_personel_load_file($path);
+		$pilots = $pack["pilots"];
+		$columns = $pack["columns"];
+		if (!in_array("theorie_exam_code", $columns, true)) {
+			$columns[] = "theorie_exam_code";
+		}
+		$changed = false;
+		foreach ($pilots as $i => $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+			$rid = trim((string) ($row["id"] ?? ""));
+			$rkrs = function_exists("rkrk_assess_personel_row_effective_rkrs_id")
+				? rkrk_assess_personel_row_effective_rkrs_id($row)
+				: trim((string) ($row["rkrs_pilot_id"] ?? ""));
+			foreach ($updates as $u) {
+				if (!is_array($u)) {
+					continue;
+				}
+				$code = rkrk_es_norm_exam_code((string) ($u["code"] ?? ""));
+				if (!rkrk_es_is_exam_code($code)) {
+					continue;
+				}
+				$id = trim((string) ($u["id"] ?? ""));
+				$urkrs = trim((string) ($u["rkrs"] ?? ""));
+				$match = ($id !== "" && ($rid === $id || $rkrs === $id))
+					|| ($urkrs !== "" && ($rid === $urkrs || $rkrs === $urkrs));
+				if (!$match) {
+					continue;
+				}
+				$cur = rkrk_es_norm_exam_code((string) ($row["theorie_exam_code"] ?? ""));
+				if ($cur !== $code) {
+					$pilots[$i]["theorie_exam_code"] = $code;
+					$changed = true;
+				}
+				break;
+			}
+		}
+		if (!$changed) {
+			return true;
+		}
+		$wasBusy = !empty($GLOBALS["rkrk_es_snapshot_busy"]);
+		$GLOBALS["rkrk_es_snapshot_busy"] = true;
+		$saved = rkrk_assess_personel_save_file($path, $columns, $pilots);
+		if (!$wasBusy) {
+			$GLOBALS["rkrk_es_snapshot_busy"] = false;
+		}
+		return $saved;
+	}
+}
+
 if (!function_exists("rkrk_es_save_pilot_fields")) {
 	/**
 	 * @param array<string, mixed> $fields
 	 */
 	function rkrk_es_save_pilot_fields(string $id, array $fields): bool {
-		$path = function_exists("rkrk_assess_personel_get_file_path") ? rkrk_assess_personel_get_file_path() : null;
-		if ($path === null || $path === "") {
+		$path = rkrk_es_server_personel_file();
+		if ($path === "") {
+			$path = function_exists("rkrk_assess_personel_get_file_path") ? (string) rkrk_assess_personel_get_file_path() : "";
+		}
+		if ($path === "") {
 			return false;
 		}
 		$pack = rkrk_assess_personel_load_file($path);
@@ -972,6 +1393,267 @@ if (!function_exists("rkrk_es_save_pilot_fields")) {
 			return false;
 		}
 		return rkrk_assess_personel_save_file($path, $columns, $pilots);
+	}
+}
+
+if (!function_exists("rkrk_es_personel_relevant_signature")) {
+	/** @param list<array<string,mixed>> $pilots */
+	function rkrk_es_personel_relevant_signature(array $pilots): string {
+		$keys = array(
+			"id", "pilot_id", "rkrs_pilot_id", "vorname", "nachname", "name",
+			"erste_erfahrung", "rkrsplus", "instruktor", "drohnentyp", "fpl_gueltig",
+			"einsatzpruefung_rkrsplus", "theorie_exam_code", "theorie_gueltig",
+			"suspendiert", "einsatz_bemerkung", "bemerkung", "note", "kommentar",
+		);
+		$rows = array();
+		foreach ($pilots as $p) {
+			if (!is_array($p)) {
+				continue;
+			}
+			$slice = array();
+			foreach ($keys as $k) {
+				$v = $p[$k] ?? "";
+				if (is_bool($v)) {
+					$v = $v ? "1" : "";
+				} elseif (is_array($v)) {
+					$v = json_encode($v);
+				} else {
+					$v = trim((string) $v);
+				}
+				$slice[$k] = $v;
+			}
+			$rows[] = $slice;
+		}
+		return hash("sha1", (string) json_encode($rows));
+	}
+}
+
+if (!function_exists("rkrk_es_snapshot_path")) {
+	function rkrk_es_snapshot_path(): string {
+		$personel = rkrk_es_server_personel_file();
+		if ($personel !== "") {
+			return dirname($personel) . DIRECTORY_SEPARATOR . "einsatzstatus.json";
+		}
+		$cfg = rkrk_es_config_path();
+		return $cfg !== "" ? dirname($cfg) . DIRECTORY_SEPARATOR . "einsatzstatus.json" : "";
+	}
+}
+
+if (!function_exists("rkrk_es_report_external_href")) {
+	/** Absolute Report-URL für einsatzstatus.json; leer, wenn kein Report liegt. */
+	function rkrk_es_report_external_href(?array $hit): string {
+		$href = rkrk_es_report_href($hit);
+		if ($href === "") {
+			return "";
+		}
+		if (preg_match('#^https?://#i', $href) === 1) {
+			return $href;
+		}
+		$host = trim((string) ($_SERVER["HTTP_HOST"] ?? ""));
+		if ($host === "") {
+			return ($href !== "" && $href[0] === "/") ? $href : ("/" . ltrim($href, "/"));
+		}
+		$https = (!empty($_SERVER["HTTPS"]) && strtolower((string) $_SERVER["HTTPS"]) !== "off")
+			|| ((string) ($_SERVER["SERVER_PORT"] ?? "") === "443")
+			|| (strtolower((string) ($_SERVER["HTTP_X_FORWARDED_PROTO"] ?? "")) === "https");
+		if ($href === "" || $href[0] !== "/") {
+			$href = "/" . ltrim($href, "/");
+		}
+		return ($https ? "https" : "http") . "://" . $host . $href;
+	}
+}
+
+if (!function_exists("rkrk_es_snapshot_flat")) {
+	/** @param array<string,mixed> $row @return array<string,string> */
+	function rkrk_es_snapshot_flat(array $row): array {
+		$ymdHit = static function ($hit): string {
+			if (!is_array($hit)) {
+				return "";
+			}
+			$d = $hit["date"] ?? null;
+			return ($d instanceof DateTimeImmutable) ? $d->format("Y-m-d") : "";
+		};
+		$flagHit = static function ($hit): string {
+			if (!is_array($hit) || !array_key_exists("passed", $hit) || $hit["passed"] === null) {
+				return "";
+			}
+			return !empty($hit["passed"]) ? "1" : "0";
+		};
+		$due = $row["theory_due"] ?? null;
+		$lic = $row["license"] ?? null;
+		$th = is_array($row["theory"] ?? null) ? $row["theory"] : null;
+		$thRep = is_array($row["theory_report"] ?? null) ? $row["theory_report"] : null;
+		$mat = is_array($row["material"] ?? null) ? $row["material"] : null;
+		$pra = is_array($row["praxis"] ?? null) ? $row["praxis"] : null;
+		return array(
+			"id" => (string) ($row["id"] ?? ""),
+			"pilot_id" => (string) ($row["pilot_id"] ?? ""),
+			"rkrs_id" => (string) ($row["rkrs_id"] ?? ""),
+			"name" => (string) ($row["name"] ?? ""),
+			"maturitaet" => (string) ($row["maturitaet"] ?? ""),
+			"rkrsplus" => !empty($row["rkrsplus"]) ? "1" : "0",
+			"instruktor" => !empty($row["instruktor"]) ? "1" : "0",
+			"exam_code" => (string) ($row["exam_code"] ?? ""),
+			"theorie_bis" => ($due instanceof DateTimeImmutable) ? $due->format("Y-m-d") : "",
+			"theorie_status" => (string) ($row["theory_cls"] ?? ""),
+			"theorie_datum" => $ymdHit($th),
+			"theorie_bestanden" => $flagHit($th),
+			"theorie_report" => rkrk_es_report_external_href($thRep),
+			"lizenz_bis" => ($lic instanceof DateTimeImmutable) ? $lic->format("Y-m-d") : "",
+			"lizenz_status" => (string) ($row["license_cls"] ?? ""),
+			"material_ok" => $flagHit($mat),
+			"material_datum" => $ymdHit($mat),
+			"material_report" => rkrk_es_report_external_href($mat),
+			"praxis_ok" => $flagHit($pra),
+			"praxis_datum" => $ymdHit($pra),
+			"praxis_report" => rkrk_es_report_external_href($pra),
+			"status" => (string) ($row["status"] ?? ""),
+			"mark" => (string) ($row["mark"] ?? ""),
+			"suspendiert" => !empty($row["suspended"]) ? "1" : "0",
+			"berechtigt" => !empty($row["berechtigt"]) ? "1" : "0",
+			"flugbereit" => !empty($row["flugbereit"]) ? "1" : "0",
+			"bemerkung" => (string) ($row["bemerkung"] ?? ""),
+		);
+	}
+}
+
+if (!function_exists("rkrk_es_snapshot_columns")) {
+	/** @return list<string> */
+	function rkrk_es_snapshot_columns(): array {
+		return array(
+			"id", "pilot_id", "rkrs_id", "name", "maturitaet", "rkrsplus", "instruktor",
+			"exam_code", "theorie_bis", "theorie_status", "theorie_datum", "theorie_bestanden", "theorie_report",
+			"lizenz_bis", "lizenz_status", "material_ok", "material_datum", "material_report", "praxis_ok", "praxis_datum", "praxis_report",
+			"status", "mark", "suspendiert", "berechtigt", "flugbereit", "bemerkung",
+		);
+	}
+}
+
+if (!function_exists("rkrk_es_apply_found_exam_codes")) {
+	/** @param list<array<string,mixed>> $rows */
+	function rkrk_es_apply_found_exam_codes(array $rows): void {
+		$updates = array();
+		foreach ($rows as $r) {
+			if (!is_array($r)) {
+				continue;
+			}
+			$code = trim((string) ($r["exam_from_theory"] ?? ""));
+			if ($code === "") {
+				continue;
+			}
+			$updates[] = array(
+				"id" => (string) ($r["id"] ?? ""),
+				"rkrs" => (string) ($r["rkrs_id"] ?? ""),
+				"code" => $code,
+			);
+		}
+		if ($updates !== array() && function_exists("rkrk_es_store_found_exam_codes")) {
+			rkrk_es_store_found_exam_codes($updates);
+		}
+	}
+}
+
+if (!function_exists("rkrk_es_snapshot_write")) {
+	/** @param list<array<string,mixed>> $rows */
+	function rkrk_es_snapshot_write(array $rows, string $reason): bool {
+		$path = rkrk_es_snapshot_path();
+		if ($path === "") {
+			return false;
+		}
+		$dir = dirname($path);
+		if ($dir !== "" && !is_dir($dir)) {
+			@mkdir($dir, 0777, true);
+		}
+		$flat = array();
+		foreach ($rows as $r) {
+			if (is_array($r)) {
+				$flat[] = rkrk_es_snapshot_flat($r);
+			}
+		}
+		$fp = hash("sha1", (string) json_encode($flat, JSON_UNESCAPED_UNICODE));
+		$today = date("Y-m-d");
+		if (is_file($path)) {
+			$raw = @file_get_contents($path);
+			$old = is_string($raw) ? json_decode($raw, true) : null;
+			if (is_array($old) && (string) ($old["fingerprint"] ?? "") === $fp && (string) ($old["as_of"] ?? "") === $today) {
+				return true;
+			}
+		}
+		$payload = array(
+			"version" => 1,
+			"updated_at" => date("c"),
+			"as_of" => $today,
+			"reason" => $reason,
+			"fingerprint" => $fp,
+			"columns" => rkrk_es_snapshot_columns(),
+			"rows" => $flat,
+		);
+		$json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		if (!is_string($json) || $json === "") {
+			return false;
+		}
+		$tmp = $path . ".tmp." . substr(hash("sha1", microtime(true) . "|" . $path), 0, 10);
+		if (@file_put_contents($tmp, $json, LOCK_EX) === false) {
+			@unlink($tmp);
+			return false;
+		}
+		if (!@rename($tmp, $path)) {
+			$ok = @copy($tmp, $path);
+			@unlink($tmp);
+			return $ok;
+		}
+		return true;
+	}
+}
+
+if (!function_exists("rkrk_es_snapshot_refresh")) {
+	function rkrk_es_snapshot_refresh(string $reason): bool {
+		if (!empty($GLOBALS["rkrk_es_snapshot_busy"])) {
+			return true;
+		}
+		$GLOBALS["rkrk_es_snapshot_busy"] = true;
+		$ok = false;
+		try {
+			$rows = rkrk_es_build_rows();
+			if (function_exists("rkrk_es_apply_found_exam_codes")) {
+				rkrk_es_apply_found_exam_codes($rows);
+			}
+			$ok = rkrk_es_snapshot_write($rows, $reason);
+		} catch (Throwable $e) {
+			$ok = false;
+		}
+		$GLOBALS["rkrk_es_snapshot_busy"] = false;
+		return $ok;
+	}
+}
+
+if (!function_exists("rkrk_es_snapshot_reconcile")) {
+	/** @param list<array<string,mixed>> $rows */
+	function rkrk_es_snapshot_reconcile(array $rows): bool {
+		if (!empty($GLOBALS["rkrk_es_snapshot_busy"])) {
+			return true;
+		}
+		$GLOBALS["rkrk_es_snapshot_busy"] = true;
+		if (function_exists("rkrk_es_apply_found_exam_codes")) {
+			rkrk_es_apply_found_exam_codes($rows);
+		}
+		$ok = rkrk_es_snapshot_write($rows, "reconcile");
+		$GLOBALS["rkrk_es_snapshot_busy"] = false;
+		return $ok;
+	}
+}
+
+if (!function_exists("rkrk_es_after_personel_save")) {
+	/** @param list<array<string,mixed>> $newPilots */
+	function rkrk_es_after_personel_save(array $newPilots, string $beforeSig): void {
+		if (!empty($GLOBALS["rkrk_es_snapshot_busy"])) {
+			return;
+		}
+		$after = rkrk_es_personel_relevant_signature($newPilots);
+		if ($beforeSig !== "" && $beforeSig === $after) {
+			return;
+		}
+		rkrk_es_snapshot_refresh("personel");
 	}
 }
 

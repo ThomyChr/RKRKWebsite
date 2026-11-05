@@ -267,7 +267,7 @@ function csv_to_array_ascII($filename='', $delimiter=',')
 	$maxLineLen = 1048576;
     if (($handle = fopen($filename, 'r')) !== FALSE)
     {
-        while (($row = fgetcsv($handle, $maxLineLen, $delimiter)) !== FALSE)
+        while (($row = fgetcsv($handle, $maxLineLen, $delimiter, '"', '\\')) !== FALSE)
         {
 			//pre_r($row);
             if(!$header) {
@@ -302,7 +302,7 @@ function csv_to_array($filename='', $delimiter=',')
 	$maxLineLen = 1048576;
     if (($handle = fopen($filename, 'r')) !== FALSE)
     {
-        while (($row = fgetcsv($handle, $maxLineLen, $delimiter)) !== FALSE)
+        while (($row = fgetcsv($handle, $maxLineLen, $delimiter, '"', '\\')) !== FALSE)
         {
 			//pre_r($row);
             if(!$header)

@@ -20,7 +20,7 @@
     <a href="analyse_ui.php">Algo-Analysator</a>
   </div>
   <div id="helpRoot"></div>
-  <script src="rkrk_help_catalog.js?v=20261018abdeckung2"></script>
+  <script src="rkrk_help_catalog.js?v=20261018katalog2"></script>
   <script src="rkrk_help.js?v=20261017hilfe7"></script>
   <script>
     const helpQuery = new URLSearchParams(location.search);

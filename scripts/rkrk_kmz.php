@@ -119,7 +119,7 @@ $KMZTemplate = Array(
 	// Einlesen der KMZ Daten
 		//echo "KMZ File: " . $KmzFile . "<br>";
 		if(file_exists($KmzFile)) {
-			//$KmzData = simplexml_load_file($xmlMissionLocation);     //Lùdt die XML-Datei in ein Objekt
+			//$KmzData = simplexml_load_file($xmlMissionLocation);     //LÔøΩdt die XML-Datei in ein Objekt
 			//echo "file exists <br>";
 			// $LoadXML = utf8_encode(htmlentities_decode(file_get_contents($KmzFile)));
 			$LoadXML = mb_convert_encoding(htmlentities_decode(file_get_contents($KmzFile)), 'UTF-8', mb_list_encodings());
@@ -193,7 +193,7 @@ $KMZTemplate = Array(
 			}
 		} else {
 			$fileloaded = false;
-			echo '        <p>Die Datei names '. $felder_file .' konnte nicht geùffnet werden</p>';
+			echo '        <p>Die Datei names '. $felder_file .' konnte nicht geÔøΩffnet werden</p>';
 		}
 		Return $array;
 	}

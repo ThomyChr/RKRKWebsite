@@ -174,9 +174,17 @@ if (!function_exists('rkrk_json_decode_utf8')) {
 }
 
 if (!function_exists('rkrk_read_json_file')) {
-	function rkrk_read_json_file($path) {
+	function rkrk_read_json_file($path, $forget = false) {
 		static $requestCache = array();
 		$key = is_string($path) ? str_replace('\\', '/', $path) : '';
+		if ($forget) {
+			if ($key === '') {
+				$requestCache = array();
+			} else {
+				unset($requestCache[$key]);
+			}
+			return array();
+		}
 		if ($key !== '' && array_key_exists($key, $requestCache)) {
 			return $requestCache[$key];
 		}
@@ -202,6 +210,10 @@ if (!function_exists('rkrk_write_json_file')) {
 		if ($json === false) {
 			return false;
 		}
-		return rkrk_write_utf8_file($path, $json . "\n");
+		$written = rkrk_write_utf8_file($path, $json . "\n");
+		if ($written) {
+			rkrk_read_json_file($path, true);
+		}
+		return $written;
 	}
 }

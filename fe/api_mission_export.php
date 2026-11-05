@@ -249,7 +249,7 @@ function mission_settings_defaults(): array
         'altitude_m' => 60.0,
         'flight_direction_deg' => -1.0,
         'speed_m_s' => 5.0,
-        'overlap_pct' => 15.0,
+        'overlap_pct' => 30.0,
         'edge_factor_pct' => 40.0,
         'start_speed_active' => false,
         'start_speed_m_s' => 5.0,
@@ -310,7 +310,54 @@ function normalize_mission_settings(array $missionSettings): array
         'poi' => $pois[0] ?? null,
         'pois' => $pois,
         'waypoint_overrides' => normalize_waypoint_overrides_raw($missionSettings['waypoint_overrides'] ?? []),
+        'obstacles' => normalize_obstacle_list($missionSettings['obstacles'] ?? []),
+        'entry_id' => trim((string)($missionSettings['entry_id'] ?? 'auto')) ?: 'auto',
+        'obs_active' => !empty($missionSettings['obs_active']),
     ];
+}
+
+function normalize_obstacle_list($raw): array
+{
+    if (!is_array($raw)) {
+        return [];
+    }
+    $out = [];
+    foreach ($raw as $ob) {
+        if (!is_array($ob)) {
+            continue;
+        }
+        $ring = [];
+        foreach (($ob['ring'] ?? []) as $p) {
+            if (!is_array($p) || count($p) < 2) {
+                continue;
+            }
+            $lon = floatval($p[0]);
+            $lat = floatval($p[1]);
+            if (!is_finite($lon) || !is_finite($lat)) {
+                continue;
+            }
+            $ring[] = [round($lon, 7), round($lat, 7)];
+        }
+        if (count($ring) < 3) {
+            continue;
+        }
+        $mode = strtolower(trim((string)($ob['mode'] ?? 'avoid')));
+        if (!in_array($mode, ['avoid', 'overfly', 'ignore'], true)) {
+            $mode = 'avoid';
+        }
+        $item = [
+            'mode' => $mode,
+            'ring' => $ring,
+        ];
+        if (isset($ob['height_m']) && is_numeric($ob['height_m'])) {
+            $item['height_m'] = round(floatval($ob['height_m']), 1);
+        }
+        if (isset($ob['climb_mps']) && is_numeric($ob['climb_mps'])) {
+            $item['climb_mps'] = max(0.5, min(8.0, floatval($ob['climb_mps'])));
+        }
+        $out[] = $item;
+    }
+    return $out;
 }
 
 function export_mission_pois(array $mission): array
@@ -972,6 +1019,11 @@ function build_kmz_waypoint_extensions(array $missionSettings, int $i0, float $a
     $ptSpeed = $useGlobalSpeed ? $missionSpeed : clamp_export_speed_m_s(floatval($ov['speed_m_s'] ?? $missionSpeed));
     if ($useGlobalHeight) {
         $relForKmz = $altM;
+        $pathAlt = clamp_export_agl_m($aglTriplet);
+        if (abs($pathAlt - $altM) > 0.6) {
+            $useGlobalHeight = 0;
+            $relForKmz = $pathAlt;
+        }
     } else {
         $relForKmz = clamp_export_agl_m(floatval($ov['agl_m'] ?? $aglTriplet));
     }
@@ -1460,6 +1512,9 @@ function build_ch_sample_geojson_features(array $poly, array $path, array $start
         $pointHeight = !empty($flags['useMissionHeight'])
             ? $altM
             : clamp_export_agl_m(floatval($ov['agl_m'] ?? $agl));
+        if (!empty($flags['useMissionHeight']) && abs(clamp_export_agl_m($agl) - $altM) > 0.6) {
+            $pointHeight = clamp_export_agl_m($agl);
+        }
         $autoHeight = kmz_is_alt_relative_to_start($mission);
         $explicitDir = null;
         if (array_key_exists('heading_angle', $ov) && $ov['heading_angle'] !== null && $ov['heading_angle'] !== '' && is_numeric($ov['heading_angle'])) {
@@ -2538,11 +2593,89 @@ function build_dji_pilot2_export_context(array $meta, array $path, array $missio
     ];
 }
 
+/**
+ * Höhenproben im Feld für die Höhenlinienrichtung. Leer, wenn das Höhenmodell nicht antwortet.
+ * @param list<array{0:float,1:float}> $poly
+ * @return list<array{0:float,1:float,2:float}>
+ */
+function mission_terrain_samples(array $poly, int $grid = 4): array
+{
+    if (count($poly) < 3) {
+        return [];
+    }
+    $cacheSig = [];
+    foreach ($poly as $p) {
+        if (!is_array($p) || count($p) < 2) {
+            continue;
+        }
+        $cacheSig[] = round(floatval($p[0]), 5) . ',' . round(floatval($p[1]), 5);
+    }
+    $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rkrk_terrain_' . md5(implode('|', $cacheSig)) . '.json';
+    if (is_file($cacheFile) && (time() - (int)@filemtime($cacheFile)) < 3600) {
+        $cached = json_decode((string)@file_get_contents($cacheFile), true);
+        if (is_array($cached) && count($cached) >= 3) {
+            return $cached;
+        }
+    }
+    $closed = $poly;
+    if ($closed[0] !== $closed[count($closed) - 1]) {
+        $closed[] = $closed[0];
+    }
+    $lon0 = floatval($closed[0][0]);
+    $lat0 = floatval($closed[0][1]);
+    $polyXY = [];
+    $minLon = INF;
+    $maxLon = -INF;
+    $minLat = INF;
+    $maxLat = -INF;
+    foreach ($closed as $p) {
+        $lon = floatval($p[0]);
+        $lat = floatval($p[1]);
+        $minLon = min($minLon, $lon);
+        $maxLon = max($maxLon, $lon);
+        $minLat = min($minLat, $lat);
+        $maxLat = max($maxLat, $lat);
+        $polyXY[] = lonlat_to_xy([$lon, $lat], $lon0, $lat0);
+    }
+    $grid = max(3, min(5, $grid));
+    $candidates = [];
+    for ($iy = 0; $iy < $grid; $iy++) {
+        for ($ix = 0; $ix < $grid; $ix++) {
+            $lon = $minLon + (($ix + 0.5) * (($maxLon - $minLon) / $grid));
+            $lat = $minLat + (($iy + 0.5) * (($maxLat - $minLat) / $grid));
+            $xy = lonlat_to_xy([$lon, $lat], $lon0, $lat0);
+            if (point_in_polygon_xy($xy, $polyXY)) {
+                $candidates[] = [$lon, $lat];
+            }
+        }
+    }
+    if (count($candidates) < 3) {
+        foreach ($poly as $p) {
+            $candidates[] = [floatval($p[0]), floatval($p[1])];
+        }
+    }
+    $heights = kmz_fetch_geoadmin_terrain_asl_m($candidates);
+    $out = [];
+    foreach ($candidates as $p) {
+        $key = kmz_lonlat_cache_key(floatval($p[0]), floatval($p[1]));
+        if (!isset($heights[$key]) || !is_finite(floatval($heights[$key]))) {
+            continue;
+        }
+        $out[] = [floatval($p[0]), floatval($p[1]), floatval($heights[$key])];
+    }
+    if (count($out) >= 3) {
+        @file_put_contents($cacheFile, json_encode($out));
+    }
+    return $out;
+}
+
 /** @return array{path:array,metrics:array,used_inputs:array} */
 function compute_planned_mission_path(array $poly, array $startPt, array $missionSettings, float $stdAgl, array $manualPath, array $payload): array
 {
     $hfov = floatval($missionSettings['hfov_deg'] ?? 0.0);
     if ($hfov <= 0.0) $hfov = floatval($payload['hfov'] ?? 48.0);
+    $vfovForPlan = floatval($missionSettings['vfov_deg'] ?? 40.0);
+    if (!is_finite($vfovForPlan) || $vfovForPlan <= 1.0) $vfovForPlan = 40.0;
     $aglForPlan = floatval($missionSettings['altitude_m'] ?? 0.0);
     if ($aglForPlan <= 0.0) $aglForPlan = $stdAgl;
     $flightDirectionDeg = floatval($missionSettings['flight_direction_deg'] ?? -1.0);
@@ -2583,12 +2716,30 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
     }
     $derivedDirection = derive_direction_from_height_points($manualPath);
     $heightRangeM = floatval($derivedDirection['height_range_m'] ?? 0.0);
+    $contourApplied = false;
+    $contourAngleDeg = null;
     $isLowRelief = $heightRangeM < $lowReliefThresholdM;
-    if ($flightDirectionDeg <= -1.0 && $isLowRelief) {
-        $fixedAngleDeg = is_finite(floatval($edgeAlignAngleDeg))
-            ? floatval($edgeAlignAngleDeg)
-            : $fixedAngleDeg;
-        $preferredDirection = 'fixed';
+    if ($flightDirectionDeg <= -1.0) {
+        $terrainPts = mission_terrain_samples($poly);
+        $terrainDir = derive_direction_from_height_points($terrainPts);
+        $terrainRange = floatval($terrainDir['height_range_m'] ?? 0.0);
+        if ($terrainRange > 0.0) {
+            $heightRangeM = $terrainRange;
+            $isLowRelief = $heightRangeM < $lowReliefThresholdM;
+        }
+        if (!$isLowRelief && count($terrainPts) >= 3 && is_finite(floatval($terrainDir['fixed_theta_deg'] ?? NAN))) {
+            // Hang: Bahnen entlang der Höhenlinie, damit der Höhenunterschied klein bleibt.
+            $fixedAngleDeg = fmod((floatval($terrainDir['fixed_theta_deg']) + 360.0), 180.0);
+            $preferredDirection = 'fixed';
+            $contourApplied = true;
+            $contourAngleDeg = $fixedAngleDeg;
+            $edgeAlignApplied = false;
+        } elseif ($isLowRelief) {
+            $fixedAngleDeg = is_finite(floatval($edgeAlignAngleDeg))
+                ? floatval($edgeAlignAngleDeg)
+                : $fixedAngleDeg;
+            $preferredDirection = 'fixed';
+        }
     }
     $overlap = floatval($missionSettings['overlap_pct'] ?? -1.0);
     if ($overlap >= 0.0) {
@@ -2606,7 +2757,26 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
     }
     if (!is_finite($edgeFactor)) $edgeFactor = 0.40;
     $edgeFactor = max(0.0, min(1.0, $edgeFactor));
-    $planned = plan_lawnmower($poly, $startPt, $hfov, $aglForPlan, $overlap, $edgeFactor, $preferredDirection, $fixedAngleDeg, $curveWaypointAngleStepDeg);
+    $planObstacles = (!empty($missionSettings['obs_active']) && is_array($missionSettings['obstacles'] ?? null))
+        ? $missionSettings['obstacles']
+        : [];
+    $planEntry = trim((string)($missionSettings['entry_id'] ?? 'auto'));
+    if ($planEntry === '') {
+        $planEntry = 'auto';
+    }
+    $planSpeed = floatval($missionSettings['speed_m_s'] ?? 4.5);
+    $hasAvoidHole = false;
+    foreach ($planObstacles as $ob) {
+        if (!is_array($ob)) {
+            continue;
+        }
+        $obMode = strtolower(trim((string)($ob['mode'] ?? 'avoid')));
+        if ($obMode === '' || $obMode === 'avoid') {
+            $hasAvoidHole = true;
+            break;
+        }
+    }
+    $planned = plan_lawnmower($poly, $startPt, $hfov, $aglForPlan, $overlap, $edgeFactor, $preferredDirection, $fixedAngleDeg, $curveWaypointAngleStepDeg, $vfovForPlan, $planObstacles, $planEntry, $planSpeed);
     if (!is_array($planned) || !isset($planned['path']) || !is_array($planned['path'])) {
         $planned = ['path' => [], 'angle' => 0.0, 'W' => 0.0, 'S' => 0.0];
     }
@@ -2641,26 +2811,33 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
             }
         }
     }
-    $coverageBeforeTune = path_coverage_ratio_by_width_and_turns($path, $poly, floatval($planned['W'] ?? 0.0), $turnDiameterM, 80);
+    $coverWidth = bahn_search_width_m($aglForPlan, $hfov);
+    if ($coverWidth <= 1.0) {
+        $coverWidth = floatval($planned['search_m'] ?? $planned['S'] ?? 0.0);
+    }
+    $coverageBeforeTune = path_coverage_ratio_by_width_and_turns($path, $poly, $coverWidth, 0.0, 80);
     $coverageAfterTune = $coverageBeforeTune;
     $angleTuneApplied = false;
     $angleTuneDeltaDeg = 0.0;
-    if ($flightDirectionDeg <= -1.0 && !$isNarrowField && $coverageBeforeTune < $minPathCoverageRatio) {
-        $baseTheta = isset($planned['angle']) ? floatval($planned['angle']) : (is_finite(floatval($fixedAngleDeg)) ? floatval($fixedAngleDeg) : 0.0);
+    $laneTheta = isset($planned['angle']) ? floatval($planned['angle']) : (is_finite(floatval($fixedAngleDeg)) ? floatval($fixedAngleDeg) : 0.0);
+    if (!$hasAvoidHole && $flightDirectionDeg <= -1.0 && !$isNarrowField && $coverageBeforeTune < $minPathCoverageRatio) {
+        $baseTheta = $laneTheta;
         $bestPath = $path;
         $bestCov = $coverageBeforeTune;
         $bestDelta = 0.0;
         $deltaCandidates = [-10.0, -7.5, -5.0, -2.5, 2.5, 5.0, 7.5, 10.0];
         foreach ($deltaCandidates as $dTheta) {
             $candTheta = fmod(($baseTheta + floatval($dTheta) + 360.0), 180.0);
-            $cand = plan_lawnmower($poly, $startPt, $hfov, $aglForPlan, $overlap, $edgeFactor, 'fixed', $candTheta, $curveWaypointAngleStepDeg);
+            $cand = plan_lawnmower($poly, $startPt, $hfov, $aglForPlan, $overlap, $edgeFactor, 'fixed', $candTheta, $curveWaypointAngleStepDeg, $vfovForPlan, $planObstacles, $planEntry, $planSpeed);
             $candPath = ensure_start_point_first($cand['path'] ?? [], $startPt, $aglForPlan);
             $candPath = enforce_path_inside_field_except_first_leg($candPath, $poly, $isNarrowField ? 0.0 : $maxOutsideM);
-            $cov = path_coverage_ratio_by_width_and_turns($candPath, $poly, floatval($cand['W'] ?? 0.0), $turnDiameterM, 80);
+            $cov = path_coverage_ratio_by_width_and_turns($candPath, $poly, $coverWidth, 0.0, 80);
             if ($cov > $bestCov + 1e-9) {
                 $bestCov = $cov;
                 $bestPath = $candPath;
                 $bestDelta = floatval($dTheta);
+                $planned['entries'] = $cand['entries'] ?? ($planned['entries'] ?? []);
+                $planned['entry_id'] = $cand['entry_id'] ?? ($planned['entry_id'] ?? 'auto');
             }
             if ($bestCov >= $minPathCoverageRatio) {
                 break;
@@ -2671,6 +2848,41 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
             $coverageAfterTune = $bestCov;
             $angleTuneApplied = true;
             $angleTuneDeltaDeg = $bestDelta;
+            $laneTheta = fmod(($baseTheta + $bestDelta + 360.0), 180.0);
+        }
+    }
+    // R-003: 40 Prozent der Bahnbreite vom Feldrand. Nur wenn die Mindestabdeckung
+    // fehlt, wird dieser Abstand kleiner, und zwar nur so weit wie nötig.
+    $hasAvoidHole = false;
+    foreach ($planObstacles as $ob) {
+        if (!is_array($ob)) {
+            continue;
+        }
+        $obMode = strtolower(trim((string)($ob['mode'] ?? 'avoid')));
+        if ($obMode === '' || $obMode === 'avoid') {
+            $hasAvoidHole = true;
+            break;
+        }
+    }
+    if (!$hasAvoidHole && $coverageAfterTune < $minPathCoverageRatio) {
+        foreach ([0.30, 0.20, 0.12] as $tryEdge) {
+            if ($tryEdge >= $edgeFactor - 1e-9) {
+                continue;
+            }
+            $cand = plan_lawnmower($poly, $startPt, $hfov, $aglForPlan, $overlap, $tryEdge, 'fixed', $laneTheta, $curveWaypointAngleStepDeg, $vfovForPlan, $planObstacles, $planEntry, $planSpeed);
+            $candOutside = max(0.0, $tryEdge * floatval($cand['S'] ?? 0.0));
+            $candPath = ensure_start_point_first($cand['path'] ?? [], $startPt, $aglForPlan);
+            $candPath = enforce_path_inside_field_except_first_leg($candPath, $poly, $isNarrowField ? 0.0 : $candOutside);
+            $cov = path_coverage_ratio_by_width_and_turns($candPath, $poly, $coverWidth, 0.0, 80);
+            if ($cov > $coverageAfterTune + 0.002) {
+                $path = $candPath;
+                $coverageAfterTune = $cov;
+                $planned = $cand;
+                $maxOutsideM = $candOutside;
+            }
+            if ($coverageAfterTune >= $minPathCoverageRatio) {
+                break;
+            }
         }
     }
     // Nordkanten-Mittelpunkt und Kanten-Ende nicht in den Flugweg. Die Suchabdeckung
@@ -2682,6 +2894,8 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
     return [
         'path' => $path,
         'metrics' => path_metrics($path),
+        'entries' => is_array($planned['entries'] ?? null) ? $planned['entries'] : [],
+        'entry_id' => (string)($planned['entry_id'] ?? 'auto'),
         'used_inputs' => [
             'hfov_deg' => $hfov,
             'agl_m' => $aglForPlan,
@@ -2689,7 +2903,12 @@ function compute_planned_mission_path(array $poly, array $startPt, array $missio
             'flight_direction_mode' => $preferredDirection,
             'height_range_m' => $heightRangeM,
             'low_relief_threshold_m' => $lowReliefThresholdM,
-            'low_relief_parallel_applied' => $isLowRelief && ($flightDirectionDeg <= -1.0),
+            'low_relief_parallel_applied' => $isLowRelief && ($flightDirectionDeg <= -1.0) && !$contourApplied,
+            'contour_applied' => $contourApplied,
+            'contour_angle_deg' => $contourAngleDeg,
+            'search_m' => $coverWidth,
+            'lane_spacing_m' => floatval($planned['S'] ?? 0.0),
+            'edge_margin_m' => floatval($planned['edge_margin'] ?? 0.0),
             'open_direction_edge_align_applied' => $edgeAlignApplied,
             'open_direction_edge_align_angle_deg' => $edgeAlignAngleDeg,
             'open_direction_edge_align_edge_length_m' => $edgeAlignLenM,
@@ -2813,6 +3032,8 @@ if ($action === 'compute_path') {
         'path' => $planned['path'],
         'flugweg_text' => format_triplets_text($planned['path']),
         'metrics' => $planned['metrics'],
+        'entries' => $planned['entries'] ?? [],
+        'entry_id' => $planned['entry_id'] ?? 'auto',
         'used_inputs' => $planned['used_inputs'],
     ], JSON_UNESCAPED_UNICODE);
     exit;

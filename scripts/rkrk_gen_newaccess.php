@@ -2624,7 +2624,7 @@ global $logfilelocation, $DebugWork, $RKRKLocalLoactionMissionFiles, $CleanAgeOf
 		$data = array();
 		if (($handle = fopen($filename, 'r')) !== FALSE)
 		{
-			while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE)
+			while (($row = fgetcsv($handle, 1000, $delimiter, '"', '\\')) !== FALSE)
 			{
 				//pre_r($row);
 				if(!$header)

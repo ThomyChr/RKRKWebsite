@@ -534,68 +534,42 @@ function nl_slip_qr_mail_img($svg) {
 }
 
 function nl_slip_qr($pack, $amountIso, $payerName, $payerStreet, $payerZip, $payerCity, $info) {
-	$mail = nl_mail_only();
-	$attr = $mail
-		? ' width="146" height="146" style="width:146px;height:146px;display:block;border:0;"'
-		: ' style="width:40mm;height:40mm;display:block;"';
-	if ($amountIso !== '' && $pack['qr'] !== '') {
-		return '<img src="' . nl_h($pack['qr']) . '" alt="Swiss QR-Code"' . $attr . '>';
-	}
-	if ($amountIso === '') {
-		$emptyQr = nl_slip_empty_qr_file();
-		if ($emptyQr !== '') {
-			$emptyExt = strtolower(pathinfo($emptyQr, PATHINFO_EXTENSION));
-			if ($mail && $emptyExt === 'svg') {
-				$emptySvg = (string)file_get_contents($emptyQr);
-				$emptyMail = nl_slip_qr_mail_img($emptySvg);
-				if ($emptyMail !== '') {
-					return $emptyMail;
-				}
-			}
-			$emptySrc = nl_slip_empty_qr_src($emptyQr);
-			if ($emptySrc !== '') {
-				return '<img src="' . nl_h($emptySrc) . '" alt="Swiss QR-Code"' . $attr . '>';
-			}
-		}
-	}
-	$qrFile = dirname(__DIR__) . '/rt/qr_svg.php';
-	if (!class_exists('QR') && is_file($qrFile)) {
+	$qrFile = dirname(__DIR__) . '/rt/rkrk_swissqr.inc.php';
+	if (!function_exists('rkrk_swissqr_svg') && is_file($qrFile)) {
 		require_once $qrFile;
 	}
-	if (!class_exists('QR') || !method_exists('QR', 'svg')) {
+	if (!function_exists('rkrk_swissqr_svg')) {
 		return '';
 	}
-	$payload = "SPC\n0200\n1\n"
-		. $pack['ibanRaw'] . "\nK\n"
-		. $pack['empfaenger'] . "\n"
-		. $pack['street'] . "\n"
-		. $pack['zip'] . "\n"
-		. $pack['place'] . "\n"
-		. "CH\nK\n"
-		. $payerName . "\n"
-		. $payerStreet . "\n"
-		. $payerZip . "\n"
-		. $payerCity . "\n"
-		. "CH\n"
-		. $amountIso . "\nCHF\nNON\n\n"
-		. $info . "\n";
-	$color = ($pack['color'] !== '') ? $pack['color'] : '#000000';
-	try {
-		$svg = QR::svg($payload, 6, 2, $color);
-	} catch (Exception $e) {
-		return '';
+	$amount = ($amountIso !== '' && is_numeric($amountIso)) ? (float)$amountIso : null;
+	$creditor = array(
+		'name' => (string)($pack['empfaenger'] ?? ''),
+		'street' => (string)($pack['street'] ?? ''),
+		'zip' => (string)($pack['zip'] ?? ''),
+		'city' => (string)($pack['place'] ?? ''),
+		'country' => 'CH',
+		'iban' => (string)($pack['ibanRaw'] ?? ''),
+	);
+	$debtor = array(
+		'name' => (string)$payerName,
+		'street' => (string)$payerStreet,
+		'zip' => (string)$payerZip,
+		'city' => (string)$payerCity,
+		'country' => 'CH',
+	);
+	$svg = rkrk_swissqr_svg($creditor, $debtor, $amount, 'CHF', (string)$info);
+	if (nl_mail_only()) {
+		$mailImg = nl_slip_qr_mail_img($svg);
+		if ($mailImg !== '') {
+			return $mailImg;
+		}
+		$png = rkrk_swissqr_png($creditor, $debtor, $amount, 'CHF', (string)$info);
+		if ($png === '') {
+			return '';
+		}
+		return '<img src="data:image/png;base64,' . base64_encode($png) . '" alt="Swiss QR-Code" width="146" height="146" style="width:146px;height:146px;display:block;border:0;">';
 	}
-	if ($mail) {
-		return nl_slip_qr_mail_img($svg);
-	}
-	if (!function_exists('qr_svg')) {
-		return '';
-	}
-	try {
-		return qr_svg($payload, $color);
-	} catch (Exception $e) {
-		return '';
-	}
+	return rkrk_swissqr_img($svg);
 }
 
 function nl_slip_b($cm, $lift) {

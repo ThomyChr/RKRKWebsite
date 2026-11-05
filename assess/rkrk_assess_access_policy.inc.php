@@ -101,13 +101,6 @@ if (!function_exists("rkrk_assess_access_policy_defaults")) {
 			"fail_closed" => true,
 			"cohorts" => array("kerngruppe", "koordinator"),
 		));
-		$strictSessions = rkrk_assess_access_policy_rule_merge(array(
-			"enabled" => true,
-			"allow_cs" => true,
-			"allow_siteadmin" => true,
-			"fail_closed" => true,
-			"cohorts" => array("instruktoren", "kerngruppe"),
-		));
 		$portalDigital = rkrk_assess_access_policy_rule_merge(array(
 			"enabled" => true,
 			"allow_cs" => true,
@@ -131,6 +124,14 @@ if (!function_exists("rkrk_assess_access_policy_defaults")) {
 			"fail_closed" => true,
 			"cohorts" => array("kerngruppe"),
 		));
+		$pruefungstagAccess = rkrk_assess_access_policy_rule_merge(array(
+			"enabled" => true,
+			"allow_admin_flag" => true,
+			"allow_instr_flag" => true,
+			"allow_siteadmin" => true,
+			"fail_closed" => true,
+			"cohorts" => array("kerngruppe"),
+		));
 		$off = rkrk_assess_access_policy_empty_rule();
 
 		$pages = array(
@@ -150,10 +151,10 @@ if (!function_exists("rkrk_assess_access_policy_defaults")) {
 				"label" => "Tagesübersicht / Recovery",
 				"scripts" => array("rkrk_assess_sessions.php"),
 				"cs_kind" => "sessions",
-				"note" => "Moodle: Instruktoren oder Kerngruppe, oder gültige cs-Verknüpfung.",
+				"note" => "Wie Planung: kein Extra-Gate. ?ADMIN öffnet die Tagesübersicht.",
 				"hosts" => array(
-					"portal" => $strictSessions,
-					"rkrs" => $strictSessions,
+					"portal" => $off,
+					"rkrs" => $off,
 					"rkrk" => $off,
 					"other" => $off,
 				),
@@ -218,10 +219,23 @@ if (!function_exists("rkrk_assess_access_policy_defaults")) {
 					"other" => $off,
 				),
 			),
+			"pruefungstag" => array(
+				"label" => "Prüfungstag",
+				"scripts" => array("rkrk_assess_pruefungstag.php"),
+				"cs_kind" => "",
+				"note" => "Portal und RKRS Live: ?ADMIN oder ?INSTR öffnet die Planung. Ohne diese Flags nur Kerngruppe oder Moodle-Site-Admin. Freigegebene Links mit einsicht oder instruktion bleiben offen.",
+				"hosts" => array(
+					"portal" => $pruefungstagAccess,
+					"rkrs" => $pruefungstagAccess,
+					"rkrk" => $off,
+					"other" => $off,
+				),
+			),
 			"staff_tools" => array(
 				"label" => "Fragen-Manager & Editoren",
 				"scripts" => array(
 					"rkrk_digitalassess_admin.php",
+					"rkrk_digitalassess_question_stats.php",
 					"rkrk_digitalassess_review.php",
 					"rkrk_digitalassess_review_merge.php",
 					"rkrk_digitalassess_learning_edit.php",
@@ -658,6 +672,17 @@ if (!function_exists("rkrk_assess_access_policy_defaults")) {
 		}
 		if (function_exists("rkrk_assess_access_policy_is_open_form_mode") && rkrk_assess_access_policy_is_open_form_mode()) {
 			return false;
+		}
+		$script = basename((string) ($_SERVER["PHP_SELF"] ?? ""));
+		if ($script === "") {
+			$script = basename((string) ($_SERVER["SCRIPT_FILENAME"] ?? ""));
+		}
+		if ($script === "rkrk_assess_pruefungstag.php") {
+			$share = trim((string) ($_GET["einsicht"] ?? $_POST["einsicht"] ?? ""));
+			$instr = trim((string) ($_GET["instruktion"] ?? $_POST["instruktion"] ?? ""));
+			if ($share !== "" || $instr !== "") {
+				return false;
+			}
 		}
 		return true;
 	}

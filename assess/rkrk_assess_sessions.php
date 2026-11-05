@@ -3,16 +3,6 @@
  * INSTR/ADMIN: laufende und abgeschlossene Prüfungen, Assessments und Schulungen
  * mit Recovery-Link (Fenster geschlossen / unterbrochen).
  */
-if (isset($_GET["rkrkdiag"]) && (string) $_GET["rkrkdiag"] === "path") {
-	header("Content-Type: text/plain; charset=utf-8");
-	$f = __DIR__ . "/rkrk_assess_common.php";
-	$src = is_file($f) ? (string) file_get_contents($f) : "";
-	echo "dir=" . __DIR__ . "\n";
-	echo "mtime=" . (is_file($f) ? date("c", (int) filemtime($f)) : "missing") . "\n";
-	echo "hasUnset=" . (strpos($src, "unset(\$_SESSION)") !== false ? "yes" : "no") . "\n";
-	echo "hasMoodleDiag=" . (strpos($src, "Moodle \" . (\$moodleUp") !== false ? "yes" : "no") . "\n";
-	exit;
-}
 if (function_exists("ob_get_level") && ob_get_level() === 0) {
 	ob_start();
 }
@@ -861,13 +851,41 @@ if ($quizResultsDir !== "" && function_exists("rkrk_assess_quiz_results_load_row
 		if (function_exists("rkrk_assess_quiz_title_from_key") && $quizKey !== "") {
 			$title = rkrk_assess_quiz_title_from_key($quizKey);
 		}
+		$reopen = function_exists("rkrk_assess_exam_completed_reopen_target")
+			? rkrk_assess_exam_completed_reopen_target($name, $quizKey, $exam)
+			: null;
+		if (is_array($reopen)) {
+			$reopenCode = trim((string) ($reopen["exam_code"] ?? ""));
+			if ($reopenCode !== "") {
+				$exam = $reopenCode;
+			}
+			$reopenDrone = trim((string) ($reopen["drone"] ?? ""));
+			if ($drone === "" && $reopenDrone !== "") {
+				$drone = $reopenDrone;
+			}
+			$schul = (string) ($reopen["schulung"] ?? $schul);
+			$qm = (string) ($reopen["quiz_modus"] ?? $qm);
+		}
+		$detail = $zeit;
+		if (is_array($reopen)) {
+			$detail = (!empty($reopen["passed"]) ? "Bestanden" : "Nicht bestanden");
+			if ((float) ($reopen["pct"] ?? 0) > 0 || (float) ($reopen["punkte_max"] ?? 0) > 0) {
+				$detail .= " · " . round((float) ($reopen["pct"] ?? 0), 1) . "%";
+			}
+		} elseif (function_exists("rkrk_assess_theory_result_metrics")) {
+			$metrics = rkrk_assess_theory_result_metrics($qr);
+			if ((float) ($metrics["pm"] ?? 0) > 0 || (int) ($metrics["anz"] ?? 0) > 0) {
+				$detail = (!empty($metrics["passed"]) ? "Bestanden" : "Nicht bestanden")
+					. " · " . round((float) ($metrics["pct"] ?? 0), 1) . "%";
+			}
+		}
 		$addRow(array(
 			"state" => "done",
 			"art" => $art,
 			"art_label" => $artLabel($art),
 			"pilot" => $name !== "" ? $name : "(ohne Pilot)",
 			"title" => $title,
-			"detail" => $zeit,
+			"detail" => $detail,
 			"exam_code" => $exam,
 			"when" => rkrk_sessions_ts($zeit),
 			"status_label" => "Abgeschlossen",

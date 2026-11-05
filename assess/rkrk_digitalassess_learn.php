@@ -161,8 +161,8 @@ echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars($th
 if ($themeRkrs) {
 	echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars($themeRkrsCssHref, ENT_QUOTES, "UTF-8") . "\">\n";
 }
-echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"lernunterlagen.css\">\n";
-echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars(($assessScriptDir !== "" ? $assessScriptDir : "") . "/rkrk_schulung_lern.css?v=20260923sheetlogor", ENT_QUOTES, "UTF-8") . "\">\n";
+echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"lernunterlagen.css?v=20261026kompakt\">\n";
+echo "<link rel=\"stylesheet\" type=\"text/css\" href=\"" . htmlspecialchars(($assessScriptDir !== "" ? $assessScriptDir : "") . "/rkrk_schulung_lern.css?v=20261026kompakt", ENT_QUOTES, "UTF-8") . "\">\n";
 if ($printView) {
 	echo "<style>"
 		. ".dle-learn-print-toolbar{margin:0 0 14px;padding:10px 12px;background:#f4f7f3;border:1px solid #d8dfd6;border-radius:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:system-ui,-apple-system,\"Segoe UI\",sans-serif;}"

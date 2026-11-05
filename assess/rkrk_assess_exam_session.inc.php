@@ -262,7 +262,10 @@ if (!function_exists("rkrk_assess_exam_candidate_paths")) {
 		$nameKey = ($name !== "" && function_exists("rkrk_assess_exam_pilot_key"))
 			? rkrk_assess_exam_pilot_key($name)
 			: strtolower($name);
-		foreach (glob($dir . "*.json") ?: array() as $file) {
+		// Ohne Namen nicht die Sitzung eines anderen Teilnehmers laden: derselbe EXAM-Code
+		// gilt für mehrere Personen, der Kontext-Check würde sonst das falsche Quiz sperren.
+		$__examFiles = ($name !== "") ? (glob($dir . "*.json") ?: array()) : array();
+		foreach ($__examFiles as $file) {
 			if (!is_string($file) || !is_file($file)) {
 				continue;
 			}
@@ -332,9 +335,16 @@ if (!function_exists("rkrk_assess_exam_resolve_storage_path")) {
 			}
 		}
 		foreach (rkrk_assess_exam_candidate_paths($code, $name) as $path) {
-			if (is_file($path)) {
-				return $path;
+			if (!is_file($path)) {
+				continue;
 			}
+			if (is_array($session) && function_exists("rkrk_assess_exam_matches_context")) {
+				$disk = rkrk_assess_exam_read_json_file($path);
+				if (is_array($disk) && !rkrk_assess_exam_matches_context($disk, $session)) {
+					continue;
+				}
+			}
+			return $path;
 		}
 		$stamp = rkrk_assess_exam_completion_stamp_from_session($session);
 		$withDate = rkrk_assess_exam_stem_with_date($session, $name);
@@ -402,7 +412,7 @@ if (!function_exists("rkrk_assess_exam_load")) {
 	/**
 	 * @return array<string, mixed>|null
 	 */
-	function rkrk_assess_exam_load(string $code, string $name = ""): ?array {
+	function rkrk_assess_exam_load(string $code, string $name = "", ?array $ctx = null): ?array {
 		$code = rkrk_assess_exam_normalize_code($code);
 		if ($code === "") {
 			return null;
@@ -411,6 +421,15 @@ if (!function_exists("rkrk_assess_exam_load")) {
 		foreach (rkrk_assess_exam_candidate_paths($code, $name) as $path) {
 			$data = rkrk_assess_exam_read_json_file($path);
 			if (!is_array($data)) {
+				continue;
+			}
+			// Gleicher EXAM-Code, anderes Quiz oder anderer Modus: Datei überspringen.
+			// Sonst sperrt z. B. eine Schulungs-Sitzung den Prüfungs-Link.
+			if (
+				is_array($ctx)
+				&& function_exists("rkrk_assess_exam_matches_context")
+				&& !rkrk_assess_exam_matches_context($data, $ctx)
+			) {
 				continue;
 			}
 			rkrk_assess_exam_apply_session_migrations($code, $data, $name);
@@ -476,6 +495,47 @@ if (!function_exists("rkrk_assess_exam_migrate_legacy_session")) {
 		}
 		$session["attempts"][$key] = $attempt;
 		return true;
+	}
+}
+
+if (!function_exists("rkrk_assess_exam_attempt_overlaps_questions")) {
+	/**
+	 * Gespeicherter Katalog gehört noch zu diesem Fragenpool.
+	 * Kein Treffer heisst: der Katalog stammt aus einer anderen Fragen-Datei (z. B. alte Kontrollfrage).
+	 *
+	 * @param array<string, mixed> $attempt
+	 * @param list<array<string, mixed>> $questions
+	 */
+	function rkrk_assess_exam_attempt_overlaps_questions(array $attempt, array $questions): bool {
+		$snaps = isset($attempt["question_snapshots"]) && is_array($attempt["question_snapshots"])
+			? $attempt["question_snapshots"]
+			: array();
+		if (count($snaps) < 1) {
+			return true;
+		}
+		$pool = array();
+		foreach ($questions as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+			$frage = trim((string) ($row["Frage"] ?? ""));
+			if ($frage !== "") {
+				$pool[$frage] = true;
+			}
+		}
+		if (count($pool) < 1) {
+			return true;
+		}
+		foreach ($snaps as $snap) {
+			if (!is_array($snap)) {
+				continue;
+			}
+			$frage = trim((string) ($snap["Frage"] ?? ""));
+			if ($frage !== "" && isset($pool[$frage])) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -660,6 +720,26 @@ if (!function_exists("rkrk_assess_exam_save")) {
 				@unlink($sourcePath);
 			}
 		}
+		$__esDone = strtolower(trim((string) ($data["status"] ?? ""))) === "completed";
+		if (!$__esDone && isset($data["attempts"]) && is_array($data["attempts"])) {
+			foreach ($data["attempts"] as $__esAttempt) {
+				if (is_array($__esAttempt) && strtolower(trim((string) ($__esAttempt["status"] ?? ""))) === "completed") {
+					$__esDone = true;
+					break;
+				}
+			}
+		}
+		if ($__esDone) {
+			if (!function_exists("rkrk_es_snapshot_refresh")) {
+				$__esInc = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+				if (is_file($__esInc)) {
+					include_once $__esInc;
+				}
+			}
+			if (function_exists("rkrk_es_snapshot_refresh")) {
+				rkrk_es_snapshot_refresh("quiz");
+			}
+		}
 		return true;
 	}
 }
@@ -689,6 +769,27 @@ if (!function_exists("rkrk_assess_exam_context_from_request")) {
 	}
 }
 
+if (!function_exists("rkrk_assess_exam_setting_equal")) {
+	/**
+	 * ADMIN ist nur die Verwaltungsansicht, keine eigene Audienz.
+	 * Eine Sitzung mit setting RKRS muss deshalb auch unter ?ADMIN= gefunden werden.
+	 */
+	function rkrk_assess_exam_setting_equal(string $stored, string $request): bool {
+		$stored = trim($stored);
+		$request = trim($request);
+		if (strcasecmp($stored, $request) === 0) {
+			return true;
+		}
+		if (!function_exists("rkrk_dga_quiz_setting_for_selection")) {
+			return false;
+		}
+		return strcasecmp(
+			rkrk_dga_quiz_setting_for_selection($stored),
+			rkrk_dga_quiz_setting_for_selection($request)
+		) === 0;
+	}
+}
+
 if (!function_exists("rkrk_assess_exam_matches_context")) {
 	/**
 	 * @param array<string, mixed> $session
@@ -707,7 +808,10 @@ if (!function_exists("rkrk_assess_exam_matches_context")) {
 		) {
 			return false;
 		}
-		if (strcasecmp((string) ($session["setting"] ?? ""), (string) ($ctx["setting"] ?? "")) !== 0) {
+		if (!rkrk_assess_exam_setting_equal(
+			(string) ($session["setting"] ?? ""),
+			(string) ($ctx["setting"] ?? "")
+		)) {
 			return false;
 		}
 		if (strcasecmp((string) ($session["schulung"] ?? ""), (string) ($ctx["schulung"] ?? "")) !== 0) {
@@ -851,15 +955,19 @@ if (!function_exists("rkrk_assess_exam_create_session")) {
 		if ($key === "") {
 			return null;
 		}
-		$existing = rkrk_assess_exam_load($code, $name);
+		$existing = rkrk_assess_exam_load($code, $name, $ctx);
+		$replaceStaleCatalog = false;
 		if (is_array($existing)) {
 			$attempt = rkrk_assess_exam_get_attempt($existing, $name);
 			if (is_array($attempt)) {
-				if (strtolower(trim((string) ($attempt["status"] ?? ""))) === "completed") {
-					return $existing;
-				}
-				if (rkrk_assess_exam_attempt_has_catalog($attempt)) {
-					return $existing;
+				$replaceStaleCatalog = !rkrk_assess_exam_attempt_overlaps_questions($attempt, $questions);
+				if (!$replaceStaleCatalog) {
+					if (strtolower(trim((string) ($attempt["status"] ?? ""))) === "completed") {
+						return $existing;
+					}
+					if (rkrk_assess_exam_attempt_has_catalog($attempt)) {
+						return $existing;
+					}
 				}
 			}
 		}
@@ -904,20 +1012,24 @@ if (!function_exists("rkrk_assess_exam_create_session")) {
 			if (!rkrk_assess_exam_save($code, $data, $name)) {
 				return null;
 			}
-			return rkrk_assess_exam_load($code, $name);
+			return rkrk_assess_exam_load($code, $name, $ctx);
 		}
 		rkrk_assess_exam_ensure_attempt($code, $existing, $ctx);
-		$existing = rkrk_assess_exam_load($code, $name);
+		$existing = rkrk_assess_exam_load($code, $name, $ctx);
 		if (!is_array($existing)) {
 			return null;
 		}
 		if (!isset($existing["attempts"]) || !is_array($existing["attempts"])) {
 			$existing["attempts"] = array();
 		}
-		$existing["attempts"][$key] = array_merge(
-			is_array($existing["attempts"][$key] ?? null) ? $existing["attempts"][$key] : array(),
-			$attemptCatalog
-		);
+		if ($replaceStaleCatalog) {
+			$existing["attempts"][$key] = $attemptCatalog;
+		} else {
+			$existing["attempts"][$key] = array_merge(
+				is_array($existing["attempts"][$key] ?? null) ? $existing["attempts"][$key] : array(),
+				$attemptCatalog
+			);
+		}
 		if (trim((string) ($existing["quiz_key"] ?? "")) === "") {
 			$existing["quiz_key"] = (string) ($ctx["quiz_key"] ?? "");
 		}
@@ -936,7 +1048,7 @@ if (!function_exists("rkrk_assess_exam_create_session")) {
 		if (!rkrk_assess_exam_save($code, $existing, $name)) {
 			return null;
 		}
-		return rkrk_assess_exam_load($code, $name);
+		return rkrk_assess_exam_load($code, $name, $ctx);
 	}
 }
 
@@ -944,7 +1056,7 @@ if (!function_exists("rkrk_assess_exam_mark_completed")) {
 	/**
 	 * @param array<string, mixed> $result
 	 */
-	function rkrk_assess_exam_mark_completed(string $code, array $result, string $name = ""): bool {
+	function rkrk_assess_exam_mark_completed(string $code, array $result, string $name = "", ?array $ctx = null): bool {
 		$name = trim($name) !== "" ? trim($name) : trim((string) ($result["name"] ?? ""));
 		if ($name === "") {
 			return false;
@@ -965,13 +1077,17 @@ if (!function_exists("rkrk_assess_exam_mark_completed")) {
 		if (trim((string) ($result["zeit"] ?? "")) === "") {
 			$result["zeit"] = date("d.m.Y H:i");
 		}
-		$session = rkrk_assess_exam_load($code, $name);
+		$session = rkrk_assess_exam_load($code, $name, $ctx);
 		if (!is_array($session)) {
 			return false;
 		}
-		$ctx = array("name" => $name, "drone" => (string) ($result["drone"] ?? ""));
-		rkrk_assess_exam_ensure_attempt($code, $session, $ctx);
-		$session = rkrk_assess_exam_load($code, $name);
+		$ensureCtx = is_array($ctx) ? $ctx : array();
+		$ensureCtx["name"] = $name;
+		if (trim((string) ($ensureCtx["drone"] ?? "")) === "") {
+			$ensureCtx["drone"] = (string) ($result["drone"] ?? "");
+		}
+		rkrk_assess_exam_ensure_attempt($code, $session, $ensureCtx);
+		$session = rkrk_assess_exam_load($code, $name, $ctx);
 		if (!is_array($session)) {
 			return false;
 		}
@@ -1043,7 +1159,7 @@ if (!function_exists("rkrk_assess_exam_save_completed_standalone")) {
 		if (trim((string) ($result["name"] ?? "")) === "") {
 			$result["name"] = $name;
 		}
-		$session = rkrk_assess_exam_load($code, $name);
+		$session = rkrk_assess_exam_load($code, $name, $ctx);
 		if (!is_array($session)) {
 			$session = array(
 				"exam_code" => $code,
@@ -1647,6 +1763,58 @@ if (!function_exists("rkrk_assess_exam_list_completed")) {
 			return ((int) ($b["timestamp"] ?? 0)) <=> ((int) ($a["timestamp"] ?? 0));
 		});
 		return $out;
+	}
+}
+
+if (!function_exists("rkrk_assess_exam_completed_reopen_target")) {
+	/**
+	 * Abgeschlossene Prüfung dieser Person zum Wiederöffnen.
+	 * Zuerst derselbe EXAM-Code, sonst der letzte Abschluss desselben Quiz.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	function rkrk_assess_exam_completed_reopen_target(string $name, string $quizKey, string $preferCode = ""): ?array {
+		$name = trim($name);
+		$quizKey = trim($quizKey);
+		$preferCode = function_exists("rkrk_assess_exam_normalize_code")
+			? rkrk_assess_exam_normalize_code($preferCode)
+			: trim($preferCode);
+		if ($name === "" || !function_exists("rkrk_assess_exam_list_completed") || !function_exists("rkrk_assess_exam_pilot_key")) {
+			return null;
+		}
+		$nameKey = rkrk_assess_exam_pilot_key($name);
+		if ($nameKey === "") {
+			return null;
+		}
+		$best = null;
+		$bestTs = -1;
+		foreach (rkrk_assess_exam_list_completed() as $ex) {
+			if (!is_array($ex)) {
+				continue;
+			}
+			$exName = trim((string) ($ex["name"] ?? ""));
+			if ($exName === "" || $exName === "(ohne Pilot)" || rkrk_assess_exam_pilot_key($exName) !== $nameKey) {
+				continue;
+			}
+			$exCode = function_exists("rkrk_assess_exam_normalize_code")
+				? rkrk_assess_exam_normalize_code((string) ($ex["exam_code"] ?? ""))
+				: trim((string) ($ex["exam_code"] ?? ""));
+			$exQuiz = trim((string) ($ex["quiz_key"] ?? ""));
+			$quizOk = ($quizKey === "" || $exQuiz === "" || strcasecmp($exQuiz, $quizKey) === 0);
+			$codeOk = ($preferCode !== "" && $exCode !== "" && strcasecmp($exCode, $preferCode) === 0);
+			if (!$quizOk && !$codeOk) {
+				continue;
+			}
+			if ($codeOk) {
+				return $ex;
+			}
+			$ts = (int) ($ex["timestamp"] ?? 0);
+			if ($ts >= $bestTs) {
+				$best = $ex;
+				$bestTs = $ts;
+			}
+		}
+		return is_array($best) ? $best : null;
 	}
 }
 

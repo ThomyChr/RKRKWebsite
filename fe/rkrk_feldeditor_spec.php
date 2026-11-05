@@ -41,42 +41,42 @@ $mapllBrand = mapll_favicon_brand();
 
     <h2>Gierrichtung und Neigung</h2>
     <p>Die Nasenrichtung steht in der JSON unter <code>yawDirection</code>. In der KMZ heisst dasselbe Feld <code>waypointHeadingMode</code>. Die Namen sind nicht dieselben. Ein konkretes <code>directionType</code> gewinnt vor <code>yawDirection</code> <code>followWayline</code>.</p>
-    <table>
-      <thead>
-        <tr>
+      <table>
+        <thead>
+          <tr>
           <th>Bedeutung</th>
           <th>JSON (<code>yawDirection</code>)</th>
           <th>KMZ (<code>waypointHeadingMode</code>)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
           <td>Richtung zum nächsten Wegpunkt</td>
           <td><code>followWayline</code></td>
           <td><code>followWayline</code></td>
-        </tr>
-        <tr>
+          </tr>
+          <tr>
           <td>Definiert. Der Winkel (<code>direction</code>) ist die Nase. <code>null</code> bleibt <code>null</code> und ist nicht 0.</td>
           <td><code>customised</code></td>
           <td><code>smoothTransition</code>. In <code>waylines.wpml</code> steht <code>waypointHeadingAngleEnable</code> auf <code>1</code> und <code>waypointHeadingAngle</code> auf dem Winkel.</td>
-        </tr>
-        <tr>
+          </tr>
+          <tr>
           <td>Schwenkachse sperren. Rotes X, Winkel gesperrt.</td>
           <td><code>fixed</code></td>
           <td><code>fixed</code>. Winkel <code>0</code>, <code>waypointHeadingAngleEnable</code> <code>0</code>.</td>
-        </tr>
-        <tr>
+          </tr>
+          <tr>
           <td>Fokus POI. Nase zum markierten POI. Das ist nicht <code>smoothTransition</code>.</td>
           <td><code>smoothTransition</code></td>
           <td><code>towardPOI</code>. Ohne POI <code>followWayline</code>. Winkel <code>0</code>, <code>waypointHeadingAngleEnable</code> <code>0</code>.</td>
-        </tr>
-        <tr>
+          </tr>
+          <tr>
           <td>Manuell</td>
           <td><code>manually</code></td>
           <td><code>manually</code></td>
-        </tr>
-      </tbody>
-    </table>
+          </tr>
+        </tbody>
+      </table>
     <p>Definiert und Fokus POI sind in der KMZ nicht dasselbe. Definiert ist <code>smoothTransition</code>. Fokus POI ist <code>towardPOI</code>. Die Fernsteuerung schreibt <code>waypointPoiPoint</code> an jedem Wegpunkt, auch bei Definiert. Das ist kein Fokus POI. Fokus POI gilt nur bei <code>waypointHeadingMode</code> <code>towardPOI</code>.</p>
     <p>Lokaler Heading-Block in <code>template.kml</code> und <code>waylines.wpml</code>: <code>waypointHeadingMode</code>, <code>waypointHeadingAngle</code>, <code>waypointPoiPoint</code>, <code>waypointHeadingPathMode</code>, <code>waypointHeadingPoiIndex</code> <code>0</code>. <code>useGlobalHeadingParam</code> steht daneben, nicht im Block. <code>1</code> lässt den Block weg. Ein lokaler Punkt schreibt das Flag nicht als <code>0</code> in den Block. Die Drehrichtung steht in <code>waypointHeadingPathMode</code> (<code>followBadArc</code>, <code>clockwise</code>, <code>counterClockwise</code>). In <code>waylines.wpml</code> steht zusätzlich <code>waypointHeadingAngleEnable</code>: <code>1</code> nur bei Definiert mit gesetztem Winkel, sonst <code>0</code> und Winkel <code>0</code>.</p>
     <p>Neigungswinkel. Standard −90 ist nicht spezifisch. JSON: <code>gimbalControl</code> <code>manuel</code>, an jedem Wegpunkt <code>gimbalAngle</code> −90. KMZ: <code>gimbalPitchMode</code> <code>manual</code>, in <code>template.kml</code> kein <code>gimbalPitchAngle</code>. In <code>waylines.wpml</code> steht <code>waypointGimbalHeadingParam</code> mit <code>waypointGimbalPitchAngle</code> <code>0</code> und <code>waypointGimbalYawAngle</code> <code>0</code>.</p>
@@ -85,8 +85,10 @@ $mapllBrand = mapll_favicon_brand();
 
     <h2>Suchabdeckung</h2>
     <p>Nur die Karte. <span class="none">kein KMZ-Tag</span>. Der Flugpfad wird dabei nicht neu gerechnet. Die Höhe <code>h</code> ist die programmierte Flughöhe des Punkts. <code>HFOV</code> und <code>VFOV</code> kommen vom Drohnentyp.</p>
-    <p>Einfach, Neigung −90 oder nicht gesetzt. Die Kamera blickt senkrecht nach unten. Bodenbreite W = 2 · h · tan(HFOV / 2). Bodenlänge = 2 · h · tan(VFOV / 2). Der hellblaue Streifen liegt mittig auf der Route. Dieselbe Überlappung wie bei der grünen Strecke S: S = (1 − Überlappung) · W. Der Faktor heisst im Code <code>spacingM / widthM</code> und ist (1 − Überlappung). Die Überlappung ist der Missionswert, Standard 15 %, der Faktor also 0.85. Standard der gezeichneten Suchabdeckung ist S, vorwärts und seitwärts, nach der Wahl der Kante. W ist das volle Kamerafenster. Mit <code>DEBUG</code> steht in der Anzeigekontrolle unter Abdeckung die Wahl Kamerasicht (W) oder Suchabdeckung (S). Ohne DEBUG und ohne gespeicherten Wert gilt S. Bei Missionshöhe und Nase entlang der Bahn ist die Streifenbreite gleich S. Ist die Gierrichtung nicht «Richtung zum nächsten Wegpunkt» und zeigt die Nase quer zur Bahn, ist die Streifenbreite die Bodenlänge mal denselben Faktor. «Richtung zum nächsten Wegpunkt» bleibt bei der Bodenbreite mal dem Faktor. Dazwischen werden beide Anteile gemischt. Start und Ende erhalten eine Kappe um die halbe skalierte Länge in Blickrichtung. An einem Richtungswechsel füllt ein Kreisausschnitt die äussere Lücke.</p>
-    <p>Komplex, gesetzte Neigung ungleich −90. Die Kamera blickt schräg in Gierrichtung. Der Winkel aus dem Lot ist τ = Neigung + 90°. Naher Bildrand = h · tan(τ − VFOV / 2), ferner Bildrand = h · tan(τ + VFOV / 2). Ein Strahl, dessen Winkel aus dem Lot 89° erreicht oder darüber liegt, hat keinen Bodenpunkt. Die halbe Breite an einem Bodenabstand r ist die Schrägentfernung √(h² + r²) mal tan(HFOV / 2). Nah, fern und diese halbe Breite werden mit demselben Faktor (1 − Überlappung) multipliziert. Ist die Gierrichtung «Richtung zum nächsten Wegpunkt», blickt die Kamera entlang der Bahn: quer zur Bahn die horizontale Breite, längs die vertikale Ausdehnung. Bei jeder anderen Gierrichtung bleibt das Fenster in der Kameraachse (HFOV quer zum Blick, VFOV in der Nickebene) und die Bahn schiebt es nur. Der Streifen sitzt in Blickrichtung vor der Drohne. Ab 150 m Bodenabstand des unskalierten Fensters wird er blasser und endet bei 320 m. Fehlt das Sichtfeld, gelten hier 49° horizontal und 40° vertikal. Wegpunkte mit −90 auf derselben Route behalten den einfachen Streifen.</p>
+    <p>Einfach, Neigung −90 oder nicht gesetzt. Die Kamera blickt senkrecht nach unten. W, S und B werden auf den nächsten halben Meter gerundet. W = 2 · h · tan(HFOV / 2). Das ist die Sichtbreite. S kommt aus der Bahnberechnung, Feldsuche vorwärts, und nicht aus dem Überlappungsregler. k ist der Kernparameter <code>overlap</code>, Vorgabe 0.15. Ab 50 m gilt k = 0.15 / (1 + (h − 50) / 65). Der Winkel je Seite zwischen W und S ist ua = HFOV · k. S = 2 · h · tan(HFOV / 2 − ua). Der hellblaue Streifen liegt mittig auf der Route und ist quer zur Bahn so breit wie S. B = (1 − Überlappung) · W. B ist die Bahnbreite und der Abstand der geplanten Bahnen. Die Überlappung steuert nur B. Der Regler geht von 0 bis 95 Prozent, in Schritten von 1. Die Standardüberlappung eines neuen Feldes ist 30 Prozent. Ein gespeichertes Feld behält seine Überlappung. Bodenlänge = 2 · h · tan(VFOV / 2). Mit <code>DEBUG</code> steht in der Anzeigekontrolle unter Abdeckung die Wahl Kamerasicht (W) oder Suchabdeckung (S). Ohne DEBUG gilt S. Die Gierrichtung ändert die Streifenbreite nicht. Start und Ende erhalten eine Kappe um die halbe Bodenlänge in Blickrichtung. An einem Richtungswechsel füllt ein Kreisausschnitt die äussere Lücke.</p>
+    <p>Komplex, gesetzte Neigung ungleich −90. Die Kamera blickt schräg in Gierrichtung. Ein geneigtes Bein nimmt Neigung und Gierrichtung des Wegpunkts, den das Fluggerät verlässt. Am Abflug gilt dessen programmierte Höhe, am Ankommen die programmierte Höhe des nächsten Punkts, mit derselben Neigung. Die Fläche wird auf das Segment beschnitten, damit ein kurzes Bein die ferne Kante nicht über spätere Bahnen wirft. Der Winkel aus dem Lot ist τ = Neigung + 90°. Naher Bildrand = h · tan(τ − VFOV / 2), ferner Bildrand = h · tan(τ + VFOV / 2). Ein Strahl, dessen Winkel aus dem Lot 89° erreicht oder darüber liegt, hat keinen Bodenpunkt. Die halbe Breite an einem Bodenabstand r ist die Schrägentfernung √(h² + r²) mal tan(HFOV / 2). Nah, fern und diese halbe Breite werden mit demselben Faktor S / W multipliziert. Ist die Gierrichtung «Richtung zum nächsten Wegpunkt», blickt die Kamera entlang der Bahn: quer zur Bahn die horizontale Breite, längs die vertikale Ausdehnung. Bei jeder anderen Gierrichtung bleibt das Fenster in der Kameraachse (HFOV quer zum Blick, VFOV in der Nickebene) und die Bahn schiebt es nur. Der Streifen sitzt in Blickrichtung vor der Drohne. Ab 150 m Bodenabstand des unskalierten Fensters wird er blasser und endet bei 320 m. Fehlt das Sichtfeld, gelten hier 49° horizontal und 40° vertikal. Wegpunkte mit −90 auf derselben Route behalten den einfachen Streifen. Nadir −90 bleibt ein Streifen entlang der Route. Die Höhe in Klammern ist relativ zum Start und geht nicht in den Footprint.</p>
+    <h2>Stützpunkte</h2>
+    <p>Nur Expertenmodus, Schritt 4 - Prüfen. DESK: Reiter Flugroute. MOB: Block Flugroute. <span class="none">kein eigenes KMZ-Tag</span>, bis ein Punkt als Wegpunkt gesetzt und mit Speichern geschrieben ist. Stützpunkte anzeigen setzt hellviolette Punkte über die Suchabdeckung. An jedem Punkt steht die Höhenabweichung zum Flugpfad in demselben Violett, zum Beispiel +12.0 m. Das weisse + setzt nur diesen Wegpunkt. Alle Stützpunkte setzen übernimmt jeden aktuellen Vorschlag. Der Katalog bleibt, bis Speichern. Ziel sind so wenige Punkte wie möglich, solange die reale Höhe in der Toleranz der Sollflughöhe bleibt, Vorgabe ±10 m (<code>agl_display_deviation_m</code>). Die Auswahl ist Optimal Min-WP (Vorgabe), Douglas-Peucker oder Sliding Sleeve. Der einfache Modus blendet die Schalter aus. Schon gesetzte Wegpunkte bleiben beim Wechsel des Modus.</p>
 
     <h2>Flag-Regel</h2>
     <p><code>true</code> und <code>1</code>: Missionswert, Expertenfeld ausgegraut. <code>false</code> und <code>0</code>: lokaler Wert. Im JasonFile <code>true</code> oder <code>false</code>. In der KMZ <code>1</code> oder <code>0</code>.</p>
@@ -232,7 +234,7 @@ $mapllBrand = mapll_favicon_brand();
         <tr class="group"><td colspan="5">Mission</td></tr>
         <tr>
           <td class="grp">Mission</td>
-          <td>Direkt zur Startposition. Einfacher Modus: Nein.</td>
+          <td>Direkt zur Startposition fliegen. Nur DESK, Schritt 4 - Prüfen, Reiter Flugroute, Expertenmodus. Einfacher Modus blendet den Schalter aus. MOB hat ihn nicht. Einfacher Modus: Nein.</td>
           <td><code>flyToWaylineMode</code></td>
           <td><code>wpml:flyToWaylineMode</code></td>
           <td class="hint">Aus: <code>safely</code>, erst auf die sichere Höhe. An: <code>pointToPoint</code>.</td>
@@ -246,10 +248,10 @@ $mapllBrand = mapll_favicon_brand();
         </tr>
         <tr>
           <td class="grp">Geschwindigkeit</td>
-          <td>Startgeschwindigkeit einschalten. Schritt 3 Flugpfad, nur im Expertenmodus bedienbar. Einfacher Modus: Schalter aus.</td>
+          <td>Startgeschwindigkeit einschalten. Schritt 4 - Prüfen, Reiter Flugroute auf DESK und Block Flugroute auf MOB, nur im Expertenmodus. Der einfache Modus blendet den Schalter aus. Einfacher Modus: Schalter aus.</td>
           <td><code>start_speed_active</code>, <code>start_speed_m_s</code>. Im JasonFile <code>transitionalSpeedActive</code>, <code>transitionalSpeed</code>.</td>
           <td><code>wpml:globalTransitionalSpeed</code>. Aktiv-Flag: <span class="none">kein KMZ-Tag</span></td>
-          <td class="hint">Flag an: eigene Startgeschwindigkeit, 0.1 bis 15 m/s. Flag aus, einfacher Modus und Verlassen des Expertenmodus: die Startgeschwindigkeit ist die Fluggeschwindigkeit.</td>
+          <td class="hint">Flag an: eigene Startgeschwindigkeit, 0.1 bis 15 m/s. Flag aus: die Startgeschwindigkeit ist die Fluggeschwindigkeit. Der einfache Modus blendet den Schalter aus. Ein schon gesetzter Wegpunkt bleibt beim Wechsel des Modus.</td>
         </tr>
         <tr>
           <td class="grp">Mission</td>
@@ -319,7 +321,7 @@ $mapllBrand = mapll_favicon_brand();
           <td>Einfacher Modus / Expertenmodus</td>
           <td><code>easyModeForm</code></td>
           <td class="none">kein KMZ-Tag</td>
-          <td class="hint">Ein geladenes Feld mit einem <code>useMission</code>-Flag <code>false</code> bleibt im Expertenmodus. Verlassen des Expertenmodus setzt die Startgeschwindigkeit auf aus.</td>
+          <td class="hint">Ein geladenes Feld mit einem <code>useMission</code>-Flag <code>false</code> bleibt im Expertenmodus. Der einfache Modus blendet Direkt zur Startposition fliegen, Startgeschwindigkeit einschalten und die Stützpunkte aus. Schon gesetzte Wegpunkte bleiben.</td>
         </tr>
         <tr>
           <td class="grp">Mission</td>
@@ -340,7 +342,7 @@ $mapllBrand = mapll_favicon_brand();
           <td>Überlappung (%)</td>
           <td>kein Name im JasonFile</td>
           <td class="none">kein KMZ-Tag</td>
-          <td class="hint">Nur für den Abstand der Bahnen. Steht nicht in der KMZ.</td>
+          <td class="hint">Steuert die Bahnbreite B = gerundet (1 − Überlappung) · W. Bereich 0 bis 95 Prozent, Schritt 1. Standard eines neuen Feldes: 30 Prozent. S bleibt die Suchbreite aus der Bahnberechnung. Ein gespeichertes Feld behält seinen Wert. Steht nicht in der KMZ.</td>
         </tr>
         <tr>
           <td class="grp">Pfad</td>

@@ -780,9 +780,18 @@ if ($amountVal === null) {
 $amountIso = number_format((float)$amountVal, 2, '.', '');
 
 /* ----------------------------
-   Swiss-QR (Einzahlungsschein) — Bild aus Admin (kategorien[kat].swissqrcode)
+   Swiss-QR (Einzahlungsschein) — aus den Rechnungsdaten
 ----------------------------- */
-$catInfo = trim((string)($cat['zusatzinfo'] ?? $cat['Zusatzinformation'] ?? ''));
+if (array_key_exists('zusatzinfo', $data)) {
+    $catInfo = trim((string) $data['zusatzinfo']);
+} else {
+    $catInfo = trim((string)($cat['zusatzinfo'] ?? $cat['Zusatzinformation'] ?? ''));
+}
+if (function_exists('mb_substr')) {
+    $catInfo = mb_substr($catInfo, 0, 60, 'UTF-8');
+} else {
+    $catInfo = substr($catInfo, 0, 60);
+}
 
 $qrIban = str_replace(' ', '', (string)($iban ?: $ibanDefault));
 $crName = (string)($empfaengerDefault ?: '');
@@ -802,51 +811,27 @@ if (strlen($additionalInfo) > 140) {
     $additionalInfo = substr($additionalInfo, 0, 137) . '...';
 }
 
-$swissQrRel = trim((string)($cat['swissqrcode'] ?? ''));
-$swissQrPath = $swissQrRel !== '' ? resolve_rt_media_path($swissQrRel, $baseDir) : '';
-
-$qrPrimary = trim((string) ($catDesign['color'] ?? '#000000'));
-if ($qrPrimary === '') {
-    $qrPrimary = '#000000';
-}
-
-$swissQrSrc = null;
-if ($swissQrPath !== '') {
-    // Dunkle Module in Kategorie-Primärfarbe (Styleset primary)
-    $swissQrSrc = signature_tinted_data_uri($swissQrPath, $qrPrimary);
-    if ($swissQrSrc === null) {
-        $swissQrSrc = img_data_uri($swissQrPath);
-    }
-}
-
-$qrHtml = '';
-if ($swissQrSrc !== null) {
-    $qrHtml = '<img src="' . h($swissQrSrc) . '" alt="Swiss QR-Code" style="width:40mm;height:40mm;display:block;">';
-} else {
-    // Fallback: dynamisch erzeugen, falls in Admin kein Swiss-QR hochgeladen ist
-    $qrString =
-        "SPC\n0200\n1\n" .
-        $qrIban . "\n" .
-        "K\n" .
-        $crName . "\n" .
-        $crStreet . "\n" .
-        $crZip . "\n" .
-        $crCity . "\n" .
-        $crCountry . "\n" .
-        "K\n" .
-        $dbName . "\n" .
-        $dbStreet . "\n" .
-        $dbZip . "\n" .
-        $dbCity . "\n" .
-        $dbCountry . "\n" .
-        $amountIso . "\n" .
-        $currency . "\n" .
-        "NON\n" .
-        "\n" .
-        $additionalInfo . "\n";
-
-    $qrHtml = qr_svg($qrString, $qrPrimary);
-}
+require_once __DIR__ . '/rkrk_swissqr.inc.php';
+$qrHtml = rkrk_swissqr_img(rkrk_swissqr_svg(
+    [
+        'name' => $crName,
+        'street' => $crStreet,
+        'zip' => $crZip,
+        'city' => $crCity,
+        'country' => $crCountry,
+        'iban' => $qrIban,
+    ],
+    [
+        'name' => $dbName,
+        'street' => $dbStreet,
+        'zip' => $dbZip,
+        'city' => $dbCity,
+        'country' => $dbCountry,
+    ],
+    is_numeric($amountIso) ? (float)$amountIso : null,
+    (string)$currency,
+    $additionalInfo
+));
 
 $slipIbanLine = $ibanFormatted !== '' ? $ibanFormatted : format_iban_ch((string) $qrIban);
 $slipCredName = $crName;

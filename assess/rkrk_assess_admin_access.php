@@ -75,6 +75,48 @@ function rkrk_acc_csrf_ok(): bool {
 	return $got !== "" && hash_equals($want, $got);
 }
 
+/**
+ * @param array<string, mixed> $rule
+ * @param array<string, array{id:string,label:string}> $cohortCat
+ * @return list<string>
+ */
+function rkrk_acc_rule_bits(array $rule, array $cohortCat): array {
+	if (empty($rule["enabled"])) {
+		return array();
+	}
+	$bits = array();
+	foreach ($cohortCat as $ck => $c) {
+		if (in_array($ck, (array) ($rule["cohorts"] ?? array()), true)) {
+			$bits[] = (string) $c["label"];
+		}
+	}
+	if (!empty($rule["allow_siteadmin"])) {
+		$bits[] = "Site-Admin";
+	}
+	if (!empty($rule["allow_cs"])) {
+		$bits[] = "cs";
+	}
+	if (!empty($rule["allow_admin_flag"])) {
+		$bits[] = "ADMIN";
+	}
+	if (!empty($rule["allow_instr_flag"])) {
+		$bits[] = "INSTR";
+	}
+	if (!empty($rule["allow_noh"])) {
+		$bits[] = "NOH";
+	}
+	if (!empty($rule["hash_gate"])) {
+		$bits[] = "Hash";
+	}
+	if (!empty($rule["fail_closed"])) {
+		$bits[] = "Fail-closed";
+	}
+	if (trim((string) ($rule["extra_cohorts"] ?? "")) !== "") {
+		$bits[] = "weitere Cohorts";
+	}
+	return $bits;
+}
+
 function rkrk_acc_self_href(): string {
 	$path = "rkrk_assess_admin_access.php";
 	if (function_exists("rkrk_assess_append_setting_href")) {
@@ -185,15 +227,30 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 .rkrk-acc-flash{padding:10px 12px;border-radius:10px;margin:0 0 12px;}
 .rkrk-acc-flash--ok{background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;}
 .rkrk-acc-flash--err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;}
-.rkrk-acc-matrix{width:100%;border-collapse:collapse;font-size:13px;}
-.rkrk-acc-matrix th,.rkrk-acc-matrix td{vertical-align:top;padding:8px;}
-.rkrk-acc-matrix th.rkrk-acc-now{background:#e8f0e4;}
-.rkrk-acc-matrix td.rkrk-acc-now{background:#f7fbf5;}
-.rkrk-acc-cell{min-width:170px;}
-.rkrk-acc-cell label{display:flex;align-items:flex-start;gap:6px;margin:2px 0;font-size:13px;line-height:1.35;}
-.rkrk-acc-cell input[type="text"]{width:100%;margin-top:4px;padding:4px 6px;border:1px solid var(--input-border);border-radius:6px;}
-.rkrk-acc-en{font-weight:600;}
 .rkrk-acc-note{font-size:12px;opacity:.8;margin:4px 0 8px;}
+.rkrk-acc-fold{border:1px solid var(--border);border-radius:10px;margin:0 0 8px;background:#fff;}
+.rkrk-acc-fold > summary{cursor:pointer;padding:8px 12px;font-weight:650;list-style:none;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
+.rkrk-acc-fold > summary::-webkit-details-marker{display:none;}
+.rkrk-acc-fold > summary::before{content:"";width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);display:inline-block;margin-right:2px;opacity:.55;flex:0 0 auto;}
+.rkrk-acc-fold[open] > summary::before{transform:rotate(45deg);margin-top:-2px;}
+.rkrk-acc-fold > .rkrk-acc-body{padding:0 12px 12px;}
+.rkrk-acc-page > summary{font-weight:650;}
+.rkrk-acc-sum{display:flex;gap:4px;flex-wrap:wrap;font-weight:500;font-size:12px;}
+.rkrk-acc-bit{display:inline-block;padding:1px 6px;border-radius:999px;background:#f4f4f5;border:1px solid var(--border);color:#3f3f46;}
+.rkrk-acc-bit--on{background:#e8f0e4;border-color:#9ab08f;color:#1f3d24;}
+.rkrk-acc-bit--now{box-shadow:inset 0 0 0 1px #6b8f62;}
+.rkrk-acc-tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px;}
+.rkrk-acc-tools button{background:#fff;color:#1f2933;border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;font:inherit;font-size:13px;}
+.rkrk-acc-hosts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+.rkrk-acc-host{border:1px solid var(--border);border-radius:8px;padding:8px;min-width:0;}
+.rkrk-acc-host--now{background:#f7fbf5;border-color:#9ab08f;}
+.rkrk-acc-host h4{margin:0 0 6px;font-size:13px;}
+.rkrk-acc-checks{display:grid;grid-template-columns:1fr 1fr;gap:1px 8px;}
+.rkrk-acc-checks label,.rkrk-acc-host label{display:flex;align-items:flex-start;gap:4px;margin:0;font-size:12px;line-height:1.3;}
+.rkrk-acc-en{font-weight:700;grid-column:1 / -1;margin-bottom:4px!important;}
+.rkrk-acc-host input[type="text"]{width:100%;margin-top:6px;padding:4px 6px;border:1px solid var(--input-border);border-radius:6px;font:inherit;font-size:12px;}
+@media (max-width:980px){.rkrk-acc-hosts{grid-template-columns:1fr 1fr;}}
+@media (max-width:640px){.rkrk-acc-hosts,.rkrk-acc-checks{grid-template-columns:1fr;}}
 .rkrk-acc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
 .rkrk-acc-actions button,.rkrk-acc-actions a.ql-btn{padding:8px 14px;border-radius:8px;border:0;cursor:pointer;font:inherit;}
 .rkrk-acc-save{background:var(--brand-dark);color:#fff;}
@@ -203,20 +260,17 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 .rkrk-acc-pill--on{background:#e8f0e4;border-color:#9ab08f;}
 </style>
 
-<div class="card rkrk-card" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+<div class="card rkrk-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;">
 	<div>
-		<h2 style="margin-top:0;">Zugriffsrechte</h2>
-		<p style="margin:0;max-width:52rem;">
-			Assess prüft Zugriffe je nach Server unterschiedlich (Moodle-Cohorts, cs-Hash, RKRK-Login, URL-Flags).
-			Diese Seite fasst die Regeln zusammen und steuert sie zentral. <code>?ADMIN</code> / <code>?INSTR</code>
-			sind Menü-Flags und nur dann eine Freigabe, wenn das unten explizit eingeschaltet ist.
+		<h2 style="margin:0;">Zugriffsrechte</h2>
+		<p class="rkrk-acc-note" style="margin:2px 0 0;">
+			<code>?ADMIN</code> und <code>?INSTR</code> gelten nur, wenn die Freigabe in der Zeile an ist.
+			<a href="<?php echo rkrk_acc_h(function_exists("rkrk_assess_append_setting_href") ? rkrk_assess_append_setting_href("rkrk_assess_zugriff_hilfe.php") : "rkrk_assess_zugriff_hilfe.php"); ?>">Rollen und Zugriffe</a>
 		</p>
 	</div>
-	<div>
-		<?php if (!empty($logopic) && !empty($QuizIconLoc)): ?>
-		<img src="<?php echo rkrk_acc_h($QuizIconLoc . $logopic); ?>" alt="" style="height:56px;">
-		<?php endif; ?>
-	</div>
+	<?php if (!empty($logopic) && !empty($QuizIconLoc)): ?>
+	<img src="<?php echo rkrk_acc_h($QuizIconLoc . $logopic); ?>" alt="" style="height:36px;">
+	<?php endif; ?>
 </div>
 
 <?php if ($flashOk !== ""): ?>
@@ -226,8 +280,9 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 <div class="rkrk-acc-flash rkrk-acc-flash--err"><?php echo rkrk_acc_h($flashErr); ?></div>
 <?php endif; ?>
 
-<div class="card rkrk-card">
-	<h3 style="margin-top:0;">Dieser Server</h3>
+<details class="rkrk-acc-fold">
+	<summary>Dieser Server · <?php echo rkrk_acc_h($status["host_label"]); ?> · Moodle <?php echo !empty($status["moodle_up"]) ? "geladen" : "nicht geladen"; ?></summary>
+	<div class="rkrk-acc-body">
 	<div class="rkrk-acc-grid">
 		<div class="rkrk-acc-kpi"><b>Profil</b><?php echo rkrk_acc_h($status["host_label"]); ?><div class="rkrk-acc-note"><?php echo rkrk_acc_h($status["host_detail"]); ?></div></div>
 		<div class="rkrk-acc-kpi"><b>Host</b><span class="rkrk-acc-code"><?php echo rkrk_acc_h($status["host"]); ?></span></div>
@@ -281,7 +336,8 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 	<p class="rkrk-acc-note">Zuletzt gespeichert: <?php echo rkrk_acc_h((string) $policy["updated_at"]); ?>
 		<?php echo $policy["updated_by"] !== "" ? " · " . rkrk_acc_h((string) $policy["updated_by"]) : ""; ?></p>
 	<?php endif; ?>
-</div>
+	</div>
+</details>
 
 <form method="post" action="<?php echo rkrk_acc_h(rkrk_acc_self_href()); ?>">
 <input type="hidden" name="csrf" value="<?php echo rkrk_acc_h($csrf); ?>">
@@ -289,57 +345,61 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 <?php if ($isInstrMode): ?><input type="hidden" name="INSTR" value=""><?php endif; ?>
 
 <div class="card rkrk-card">
-	<h3 style="margin-top:0;">Regeln je Seite und Server</h3>
-	<p class="rkrk-acc-note">
-		Spalte <strong><?php echo rkrk_acc_h((string) $status["host_label"]); ?></strong> gilt jetzt.
-		Ist «Extra-Gate» aus, bleibt nur der serverseitige Standard (auf RKRK: GrantAccess-Login; auf Portal/RKRS: offen, ausser andere Checks).
-		Ist es an, muss mindestens eine der gewählten Freigaben zutreffen.
+	<h3 style="margin:0 0 6px;">Regeln je Seite und Server</h3>
+	<p class="rkrk-acc-note" style="margin-top:0;">
+		Gilt jetzt: <strong><?php echo rkrk_acc_h((string) $status["host_label"]); ?></strong>.
+		Extra-Gate aus heisst nur der Server-Standard. Extra-Gate an heisst: eine der gewählten Freigaben muss zutreffen.
 	</p>
-	<div style="overflow:auto;">
-	<table class="rkrk-acc-matrix">
-		<thead>
-			<tr>
-				<th>Seite</th>
-				<?php foreach ($hostMeta as $hid => $hm): ?>
-				<th class="<?php echo $hid === $currentHost ? "rkrk-acc-now" : ""; ?>">
-					<?php echo rkrk_acc_h((string) $hm["label"]); ?>
-					<div class="rkrk-acc-note"><?php echo rkrk_acc_h((string) $hm["detail"]); ?></div>
-				</th>
-				<?php endforeach; ?>
-			</tr>
-		</thead>
-		<tbody>
-		<?php foreach ($policy["pages"] as $pid => $page): ?>
-			<tr>
-				<td>
-					<strong><?php echo rkrk_acc_h((string) $page["label"]); ?></strong>
-					<div class="rkrk-acc-note"><?php echo rkrk_acc_h(implode(", ", (array) ($page["scripts"] ?? array()))); ?></div>
-					<div class="rkrk-acc-note"><?php echo rkrk_acc_h((string) ($page["note"] ?? "")); ?></div>
-				</td>
-				<?php foreach ($hostMeta as $hid => $hm):
-					$rule = $page["hosts"][$hid] ?? rkrk_assess_access_policy_empty_rule();
-					$n = "rule[" . $pid . "][" . $hid . "]";
-					?>
-				<td class="rkrk-acc-cell<?php echo $hid === $currentHost ? " rkrk-acc-now" : ""; ?>">
-					<label class="rkrk-acc-en"><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[enabled]" value="1"<?php echo !empty($rule["enabled"]) ? " checked" : ""; ?>> Extra-Gate</label>
-					<?php foreach ($cohortCat as $ck => $c): ?>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[cohorts][]" value="<?php echo rkrk_acc_h($ck); ?>"<?php echo in_array($ck, (array) ($rule["cohorts"] ?? array()), true) ? " checked" : ""; ?>> <?php echo rkrk_acc_h((string) $c["label"]); ?></label>
-					<?php endforeach; ?>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_siteadmin]" value="1"<?php echo !empty($rule["allow_siteadmin"]) ? " checked" : ""; ?>> Moodle-Site-Admin</label>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_cs]" value="1"<?php echo !empty($rule["allow_cs"]) ? " checked" : ""; ?>> cs-Link</label>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_admin_flag]" value="1"<?php echo !empty($rule["allow_admin_flag"]) ? " checked" : ""; ?>> ?ADMIN</label>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_instr_flag]" value="1"<?php echo !empty($rule["allow_instr_flag"]) ? " checked" : ""; ?>> ?INSTR</label>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_noh]" value="1"<?php echo !empty($rule["allow_noh"]) ? " checked" : ""; ?>> ?NOH</label>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[hash_gate]" value="1"<?php echo !empty($rule["hash_gate"]) ? " checked" : ""; ?>> Hash-Gate</label>
-					<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[fail_closed]" value="1"<?php echo !empty($rule["fail_closed"]) ? " checked" : ""; ?>> Fail-closed (Moodle tot = Sperre)</label>
-					<input type="text" name="<?php echo rkrk_acc_h($n); ?>[extra_cohorts]" value="<?php echo rkrk_acc_h((string) ($rule["extra_cohorts"] ?? "")); ?>" placeholder="weitere Cohort-IDs">
-				</td>
-				<?php endforeach; ?>
-			</tr>
-		<?php endforeach; ?>
-		</tbody>
-	</table>
+	<div class="rkrk-acc-tools">
+		<button type="button" id="rkrk-acc-open-all">Alle aufklappen</button>
+		<button type="button" id="rkrk-acc-close-all">Alle zuklappen</button>
 	</div>
+	<?php foreach ($policy["pages"] as $pid => $page): ?>
+	<details class="rkrk-acc-fold rkrk-acc-page" data-page="<?php echo rkrk_acc_h((string) $pid); ?>">
+		<summary>
+			<span><?php echo rkrk_acc_h((string) $page["label"]); ?></span>
+			<span class="rkrk-acc-sum">
+			<?php foreach ($hostMeta as $hid => $hm):
+				$ruleSum = $page["hosts"][$hid] ?? rkrk_assess_access_policy_empty_rule();
+				$bits = rkrk_acc_rule_bits($ruleSum, $cohortCat);
+				$bitCls = "rkrk-acc-bit" . ($bits !== array() ? " rkrk-acc-bit--on" : "") . ($hid === $currentHost ? " rkrk-acc-bit--now" : "");
+				$bitTxt = (string) $hm["label"] . ": " . ($bits === array() ? "aus" : implode(", ", $bits));
+			?>
+				<span class="<?php echo rkrk_acc_h($bitCls); ?>"><?php echo rkrk_acc_h($bitTxt); ?></span>
+			<?php endforeach; ?>
+			</span>
+		</summary>
+		<div class="rkrk-acc-body">
+			<p class="rkrk-acc-note" style="margin-top:0;"><?php echo rkrk_acc_h((string) ($page["note"] ?? "")); ?>
+				<span class="rkrk-acc-code"><?php echo rkrk_acc_h(implode(", ", (array) ($page["scripts"] ?? array()))); ?></span>
+			</p>
+			<div class="rkrk-acc-hosts">
+			<?php foreach ($hostMeta as $hid => $hm):
+				$rule = $page["hosts"][$hid] ?? rkrk_assess_access_policy_empty_rule();
+				$n = "rule[" . $pid . "][" . $hid . "]";
+			?>
+				<div class="rkrk-acc-host<?php echo $hid === $currentHost ? " rkrk-acc-host--now" : ""; ?>">
+					<h4><?php echo rkrk_acc_h((string) $hm["label"]); ?></h4>
+					<div class="rkrk-acc-checks">
+						<label class="rkrk-acc-en"><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[enabled]" value="1"<?php echo !empty($rule["enabled"]) ? " checked" : ""; ?>> Extra-Gate</label>
+						<?php foreach ($cohortCat as $ck => $c): ?>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[cohorts][]" value="<?php echo rkrk_acc_h($ck); ?>"<?php echo in_array($ck, (array) ($rule["cohorts"] ?? array()), true) ? " checked" : ""; ?>> <?php echo rkrk_acc_h((string) $c["label"]); ?></label>
+						<?php endforeach; ?>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_siteadmin]" value="1"<?php echo !empty($rule["allow_siteadmin"]) ? " checked" : ""; ?>> Site-Admin</label>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_cs]" value="1"<?php echo !empty($rule["allow_cs"]) ? " checked" : ""; ?>> cs-Link</label>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_admin_flag]" value="1"<?php echo !empty($rule["allow_admin_flag"]) ? " checked" : ""; ?>> ?ADMIN</label>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_instr_flag]" value="1"<?php echo !empty($rule["allow_instr_flag"]) ? " checked" : ""; ?>> ?INSTR</label>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[allow_noh]" value="1"<?php echo !empty($rule["allow_noh"]) ? " checked" : ""; ?>> ?NOH</label>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[hash_gate]" value="1"<?php echo !empty($rule["hash_gate"]) ? " checked" : ""; ?>> Hash-Gate</label>
+						<label><input type="checkbox" name="<?php echo rkrk_acc_h($n); ?>[fail_closed]" value="1"<?php echo !empty($rule["fail_closed"]) ? " checked" : ""; ?>> Fail-closed</label>
+					</div>
+					<input type="text" name="<?php echo rkrk_acc_h($n); ?>[extra_cohorts]" value="<?php echo rkrk_acc_h((string) ($rule["extra_cohorts"] ?? "")); ?>" placeholder="weitere Cohort-IDs">
+				</div>
+			<?php endforeach; ?>
+			</div>
+		</div>
+	</details>
+	<?php endforeach; ?>
 	<div class="rkrk-acc-actions">
 		<button type="submit" name="action" value="save" class="rkrk-acc-save">Regeln speichern</button>
 		<button type="submit" name="action" value="reset" class="rkrk-acc-reset" onclick="return confirm('Alle Zugriffsregeln auf den Standard zurücksetzen?');">Standard wiederherstellen</button>
@@ -347,12 +407,13 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 </div>
 </form>
 
-<div class="card rkrk-card">
-	<h3 style="margin-top:0;">Wie die parallelen Checks zusammenhängen</h3>
-	<ol>
-		<li><strong>RKRK-Login (GrantAccess)</strong> — nur auf drohnenrehkitzrettung.ch, unabhängig von dieser Matrix.</li>
-		<li><strong>Quiz-Hash-Gate</strong> — prüft <code>cs</code> für geschützte Quiz-Keys, wenn die Zeile «Quiz-Hash-Gate» für den Server an ist.</li>
-		<li><strong>Seiten-Gate</strong> — Moodle-Cohorts / Site-Admin / cs / URL-Flags laut Matrix. Ohne Extra-Gate keine zusätzliche Sperre.</li>
+<details class="rkrk-acc-fold">
+	<summary>Wie die Checks zusammenhängen</summary>
+	<div class="rkrk-acc-body">
+	<ol style="margin:0 0 8px;padding-left:1.2rem;">
+		<li><strong>RKRK-Login (GrantAccess)</strong> auf drohnenrehkitzrettung.ch, unabhängig von diesen Regeln.</li>
+		<li><strong>Quiz-Hash-Gate</strong> prüft <code>cs</code> für geschützte Quiz-Keys, wenn die Zeile für den Server an ist.</li>
+		<li><strong>Seiten-Gate</strong> prüft Cohorts, Site-Admin, cs und URL-Flags. Ohne Extra-Gate keine zusätzliche Sperre.</li>
 	</ol>
 	<p class="rkrk-acc-note" style="margin-bottom:0;">
 		Policy-Datei: <span class="rkrk-acc-code"><?php echo rkrk_acc_h((string) $status["policy_file"]); ?></span>
@@ -360,5 +421,28 @@ if (function_exists("rkrk_assess_portal_nav_echo")) {
 		<br>Moodle config.php: <span class="rkrk-acc-code"><?php echo rkrk_acc_h((string) $status["moodle_config"]); ?></span>
 		<?php endif; ?>
 	</p>
-</div>
+	</div>
+</details>
+<script>
+(function () {
+	var nodes = document.querySelectorAll("details.rkrk-acc-page");
+	var key = "rkrkAccOpen";
+	var saved = {};
+	try { saved = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch (e) { saved = {}; }
+	function store() {
+		var next = {};
+		nodes.forEach(function (d) { next[d.getAttribute("data-page")] = d.open; });
+		try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) {}
+	}
+	nodes.forEach(function (d) {
+		var id = d.getAttribute("data-page");
+		if (Object.prototype.hasOwnProperty.call(saved, id)) { d.open = !!saved[id]; }
+		d.addEventListener("toggle", store);
+	});
+	var openAll = document.getElementById("rkrk-acc-open-all");
+	var closeAll = document.getElementById("rkrk-acc-close-all");
+	if (openAll) { openAll.addEventListener("click", function () { nodes.forEach(function (d) { d.open = true; }); store(); }); }
+	if (closeAll) { closeAll.addEventListener("click", function () { nodes.forEach(function (d) { d.open = false; }); store(); }); }
+})();
+</script>
 </div>

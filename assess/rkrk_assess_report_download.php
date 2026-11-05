@@ -71,6 +71,20 @@ if (isset($GLOBALS["QuizLocResults"]) && trim((string) $GLOBALS["QuizLocResults"
 if (isset($GLOBALS["rkrkLiveassessData"]) && trim((string) $GLOBALS["rkrkLiveassessData"]) !== "") {
 	$addDir(rtrim(str_replace("\\", "/", (string) $GLOBALS["rkrkLiveassessData"]), "/") . "/results/reports/");
 }
+$esRootDir = $here;
+if (preg_match("#/public$#i", $esRootDir) === 1) {
+	$esRootDir = dirname($esRootDir);
+}
+$esSite = dirname($esRootDir);
+$esDataChecks = array($esSite . "/data");
+$esRkropen = dirname($esSite);
+if ($esRkropen !== "" && $esRkropen !== "." && $esRkropen !== $esSite) {
+	$esDataChecks[] = $esRkropen . "/rkrk/data";
+}
+foreach ($esDataChecks as $esData) {
+	$addDir($esData . "/assess/results/reports/");
+	$addDir($esData . "/liveassess/results/reports/");
+}
 
 if ($dirs === array()) {
 	http_response_code(500);

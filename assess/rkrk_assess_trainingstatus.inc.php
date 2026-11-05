@@ -151,6 +151,61 @@ if (!function_exists("rkrk_tr_pilot_keys_of")) {
 	}
 }
 
+if (!function_exists("rkrk_tr_parse_pass_rule")) {
+	/**
+	 * Regel für Summe/Gesamtstatus «OK»: all = alle Tests, any = mindestens einer.
+	 * Default «all» erhält bisheriges Verhalten.
+	 *
+	 * @param mixed $src
+	 */
+	function rkrk_tr_parse_pass_rule($src): string {
+		$v = strtolower(trim((string) $src));
+		if ($v === "any" || $v === "one" || $v === "einer" || $v === "mindestens_einer") {
+			return "any";
+		}
+		return "all";
+	}
+}
+
+if (!function_exists("rkrk_tr_sum_status")) {
+	/**
+	 * Gesamtstatus aus Zählern und Pass-Regel.
+	 *
+	 * @param array{passed?:int,failed?:int,open?:int,progress?:int,total?:int} $sum
+	 */
+	function rkrk_tr_sum_status(array $sum, string $passRule = "all"): string {
+		$total = (int) ($sum["total"] ?? 0);
+		$passed = (int) ($sum["passed"] ?? 0);
+		$failed = (int) ($sum["failed"] ?? 0);
+		$open = (int) ($sum["open"] ?? 0);
+		$progress = (int) ($sum["progress"] ?? 0);
+		$rule = rkrk_tr_parse_pass_rule($passRule);
+		if ($total <= 0) {
+			return "empty";
+		}
+		if ($rule === "any") {
+			// Mindestens einer: OK sobald ein Test bestanden; sonst offen solange noch Chance; fail erst wenn alle versucht und keiner bestanden.
+			if ($passed > 0) {
+				return "ok";
+			}
+			if ($open > 0 || $progress > 0) {
+				return "open";
+			}
+			if ($failed > 0) {
+				return "fail";
+			}
+			return "open";
+		}
+		if ($failed > 0) {
+			return "fail";
+		}
+		if ($open > 0 || $progress > 0) {
+			return "open";
+		}
+		return "ok";
+	}
+}
+
 if (!function_exists("rkrk_tr_config_defaults")) {
 	/** @return array{lists: list<array<string,mixed>>} */
 	function rkrk_tr_config_defaults(): array {
@@ -161,12 +216,14 @@ if (!function_exists("rkrk_tr_config_defaults")) {
 					"name" => "WK26 Mogelsberg",
 					"exam_codes" => array(),
 					"pilot_ids" => array(),
+					"pass_rule" => "all",
 				),
 				array(
 					"id" => "wk26-sa-engelberg",
 					"name" => "WK26 SA Engelberg",
 					"exam_codes" => array(),
 					"pilot_ids" => array(),
+					"pass_rule" => "all",
 				),
 			),
 		);
@@ -365,9 +422,13 @@ if (!function_exists("rkrk_tr_normalize_list")) {
 			"name" => $name,
 			"exam_codes" => rkrk_tr_parse_codes($raw["exam_codes"] ?? array()),
 			"pilot_ids" => rkrk_tr_parse_ids($raw["pilot_ids"] ?? array()),
+			"pass_rule" => rkrk_tr_parse_pass_rule($raw["pass_rule"] ?? "all"),
 			"show_remark" => true,
 			"remarks" => rkrk_tr_parse_remarks($raw["remarks"] ?? array()),
 			"disabled" => rkrk_tr_parse_disabled($raw["disabled"] ?? array()),
+			"present" => rkrk_tr_parse_disabled($raw["present"] ?? array()),
+			"paid" => rkrk_tr_parse_disabled($raw["paid"] ?? array()),
+			"fee_due" => !empty($raw["fee_due"]) && (string) $raw["fee_due"] !== "0" && (string) $raw["fee_due"] !== "false",
 		);
 	}
 }
@@ -455,6 +516,12 @@ if (!function_exists("rkrk_tr_config_save")) {
 				if (!array_key_exists("disabled", $item)) {
 					$item["disabled"] = $prevById[$keepId]["disabled"] ?? array();
 				}
+				if (!array_key_exists("present", $item)) {
+					$item["present"] = $prevById[$keepId]["present"] ?? array();
+				}
+				if (!array_key_exists("paid", $item)) {
+					$item["paid"] = $prevById[$keepId]["paid"] ?? array();
+				}
 			}
 			$one = rkrk_tr_normalize_list($item, $used);
 			$used[$one["id"]] = true;
@@ -482,7 +549,7 @@ if (!function_exists("rkrk_tr_list_by_id")) {
 }
 
 if (!function_exists("rkrk_tr_save_row")) {
-	function rkrk_tr_save_row(string $listId, string $pilotId, string $text, ?bool $disabled = null): bool {
+	function rkrk_tr_save_row(string $listId, string $pilotId, string $text, ?bool $disabled = null, ?bool $present = null, ?bool $paid = null): bool {
 		$listId = trim($listId);
 		$pilotId = trim($pilotId);
 		if ($listId === "" || $pilotId === "") {
@@ -512,6 +579,24 @@ if (!function_exists("rkrk_tr_save_row")) {
 					unset($off[$key]);
 				}
 				$lists[$i]["disabled"] = $off;
+			}
+			if ($present !== null) {
+				$here = rkrk_tr_parse_disabled($item["present"] ?? array());
+				if ($present) {
+					$here[$key] = true;
+				} else {
+					unset($here[$key]);
+				}
+				$lists[$i]["present"] = $here;
+			}
+			if ($paid !== null) {
+				$paidSet = rkrk_tr_parse_disabled($item["paid"] ?? array());
+				if ($paid) {
+					$paidSet[$key] = true;
+				} else {
+					unset($paidSet[$key]);
+				}
+				$lists[$i]["paid"] = $paidSet;
 			}
 			$found = true;
 			break;
@@ -759,16 +844,21 @@ if (!function_exists("rkrk_tr_result_icon")) {
 }
 
 if (!function_exists("rkrk_tr_overall_icon")) {
-	/** @param array{passed:int,failed:int,open:int,progress:int,total:int} $sum */
-	function rkrk_tr_overall_icon(array $sum): string {
+	/**
+	 * @param array{passed:int,failed:int,open:int,progress:int,total:int} $sum
+	 * @param string $passRule all|any
+	 */
+	function rkrk_tr_overall_icon(array $sum, string $passRule = "all"): string {
 		$total = (int) ($sum["total"] ?? 0);
 		$passed = (int) ($sum["passed"] ?? 0);
 		$failed = (int) ($sum["failed"] ?? 0);
 		$open = (int) ($sum["open"] ?? 0);
 		$progress = (int) ($sum["progress"] ?? 0);
+		$rule = rkrk_tr_parse_pass_rule($passRule);
+		$st = rkrk_tr_sum_status($sum, $rule);
 		$h = function_exists("rkrk_es_h") ? "rkrk_es_h" : "htmlspecialchars";
 		$icoFn = function_exists("rkrk_es_ico") ? "rkrk_es_ico" : null;
-		if ($total <= 0) {
+		if ($st === "empty" || $total <= 0) {
 			$tip = "Keine EXAM-Codes in dieser Liste";
 			$ico = $icoFn ? $icoFn("open") : "?";
 			return "<span class='es-mark es-neutral' title='" . $h($tip) . "' aria-label='" . $h($tip) . "'>" . $ico . "</span>";
@@ -778,18 +868,38 @@ if (!function_exists("rkrk_tr_overall_icon")) {
 			$tip .= " · " . $progress . " in Arbeit";
 		}
 		$tip .= " (von " . $total . ")";
-		if ($failed > 0) {
-			$cls = "es-bad";
-			$ico = $icoFn ? $icoFn("no") : "×";
-		} elseif ($open > 0 || $progress > 0) {
-			$cls = ($progress > 0) ? "es-prog" : "es-miss";
-			$ico = $icoFn ? $icoFn($progress > 0 ? "warn" : "open") : "?";
-		} else {
+		if ($st === "ok") {
 			$cls = "es-ok";
 			$ico = $icoFn ? $icoFn("ok") : "✓";
-			$tip = "Alle " . $total . " Prüfungen bestanden";
+			$tip = ($rule === "any")
+				? ("Mindestens ein Test bestanden (" . $passed . " von " . $total . ")")
+				: ("Alle " . $total . " Prüfungen bestanden");
+		} elseif ($st === "fail") {
+			$cls = "es-bad";
+			$ico = $icoFn ? $icoFn("no") : "×";
+		} else {
+			$cls = ($progress > 0) ? "es-prog" : "es-miss";
+			$ico = $icoFn ? $icoFn($progress > 0 ? "warn" : "open") : "?";
 		}
 		return "<span class='es-mark " . $cls . "' title='" . $h($tip) . "' aria-label='" . $h($tip) . "'>" . $ico . "</span>";
+	}
+}
+
+if (!function_exists("rkrk_tr_drone_label")) {
+	/** Drohnentyp aus der Pilotenliste als einzeiligen Text. */
+	function rkrk_tr_drone_label($raw): string {
+		if (is_array($raw)) {
+			$parts = array();
+			foreach ($raw as $p) {
+				$p = trim((string) $p);
+				if ($p !== "") {
+					$parts[] = $p;
+				}
+			}
+			return implode(", ", $parts);
+		}
+		$s = preg_replace('/\s+/u', " ", trim((string) $raw));
+		return is_string($s) ? $s : trim((string) $raw);
 	}
 }
 
@@ -808,6 +918,7 @@ if (!function_exists("rkrk_tr_build_rows")) {
 			$wanted["id:" . $id] = true;
 		}
 		$codes = rkrk_tr_parse_codes($list["exam_codes"] ?? array());
+		$passRule = rkrk_tr_parse_pass_rule($list["pass_rule"] ?? "all");
 		$allResults = rkrk_tr_collect_results();
 		$out = array();
 
@@ -874,14 +985,7 @@ if (!function_exists("rkrk_tr_build_rows")) {
 					"sort" => $st === "ok" ? "3" : ($st === "fail" ? "1" : ($st === "progress" ? "2" : "0")),
 				);
 			}
-			$rowStatus = "ok";
-			if ($sum["total"] <= 0) {
-				$rowStatus = "empty";
-			} elseif ($sum["failed"] > 0) {
-				$rowStatus = "fail";
-			} elseif ($sum["open"] > 0 || $sum["progress"] > 0) {
-				$rowStatus = "open";
-			}
+			$rowStatus = rkrk_tr_sum_status($sum, $passRule);
 			$remark = "";
 			$remarks = rkrk_tr_parse_remarks($list["remarks"] ?? array());
 			foreach ($keys as $k) {
@@ -895,6 +999,22 @@ if (!function_exists("rkrk_tr_build_rows")) {
 			foreach ($keys as $k) {
 				if (isset($off["id:" . $k])) {
 					$disabled = true;
+					break;
+				}
+			}
+			$present = false;
+			$here = rkrk_tr_parse_disabled($list["present"] ?? array());
+			foreach ($keys as $k) {
+				if (isset($here["id:" . $k])) {
+					$present = true;
+					break;
+				}
+			}
+			$paid = false;
+			$paidSet = rkrk_tr_parse_disabled($list["paid"] ?? array());
+			foreach ($keys as $k) {
+				if (isset($paidSet["id:" . $k])) {
+					$paid = true;
 					break;
 				}
 			}
@@ -915,6 +1035,10 @@ if (!function_exists("rkrk_tr_build_rows")) {
 				"status" => $rowStatus,
 				"remark" => $remark,
 				"disabled" => $disabled,
+				"present" => $present,
+				"paid" => $paid,
+				"fee_due" => !empty($list["fee_due"]),
+				"drohnentyp" => rkrk_tr_drone_label($row["drohnentyp"] ?? ""),
 			);
 		}
 
@@ -949,6 +1073,7 @@ if (!function_exists("rkrk_tr_all_pilots_for_select")) {
 				"rkrs" => function_exists("rkrk_assess_personel_row_effective_rkrs_id")
 					? rkrk_assess_personel_row_effective_rkrs_id($row)
 					: trim((string) ($row["rkrs_pilot_id"] ?? "")),
+				"drohnentyp" => rkrk_tr_drone_label($row["drohnentyp"] ?? ""),
 			);
 		}
 		return rkrk_tr_sort_rows($out, "nach");

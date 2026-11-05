@@ -1738,7 +1738,7 @@ if (!function_exists("rkrk_assess_report_option_texts_for_qid")) {
 			if (is_readable($listPath) && $quizKey !== "") {
 				$fh = @fopen($listPath, "rb");
 				if ($fh) {
-					$header = fgetcsv($fh, 0, ";");
+					$header = fgetcsv($fh, 0, ";", '"', '\\');
 					if (is_array($header)) {
 						$header = array_map(static function ($h) {
 							return strtolower(trim((string) $h));
@@ -1748,7 +1748,7 @@ if (!function_exists("rkrk_assess_report_option_texts_for_qid")) {
 						if ($iKey === false) {
 							$iKey = array_search("quizkey", $header, true);
 						}
-						while (($row = fgetcsv($fh, 0, ";")) !== false) {
+						while (($row = fgetcsv($fh, 0, ";", '"', '\\')) !== false) {
 							if (!is_array($row) || $iKey === false || $iFile === false) {
 								continue;
 							}
@@ -1779,7 +1779,7 @@ if (!function_exists("rkrk_assess_report_option_texts_for_qid")) {
 			if (!$fh) {
 				continue;
 			}
-			$header = fgetcsv($fh, 0, ";");
+			$header = fgetcsv($fh, 0, ";", '"', '\\');
 			if (!is_array($header)) {
 				fclose($fh);
 				continue;
@@ -1798,7 +1798,7 @@ if (!function_exists("rkrk_assess_report_option_texts_for_qid")) {
 				fclose($fh);
 				continue;
 			}
-			while (($row = fgetcsv($fh, 0, ";")) !== false) {
+			while (($row = fgetcsv($fh, 0, ";", '"', '\\')) !== false) {
 				if (!is_array($row)) {
 					continue;
 				}

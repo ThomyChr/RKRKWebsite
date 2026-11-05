@@ -328,7 +328,16 @@ define('RKRK_CATALOG_SHOT', true);
     const res = await fetch(String(info.apiUrl || ''), { method: 'POST', body: body, credentials: 'same-origin' });
     const data = await res.json().catch(() => null);
     if (!data || !data.ok) return { ok: false, error: (data && (data.detail || data.error)) || 'Bilder nicht geschrieben' };
-    return { ok: true, posted: true, suchfeld_bild: data.suchfeld_bild || '', flugplan_bild: data.flugplan_bild || '' };
+    return {
+      ok: true,
+      posted: true,
+      suchfeld_bild: data.suchfeld_bild || '',
+      flugplan_bild: data.flugplan_bild || '',
+      catalog_suchfeld: data.catalog_suchfeld || data.suchfeld_bild || '',
+      catalog_flugplan: data.catalog_flugplan || data.flugplan_bild || '',
+      catalog_suchfeld_updated: data.catalog_suchfeld_updated === true,
+      catalog_flugplan_updated: data.catalog_flugplan_updated === true
+    };
   };
 })();
 </script>

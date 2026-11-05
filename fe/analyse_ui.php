@@ -634,7 +634,7 @@ $mapllBrand = mapll_favicon_brand();
 
   <script src="https://cdn.jsdelivr.net/npm/ol@7.5.2/dist/ol.js"></script>
   <script src="rkrk_swiss_overlays.js?v=20261008dabs"></script>
-  <script src="rkrk_help_catalog.js?v=20260907help"></script>
+  <script src="rkrk_help_catalog.js?v=20261018katalog2"></script>
   <script src="rkrk_help.js"></script>
   <script src="rkrk_layout.js"></script>
   <script>

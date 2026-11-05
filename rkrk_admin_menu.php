@@ -17,6 +17,7 @@ $newForm = array(
 	'parameter' => '',
 	'release' => '',
 	'users' => '',
+	'deny_users' => '',
 	'sort' => '',
 	'site' => '',
 	'activ' => false,
@@ -77,6 +78,7 @@ if (!function_exists('rkrk_admin_menu_save')) {
 			'parameter' => $param,
 			'release' => rkrk_str($posted['release'] ?? ($row['release'] ?? '')),
 			'users' => rkrk_config_sanitize_menu_users($posted['users'] ?? ($row['users'] ?? '')),
+			'deny_users' => rkrk_config_sanitize_menu_users($posted['deny_users'] ?? ($row['deny_users'] ?? '')),
 			'sort' => intval($posted['sort'] ?? ($row['sort'] ?? 0)),
 			'activ' => !empty($posted['activ']),
 			'image_small' => $imageSmall,
@@ -112,6 +114,7 @@ if (!function_exists('rkrk_admin_menu_save')) {
 		$MainMenu[$key]['parameter'] = $paramTrim !== '' && $param === '' ? $paramRaw : $param;
 		$MainMenu[$key]['release'] = $entry['release'];
 		$MainMenu[$key]['users'] = rkrk_str($posted['users'] ?? ($row['users'] ?? ''));
+		$MainMenu[$key]['deny_users'] = rkrk_str($posted['deny_users'] ?? ($row['deny_users'] ?? ''));
 		$MainMenu[$key]['sort'] = $entry['sort'];
 		$MainMenu[$key]['activ'] = $entry['activ'];
 		$MainMenu[$key]['image_small'] = $imageSmall;
@@ -126,12 +129,13 @@ if (!function_exists('rkrk_admin_menu_save')) {
 		$newForm['parameter'] = rkrk_str($newPosted['parameter'] ?? '');
 		$newForm['release'] = rkrk_str($newPosted['release'] ?? '');
 		$newForm['users'] = rkrk_str($newPosted['users'] ?? '');
+		$newForm['deny_users'] = rkrk_str($newPosted['deny_users'] ?? '');
 		$newForm['sort'] = trim(rkrk_str($newPosted['sort'] ?? ''));
 		$newForm['site'] = trim(rkrk_str($newPosted['site'] ?? ''));
 		$newForm['activ'] = !empty($newPosted['activ']);
 		$newForm['image_small'] = rkrk_config_sanitize_menu_icon($newPosted['image_small'] ?? '');
 		$newForm['image'] = rkrk_config_sanitize_menu_icon($newPosted['image'] ?? '');
-		$wantsNew = ($newForm['key'] !== '' || $newForm['title'] !== '' || $newForm['site'] !== '' || trim($newForm['parameter']) !== '' || trim($newForm['main_menu']) !== '' || trim($newForm['release']) !== '' || trim($newForm['users']) !== '');
+		$wantsNew = ($newForm['key'] !== '' || $newForm['title'] !== '' || $newForm['site'] !== '' || trim($newForm['parameter']) !== '' || trim($newForm['main_menu']) !== '' || trim($newForm['release']) !== '' || trim($newForm['users']) !== '' || trim($newForm['deny_users']) !== '');
 		if ($wantsNew) {
 			$newKey = rkrk_config_sanitize_menu_key($newForm['key']);
 			if ($newKey === '') {
@@ -169,6 +173,7 @@ if (!function_exists('rkrk_admin_menu_save')) {
 					'parameter' => $newParam,
 					'release' => $newForm['release'],
 					'users' => rkrk_config_sanitize_menu_users($newForm['users']),
+					'deny_users' => rkrk_config_sanitize_menu_users($newForm['deny_users']),
 					'sort' => $sort,
 					'activ' => $newForm['activ'],
 					'image_small' => $imageSmall,
@@ -199,6 +204,7 @@ if (!function_exists('rkrk_admin_menu_save')) {
 				'parameter' => '',
 				'release' => '',
 				'users' => '',
+				'deny_users' => '',
 				'sort' => '',
 				'site' => '',
 				'activ' => false,
@@ -216,7 +222,7 @@ if (!rkrk_admin_boot('Menü', 'rkrk_admin_menu_save')) {
 }
 rkrk_admin_nav('rkrk_admin_menu.php');
 
-echo "<p>Seite und Parameter bestimmen den Aufruf <code>Seite?Parameter</code> (zum Beispiel Seite <code>rkrk_map.php</code> und Parameter <code>Reg=ALL</code>, oder <code>KAT</code> für die Feldeditoren). Beides lässt sich ändern. Eine neue Zeile steht am Tabellenende: Key, Titel, Gruppe, Sort, Seite und Parameter. Gruppe ist der Menüabschnitt. Die Reihenfolge der Einträge zieht man an der Zeile, die Reihenfolge der Gruppen an der Gruppenzeile. <code>sort</code> wird dabei neu gesetzt und gilt nach dem Speichern auch in der Navigationsleiste. Sichtbarkeit über <code>activ</code>, Stufen in <code>release</code> und optional kommagetrennte <code>users</code>. Eingefügte Zeilen lassen sich mit Entfernen löschen. Kleines und normales Symbol kommen aus <code>" . htmlspecialchars($iconBase, ENT_QUOTES, 'UTF-8') . "</code>. Bleibt das normale leer, wird es aus dem kleinen abgeleitet (<code>name_small.png</code> zu <code>name.png</code>).</p>\n";
+echo "<p>Seite und Parameter bestimmen den Aufruf <code>Seite?Parameter</code> (zum Beispiel Seite <code>rkrk_map.php</code> und Parameter <code>Reg=ALL</code>, oder <code>KAT</code> für die Feldeditoren). Beides lässt sich ändern. Eine neue Zeile steht am Tabellenende: Key, Titel, Gruppe, Sort, Seite und Parameter. Gruppe ist der Menüabschnitt. Die Reihenfolge der Einträge zieht man an der Zeile, die Reihenfolge der Gruppen an der Gruppenzeile. <code>sort</code> wird dabei neu gesetzt und gilt nach dem Speichern auch in der Navigationsleiste. Sichtbarkeit über <code>activ</code>, Stufen in <code>release</code> und optional kommagetrennte <code>users</code>. In <code>Ausgeblendet</code> stehen Personen, für die dieser Eintrag trotz Gruppen- oder Personen-Freigabe unsichtbar bleibt. Eingefügte Zeilen lassen sich mit Entfernen löschen. Kleines und normales Symbol kommen aus <code>" . htmlspecialchars($iconBase, ENT_QUOTES, 'UTF-8') . "</code>. Bleibt das normale leer, wird es aus dem kleinen abgeleitet (<code>name_small.png</code> zu <code>name.png</code>).</p>\n";
 if ($msg !== '') {
 	echo "<p><b>" . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . "</b></p>\n";
 }
@@ -230,7 +236,7 @@ echo ".rkrk-icon-pair img{display:block;}\n";
 echo ".rkrk-icon-pair select{width:11em;max-width:11em;box-sizing:border-box;}\n";
 echo "</style>\n";
 echo "<form method='post'>\n";
-echo "<table class='big' id='rkrkMenuTable'><thead><tr><th></th><th>Key</th><th>Icon</th><th>Titel</th><th>Gruppe</th><th>An</th><th>Sort</th><th>Freigabe</th><th>Personen</th><th>Seite</th><th>Parameter</th><th>Aufruf</th></tr></thead>\n<tbody id='rkrkMenuBody'>\n";
+echo "<table class='big' id='rkrkMenuTable'><thead><tr><th></th><th>Key</th><th>Icon</th><th>Titel</th><th>Gruppe</th><th>An</th><th>Sort</th><th>Freigabe</th><th>Personen</th><th>Ausgeblendet</th><th>Seite</th><th>Parameter</th><th>Aufruf</th></tr></thead>\n<tbody id='rkrkMenuBody'>\n";
 $menuKeys = array_keys($MainMenu);
 usort($menuKeys, function ($a, $b) use ($MainMenu) {
 	$sa = intval($MainMenu[$a]['sort'] ?? 0);
@@ -251,7 +257,7 @@ foreach ($menuGroups as $gname => $groupKeys) {
 	$gLabelH = htmlspecialchars($gLabel, ENT_QUOTES, 'UTF-8');
 	echo "<tr class='rkrk-menu-group' data-menu-group='1' data-group='{$gAttr}'>";
 	echo "<td class='rkrk-menu-grip' draggable='true' title='Gruppe verschieben'>↕</td>";
-	echo "<td colspan='11'>{$gLabelH} · " . count($groupKeys) . "</td></tr>\n";
+	echo "<td colspan='12'>{$gLabelH} · " . count($groupKeys) . "</td></tr>\n";
 	foreach ($groupKeys as $key) {
 	$row = $MainMenu[$key];
 	$keyH = htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8');
@@ -259,6 +265,7 @@ foreach ($menuGroups as $gname => $groupKeys) {
 	$grp = htmlspecialchars(rkrk_str($row['main_menu'] ?? ''), ENT_QUOTES, 'UTF-8');
 	$rel = htmlspecialchars(rkrk_str($row['release'] ?? ''), ENT_QUOTES, 'UTF-8');
 	$users = htmlspecialchars(rkrk_config_sanitize_menu_users($row['users'] ?? ($row['Benutzername'] ?? '')), ENT_QUOTES, 'UTF-8');
+	$denyUsers = htmlspecialchars(rkrk_config_sanitize_menu_users($row['deny_users'] ?? ''), ENT_QUOTES, 'UTF-8');
 	$sort = htmlspecialchars(rkrk_str($row['sort'] ?? ''), ENT_QUOTES, 'UTF-8');
 	$site = htmlspecialchars(rkrk_str($row['site'] ?? ''), ENT_QUOTES, 'UTF-8');
 	$param = htmlspecialchars(rkrk_config_sanitize_menu_parameter($row['parameter'] ?? ''), ENT_QUOTES, 'UTF-8');
@@ -290,6 +297,7 @@ foreach ($menuGroups as $gname => $groupKeys) {
 	echo "<td><input class='rkrk-menu-sort' name='menu[{$keyH}][sort]' value='{$sort}' size='5'></td>";
 	echo "<td><input name='menu[{$keyH}][release]' value='{$rel}' size='32'></td>";
 	echo "<td><input name='menu[{$keyH}][users]' value='{$users}' size='28' placeholder='Name, Name'></td>";
+	echo "<td><input name='menu[{$keyH}][deny_users]' value='{$denyUsers}' size='28' placeholder='Name, Name' title='Für diese Personen ausgeblendet, unabhängig von Freigabe'></td>";
 	echo "<td><input class='rkrk-menu-site' name='menu[{$keyH}][site]' value='{$site}' size='28' placeholder='rkrk_map.php'></td>";
 	echo "<td><input class='rkrk-menu-param' name='menu[{$keyH}][parameter]' value='{$param}' size='28' placeholder='KAT oder Reg=ALL'></td>";
 	echo "<td><code class='rkrk-menu-call'>{$call}</code></td></tr>\n";
@@ -300,6 +308,7 @@ $newTitleH = htmlspecialchars($newForm['title'], ENT_QUOTES, 'UTF-8');
 $newGrpH = htmlspecialchars($newForm['main_menu'], ENT_QUOTES, 'UTF-8');
 $newRelH = htmlspecialchars($newForm['release'], ENT_QUOTES, 'UTF-8');
 $newUsersH = htmlspecialchars($newForm['users'], ENT_QUOTES, 'UTF-8');
+$newDenyUsersH = htmlspecialchars($newForm['deny_users'], ENT_QUOTES, 'UTF-8');
 $newSortH = htmlspecialchars($newForm['sort'], ENT_QUOTES, 'UTF-8');
 $newSiteH = htmlspecialchars($newForm['site'], ENT_QUOTES, 'UTF-8');
 $newParamShow = htmlspecialchars(ltrim($newForm['parameter'], '?'), ENT_QUOTES, 'UTF-8');
@@ -327,6 +336,7 @@ echo "</td>";
 echo "<td><input class='rkrk-menu-sort' name='new[sort]' value='{$newSortH}' size='5' placeholder='auto'></td>";
 echo "<td><input name='new[release]' value='{$newRelH}' size='32' placeholder='test, intern'></td>";
 echo "<td><input name='new[users]' value='{$newUsersH}' size='28' placeholder='Name, Name'></td>";
+echo "<td><input name='new[deny_users]' value='{$newDenyUsersH}' size='28' placeholder='Name, Name' title='Für diese Personen ausgeblendet, unabhängig von Freigabe'></td>";
 echo "<td><input class='rkrk-menu-site' name='new[site]' value='{$newSiteH}' size='28' placeholder='rkrk_map.php'></td>";
 echo "<td><input class='rkrk-menu-param' name='new[parameter]' value='{$newParamShow}' size='28' placeholder='KAT oder Reg=ALL'></td>";
 echo "<td><code class='rkrk-menu-call'>{$newCall}</code></td></tr>\n";

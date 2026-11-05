@@ -8107,7 +8107,18 @@ function saveChecklist(){
 		rkrk_redirect(rkrk_assess_append_setting_href("?mode=list"));
 	}
 
-    file_put_contents($path, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $__esWrote = file_put_contents($path, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+	if ($__esWrote !== false) {
+		if (!function_exists("rkrk_es_snapshot_refresh")) {
+			$__esInc = __DIR__ . DIRECTORY_SEPARATOR . "rkrk_assess_einsatzstatus.inc.php";
+			if (is_file($__esInc)) {
+				include_once $__esInc;
+			}
+		}
+		if (function_exists("rkrk_es_snapshot_refresh")) {
+			rkrk_es_snapshot_refresh("assessment");
+		}
+	}
 
 	if (function_exists("rkrk_assess_checklist_progress_delete")) {
 		$__draft = preg_replace('/[^A-Za-z0-9_-]/', "", (string) ($_POST["checklist_draft_id"] ?? ""));

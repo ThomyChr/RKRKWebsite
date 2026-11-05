@@ -339,11 +339,11 @@
 	function BuildPilotDownloadJsonOnClick($data, $pilotCode, $date, $feldkatalog, $baseMissionPath) {
 		$links = CollectPilotFlightPlanLinks($data, $pilotCode, $date, $feldkatalog, "JasonFile");
 		$urls = array();
-		foreach ($links as $rel) {
-			$href = function_exists('rkrk_file_convert_download_href') ? rkrk_file_convert_download_href($rel) : '';
-			if ($href === '') {
-				$href = rkrk_json_flight_export_href($rel);
-			}
+			foreach ($links as $rel) {
+				$href = function_exists('rkrk_file_convert_download_href') ? rkrk_file_convert_download_href($rel, $date) : '';
+				if ($href === '') {
+					$href = rkrk_json_flight_export_href($rel, $date);
+				}
 			if ($href === '') {
 				$href = $baseMissionPath . $rel;
 			}
@@ -532,7 +532,7 @@ function rkrk_einsatz_checklist_href($params) {
 	return $href;
 }
 
-function rkrk_json_flight_export_href($rel) {
+function rkrk_json_flight_export_href($rel, $day = '') {
 	$rel = str_replace('\\', '/', trim((string)$rel));
 	if ($rel === '' || strpos($rel, '..') !== false || !preg_match('/\.json$/i', $rel)) {
 		return '';
@@ -542,6 +542,10 @@ function rkrk_json_flight_export_href($rel) {
 	$href = 'rkrk_json_flight_export.php?file=' . rawurlencode($rel);
 	if ($mdb !== '') {
 		$href .= '&MDB=' . rawurlencode($mdb);
+	}
+	$day = trim((string)$day);
+	if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+		$href .= '&day=' . rawurlencode($day);
 	}
 	return $href;
 }
@@ -582,13 +586,26 @@ function rkrk_flight_sightings_count($row) {
 	return 0;
 }
 
-function rkrk_control_flight_date_utc($datum) {
+function rkrk_control_flight_date_utc($datum, $zeit = '') {
 	$datum = trim((string)$datum);
 	if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datum)) {
 		return '';
 	}
+	$zeit = trim((string)$zeit);
+	if (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $zeit, $m)) {
+		$hour = (int)$m[1];
+		$minute = (int)$m[2];
+		$second = isset($m[3]) ? (int)$m[3] : 0;
+		if ($hour > 23 || $minute > 59 || $second > 59) {
+			$zeit = '00:00:00';
+		} else {
+			$zeit = sprintf('%02d:%02d:%02d', $hour, $minute, $second);
+		}
+	} else {
+		$zeit = '00:00:00';
+	}
 	try {
-		$local = new DateTime($datum . ' 00:00:00', new DateTimeZone('Europe/Zurich'));
+		$local = new DateTime($datum . ' ' . $zeit, new DateTimeZone('Europe/Zurich'));
 	} catch (Exception $e) {
 		return '';
 	}
@@ -596,8 +613,9 @@ function rkrk_control_flight_date_utc($datum) {
 	return $local->format('Y-m-d\TH:i:s.000\Z');
 }
 
-function rkrk_control_flights_for_field($rows, $feldId) {
+function rkrk_control_flights_for_field($rows, $feldId, $onlyDate = '') {
 	$feldId = trim((string)$feldId);
+	$onlyDate = trim((string)$onlyDate);
 	$flights = array();
 	if ($feldId === '' || !is_array($rows)) {
 		return $flights;
@@ -606,11 +624,15 @@ function rkrk_control_flights_for_field($rows, $feldId) {
 		if (!is_array($row) || trim((string)($row['Feld'] ?? '')) !== $feldId) {
 			continue;
 		}
-		$sightings = rkrk_flight_sightings_count($row);
-		if ($sightings < 1) {
+		if ($onlyDate !== '' && trim((string)($row['Datum'] ?? '')) !== $onlyDate) {
 			continue;
 		}
-		$date = rkrk_control_flight_date_utc($row['Datum'] ?? '');
+		$sightings = rkrk_flight_sightings_count($row);
+		$flown = (strcasecmp(trim((string)($row['Geflogen'] ?? '')), 'Ja') === 0);
+		if ($sightings < 1 && !$flown) {
+			continue;
+		}
+		$date = rkrk_control_flight_date_utc($row['Datum'] ?? '', $row['Zeit'] ?? '');
 		if ($date === '') {
 			continue;
 		}
@@ -659,14 +681,23 @@ function rkrk_load_flight_book_rows() {
 	return $rows;
 }
 
-function rkrk_json_apply_control_flights($json, $feldId, $rows = null) {
+function rkrk_json_apply_control_flights($json, $feldId, $rows = null, $onlyDate = '') {
 	if (!is_object($json)) {
 		return;
 	}
 	if ($rows === null) {
 		$rows = rkrk_load_flight_book_rows();
 	}
-	$flights = rkrk_control_flights_for_field($rows, $feldId);
+	$onlyDate = trim((string)$onlyDate);
+	$flights = rkrk_control_flights_for_field($rows, $feldId, $onlyDate);
+	if ($onlyDate !== '') {
+		if (count($flights) > 0) {
+			$json->controlFlights = $flights;
+		} else {
+			unset($json->controlFlights);
+		}
+		return;
+	}
 	if (count($flights) > 0) {
 		$json->controlFlights = $flights;
 	}

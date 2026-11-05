@@ -13,6 +13,7 @@ include_once __DIR__ . "/rkrk_assess_exam_session.inc.php";
 include_once __DIR__ . "/rkrk_assess_einsatzstatus.inc.php";
 include_once __DIR__ . "/rkrk_assess_trainingstatus.inc.php";
 include_once __DIR__ . "/rkrk_assess_trainingstatus_export.inc.php";
+include_once __DIR__ . "/rkrk_assess_pruefungstag.inc.php";
 
 if (function_exists("rkrk_assess_portal_personel_enforce_access")) {
 	rkrk_assess_portal_personel_enforce_access();
@@ -66,6 +67,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $canEdit && isset($_POST["tr_cfg_sa
 		);
 	}
 	$ok = rkrk_tr_config_save(array("lists" => $posted));
+	if ($ok && function_exists("rkrk_pt_sync_list_membership")) {
+		rkrk_pt_sync_list_membership($trCfg, rkrk_tr_config_load());
+	}
 	header("Location: " . rkrk_tr_page_href($ok ? array("cfg" => "1", "ok" => "1") : array("cfg" => "1", "err" => "1")), true, 303);
 	exit;
 }
@@ -81,7 +85,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $canEdit && (isset($_POST["tr_row_s
 	if ((string) $rawActive === "1") {
 		$disabled = false;
 	}
-	$ok = rkrk_tr_save_row($listSave, $pilotSave, (string) ($_POST["remark"] ?? ""), $disabled);
+	$present = null;
+	if (array_key_exists("present", $_POST)) {
+		$present = false;
+		$rawPresent = $_POST["present"];
+		if (is_array($rawPresent)) {
+			$rawPresent = end($rawPresent);
+		}
+		if ((string) $rawPresent === "1") {
+			$present = true;
+		}
+	}
+	$paid = null;
+	if (array_key_exists("paid", $_POST)) {
+		$paid = false;
+		$rawPaid = $_POST["paid"];
+		if (is_array($rawPaid)) {
+			$rawPaid = end($rawPaid);
+		}
+		if ((string) $rawPaid === "1") {
+			$paid = true;
+		}
+	}
+	$ok = rkrk_tr_save_row($listSave, $pilotSave, (string) ($_POST["remark"] ?? ""), $disabled, $present, $paid);
 	$q = $ok ? array("ok" => "1") : array("err" => "1");
 	if ($listSave !== "") {
 		$q["list"] = $listSave;
@@ -127,7 +153,7 @@ if (!$showCfg && is_array($active)) {
 $visible = array();
 foreach ($rows as $r) {
 	if ($filterQ !== "") {
-		$hay = rkrk_es_norm_name($r["name"] . " " . $r["rkrs_id"] . " " . $r["pilot_id"] . " " . (string) ($r["remark"] ?? ""));
+		$hay = rkrk_es_norm_name($r["name"] . " " . $r["rkrs_id"] . " " . $r["pilot_id"] . " " . (string) ($r["remark"] ?? "") . " " . (string) ($r["drohnentyp"] ?? ""));
 		if (strpos($hay, rkrk_es_norm_name($filterQ)) === false) {
 			continue;
 		}
@@ -143,7 +169,11 @@ $nOk = 0;
 $nFail = 0;
 $nOpen = 0;
 $nOff = 0;
+$nHere = 0;
 foreach ($rows as $r) {
+	if (!empty($r["present"])) {
+		$nHere++;
+	}
 	if (!empty($r["disabled"])) {
 		$nOff++;
 		continue;
@@ -209,8 +239,10 @@ foreach ($visible as $vr) {
 		$mailVisible[] = $vr;
 	}
 }
-$mailHref = function_exists("rkrk_tr_mailto_href") ? rkrk_tr_mailto_href($mailVisible, is_array($active) ? (string) ($active["name"] ?? "") : "") : "";
+$mailListName = is_array($active) ? (string) ($active["name"] ?? "") : "";
+$mailHref = function_exists("rkrk_tr_mailto_href") ? rkrk_tr_mailto_href($mailVisible, $mailListName) : "";
 $mailCount = function_exists("rkrk_tr_collect_emails") ? count(rkrk_tr_collect_emails($mailVisible)) : 0;
+$mailById = function_exists("rkrk_tr_mailto_by_id") ? rkrk_tr_mailto_by_id($visible, $mailListName) : array();
 ?>
 <style>
 .es-wrap{max-width:1180px;margin:0 auto;padding:8px 10px 20px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:15px;}
@@ -252,7 +284,8 @@ $mailCount = function_exists("rkrk_tr_collect_emails") ? count(rkrk_tr_collect_e
 .es-table td.es-cell-sum-open{background:#fff8e8!important;}
 .es-table tr.es-row-off td{opacity:.55;background:#f1f5f9!important;}
 .es-table tr.es-row-off .es-name{text-decoration:line-through;}
-.es-col-on{text-align:center;width:4.2rem;}
+.es-col-on,.es-col-here{text-align:center;width:5.2rem;}
+.es-table td.es-here-on{background:#d9f2c9!important;}
 .es-on{display:inline-flex;align-items:center;justify-content:center;margin:0;}
 .es-on input{width:1.05rem;height:1.05rem;cursor:pointer;}
 .es-score{display:block;font-size:11px;font-weight:600;color:#334155;line-height:1.2;margin-top:2px;}
@@ -303,7 +336,10 @@ $mailCount = function_exists("rkrk_tr_collect_emails") ? count(rkrk_tr_collect_e
 .es-in{width:100%;max-width:7.4rem;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:14px;height:30px;box-sizing:border-box;}
 .es-in.note{max-width:14rem;min-width:8rem;}
 .es-note-form{display:flex;gap:4px;align-items:center;margin:0;}
+.es-wrap span.es-ibtn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-width:32px;padding:0;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;color:#94a3b8;box-sizing:border-box;cursor:default;}
+.es-wrap span.es-ibtn .es-ico,.es-wrap span.es-ibtn svg{width:18px;height:18px;min-width:18px;min-height:18px;display:block;flex-shrink:0;fill:none;stroke:currentColor;}
 .es-col-note{white-space:normal;min-width:11rem;}
+.es-col-drone{white-space:nowrap;color:#334155;}
 .es-opt{font-weight:600;color:#334155;margin:8px 0 0;}
 .es-del{font-weight:600;color:#b91c1c;margin:8px 0 0;}
 .es-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:1.8rem;margin:0 0 8px;}
@@ -368,6 +404,16 @@ $mailCount = function_exists("rkrk_tr_collect_emails") ? count(rkrk_tr_collect_e
 			<label>Name
 				<input type="text" name="lists[<?php echo (int) $li; ?>][name]" value="<?php echo rkrk_es_h((string) ($lst["name"] ?? "")); ?>" maxlength="80" placeholder="z. B. WK26 Mogelsberg">
 			</label>
+			<?php $passRule = rkrk_tr_parse_pass_rule($lst["pass_rule"] ?? "all"); ?>
+			<label>Summe «OK» wenn
+				<select name="lists[<?php echo (int) $li; ?>][pass_rule]">
+					<option value="all"<?php echo $passRule === "all" ? " selected" : ""; ?>>Alle Tests bestehen</option>
+					<option value="any"<?php echo $passRule === "any" ? " selected" : ""; ?>>Mindestens ein Test bestehen</option>
+				</select>
+			</label>
+			<span class="hint">Steuert den Gesamtstatus (Σ): bei «Alle» nur OK wenn jeder Code bestanden ist; bei «Mindestens einer» reicht ein bestandener Test.</span>
+			<label><input type="checkbox" name="lists[<?php echo (int) $li; ?>][fee_due]" value="1"<?php echo !empty($lst["fee_due"]) ? " checked" : ""; ?>> Kurskosten fällig</label>
+			<span class="hint">Dann erscheint «Bezahlt» wie die Anwesenheit. Der Prüfungstag übernimmt das Kennzeichen als Icon.</span>
 			<div class="es-card-grid">
 				<div>
 					<label>Codes (Spalten)</label>
@@ -402,6 +448,10 @@ $mailCount = function_exists("rkrk_tr_collect_emails") ? count(rkrk_tr_collect_e
 							$lab = (string) $po["name"];
 							if ((string) $po["rkrs"] !== "") {
 								$lab .= " (" . $po["rkrs"] . ")";
+							}
+							$droneLab = trim((string) ($po["drohnentyp"] ?? ""));
+							if ($droneLab !== "") {
+								$lab .= " · " . $droneLab;
 							}
 							$vor = (string) ($po["vorname"] ?? "");
 							$nach = (string) ($po["nachname"] ?? "");
@@ -626,17 +676,20 @@ $mailCount = function_exists("rkrk_tr_collect_emails") ? count(rkrk_tr_collect_e
 	return;
 endif;
 $showRemark = true;
-$colCount = 4 + count($codes);
+$feeDue = is_array($active) && !empty($active["fee_due"]);
+$colShift = $feeDue ? 1 : 0;
+$colCount = 6 + count($codes) + $colShift;
 ?>
 <div class="es-wrap">
 	<div class="es-head">
 		<h1>Teilnehmerliste<?php echo is_array($active) ? " — " . rkrk_es_h((string) ($active["name"] ?? "")) : ""; ?></h1>
 		<div class="es-stats">
 			<span><b><?php echo (int) $nAll; ?></b> <?php echo $nAll === 1 ? "Teilnehmer" : "Teilnehmer"; ?></span>
+			<span>anwesend <b><?php echo (int) $nHere; ?></b></span>
 			<?php if (count($visible) !== $nAll): ?>
 			<span>angezeigt <b><?php echo (int) count($visible); ?></b></span>
 			<?php endif; ?>
-			<span><?php echo (int) $nOk; ?>/<?php echo (int) ($nAll - $nOff); ?> vollständig</span>
+			<span><?php echo (int) $nOk; ?>/<?php echo (int) ($nAll - $nOff); ?> <?php echo rkrk_tr_parse_pass_rule(is_array($active) ? ($active["pass_rule"] ?? "all") : "all") === "any" ? "OK (≥1)" : "vollständig"; ?></span>
 			<span>offen <b><?php echo (int) $nOpen; ?></b></span>
 			<span>nicht bestanden <b><?php echo (int) $nFail; ?></b></span>
 			<?php if ($nOff > 0): ?>
@@ -679,10 +732,11 @@ $colCount = 4 + count($codes);
 		<?php if (function_exists("rkrk_assess_rkrs_echo_cs_hidden_inputs")) { rkrk_assess_rkrs_echo_cs_hidden_inputs(array("Name", "RKRSPilotID", "PilotID", "cs")); } ?>
 		<?php if ($listId !== ""): ?><input type="hidden" name="list" value="<?php echo rkrk_es_h($listId); ?>"><?php endif; ?>
 		<input type="hidden" name="sort" value="<?php echo rkrk_es_h($sortMode); ?>">
-		<input type="text" name="q" value="<?php echo rkrk_es_h($filterQ); ?>" placeholder="Name, ID…">
+		<input type="text" name="q" value="<?php echo rkrk_es_h($filterQ); ?>" placeholder="Name, ID, Drohne…">
+		<?php $activePassRule = rkrk_tr_parse_pass_rule(is_array($active) ? ($active["pass_rule"] ?? "all") : "all"); ?>
 		<select name="status">
 			<option value="">Status</option>
-			<option value="ok"<?php echo $filterStatus === "ok" ? " selected" : ""; ?>>Vollständig bestanden</option>
+			<option value="ok"<?php echo $filterStatus === "ok" ? " selected" : ""; ?>><?php echo $activePassRule === "any" ? "Summe OK (≥1 bestanden)" : "Vollständig bestanden"; ?></option>
 			<option value="open"<?php echo $filterStatus === "open" ? " selected" : ""; ?>>Offen / in Arbeit</option>
 			<option value="fail"<?php echo $filterStatus === "fail" ? " selected" : ""; ?>>Nicht bestanden</option>
 		</select>
@@ -707,13 +761,18 @@ $colCount = 4 + count($codes);
 		<table class="es-table" id="tr-table">
 			<thead>
 				<tr>
-					<th class="es-th-sort" data-col="0"><?php echo $sortMode === "vor" ? "Teilnehmer (Vorname)" : "Teilnehmer (Nachname)"; ?></th>
+					<th class="es-th-sort es-col-here" data-col="0" title="Anwesenheit in dieser Liste">Anwesend</th>
+					<?php if ($feeDue): ?>
+					<th class="es-th-sort es-col-here" data-col="1" title="Kurskosten bezahlt">Bezahlt</th>
+					<?php endif; ?>
+					<th class="es-th-sort" data-col="<?php echo 1 + $colShift; ?>"><?php echo $sortMode === "vor" ? "Teilnehmer (Vorname)" : "Teilnehmer (Nachname)"; ?></th>
+					<th class="es-th-sort es-col-drone" data-col="<?php echo 2 + $colShift; ?>">Drohnentyp</th>
 					<?php foreach ($codes as $ci => $code): ?>
-						<th class="es-th-sort es-col-exam" data-col="<?php echo (int) ($ci + 1); ?>" title="<?php echo rkrk_es_h($code); ?>"><?php echo rkrk_es_h($code); ?></th>
+						<th class="es-th-sort es-col-exam" data-col="<?php echo (int) ($ci + 3 + $colShift); ?>" title="<?php echo rkrk_es_h($code); ?>"><?php echo rkrk_es_h($code); ?></th>
 					<?php endforeach; ?>
-					<th class="es-th-sort es-col-exam" data-col="<?php echo (int) (count($codes) + 1); ?>" title="Gesamtstatus">Σ</th>
-					<th class="es-th-sort es-col-on" data-col="<?php echo (int) (count($codes) + 2); ?>" title="Inaktive Teilnehmer bleiben in der Liste, zählen aber nicht mit">Aktiv</th>
-					<th class="es-th-sort es-col-note" data-col="<?php echo (int) (count($codes) + 3); ?>">Bemerkung</th>
+					<th class="es-th-sort es-col-exam" data-col="<?php echo (int) (count($codes) + 3 + $colShift); ?>" title="Gesamtstatus">Σ</th>
+					<th class="es-th-sort es-col-on" data-col="<?php echo (int) (count($codes) + 4 + $colShift); ?>" title="Inaktive Teilnehmer bleiben in der Liste, zählen aber nicht mit">Aktiv</th>
+					<th class="es-th-sort es-col-note" data-col="<?php echo (int) (count($codes) + 5 + $colShift); ?>">Bemerkung</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -727,6 +786,8 @@ $colCount = 4 + count($codes);
 				$sumSort = $rowSt === "ok" ? "3" : ($rowSt === "fail" ? "1" : "2");
 				$sumCls = $rowSt === "ok" ? "es-cell-sum-ok" : ($rowSt === "fail" ? "es-cell-sum-fail" : "es-cell-sum-open");
 				$isOff = !empty($r["disabled"]);
+				$isHere = !empty($r["present"]);
+				$isPaid = !empty($r["paid"]);
 				$pilotSv = $sortMode === "vor"
 					? trim((string) ($r["vorname"] ?? "") . " " . (string) ($r["nachname"] ?? ""))
 					: trim((string) ($r["nachname"] ?? "") . " " . (string) ($r["vorname"] ?? ""));
@@ -735,8 +796,32 @@ $colCount = 4 + count($codes);
 				}
 				$formId = "trf" . (int) $ri;
 				$rem = (string) ($r["remark"] ?? "");
+				$drone = (string) ($r["drohnentyp"] ?? "");
+				$rowMail = (string) ($mailById[(string) ($r["id"] ?? "")] ?? "");
 			?>
 				<tr<?php echo $isOff ? ' class="es-row-off"' : ""; ?>>
+					<td class="es-col-here<?php echo $isHere ? " es-here-on" : ""; ?>" data-sv="<?php echo $isHere ? "1" : "0"; ?>">
+						<?php if ($canEdit && $listId !== "" && (string) ($r["id"] ?? "") !== ""): ?>
+							<label class="es-on" title="<?php echo $isHere ? "Anwesend — Häkchen entfernen" : "Nicht anwesend — Häkchen setzen"; ?>">
+								<input type="hidden" form="<?php echo rkrk_es_h($formId); ?>" name="present" value="0">
+								<input type="checkbox" form="<?php echo rkrk_es_h($formId); ?>" name="present" value="1" data-tr-present<?php echo $isHere ? " checked" : ""; ?>>
+							</label>
+						<?php else: ?>
+							<?php echo $isHere ? "Ja" : "Nein"; ?>
+						<?php endif; ?>
+					</td>
+					<?php if ($feeDue): ?>
+					<td class="es-col-here<?php echo $isPaid ? " es-here-on" : ""; ?>" data-sv="<?php echo $isPaid ? "1" : "0"; ?>">
+						<?php if ($canEdit && $listId !== "" && (string) ($r["id"] ?? "") !== ""): ?>
+							<label class="es-on" title="<?php echo $isPaid ? "Bezahlt — Häkchen entfernen" : "Nicht bezahlt — Häkchen setzen"; ?>">
+								<input type="hidden" form="<?php echo rkrk_es_h($formId); ?>" name="paid" value="0">
+								<input type="checkbox" form="<?php echo rkrk_es_h($formId); ?>" name="paid" value="1" data-tr-paid<?php echo $isPaid ? " checked" : ""; ?>>
+							</label>
+						<?php else: ?>
+							<?php echo $isPaid ? "Ja" : "Nein"; ?>
+						<?php endif; ?>
+					</td>
+					<?php endif; ?>
 					<td data-sv="<?php echo rkrk_es_h($pilotSv); ?>">
 						<span class="es-name"><?php echo rkrk_es_h($r["name"]); ?></span>
 						<span class="es-sub">
@@ -744,6 +829,7 @@ $colCount = 4 + count($codes);
 							<?php if (!empty($r["rkrsplus"])): ?> · +<?php endif; ?>
 						</span>
 					</td>
+					<td class="es-col-drone" data-sv="<?php echo rkrk_es_h($drone); ?>"><?php echo $drone !== "" ? rkrk_es_h($drone) : "—"; ?></td>
 					<?php foreach ($codes as $code):
 						$cell = isset($r["cells"][$code]) && is_array($r["cells"][$code]) ? $r["cells"][$code] : array("hit" => null, "sort" => "0", "status" => "open");
 						$hit = isset($cell["hit"]) && is_array($cell["hit"]) ? $cell["hit"] : null;
@@ -766,7 +852,7 @@ $colCount = 4 + count($codes);
 						</td>
 					<?php endforeach; ?>
 					<td class="es-col-exam <?php echo $sumCls; ?>" data-sv="<?php echo rkrk_es_h($sumSort); ?>">
-						<?php echo rkrk_tr_overall_icon(is_array($r["sum"] ?? null) ? $r["sum"] : array()); ?>
+						<?php echo rkrk_tr_overall_icon(is_array($r["sum"] ?? null) ? $r["sum"] : array(), rkrk_tr_parse_pass_rule(is_array($active) ? ($active["pass_rule"] ?? "all") : "all")); ?>
 					</td>
 					<td class="es-col-on" data-sv="<?php echo $isOff ? "0" : "1"; ?>">
 						<?php if ($canEdit && $listId !== "" && (string) ($r["id"] ?? "") !== ""): ?>
@@ -783,9 +869,19 @@ $colCount = 4 + count($codes);
 							<div class="es-note-form">
 								<input class="es-in note" form="<?php echo rkrk_es_h($formId); ?>" type="text" name="remark" value="<?php echo rkrk_es_h($rem); ?>" placeholder="Bemerkung" maxlength="200">
 								<button form="<?php echo rkrk_es_h($formId); ?>" type="submit" class="es-ibtn" title="Speichern" aria-label="Speichern"><?php echo rkrk_es_ico("save"); ?></button>
+								<?php if ($rowMail !== ""): ?>
+									<a class="es-ibtn" href="<?php echo rkrk_es_h($rowMail); ?>" title="E-Mail an <?php echo rkrk_es_h((string) $r["name"]); ?> öffnen" aria-label="E-Mail an <?php echo rkrk_es_h((string) $r["name"]); ?>"><?php echo rkrk_es_ico("mail"); ?></a>
+								<?php else: ?>
+									<span class="es-ibtn" title="Keine E-Mail-Adresse" aria-label="Keine E-Mail-Adresse"><?php echo rkrk_es_ico("mail"); ?></span>
+								<?php endif; ?>
 							</div>
 						<?php else: ?>
-							<?php echo $rem !== "" ? rkrk_es_h($rem) : "—"; ?>
+							<div class="es-note-form">
+								<span><?php echo $rem !== "" ? rkrk_es_h($rem) : "—"; ?></span>
+								<?php if ($rowMail !== ""): ?>
+									<a class="es-ibtn" href="<?php echo rkrk_es_h($rowMail); ?>" title="E-Mail an <?php echo rkrk_es_h((string) $r["name"]); ?> öffnen" aria-label="E-Mail an <?php echo rkrk_es_h((string) $r["name"]); ?>"><?php echo rkrk_es_ico("mail"); ?></a>
+								<?php endif; ?>
+							</div>
 						<?php endif; ?>
 					</td>
 				</tr>
@@ -800,14 +896,17 @@ $colCount = 4 + count($codes);
 		· <?php echo rkrk_tr_result_icon(null, ""); ?> Offen.
 		Hover auf dem Icon: Status, Datum, EXAM, Quiz und Resultat in Prozent.
 		Zelle grün = bestanden, rot = nicht bestanden, gelb = offen, orange = in Arbeit.
+		Σ = Summe «OK» gemäss Listenregel (alle Tests bzw. mindestens einer).
 		PDF und Excel zeigen die Resultate (Punkte / Prozent) direkt.
+		Anwesend ganz links: Häkchen setzen, wenn die Person da ist. Zählt nur für diese Liste.
+		<?php if ($feeDue): ?>Bezahlt direkt daneben: Häkchen, wenn die Kurskosten bezahlt sind.<?php else: ?>Bezahlt erscheint, sobald in der Konfiguration «Kurskosten fällig» gesetzt ist.<?php endif; ?>
 		Aktiv-Häkchen entfernen deaktiviert den Teilnehmer (bleibt in der Liste).
 		Teilnehmerlisten, Personen und Codes im Zahnrad.
 	</p>
 </div>
 <script>
 (function(){
-	document.querySelectorAll("input[data-tr-active]").forEach(function(cb){
+	document.querySelectorAll("input[data-tr-active], input[data-tr-present], input[data-tr-paid]").forEach(function(cb){
 		cb.addEventListener("change", function(){
 			var id = cb.getAttribute("form") || "";
 			var f = id ? document.getElementById(id) : cb.form;
